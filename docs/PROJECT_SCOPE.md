@@ -104,10 +104,10 @@ deterministic inspection shell over the existing synthetic Core fixture. It
 does not add physics, time advancement, refuelling, RRS actions, save/load,
 replay, or gameplay scoring. The next Phase 8 task remains unselected until
 approved scenario/difficulty parameter authority exists. The owner-authorized
-Phase 7A activation has also completed `P7-T01` through `P7-T03`: the approved
-point-kinetics and I/Xe transitions plus the caller-supplied stable timestep
-policy are implemented and T3-validated; dynamic spatial coupling, scenarios,
-and G7A evidence remain deferred.
+Phase 7A activation has also completed `P7-T01` through `P7-T04`: the approved
+point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
+and synthetic scenario histories are implemented and T3-validated; dynamic
+spatial coupling and G7A evidence remain deferred.
 
 ## Fast routing
 
@@ -228,6 +228,7 @@ Historical context is intentionally short:
 | `P7-T01` | `COMPLETE` | Implements only the approved point-kinetics/quasi-static amplitude package: immutable delayed-neutron data and kinetic state contracts, exact spatial/data binding, explicit left-endpoint Euler transition, audit record, and focused edge coverage. Focused tests `10/10`, full T3 CLI `5/5`, Core `168/168`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T02` is next eligible for I-135/Xe-135 production, decay, absorption, and spatial/coarse-region mapping. Timestep policy, cadence, scenarios, and G7A evidence are not implied by this slice. |
 | `P7-T02` | `COMPLETE` | Closes the I-135/Xe-135 production, decay, absorption, and local node-volume/flux/fission-rate mapping boundary over the existing P5-T09 contracts; hardens canonical finite/range handling and canonical zero loss terms without adding data constants or a new spatial schema. Focused tests `7/7`, full T3 CLI `5/5`, Core `175/175`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T03` is next eligible for stable integration methods and timestep limits. Dynamic Xe-to-P2-T02 coupling, scenarios, and G7A evidence are not implied by this slice. |
 | `P7-T03` | `COMPLETE` | Defines the caller-supplied explicit-Euler stability policy: canonical finite/positive five-term inputs, exact authoritative `H` minimum, direct/dimensionless substep validation, active decay/prompt-rate envelope coverage, and immutable deterministic `ceil(gap/H)` first-`n-1`/remainder scheduling. Focused tests `5/5`, full T3 CLI `5/5`, Core `180/180`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T04` is next eligible for startup/equilibrium, power-change, shutdown-like reduction without safety-system modeling, and xenon-oscillation scenarios. Dynamic Xe-to-P2-T02 coupling and G7A evidence are not implied by this slice. |
+| `P7-T04` | `COMPLETE` | Adds three focused synthetic scenario histories over the approved transitions and shared stability schedule: explicit equilibrium-like startup, ordinary power increase/reduction with no safety-system state, and high-power xenon production followed by low-power relaxation. Determinism, explicit initial values, policy partitioning, and finite nonnegative histories are covered. Focused tests `3/3`, full T3 CLI `5/5`, Core `183/183`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T05` is next eligible for controlled xenon coefficient coupling to the spatial solve. G7A long histories, convergence, and golden/reference evidence are not implied by this slice. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
