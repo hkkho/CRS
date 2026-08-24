@@ -82,9 +82,16 @@ artifact-output wrapper portable: the direct and wrapper runs both pass Core
 queue admission method now derives candidates and preserves the caller-
 validated source binding, with focused mismatch/atomicity characterization,
 Core `158/158`, Golden `19/19`, and independent review `PASS` (telemetry
+`UNVERIFIED`). `P6-INTERNALS-01` is complete as an internal-only compatibility
+refactor: the P6-T05 read-only RRS queue projection and P6-T06 transition queue
+remain distinct, P6-T06 is documented as the admission/transition owner, and
+only the genuinely identical liquid-zone/adjuster grouping-byte writer was
+shared. Focused grouping characterization passed `11/11`, T3 Core passed
+`158/158`, Golden `19/19`, and independent review was `PASS` (telemetry
 `UNVERIFIED`). These are synthetic/test-only contract results; no runtime
 physics, schema version, tolerance, or golden authority changed. The next
-eligible recovery task is `P6-INTERNALS-01`.
+sequenced recovery task is `CORE-NAMING-01`; any public-contract migration
+remains a separate risk-triggered task.
 
 ## Fast routing
 
@@ -187,8 +194,9 @@ Historical context is intentionally short:
 | Key | Status | Boundary and evidence | Next handoff |
 |---|---|---|---|
 | `TEST-INFRA-01` | `COMPLETE` | Test-only output-root resolution and explicit Core fixture declarations; direct Core `156/156`, Golden `19/19`, and fresh artifact-output wrapper Core `156/156`, Golden `19/19`, all with zero failures/skips. | Baseline is portable; no further work remains in this task. |
-| `P6-INTEGRATION-01` | `COMPLETE` | Core-owned RRS projection-to-queue admission preserves v1 command/queue bytes, source binding, rank 2, delays/rates, and immutable enqueue behavior; focused `10/10`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | Queue/digest ownership consolidation is next. |
-| `P6-INTERNALS-01` | `NEXT ELIGIBLE` | Consolidate only internal queue/digest implementation details after a compatibility inventory; preserve public v1 types, serialization, fixture bytes, digests, replay bytes, and error codes. | Requires its own T1/T3 evidence and independent code review (high); split if ownership and digest deduplication are not one reviewable candidate. |
+| `P6-INTEGRATION-01` | `COMPLETE` | Core-owned RRS projection-to-queue admission preserves v1 command/queue bytes, source binding, rank 2, delays/rates, and immutable enqueue behavior; focused `10/10`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | Follow-on `P6-INTERNALS-01` is complete; `CORE-NAMING-01` is next. |
+| `P6-INTERNALS-01` | `COMPLETE` | Internal compatibility inventory preserved the distinct public RRS projection and P6-T06 transition queue; shared only the identical grouping canonical-byte body. Focused grouping `11/11`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | `CORE-NAMING-01` is next; no public rename is authorized in that discovery task. |
+| `CORE-NAMING-01` | `NEXT ELIGIBLE` | Inventory and decision record for task-ID-named runtime types; classify public types by persistence, reflection, fixture, internal, or external use and define a no-break migration order. | T0 API/source inventory and focused build; any implementation rename requires a separate risk-triggered task. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
