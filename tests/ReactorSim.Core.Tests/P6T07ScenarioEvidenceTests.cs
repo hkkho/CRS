@@ -103,6 +103,86 @@ public sealed class P6T07ScenarioEvidenceTests
     }
 
     [Fact]
+    public void ControllerProjectionAdmissionPreservesPreRefactorQueueBytes()
+    {
+        RrsControllerAdmissionFixture admission = CreateCenteredAdmissionFixture(
+            1.0,
+            800.0,
+            0.6,
+            0.4,
+            1.0,
+            0.1,
+            Digest(0x61));
+        byte[] queueBefore = admission.Queue.ToCanonicalBytes();
+        P6T06CommandCandidateV1[] preRefactorCandidates = admission.Projection.Commands
+            .Select(command => Require(P6T06CommandCandidateV1.TryCreate(
+                P6T06QueueFamilyV1.Rrs,
+                Require(P6T06TargetKeyV1.TryForRrsActuator(command.ActuatorId)),
+                P6T06SourceKindV1.Controller,
+                EventRankV1.ControllerCommandGeneration,
+                command.DelaySeconds,
+                command.RequestedCommand,
+                command.LowerBound,
+                command.UpperBound,
+                command.RateLimitPerSecond)))
+            .ToArray();
+        P6T06EnqueueResultV1 preRefactor = Require(admission.Queue.TryEnqueueBatch(
+            Require(P6T06SourceBindingTokenV1.TryCreate(
+                admission.EventIdentity.SourceEventId,
+                admission.EventIdentity.SourceBindingDigest)),
+            admission.Projection.CurrentTimeSeconds,
+            Require(admission.Queue.TryCreatePhaseToken(admission.Projection.CurrentTimeSeconds)),
+            preRefactorCandidates));
+
+        P6T06EnqueueResultV1 integrated = Require(
+            admission.Queue.TryEnqueueRrsControllerProjection(
+                admission.Projection,
+                admission.EventIdentity,
+                Require(admission.Queue.TryCreatePhaseToken(admission.Projection.CurrentTimeSeconds))));
+
+        Assert.Equal(queueBefore, admission.Queue.ToCanonicalBytes());
+        Assert.Equal(preRefactor.Queue.ToCanonicalBytes(), integrated.Queue.ToCanonicalBytes());
+        Assert.Equal(preRefactor.Transition.ToCanonicalBytes(), integrated.Transition.ToCanonicalBytes());
+        Assert.Equal(
+            preRefactor.Commands.Select(command => command.ToCanonicalBytes()),
+            integrated.Commands.Select(command => command.ToCanonicalBytes()));
+        Assert.Equal(preRefactor.Queue.QueueDigest, integrated.Queue.QueueDigest);
+        Assert.Equal(
+            preRefactor.Commands.Select(command => command.CommandDigest),
+            integrated.Commands.Select(command => command.CommandDigest));
+    }
+
+    [Fact]
+    public void ControllerProjectionAdmissionRejectsDigestMismatchBeforeQueueMutation()
+    {
+        RrsControllerAdmissionFixture admission = CreateCenteredAdmissionFixture(
+            1.0,
+            800.0,
+            0.6,
+            0.4,
+            1.0,
+            0.1,
+            Digest(0x61));
+        P6T06RrsControllerEventIdentityV1 mismatchedIdentity = Require(
+            P6T06RrsControllerEventIdentityV1.TryCreate(
+                admission.EventIdentity.ControllerId,
+                admission.EventIdentity.SourceEventId,
+                admission.EventIdentity.SourceBindingDigest,
+                Digest(0x62)));
+        byte[] queueBefore = admission.Queue.ToCanonicalBytes();
+
+        ContractValidationResult<P6T06EnqueueResultV1> result =
+            admission.Queue.TryEnqueueRrsControllerProjection(
+                admission.Projection,
+                mismatchedIdentity,
+                Require(admission.Queue.TryCreatePhaseToken(admission.Projection.CurrentTimeSeconds)));
+
+        Assert.False(result.IsValid);
+        Assert.Equal("P6T06.RrsProjection.Event.ProjectionDigestMismatch", result.FirstDiagnostic.Code);
+        Assert.Equal(queueBefore, admission.Queue.ToCanonicalBytes());
+    }
+
+    [Fact]
     public void RegionalTiltProducesDistinctDeterministicSignedOverlay()
     {
         JsonElement scenario = LoadScenario("regional-tilt");
@@ -352,65 +432,33 @@ public sealed class P6T07ScenarioEvidenceTests
         double rate = ScenarioDouble(scenario, "actuator_rate_s^-1");
         double[] motionTimes = ScenarioDoubles(scenario, "queue_motion_times_s");
         Assert.Equal(2, motionTimes.Length);
-        RrsFixture fixture = CreateRrsFixture();
-        RrsMeasurementSnapshotV1 measurement = Require(RrsMeasurementSnapshotV1.TryCreate(
-            fixture.RegionSet,
+        RrsControllerAdmissionFixture admission = CreateCenteredAdmissionFixture(
             measurementTime,
             ScenarioDouble(scenario, "measured_power_w"),
-            ScenarioDouble(scenario, "left_measured_fraction") * ScenarioDouble(scenario, "measured_power_w"),
-            ScenarioDouble(scenario, "right_measured_fraction") * ScenarioDouble(scenario, "measured_power_w")));
-        RrsControllerProjectionV1 projection = Require(
-            RrsControllerProjectionV1.TryProjectAutomatic(fixture.State, measurement, measurementTime));
+            ScenarioDouble(scenario, "left_measured_fraction"),
+            ScenarioDouble(scenario, "right_measured_fraction"),
+            cadence,
+            rate,
+            Digest(0x61));
+        RrsFixture fixture = admission.Fixture;
+        RrsMeasurementSnapshotV1 measurement = admission.Measurement;
+        RrsControllerProjectionV1 projection = admission.Projection;
         Assert.All(projection.Commands, command =>
         {
             Assert.Equal(delay, command.DelaySeconds, 12);
             Assert.Equal(rate, command.RateLimitPerSecond, 12);
         });
-
-        P6T06TargetKeyV1 totalTarget = Require(
-            P6T06TargetKeyV1.TryForRrsActuator(RrsFixtureV1.TotalPowerActuatorId));
-        P6T06TargetKeyV1 tiltTarget = Require(
-            P6T06TargetKeyV1.TryForRrsActuator(RrsFixtureV1.TiltActuatorId));
-        P6T06QueueStateV1 queue = CreateP6Queue(
-            P6T06QueueFamilyV1.Rrs,
-            Id(0xf601),
-            RrsFixtureV1.ControllerId,
-            cadence,
-            0.0,
-            new[]
-            {
-                Require(P6T06AvailableCommandV1.TryCreate(
-                    P6T06QueueFamilyV1.Rrs,
-                    totalTarget,
-                    0.5,
-                    0.0,
-                    1.0,
-                    rate)),
-                Require(P6T06AvailableCommandV1.TryCreate(
-                    P6T06QueueFamilyV1.Rrs,
-                    tiltTarget,
-                    0.5,
-                    0.0,
-                    1.0,
-                    rate))
-            });
-        P6T06CommandCandidateV1[] candidates = projection.Commands
-            .Select(command => Require(P6T06CommandCandidateV1.TryCreate(
-                P6T06QueueFamilyV1.Rrs,
-                Require(P6T06TargetKeyV1.TryForRrsActuator(command.ActuatorId)),
-                P6T06SourceKindV1.Controller,
-                EventRankV1.ControllerCommandGeneration,
-                command.DelaySeconds,
-                command.RequestedCommand,
-                command.LowerBound,
-                command.UpperBound,
-                command.RateLimitPerSecond)))
-            .ToArray();
-        P6T06EnqueueResultV1 enqueue = Require(queue.TryEnqueueBatch(
-            Binding(0xf611, Digest(0x61)),
-            measurementTime,
-            Require(queue.TryCreatePhaseToken(measurementTime)),
-            candidates));
+        P6T06QueueStateV1 queue = admission.Queue;
+        P6T06RrsControllerEventIdentityV1 eventIdentity = admission.EventIdentity;
+        P6T06TargetKeyV1 totalTarget = admission.Queue.AvailableCommands.Single(
+            command => command.Target.StableId == RrsFixtureV1.TotalPowerActuatorId).Target;
+        P6T06TargetKeyV1 tiltTarget = admission.Queue.AvailableCommands.Single(
+            command => command.Target.StableId == RrsFixtureV1.TiltActuatorId).Target;
+        P6T06EnqueueResultV1 enqueue = Require(
+            queue.TryEnqueueRrsControllerProjection(
+                projection,
+                eventIdentity,
+                Require(queue.TryCreatePhaseToken(projection.CurrentTimeSeconds))));
         P6T06ActuatorStateV1[] initialStates =
         {
             Require(P6T06ActuatorStateV1.TryCreate(
@@ -965,6 +1013,65 @@ public sealed class P6T07ScenarioEvidenceTests
     private static P6T06SourceBindingTokenV1 Binding(int suffix, Digest32 digest)
     {
         return Require(P6T06SourceBindingTokenV1.TryCreate(Id((uint)suffix), digest));
+    }
+
+    private static RrsControllerAdmissionFixture CreateCenteredAdmissionFixture(
+        double measurementTime,
+        double measuredPower,
+        double leftMeasuredFraction,
+        double rightMeasuredFraction,
+        double cadence,
+        double rate,
+        Digest32 sourceBindingDigest)
+    {
+        RrsFixture fixture = CreateRrsFixture();
+        RrsMeasurementSnapshotV1 measurement = Require(RrsMeasurementSnapshotV1.TryCreate(
+            fixture.RegionSet,
+            measurementTime,
+            measuredPower,
+            leftMeasuredFraction * measuredPower,
+            rightMeasuredFraction * measuredPower));
+        RrsControllerProjectionV1 projection = Require(
+            RrsControllerProjectionV1.TryProjectAutomatic(fixture.State, measurement, measurementTime));
+        P6T06TargetKeyV1 totalTarget = Require(
+            P6T06TargetKeyV1.TryForRrsActuator(RrsFixtureV1.TotalPowerActuatorId));
+        P6T06TargetKeyV1 tiltTarget = Require(
+            P6T06TargetKeyV1.TryForRrsActuator(RrsFixtureV1.TiltActuatorId));
+        P6T06QueueStateV1 queue = CreateP6Queue(
+            P6T06QueueFamilyV1.Rrs,
+            Id(0xf601),
+            fixture.State.ControllerId,
+            cadence,
+            0.0,
+            new[]
+            {
+                Require(P6T06AvailableCommandV1.TryCreate(
+                    P6T06QueueFamilyV1.Rrs,
+                    totalTarget,
+                    0.5,
+                    0.0,
+                    1.0,
+                    rate)),
+                Require(P6T06AvailableCommandV1.TryCreate(
+                    P6T06QueueFamilyV1.Rrs,
+                    tiltTarget,
+                    0.5,
+                    0.0,
+                    1.0,
+                    rate))
+            });
+        P6T06RrsControllerEventIdentityV1 eventIdentity = Require(
+            P6T06RrsControllerEventIdentityV1.TryCreate(
+                fixture.State.ControllerId,
+                Id(0xf611),
+                sourceBindingDigest,
+                projection.ProjectionDigest));
+        return new RrsControllerAdmissionFixture(
+            fixture,
+            measurement,
+            projection,
+            queue,
+            eventIdentity);
     }
 
     private static RrsFixture CreateRrsFixture()
@@ -1785,6 +1892,33 @@ public sealed class P6T07ScenarioEvidenceTests
         public RrsInfluenceMapV1 Map { get; }
 
         public RrsControllerStateV1 State { get; }
+    }
+
+    private sealed class RrsControllerAdmissionFixture
+    {
+        public RrsControllerAdmissionFixture(
+            RrsFixture fixture,
+            RrsMeasurementSnapshotV1 measurement,
+            RrsControllerProjectionV1 projection,
+            P6T06QueueStateV1 queue,
+            P6T06RrsControllerEventIdentityV1 eventIdentity)
+        {
+            Fixture = fixture;
+            Measurement = measurement;
+            Projection = projection;
+            Queue = queue;
+            EventIdentity = eventIdentity;
+        }
+
+        public RrsFixture Fixture { get; }
+
+        public RrsMeasurementSnapshotV1 Measurement { get; }
+
+        public RrsControllerProjectionV1 Projection { get; }
+
+        public P6T06QueueStateV1 Queue { get; }
+
+        public P6T06RrsControllerEventIdentityV1 EventIdentity { get; }
     }
 
     private sealed class ScenarioTrace

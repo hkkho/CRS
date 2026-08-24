@@ -1332,6 +1332,66 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
+    /// Validated identity for one controller command-generation event. This is
+    /// an adapter handoff value, not a serialized v1 queue record. The event
+    /// carries the controller owner, the source event identity, the exact
+    /// caller-validated source-state binding, and the projection digest that
+    /// the event is admitting.
+    /// </summary>
+    public sealed class P6T06RrsControllerEventIdentityV1
+    {
+        private P6T06RrsControllerEventIdentityV1(
+            StableId controllerId,
+            StableId sourceEventId,
+            Digest32 sourceBindingDigest,
+            Digest32 projectionDigest)
+        {
+            ControllerId = controllerId;
+            SourceEventId = sourceEventId;
+            SourceBindingDigest = sourceBindingDigest;
+            ProjectionDigest = projectionDigest;
+        }
+
+        public StableId ControllerId { get; }
+
+        public StableId SourceEventId { get; }
+
+        public Digest32 SourceBindingDigest { get; }
+
+        public Digest32 ProjectionDigest { get; }
+
+        public static ContractValidationResult<P6T06RrsControllerEventIdentityV1> TryCreate(
+            StableId controllerId,
+            StableId sourceEventId,
+            Digest32? sourceBindingDigest,
+            Digest32? projectionDigest)
+        {
+            if (controllerId.IsEmpty || sourceEventId.IsEmpty)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06RrsControllerEventIdentityV1>(
+                    "P6T06.RrsEvent.Identity.Invalid",
+                    "event_identity",
+                    "A controller event requires non-empty controller and source-event identities.");
+            }
+
+            if (sourceBindingDigest == null || projectionDigest == null)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06RrsControllerEventIdentityV1>(
+                    "P6T06.RrsEvent.Digest.Missing",
+                    "event_identity",
+                    "A controller event requires both its source-state binding and projection digests.");
+            }
+
+            return ContractValidationResult<P6T06RrsControllerEventIdentityV1>.Valid(
+                new P6T06RrsControllerEventIdentityV1(
+                    controllerId,
+                    sourceEventId,
+                    sourceBindingDigest,
+                    projectionDigest));
+        }
+    }
+
+    /// <summary>
     /// Complete immutable owner-bound queue state. Both historical registries
     /// remain in the state after consume; consumed command IDs are never
     /// released or reallocated.
@@ -1911,6 +1971,153 @@ namespace ReactorSim.Core
                 AvailableCommands);
             return ContractValidationResult<P6T06EnqueueResultV1>.Valid(
                 new P6T06EnqueueResultV1(nextQueue.Value, commands, saturation, transition));
+        }
+
+        /// <summary>
+        /// Owns the RRS projection-to-queue boundary. It validates the event
+        /// identity against the projection and queue, translates every
+        /// projection command into one P6-T06 candidate, and then delegates to
+        /// the existing atomic queue transaction. Source-state binding remains
+        /// caller-validated and is preserved exactly; this method does not
+        /// invent a measurement, equation, or digest.
+        /// </summary>
+        public ContractValidationResult<P6T06EnqueueResultV1> TryEnqueueRrsControllerProjection(
+            RrsControllerProjectionV1? projection,
+            P6T06RrsControllerEventIdentityV1? eventIdentity,
+            P6T06QueuePhaseTokenV1? phaseToken)
+        {
+            if (Family != P6T06QueueFamilyV1.Rrs)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    "P6T06.RrsProjection.Queue.FamilyMismatch",
+                    "queue.family",
+                    "RRS controller projections may be admitted only to an RRS queue.");
+            }
+
+            if (projection == null || eventIdentity == null)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    "P6T06.RrsProjection.Input.Missing",
+                    "projection_event",
+                    "A validated RRS projection and controller event identity are required.");
+            }
+
+            if (!OwnerKey.IsCompatibleWith(P6T06QueueFamilyV1.Rrs) ||
+                OwnerKey.EntityId != eventIdentity.ControllerId)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    "P6T06.RrsProjection.Queue.OwnerMismatch",
+                    "queue.owner_key",
+                    "The RRS queue owner must equal the controller event identity.");
+            }
+
+            if (!eventIdentity.ProjectionDigest.Equals(projection.ProjectionDigest))
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    "P6T06.RrsProjection.Event.ProjectionDigestMismatch",
+                    "event_identity.projection_digest",
+                    "The controller event must admit the exact validated projection digest.");
+            }
+
+            P6T06SourceKindV1 sourceKind;
+            switch (projection.Mode)
+            {
+                case RrsModeV1.Automatic:
+                    sourceKind = P6T06SourceKindV1.Controller;
+                    break;
+                case RrsModeV1.Manual:
+                    sourceKind = P6T06SourceKindV1.Manual;
+                    break;
+                case RrsModeV1.Held:
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        "P6T06.RrsProjection.Mode.Held",
+                        "projection.mode",
+                        "Held projections preserve the current command and do not generate queue admissions.");
+                default:
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        "P6T06.RrsProjection.Mode.Invalid",
+                        "projection.mode",
+                        "The controller projection mode is not part of the closed RRS mode set.");
+            }
+
+            if (projection.Commands == null || projection.Commands.Count == 0)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    "P6T06.RrsProjection.Commands.Empty",
+                    "projection.commands",
+                    "A controller projection must contain at least one command for admission.");
+            }
+
+            List<P6T06CommandCandidateV1> candidates = new List<P6T06CommandCandidateV1>(
+                projection.Commands.Count);
+            for (int index = 0; index < projection.Commands.Count; index++)
+            {
+                RrsCommandProjectionV1 command = projection.Commands[index];
+                if (command == null)
+                {
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        "P6T06.RrsProjection.Command.Null",
+                        "projection.commands[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                        "A controller projection cannot contain a null command.");
+                }
+
+                ContractValidationResult<P6T06TargetKeyV1> target =
+                    P6T06TargetKeyV1.TryForRrsActuator(command.ActuatorId);
+                if (!target.IsValid)
+                {
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        target.FirstDiagnostic.Code,
+                        target.FirstDiagnostic.Path,
+                        target.FirstDiagnostic.Message);
+                }
+
+                ContractValidationResult<P6T06CommandCandidateV1> candidate =
+                    P6T06CommandCandidateV1.TryCreate(
+                        P6T06QueueFamilyV1.Rrs,
+                        target.Value,
+                        sourceKind,
+                        EventRankV1.ControllerCommandGeneration,
+                        command.DelaySeconds,
+                        command.RequestedCommand,
+                        command.LowerBound,
+                        command.UpperBound,
+                        command.RateLimitPerSecond);
+                if (!candidate.IsValid)
+                {
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        candidate.FirstDiagnostic.Code,
+                        candidate.FirstDiagnostic.Path,
+                        candidate.FirstDiagnostic.Message);
+                }
+
+                if (candidate.Value.BoundedCommand != command.BoundedCommand)
+                {
+                    return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                        "P6T06.RrsProjection.Command.BoundedMismatch",
+                        "projection.commands[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                        "The queue candidate must preserve the projection's bounded command exactly.");
+                }
+
+                candidates.Add(candidate.Value);
+            }
+
+            ContractValidationResult<P6T06SourceBindingTokenV1> sourceBinding =
+                P6T06SourceBindingTokenV1.TryCreate(
+                    eventIdentity.SourceEventId,
+                    eventIdentity.SourceBindingDigest);
+            if (!sourceBinding.IsValid)
+            {
+                return P6T06QueueValidationV1.Invalid<P6T06EnqueueResultV1>(
+                    sourceBinding.FirstDiagnostic.Code,
+                    sourceBinding.FirstDiagnostic.Path,
+                    sourceBinding.FirstDiagnostic.Message);
+            }
+
+            return TryEnqueueBatch(
+                sourceBinding.Value,
+                projection.CurrentTimeSeconds,
+                phaseToken,
+                candidates);
         }
 
         public ContractValidationResult<P6T06MotionResultV1> TryMotionAndConsume(
