@@ -74,13 +74,17 @@ comparison package is absent, so unconditional comparison, production,
 external-reference, and golden authority remain deferred to a separately
 authorized G6 re-entry.
 
-The user-authorized `TEST-INFRA-01` recovery task is now complete. The shared
+The user-authorized `TEST-INFRA-01` recovery task is complete. The shared
 test-output locator and explicit test-data declarations make the standard
 artifact-output wrapper portable: the direct and wrapper runs both pass Core
-`156/156` and Golden `19/19`, with zero failures and zero skips. This is test
-evidence only; it changes no runtime physics, schema, tolerance, or golden
-authority. The next eligible recovery task is `P6-INTEGRATION-01` after this
-portable baseline.
+`156/156` and Golden `19/19`, with zero failures and zero skips. The follow-on
+`P6-INTEGRATION-01` task is also complete: one Core-owned RRS projection-to-
+queue admission method now derives candidates and preserves the caller-
+validated source binding, with focused mismatch/atomicity characterization,
+Core `158/158`, Golden `19/19`, and independent review `PASS` (telemetry
+`UNVERIFIED`). These are synthetic/test-only contract results; no runtime
+physics, schema version, tolerance, or golden authority changed. The next
+eligible recovery task is `P6-INTERNALS-01`.
 
 ## Fast routing
 
@@ -183,7 +187,8 @@ Historical context is intentionally short:
 | Key | Status | Boundary and evidence | Next handoff |
 |---|---|---|---|
 | `TEST-INFRA-01` | `COMPLETE` | Test-only output-root resolution and explicit Core fixture declarations; direct Core `156/156`, Golden `19/19`, and fresh artifact-output wrapper Core `156/156`, Golden `19/19`, all with zero failures/skips. | Baseline is portable; no further work remains in this task. |
-| `P6-INTEGRATION-01` | `NEXT ELIGIBLE` | Separate Phase 6 Core-only integration task from the approved refactoring proposal; it must preserve v1 contracts, canonical bytes/digests, synthetic values, and queue behavior. | Requires its own task report, focused mismatch/atomicity evidence, T3 regression, and independent code review (high). |
+| `P6-INTEGRATION-01` | `COMPLETE` | Core-owned RRS projection-to-queue admission preserves v1 command/queue bytes, source binding, rank 2, delays/rates, and immutable enqueue behavior; focused `10/10`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | Queue/digest ownership consolidation is next. |
+| `P6-INTERNALS-01` | `NEXT ELIGIBLE` | Consolidate only internal queue/digest implementation details after a compatibility inventory; preserve public v1 types, serialization, fixture bytes, digests, replay bytes, and error codes. | Requires its own T1/T3 evidence and independent code review (high); split if ownership and digest deduplication are not one reviewable candidate. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
