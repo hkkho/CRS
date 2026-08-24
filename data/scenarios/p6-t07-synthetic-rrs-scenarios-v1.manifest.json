@@ -1,0 +1,46 @@
+{
+  "manifest_schema_id": "CANDU-SYNTHETIC-SCENARIO-MANIFEST-V1",
+  "fixture_id": "P6-T07-SYNTHETIC-RRS-SCENARIOS-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "artifact": {
+    "path": "data/scenarios/p6-t07-synthetic-rrs-scenarios-v1.json",
+    "byte_length": 4813,
+    "sha256": "ae08d771e9d67454ec1f4131b7f1c2e9aca64bd8a2f21ddf3d1fc0d19dc3f58f"
+  },
+  "scenario_count": 5,
+  "input_packages": [
+    {
+      "path": "data/packs/p6-t02-synthetic-liquid-zone-map-v1.json",
+      "manifest_path": "data/packs/p6-t02-synthetic-liquid-zone-map-v1.manifest.json",
+      "byte_length": 9694,
+      "sha256": "ce9621967b948ff48d756acf4683cf7cdcf0889b01698a765856c408f631cf5c"
+    },
+    {
+      "path": "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.json",
+      "manifest_path": "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.manifest.json",
+      "byte_length": 9209,
+      "sha256": "cb0fbcd3d88d74b209003300a428e2871cf33dd998e38e5b2cf098d6343d8059"
+    },
+    {
+      "path": "data/packs/p6-t04-synthetic-bulk-poison-map-v1.json",
+      "manifest_path": "data/packs/p6-t04-synthetic-bulk-poison-map-v1.manifest.json",
+      "byte_length": 6605,
+      "sha256": "dbed4cfad9ace995282629f20bfa079866612194834022492201fa0cad3b2bdb"
+    },
+    {
+      "path": "data/packs/p6-t05-synthetic-rrs-controller-map-v1.json",
+      "manifest_path": "data/packs/p6-t05-synthetic-rrs-controller-map-v1.manifest.json",
+      "byte_length": 15423,
+      "sha256": "91b5a5ec140217152557667e863a13da8c8359c1c90d39e463032ff3a6cf771f"
+    }
+  ],
+  "authority": "Derived P6-T07 evidence fixture bound to the approved P6-T02 through P6-T05 synthetic input packages; it is not production, external-reference, or golden-data authority.",
+  "boundary": {
+    "queue_allocation_transition_rollback": "VALIDATED_P6-T06",
+    "scenario_execution": "VALIDATED_P6-T07_TEST_FIXTURES",
+    "approved_comparisons": "RESERVED_G6",
+    "production_external_golden_claim": "FORBIDDEN",
+    "safety_behavior": "FORBIDDEN"
+  }
+}

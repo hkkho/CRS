@@ -1,0 +1,123 @@
+{
+  "schema_id": "CANDU-P6-T07-SCENARIO-PACKAGE-V1",
+  "fixture_id": "P6-T07-SYNTHETIC-RRS-SCENARIOS-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "scope": "Evidence fixtures for the engine-neutral Core / ReducedModel Phase 6 RRS task; synthetic values are not production, external-reference, or golden-data authority.",
+  "input_packages": [
+    "data/packs/p6-t02-synthetic-liquid-zone-map-v1.json",
+    "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.json",
+    "data/packs/p6-t04-synthetic-bulk-poison-map-v1.json",
+    "data/packs/p6-t05-synthetic-rrs-controller-map-v1.json"
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "centered-perturbation",
+      "purpose": "Total-power perturbation with centered regional fractions.",
+      "initial_time_s": 0.0,
+      "measurement_time_s": 1.0,
+      "measured_power_w": 800.0,
+      "left_measured_fraction": 0.5,
+      "right_measured_fraction": 0.5,
+      "rrs_cadence_s": 1.0,
+      "actuator_delay_s": 0.5,
+      "actuator_rate_s^-1": 0.1,
+      "queue_motion_times_s": [1.5, 2.5],
+      "expected_controller_commands": {
+        "total_power": 0.72,
+        "tilt": 0.5
+      },
+      "expected_physical_state_before_due": 0.5,
+      "expected_physical_state_after_due": 0.6
+    },
+    {
+      "scenario_id": "regional-tilt",
+      "purpose": "Regional fraction tilt with total power at setpoint.",
+      "initial_time_s": 0.0,
+      "measurement_time_s": 1.0,
+      "measured_power_w": 1000.0,
+      "left_measured_fraction": 0.6,
+      "right_measured_fraction": 0.4,
+      "rrs_cadence_s": 1.0,
+      "expected_controller_commands": {
+        "total_power": 0.5,
+        "tilt": 0.61
+      },
+      "overlay_total_state_fraction": 0.6,
+      "overlay_tilt_state_fraction": 0.6,
+      "overlay_assertion": "left and right signed local absorption contributions remain distinct and deterministic"
+    },
+    {
+      "scenario_id": "zone-saturation",
+      "purpose": "Delayed liquid-zone command reaches the explicit upper bound under the approved rate limit.",
+      "logical_zone_id": 2,
+      "initial_fill_fraction": 0.6,
+      "requested_command_fraction": 1.5,
+      "motion_command_fraction": 1.0,
+      "rate_limit_s^-1": 0.1,
+      "command_available_time_s": 0.0,
+      "motion_time_s": 10.0,
+      "expected_final_fill_fraction": 1.0,
+      "expected_applied_delta_fraction": 0.4,
+      "expected_saturation": "UpperBound"
+    },
+    {
+      "scenario_id": "adjuster-insertion-withdrawal",
+      "purpose": "The approved synthetic bank is projected to its insertion and withdrawal commands with bounded delayed motion.",
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "queue_id": "00000000-0000-0000-0000-00000000a708",
+      "owner_branch_id": "00000000-0000-0000-0000-00000000a709",
+      "initial_fraction": 0.5,
+      "insertion_command_fraction": 1.0,
+      "withdrawal_command_fraction": 0.0,
+      "rate_limit_s^-1": 0.1,
+      "command_available_time_s": 2.0,
+      "post_delay_motion_duration_s": 5.0,
+      "motion_time_s": 7.0,
+      "expected_insertion_fraction": 1.0,
+      "expected_withdrawal_fraction": 0.0
+    },
+    {
+      "scenario_id": "poison-recovery",
+      "purpose": "Rate-limited bulk-poison addition followed by slow withdrawal with exact mass and concentration accounting.",
+      "initial_mass_kg": 0.5,
+      "moderator_volume_m3": 5.0,
+      "add_rate_kg_s": 0.1,
+      "withdraw_rate_kg_s": 0.01,
+      "add_duration_s": 5.0,
+      "withdraw_duration_s": 10.0,
+      "expected_mass_after_add_kg": 1.0,
+      "expected_mass_after_recovery_kg": 0.9,
+      "expected_concentration_after_recovery_kg_m^-3": 0.18
+    }
+  ],
+  "timestep_sensitivity": {
+    "target_command_fraction": 0.9,
+    "initial_state_fraction": 0.5,
+    "rate_limit_s^-1": 0.1,
+    "elapsed_time_s": 2.0,
+    "expected_final_state_fraction": 0.7
+  },
+  "refuelling_boundary": {
+    "same_time_order": [
+      "Burnup",
+      "Refuelling",
+      "ControllerCommandGeneration",
+      "ActuatorMotion",
+      "BranchUpdate"
+    ],
+    "claim": "The scenario evidence verifies queue/event ordering at the G5 refuelling boundary; it does not execute or alter refuelling state."
+  },
+  "validation": {
+    "replay": "Identical typed inputs and explicit time partitions must produce identical evidence bytes.",
+    "timestep": "The P6-T06 exact substep partition is compared for one-step and two-step motion.",
+    "safety_boundary": "No shutdown, scram, trip, safety-system, accident, or hidden-reactivity behavior is present."
+  },
+  "boundary": {
+    "queue_allocation_transition_rollback": "VALIDATED_P6-T06",
+    "scenario_execution": "VALIDATED_P6-T07_TEST_FIXTURES",
+    "approved_comparisons": "RESERVED_G6",
+    "production_external_golden_claim": "FORBIDDEN",
+    "safety_behavior": "FORBIDDEN"
+  }
+}

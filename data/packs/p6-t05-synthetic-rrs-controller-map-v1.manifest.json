@@ -1,0 +1,60 @@
+{
+  "manifest_schema_id": "CANDU-SYNTHETIC-PACK-MANIFEST-V1",
+  "fixture_id": "P6-T05-SYNTHETIC-RRS-CONTROLLER-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "artifact": {
+    "path": "data/packs/p6-t05-synthetic-rrs-controller-map-v1.json",
+    "byte_length": 15423,
+    "sha256": "91b5a5ec140217152557667e863a13da8c8359c1c90d39e463032ff3a6cf771f"
+  },
+  "identity": {
+    "controller_id": "00000000-0000-0000-0000-00000000c501",
+    "map_id": "00000000-0000-0000-0000-00000000c502",
+    "queue_id": "00000000-0000-0000-0000-00000000c503",
+    "topology_id": "00000000-0000-0000-0000-00000000c504",
+    "region_set_id": "00000000-0000-0000-0000-00000000c505",
+    "total_power_actuator_id": "00000000-0000-0000-0000-00000000c521",
+    "tilt_actuator_id": "00000000-0000-0000-0000-00000000c522"
+  },
+  "data_version": "p6-t05-synthetic-rrs-controller-map-v1",
+  "map_version": "p6-t05-synthetic-rrs-controller-map-v1",
+  "sign_certificate": "P6-T05-SYNTHETIC-NEGATIVE-FEEDBACK-V1",
+  "normalization": "None",
+  "units": {
+    "source": "1",
+    "target": "m^-1",
+    "power": "W",
+    "power_integral": "W s",
+    "tilt_error": "1",
+    "tilt_integral": "s",
+    "rate": "s^-1",
+    "delay": "s",
+    "time": "s"
+  },
+  "digests": {
+    "topology_digest": "77dac0b13d6d4d7aca0c34f6bd8cf932b22146dff697ec89979790a4f7e4a472",
+    "region_set_digest": "8932d81d8268c64318b4624d2eae1fa13f7d02139c66896c42b2eccfde334eb6",
+    "reference_state_digest": "97b54fd75bd5636bb6b5433b10b6ff831f7dca0fa04647569b15aaa485776603",
+    "map_digest": "d198c27636f58b612fe7c184e90b329874535d0d9dd1f5de1ce6a954ba0fd1e8",
+    "queue_digest": "59ae75e357b6ecf48c39a47daf7c2bfbdc6dce91b8a7f66eef887ac893de55a9",
+    "controller_digest": "f776bf33d7655def0cca5d2d8d91979b7d74c5fb374a3db76ca7b8dcdcf689fe",
+    "measurement_digest": "46687931013d0465a7880d131eb705cffb1a4e3f11e3fca0c632441736b6b2e7",
+    "command_projection_digest": "83639b8d5325251757c9cc6bcce7f5dc8a6aec4665a86d7a09c5a3c5e19acfb4",
+    "reference_overlay_digest": "f48cc854c0a64d4fd1c027d56ed3b1afd0b23396ea29e634976ffe2d7e020c94",
+    "raised_overlay_digest": "0ab43d7dc3afe4e208d97b1aa702307c7d4fb9392552add6c9e968303ea957be"
+  },
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_controller_map_scratch_rollback": "VALIDATED_P6-T05",
+    "hidden_reactivity_shutdown_scram_trip_safety": "FORBIDDEN",
+    "production_external_golden_claim": "FORBIDDEN"
+  },
+  "authority": "Owner approval is the authority for this synthetic fixture; no production, external-reference, or golden-data claim."
+}

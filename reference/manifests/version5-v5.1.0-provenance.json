@@ -1,0 +1,107 @@
+{
+  "format": "candu.reference-tool-provenance/v1",
+  "recorded_on": "2026-08-07",
+  "task": "P1-T01",
+  "scope": {
+    "purpose": "Pin offline DRAGON5/DONJON5 source provenance, legal constraints, nuclear-data acquisition prerequisites, and Linux build prerequisites.",
+    "does_not_include": [
+      "Version5 source, binaries, Docker images, or build products",
+      "nuclear-data files, input decks, output files, compact exports, or golden data",
+      "a build or run script"
+    ]
+  },
+  "version5_source": {
+    "display_name": "Version5 (DRAGON5/DONJON5)",
+    "repository": "https://git.oecd-nea.org/dragon/5.1.git",
+    "repository_web_url": "https://git.oecd-nea.org/dragon/5.1",
+    "pin": {
+      "ref": "v5.1.0",
+      "ref_type": "lightweight Git tag",
+      "commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+      "tree": "0d3e8f721c84b3c3b2d03e9898a8a0a9c29287d8"
+    },
+    "upstream_evidence": [
+      {
+        "url": "https://merlin.polymtl.ca/version5.htm",
+        "claim": "Version5.1 production is hosted at the OECD NEA GitLab, identifies tag 5.1.0, and gives the official clone URL."
+      },
+      {
+        "url": "https://merlin.polymtl.ca/faq5.htm",
+        "claim": "The FAQ identifies Version 5.1 as the NEA GitLab production version and directs users to compile it normally."
+      }
+    ]
+  },
+  "nuclear_data_repository": {
+    "display_name": "Dragon / libraries",
+    "repository": "https://git.oecd-nea.org/dragon/libraries.git",
+    "repository_web_url": "https://git.oecd-nea.org/dragon/libraries",
+    "pin": {
+      "observed_branch": "main",
+      "commit": "d4456d42fdcdeb8147ce6e79d3a8ba0e775d403f",
+      "tree": "ed92fc1c60c373f07276516142a0aa28ba4c2433",
+      "lfs_tracked_path_count": 86,
+      "clone_requirement": "GIT_LFS_SKIP_SMUDGE=1"
+    },
+    "official_status": "The Version5 page describes XMAS and SHEM Draglib-formatted libraries as open-source and identifies this Git-LFS repository as the official 5.1 cross-section-library location.",
+    "selected_assets": [],
+    "legal_status": {
+      "classification": "NOASSERTION / mixed or absent notices",
+      "evidence": "At the pinned libraries tree, the project has README.md and .gitattributes but no LICENSE, COPYING, or per-asset license notice. Public availability and the upstream open-source description do not establish redistribution rights for every library asset or derived export.",
+      "required_policy": [
+        "Do not vendor, mirror, publish, or redistribute any library asset or derived reference output from this repository.",
+        "A later asset-selection task must acquire an explicitly identified official upstream file at this exact commit, record its full Git-LFS OID and SHA-256, and retain the upstream URL and retrieval date.",
+        "Before any redistribution or publication of an asset or derived data, obtain an explicit upstream license/permission determination for that asset."
+      ]
+    }
+  },
+  "license_and_redistribution": {
+    "version5_classification": "NOASSERTION / mixed notices",
+    "upstream_distribution_statement": "The official Version5 page and FAQ state that Version5 components are released under the GNU Lesser General Public License. Representative Version5 source and documentation state LGPL-2.1-or-later.",
+    "mixed_notice_caveat": "The pinned source tree also contains third-party Utilib/freesteam files with GPL-2.0-or-later headers. This record does not infer a single SPDX expression or redistribution outcome for a built artifact.",
+    "project_policy": [
+      "DRAGON5/DONJON5 remain offline reference tools and are never runtime dependencies.",
+      "This repository does not distribute Version5 source, compiled binaries, Docker images, or nuclear-data libraries.",
+      "Preserve applicable upstream notices and obtain a separate legal/upstream determination before distributing any reference-tool artifact or derived reference data."
+    ],
+    "evidence": [
+      "https://merlin.polymtl.ca/version5.htm",
+      "https://merlin.polymtl.ca/faq5.htm",
+      "https://git.oecd-nea.org/dragon/5.1"
+    ]
+  },
+  "linux_build_prerequisites": {
+    "official_ci_baseline": {
+      "source_path": ".nea/.gitlab-ci.yml",
+      "host_image": "docker.oecd-nea.org/dragon/5.1/ubuntu:22.04",
+      "packages": [
+        "make",
+        "gfortran",
+        "python3",
+        "python3-dev",
+        "python3-numpy",
+        "python3-distutils",
+        "libhdf5-serial-dev",
+        "libomp-dev"
+      ],
+      "environment": {
+        "HDF5_INC": "/usr/include/hdf5/serial",
+        "HDF5_API": "/usr/lib/x86_64-linux-gnu/hdf5/serial",
+        "FORTRANPATH": "/usr/lib/gcc/x86_64-linux-gnu/11"
+      },
+      "build_command": "cd Donjon && make hdf5=1 openmp=1"
+    },
+    "source_requirements": "The pinned README requires a Fortran 2003-or-later compiler and Python 3; its Linux makefiles select gfortran and gcc by default. HDF5 and OpenMP are optional upstream dependencies, but both are enabled by the official CI baseline above.",
+    "official_prebuilt_image": {
+      "tag": "docker.oecd-nea.org/dragon/5.1:v5.1.0-slim",
+      "manifest_digest": "sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+      "use_by_digest": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+      "observed_platform": "linux/amd64",
+      "observed_image_config": {
+        "org.opencontainers.image.version": "24.04",
+        "FORTRANPATH": "/usr/lib/gcc/x86_64-linux-gnu/13"
+      },
+      "caveat": "The pinned README calls the tag an Ubuntu 22.04 image, while the pinned source Dockerfile.slim starts from the project's Ubuntu 24.04 base image. The resolved image configuration also reports version 24.04 and GCC 13 FORTRANPATH. Use the digest for identity; do not infer the base image from the README prose."
+    },
+    "reproducibility_boundary": "Upstream does not pin an Ubuntu package snapshot or compiler package version. Each later reference-case manifest must record the actual OS image/digest, compiler versions, package versions, build command, and produced executable hashes; P1-T01 does not claim a bit-reproducible build."
+  }
+}

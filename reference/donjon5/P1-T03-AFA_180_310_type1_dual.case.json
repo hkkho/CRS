@@ -1,0 +1,118 @@
+{
+  "format": "candu.reference-donjon5-smoke-case/v1",
+  "task_id": "P1-T03",
+  "case_id": "donjon5-afa-180-310-type1-dual-v5.1.0",
+  "scope": {
+    "purpose": "Run one authoritative upstream DONJON5 static-core smoke case with prepared HDF5 group constants, entirely offline.",
+    "does_not_include": [
+      "committed upstream input, prepared group constants, raw result, compact export, or golden dataset",
+      "a parser, export schema, C# solver work, or DRAGON5 work",
+      "a nuclear-data-library download or a runtime dependency on DONJON5"
+    ]
+  },
+  "version5_source": {
+    "repository": "https://git.oecd-nea.org/dragon/5.1.git",
+    "ref": "v5.1.0",
+    "commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "tree": "0d3e8f721c84b3c3b2d03e9898a8a0a9c29287d8",
+    "upstream_case": {
+      "path": "Donjon/data/AFA_180_310_type1_dual.x2m",
+      "description": "Upstream 6x6x1 reflective, two-mixture static core that imports prepared AFA_180 and AFA_310 HDF5 group constants and runs a DONJON FLUD solve."
+    },
+    "staged_files": [
+      {
+        "source_path": "Donjon/data/AFA_180_310_type1_dual.x2m",
+        "staged_name": "AFA_180_310_type1_dual.x2m",
+        "content_kind": "canonical-lf-text",
+        "git_blob": "a32e603a28bfff68bde87c469ab0367670ac0635",
+        "canonical_lf_sha256": "1adbe8b8d92caa9574958517520104375f89ae90a2955fd5ed5c2176e938063d",
+        "canonical_lf_size_bytes": 1323
+      },
+      {
+        "source_path": "Donjon/data/assertS.c2m",
+        "staged_name": "assertS.c2m",
+        "content_kind": "canonical-lf-text",
+        "git_blob": "b5b6a58d3641b03ee898802e51ad7e58f6641dea",
+        "canonical_lf_sha256": "f07ad4c955f105b14ccf6aaa5f8420321b6b9d0d3a192b3433de5597bafa07bf",
+        "canonical_lf_size_bytes": 902
+      },
+      {
+        "source_path": "Ganlib/data/testgan4_proc/AFA_180.h5",
+        "staged_name": "AFA_180.h5",
+        "content_kind": "binary",
+        "git_blob": "b9ca2af523483dc4b8428158122e95d12279a57d",
+        "sha256": "d4f848158df08a4eb98a7cd78034bb5f0b30848887ef5180d068fef594a76f04",
+        "size_bytes": 2126113
+      },
+      {
+        "source_path": "Ganlib/data/testgan4_proc/AFA_310.h5",
+        "staged_name": "AFA_310.h5",
+        "content_kind": "binary",
+        "git_blob": "560b59b452c6ed34f9ad5b9aaf1ea7a4e7fdc02a",
+        "sha256": "51eb5258515ad9a86bd7c7cd2fe5c09f99f75ba6b366b5ffe63c7c7b8d8a09fc",
+        "size_bytes": 2218430
+      }
+    ],
+    "staging_rule": "Git text blobs are canonical LF. A Windows checkout may contain only checkout-inserted CRLF conversion; the runner rejects bare CR, converts CRLF pairs to LF, and verifies canonical size and SHA-256 before staging. The two HDF5 files are ordinary non-LFS Git blobs and are copied byte-for-byte after size and SHA-256 verification. All staged files remain external run inputs.",
+    "license_audit": {
+      "source_file_notice": "The upstream deck and assertion procedure do not provide individual license headers. The prepared HDF5 inputs have no standalone redistribution license in the selected files and embed CEA/AREVA copyright plus export metadata (AL: 0D001, ECCN: N) and a destination/purpose authorization warning.",
+      "repository_classification": "NOASSERTION / mixed notices",
+      "public_availability_evidence": "The exact v5.1.0 tag resolves publicly at the official Version5 Git repository recorded by P1-T01; the selected inputs are ordinary blobs in that pinned source tree, not Git-LFS nuclear-data assets.",
+      "policy": "Use only for a private, local, offline reference run. Do not commit, vendor, mirror, publish, or redistribute the source files, prepared group constants, staged copies, derived raw result, or run artifacts absent a separate legal and export-control determination. Any publication or redistribution proposal is a stop condition."
+    }
+  },
+  "prepared_group_constants": {
+    "format": "HDF5",
+    "source_storage": "ordinary Version5 source-tree Git blobs, not Git LFS",
+    "assets": [
+      "Ganlib/data/testgan4_proc/AFA_180.h5",
+      "Ganlib/data/testgan4_proc/AFA_310.h5"
+    ],
+    "dependency_boundary": "This case consumes only the two pinned, staged upstream HDF5 inputs. It does not acquire a separate nuclear-data library."
+  },
+  "execution": {
+    "container_image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "container_platform": "linux/amd64",
+    "container_network": "none",
+    "image_pull_policy": "never",
+    "deterministic_environment": {
+      "OMP_NUM_THREADS": "1",
+      "TZ": "UTC",
+      "LC_ALL": "C",
+      "LANG": "C"
+    },
+    "program_path": "/dragon/5.1/Donjon/bin/Linux_x86_64/Donjon",
+    "program_sha256": "e125c8bc095d9a1a7e088847b1c21b1bc37043681b6104713fa29ee1507f1a76",
+    "direct_execution_reason": "The runner stages verified upstream files outside the image, invokes the pinned DONJON executable directly, and captures DONJON stdout and stderr separately without relying on a launcher-specific data directory.",
+    "runtime_markers": {
+      "completion": "AFA_180_310_type1_dual completed",
+      "successful_assertion_prefix": "TEST SUCCESSFUL; DELTA=",
+      "normal_end": "normal end of execution for donjon 5  Version 5.1.0"
+    },
+    "expected_effective_multiplication_factor": "9.9859273434E-01",
+    "upstream_assertion": {
+      "object": "FLUX",
+      "field": "K-EFFECTIVE",
+      "index": 1,
+      "expected_value": "0.9985927"
+    },
+    "convergence": {
+      "maxout": 200,
+      "epsout": "1.00E-04",
+      "expected_final_outer_iteration": 15,
+      "expected_final_dels": "0.55E-07",
+      "expected_final_delt": "0.82E-04",
+      "fatal_markers": [
+        "FLDDIR: ***WARNING*** THE MAXIMUM NUMBER OF OUTER ITERATIONS IS REACHED.",
+        "FLDDIR: CONVERGENCE FAILURE."
+      ],
+      "acceptance": "The final emitted FLDDIR DELT must be less than or equal to the emitted upstream EPSOUT. These are preserved upstream settings and diagnostics, not new convergence criteria."
+    },
+    "runtime_warning_policy": {
+      "allowed_exact_text": "SPHAPX: WARNING -- Record MEDIA_VOLUME is missing in the Apex file. Volume set to 1.0",
+      "required_count": 2,
+      "policy": "Exactly the two allowlisted runtime warnings must be present; every other runtime WARNING line is fatal."
+    },
+    "raw_result_policy": "Raw-result byte hashes are provenance only because non-semantic CLE-2000 listing annotations and timing/memory diagnostics may vary across otherwise equivalent runs. The runner instead preserves the upstream assertion, requires the runtime TEST SUCCESSFUL and completion records rather than echoed input text, validates the one emitted effective multiplication factor and upstream convergence diagnostics, validates the exact warning allowlist, and rejects fatal diagnostics. No assertion or tolerance is added, changed, or relaxed."
+  }
+}

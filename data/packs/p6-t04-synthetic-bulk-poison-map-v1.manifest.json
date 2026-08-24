@@ -1,0 +1,56 @@
+{
+  "manifest_schema_id": "CANDU-SYNTHETIC-PACK-MANIFEST-V1",
+  "fixture_id": "P6-T04-SYNTHETIC-BULK-POISON-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "artifact": {
+    "path": "data/packs/p6-t04-synthetic-bulk-poison-map-v1.json",
+    "byte_length": 6605,
+    "sha256": "dbed4cfad9ace995282629f20bfa079866612194834022492201fa0cad3b2bdb"
+  },
+  "identity": {
+    "poison_source_id": "00000000-0000-0000-0000-00000000b405",
+    "map_id": "00000000-0000-0000-0000-00000000b401",
+    "topology_id": "00000000-0000-0000-0000-00000000b404"
+  },
+  "data_version": "p6-t04-synthetic-bulk-poison-map-v1",
+  "sign_certificate": "P6-T04-SYNTHETIC-POSITIVE-ABSORPTION-V1",
+  "normalization": "None",
+  "units": {
+    "source": "kg/m^3",
+    "target": "m^-1",
+    "mass": "kg",
+    "volume": "m^3",
+    "concentration": "kg/m^3",
+    "rate": "kg/s",
+    "time": "s"
+  },
+  "limits": {
+    "moderator_volume_m3": 5.0,
+    "reference_concentration_kg_per_m3": 0.0,
+    "setup_maximum_mass_kg": 1.0,
+    "add_rate_kg_per_second": 0.1,
+    "withdraw_rate_kg_per_second": 0.01
+  },
+  "digests": {
+    "topology_digest": "eaa45936722cb7eafa9e6493918ce1329e90e73b75bcf86a2ea9286db0e3798a",
+    "reference_state_digest": "84518339725ff79e6714fa84ca7ae6719544c453647753c7dd874c0d3b64c38e",
+    "map_digest": "57fda945e7f24d33d118e3526cdca6401eea8213ee930cb771260c03ec825d19",
+    "state_digest": "fa37ad317267e00aff656341786789ca090eeb93bb4e3e552af7535e080ac194",
+    "overlay_digest": "bb2ca729938811b01c2c6d104a979fd0c744763b9d92a42fa9e48c903a6023f2",
+    "action_digest": "d289b53a11551b0deaddb3d6946ca082e45c924e1e0bf924613fbd9a9b0eca53"
+  },
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_state_map_scratch_rollback": "VALIDATED_P6-T04",
+    "hidden_chemistry_decay_transport_cleanup": "FORBIDDEN",
+    "production_external_golden_claim": "FORBIDDEN"
+  },
+  "authority": "Owner approval is the authority for this synthetic fixture; no production, external-reference, or golden-data claim."
+}

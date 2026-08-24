@@ -1,0 +1,60 @@
+{
+  "format": "reactorsim.reference-compact-export/v1",
+  "approval_status": "unapproved_schema_example",
+  "retention": "external-private",
+  "publication": "not-approved",
+  "case": {
+    "case_id": "dragon5-lumpss-v5.1.0-source-era",
+    "descriptor_sha256": "ce053458cbd18987a9ca81dd15a088b0d64b36eebded23395bf928786ee399ae"
+  },
+  "tool_provenance": {
+    "program": "dragon5",
+    "version": "5.1.0",
+    "source_commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "source_tree": "0d3e8f721c84b3c3b2d03e9898a8a0a9c29287d8",
+    "executable_sha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+    "container_image_digest": "sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79"
+  },
+  "observations": [
+    {
+      "source_ordinal": 1,
+      "quantity_id": "dragon5.lumpSS.final_kinf.source_1",
+      "value": 1.329496,
+      "source_lexeme": "1.0",
+      "unit_id": "1"
+    },
+    {
+      "source_ordinal": 2,
+      "quantity_id": "dragon5.lumpSS.final_kinf.source_2",
+      "value": 1.314796,
+      "source_lexeme": "1.314796E+00",
+      "unit_id": "1"
+    },
+    {
+      "source_ordinal": 3,
+      "quantity_id": "dragon5.lumpSS.final_kinf.source_3",
+      "value": 1.292124,
+      "source_lexeme": "1.292124E+00",
+      "unit_id": "1"
+    }
+  ],
+  "diagnostics": {
+    "normal_end": true,
+    "warning_codes": [],
+    "assertions": [
+      {
+        "assertion_id": "dragon5.lumpSS.upstream_assertions",
+        "passed": true,
+        "count": 3
+      }
+    ],
+    "convergence_status": "converged",
+    "convergence": [
+      {
+        "quantity_id": "dragon5.lumpSS.final_external_convergence_count",
+        "value": 3,
+        "source_lexeme": "3"
+      }
+    ]
+  }
+}

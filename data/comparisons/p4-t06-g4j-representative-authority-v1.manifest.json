@@ -1,0 +1,72 @@
+{
+  "format": "reactorsim.g4j-representative-reduced-authority-manifest/v1",
+  "manifest_schema_version": 1,
+  "task_id": "P4-T06-G4J",
+  "artifact_id": "p4-t06-g4j-representative-authority-v1",
+  "case_id": "g4j_4x12_representative_sequence",
+  "disposition": "candidate",
+  "coverage_class": "RepresentativeReducedModel",
+  "validation_domain": "ReducedModel",
+  "definition_sha256": "bf227e60bd2c9540c699786c530c079bb31caf4108cf461704f37c81f6758b6e",
+  "source_pack_sha256": "0de429b27f78b5e2c5fe724916b14ac8ce45ba05560ab73f3fa4805befd11a0e",
+  "artifact_sha256": "4e4cf79f726fc1202a40b01db0cd296f337c3abb087a21a1abd5158483cc05c3",
+  "source_snapshot_sha256": "dc2dac6a1fd2698b4354d4eb5242d2f7a74a0c8dd425fea263539233095a341c",
+  "source_commit": "UNAVAILABLE_NO_GIT_HEAD",
+  "source_pack_path": "data/packs/p4-t06-r4-reduced-candidate-v1.json",
+  "scenario_count": 5,
+  "node_count": 48,
+  "edge_count": 92,
+  "boundary_count": 104,
+  "scenario_results": [
+    {
+      "scenario_id": "fresh_start",
+      "result_sha256": "8f0ff60117eec0a280bd3999b4f3a99cc659ce2c4c262ec072f1ea246fedba06",
+      "repeat_result_sha256": "8f0ff60117eec0a280bd3999b4f3a99cc659ce2c4c262ec072f1ea246fedba06",
+      "repeat_equal": true,
+      "outer_iterations": 1823,
+      "eigenvalue": 0.32569333812682566,
+      "total_power_w": 1000.0000000000001,
+      "residual_relative_infinity": 9.935461458409358E-11
+    },
+    {
+      "scenario_id": "equilibrium_like",
+      "result_sha256": "ca4e4f3b05a3bb600f97f1982adaab020d03d4cdf8a628f457b3b72dfd0af4d8",
+      "repeat_result_sha256": "ca4e4f3b05a3bb600f97f1982adaab020d03d4cdf8a628f457b3b72dfd0af4d8",
+      "repeat_equal": true,
+      "outer_iterations": 681,
+      "eigenvalue": 0.3067650216236955,
+      "total_power_w": 1000.0000000000001,
+      "residual_relative_infinity": 9.876534557925246E-11
+    },
+    {
+      "scenario_id": "refuelled_4_bundle_shift",
+      "result_sha256": "b0e2fb7d17e9b0df2c579b2b99e00ea0262a621c954551cc42d4ce34390de17c",
+      "repeat_result_sha256": "b0e2fb7d17e9b0df2c579b2b99e00ea0262a621c954551cc42d4ce34390de17c",
+      "repeat_equal": true,
+      "outer_iterations": 850,
+      "eigenvalue": 0.31039330409549426,
+      "total_power_w": 999.9999999999999,
+      "residual_relative_infinity": 8.177231151682484E-11
+    },
+    {
+      "scenario_id": "rrs_tilt_perturbation",
+      "result_sha256": "19fe8378bf39fa03ed8c650bce32f664de0ffe85b8fba256d12b4a46d326584c",
+      "repeat_result_sha256": "19fe8378bf39fa03ed8c650bce32f664de0ffe85b8fba256d12b4a46d326584c",
+      "repeat_equal": true,
+      "outer_iterations": 676,
+      "eigenvalue": 0.3085369346181452,
+      "total_power_w": 1000,
+      "residual_relative_infinity": 9.727510171639472E-11
+    },
+    {
+      "scenario_id": "bulk_poison_perturbation",
+      "result_sha256": "34db9d0bb2c89f5034f8cd84321187cc95acb84bd1863ae3b6d8afcaa08f8427",
+      "repeat_result_sha256": "34db9d0bb2c89f5034f8cd84321187cc95acb84bd1863ae3b6d8afcaa08f8427",
+      "repeat_equal": true,
+      "outer_iterations": 707,
+      "eigenvalue": 0.3022545018722577,
+      "total_power_w": 999.9999999999997,
+      "residual_relative_infinity": 9.871078899029496E-11
+    }
+  ]
+}

@@ -1,0 +1,160 @@
+{
+  "manifest_id": "candu-literature-sources-v1",
+  "version": 1,
+  "retrieval_date": "2026-08-09",
+  "source_artifacts_committed": false,
+  "source_artifacts_note": "The six source artifacts were retrieved for private review only. No source PDF, publisher artifact, raw listing, or host-local path is committed. SHA-256 values identify the externally reviewed bytes.",
+  "sources": [
+    {
+      "id": "S1",
+      "title": "CANDU-6 operation simulations using accident tolerant cladding candidates",
+      "authors": ["Ahmed Naceur", "Guy Marleau"],
+      "publication_year": 2019,
+      "type": "journal_article",
+      "journal": "Annals of Nuclear Energy",
+      "volume": "124",
+      "pages": "472-489",
+      "doi": "10.1016/j.anucene.2018.10.026",
+      "repository": {
+        "name": "PolyPublie",
+        "id": "5048",
+        "url": "https://publications.polymtl.ca/5048/"
+      },
+      "official_url": "https://doi.org/10.1016/j.anucene.2018.10.026",
+      "artifact_url": "https://publications.polymtl.ca/5048/11/2019_Naceur_Candu-6_operation_simulations_using_accident.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "CC BY-NC-ND 4.0",
+      "redistribution_status": "reviewed_external_artifact; repository redistribution is not performed by this task",
+      "artifact_identity": {
+        "bytes": 3935343,
+        "sha256": "513ffc1f9c6fe7b794c7514f46391567265fdfeff32cc27fca341096be858d59",
+        "committed": false
+      }
+    },
+    {
+      "id": "S2",
+      "title": "Application de la théorie des perturbations généralisées et des algorithmes stochastiques afin d'améliorer les réflecteurs des réacteurs CANDU6",
+      "authors": ["Mehdi Mahjoub"],
+      "publication_year": 2011,
+      "type": "masters_thesis",
+      "institution": "École Polytechnique de Montréal",
+      "doi": null,
+      "repository": {
+        "name": "PolyPublie",
+        "id": "714",
+        "url": "https://publications.polymtl.ca/714/"
+      },
+      "official_url": "https://publications.polymtl.ca/714/",
+      "artifact_url": "https://publications.polymtl.ca/714/1/2011_MehdiMahjoub.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "All rights reserved; copyright notice present",
+      "redistribution_status": "no redistribution permission established",
+      "artifact_identity": {
+        "bytes": 4660696,
+        "sha256": "0c0ed163b4cf1b9b32aefc5dbebc19abd935bf0a9f6fea622733790a44b2d986",
+        "committed": false
+      }
+    },
+    {
+      "id": "S3",
+      "title": "Couplage thermohydraulique-neutronique (CATHENA3-DONJON5) pour l'analyse de sûreté du SCWR Canadien",
+      "authors": ["Ulysse Le Tennier"],
+      "publication_year": 2021,
+      "type": "masters_thesis",
+      "institution": "Polytechnique Montréal",
+      "doi": null,
+      "repository": {
+        "name": "PolyPublie",
+        "id": "6643",
+        "url": "https://publications.polymtl.ca/6643/"
+      },
+      "official_url": "https://publications.polymtl.ca/6643/",
+      "artifact_url": "https://publications.polymtl.ca/6643/1/2021_UlysseLeTennier.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "All rights reserved; repository terms of use",
+      "redistribution_status": "no redistribution permission established",
+      "artifact_identity": {
+        "bytes": 11293533,
+        "sha256": "89be3d3eff09c3334c8e57a8068c36d47b6d9276afe6335ec5ce868b84c76bcf",
+        "committed": false
+      }
+    },
+    {
+      "id": "S4",
+      "title": "Automated Refueling Simulations of a CANDU for the Exploitation of Thorium Fuels",
+      "authors": ["Bradford Holmes"],
+      "publication_year": 2013,
+      "type": "masters_thesis",
+      "institution": "École Polytechnique de Montréal",
+      "doi": null,
+      "repository": {
+        "name": "PolyPublie",
+        "id": "1307",
+        "url": "https://publications.polymtl.ca/1307/"
+      },
+      "official_url": "https://publications.polymtl.ca/1307/",
+      "artifact_url": "https://publications.polymtl.ca/1307/1/2013_BradfordHolmes.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "All rights reserved; copyright notice present",
+      "redistribution_status": "no redistribution permission established",
+      "artifact_identity": {
+        "bytes": 3075176,
+        "sha256": "b319a06a4b1d6a7df9cae8db5a3f547f767224fec01d7377bc2a8b20483df530",
+        "committed": false
+      }
+    },
+    {
+      "id": "S5",
+      "title": "Neutronic analysis for accident tolerant cladding candidates in CANDU-6 reactors",
+      "authors": ["Ahmed Naceur", "Guy Marleau"],
+      "publication_year": 2017,
+      "journal_year": 2018,
+      "type": "journal_article",
+      "journal": "Annals of Nuclear Energy",
+      "volume": "113",
+      "pages": "147-161",
+      "doi": "10.1016/j.anucene.2017.11.016",
+      "repository": {
+        "name": "PolyPublie",
+        "id": "5047",
+        "url": "https://publications.polymtl.ca/5047/"
+      },
+      "official_url": "https://doi.org/10.1016/j.anucene.2017.11.016",
+      "artifact_url": "https://publications.polymtl.ca/5047/11/2018_Naceur_Neutronic_analysis_accident_tolerant_cladding.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "CC BY 4.0",
+      "redistribution_status": "reviewed_external_artifact; reuse requires attribution under the stated license",
+      "artifact_identity": {
+        "bytes": 1614658,
+        "sha256": "ddece7b372064f294c7891f1a0dbc3c20d72ea4e6c8026b31b8399a12895b1e8",
+        "committed": false
+      }
+    },
+    {
+      "id": "S6",
+      "title": "CANDU-6 reactivity devices optimization for advanced cycles - Part II: Liquid zone controllers adjustment",
+      "authors": ["Emmanuel St-Aubin", "Guy Marleau"],
+      "publication_year": 2018,
+      "type": "journal_article",
+      "journal": "Nuclear Engineering and Design",
+      "volume": "337",
+      "pages": "460-470",
+      "doi": "10.1016/j.nucengdes.2018.06.026",
+      "repository": {
+        "name": "PolyPublie",
+        "id": "5143",
+        "url": "https://publications.polymtl.ca/5143/"
+      },
+      "official_url": "https://doi.org/10.1016/j.nucengdes.2018.06.026",
+      "artifact_url": "https://publications.polymtl.ca/5143/2/2018_St-Aubin_Candu-6_reactivity_devices_optimization_advanced.pdf",
+      "access_status": "full_text_accessible",
+      "license_status": "CC BY-NC-ND 4.0",
+      "redistribution_status": "reviewed_external_artifact; repository redistribution is not performed by this task",
+      "artifact_identity": {
+        "bytes": 778451,
+        "sha256": "1babf9ab06f29671ed6d501447ae5fe8a5be75c077cfb0c6fd6a56c88ec95823",
+        "committed": false
+      }
+    }
+  ]
+}

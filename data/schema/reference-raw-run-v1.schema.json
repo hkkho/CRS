@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reactorsim:schema:reference-raw-run:v1",
+  "title": "ReactorSim external reference raw-run retention manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "approval_status",
+    "case",
+    "tool",
+    "execution",
+    "artifacts",
+    "outcome"
+  ],
+  "properties": {
+    "format": { "const": "reactorsim.reference-raw-run/v1" },
+    "approval_status": {
+      "enum": ["unapproved_schema_example", "retained_private"]
+    },
+    "case": { "$ref": "#/$defs/case" },
+    "tool": { "$ref": "#/$defs/tool" },
+    "execution": { "$ref": "#/$defs/execution" },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/artifact" }
+    },
+    "outcome": { "$ref": "#/$defs/outcome" }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/dragonBranch" },
+    { "$ref": "#/$defs/donjonBranch" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitObject": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._-]+(?:/[A-Za-z0-9._-]+)*$"
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "descriptor_path", "descriptor_sha256"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "descriptor_path": { "$ref": "#/$defs/relativePath" },
+        "descriptor_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "program",
+        "version",
+        "source_commit",
+        "source_tree",
+        "executable_sha256",
+        "container_image_digest"
+      ],
+      "properties": {
+        "program": { "enum": ["dragon5", "donjon5"] },
+        "version": { "const": "5.1.0" },
+        "source_commit": { "$ref": "#/$defs/gitObject" },
+        "source_tree": { "$ref": "#/$defs/gitObject" },
+        "executable_sha256": { "$ref": "#/$defs/sha256" },
+        "container_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner_path",
+        "runner_sha256",
+        "started_utc",
+        "finished_utc",
+        "invocation_id",
+        "network_mode"
+      ],
+      "properties": {
+        "runner_path": { "$ref": "#/$defs/relativePath" },
+        "runner_sha256": { "$ref": "#/$defs/sha256" },
+        "started_utc": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "finished_utc": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "Z$"
+        },
+        "invocation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "network_mode": { "const": "none" }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "role",
+        "media_type",
+        "byte_length",
+        "sha256",
+        "retention",
+        "publication"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "role": {
+          "enum": ["input", "stdout", "stderr", "listing", "auxiliary", "compact-export"]
+        },
+        "media_type": { "type": "string", "minLength": 1 },
+        "byte_length": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "retention": { "const": "external-private" },
+        "publication": { "const": "not-approved" },
+        "locator_id": {
+          "type": "string",
+          "pattern": "^opaque:[A-Za-z0-9._-]+$"
+        }
+      }
+    },
+    "scalar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quantity_id", "value", "source_lexeme"],
+      "properties": {
+        "quantity_id": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "unit_id": { "type": "string", "minLength": 1 },
+        "source_lexeme": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertion_id", "passed", "count"],
+      "properties": {
+        "assertion_id": { "type": "string", "minLength": 1 },
+        "passed": { "type": "boolean" },
+        "count": { "type": "integer", "minimum": 1 },
+        "observed": { "$ref": "#/$defs/scalar" }
+      }
+    },
+    "codeCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "count"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "convergence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "measures"],
+      "properties": {
+        "status": { "enum": ["converged", "not-applicable", "failed"] },
+        "measures": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/scalar" }
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "normal_end",
+        "warning_codes",
+        "error_codes",
+        "assertions",
+        "convergence"
+      ],
+      "properties": {
+        "status": { "enum": ["succeeded", "failed"] },
+        "normal_end": { "type": "boolean" },
+        "warning_codes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/codeCount" }
+        },
+        "error_codes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/codeCount" }
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/assertion" }
+        },
+        "convergence": { "$ref": "#/$defs/convergence" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "succeeded" } } },
+          "then": {
+            "properties": {
+              "normal_end": { "const": true },
+              "error_codes": { "maxItems": 0 },
+              "assertions": {
+                "not": {
+                  "contains": {
+                    "properties": { "passed": { "const": false } },
+                    "required": ["passed"]
+                  }
+                }
+              },
+              "convergence": {
+                "properties": { "status": { "const": "converged" } }
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "failed" } } },
+          "then": {
+            "properties": {
+              "error_codes": { "minItems": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "dragonBranch": {
+      "properties": {
+        "case": {
+          "properties": {
+            "case_id": { "const": "dragon5-lumpss-v5.1.0-source-era" }
+          }
+        },
+        "tool": {
+          "properties": { "program": { "const": "dragon5" } }
+        },
+        "artifacts": {
+          "allOf": [
+            {
+              "contains": {
+                "properties": { "role": { "const": "listing" } },
+                "required": ["role"]
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "properties": { "role": { "const": "stderr" } },
+                "required": ["role"]
+              },
+              "minContains": 1
+            }
+          ]
+        }
+      }
+    },
+    "donjonBranch": {
+      "properties": {
+        "case": {
+          "properties": {
+            "case_id": { "const": "donjon5-afa-180-310-type1-dual-v5.1.0" }
+          }
+        },
+        "tool": {
+          "properties": { "program": { "const": "donjon5" } }
+        },
+        "artifacts": {
+          "allOf": [
+            {
+              "contains": {
+                "properties": { "role": { "const": "listing" } },
+                "required": ["role"]
+              },
+              "minContains": 1
+            },
+            {
+              "contains": {
+                "properties": { "role": { "const": "stderr" } },
+                "required": ["role"]
+              },
+              "minContains": 1
+            }
+          ]
+        }
+      }
+    }
+  }
+}

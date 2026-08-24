@@ -1,0 +1,34 @@
+{
+  "format": "reactorsim.g4k-independent-reduced-authority-manifest/v1",
+  "task_id": "G4-R6",
+  "source_task_id": "P4-T06-G4K",
+  "artifact_id": "p4-t06-g4k-independent-authority-v1",
+  "disposition": "approved",
+  "coverage_class": "RepresentativeReducedModel",
+  "validation_domain": "ReducedModel",
+  "golden_status": "ApprovedGolden",
+  "evidence_approval": "Approved",
+  "approved_artifact_sha256": "897c0b4dc055f59b21b110f4674903c12e795e9cfaaf2131cb3ab46e042ede6a",
+  "candidate_artifact_sha256": "a056fb2292450ac251d79716db2091325830d0536fd98d5cbdbe91ae99363fe0",
+  "candidate_manifest_sha256": "e6d0ac1ab75329db9caf76961b8ab14050127a54d0d10fcaae84e0add2963067",
+  "definition_sha256": "bf227e60bd2c9540c699786c530c079bb31caf4108cf461704f37c81f6758b6e",
+  "source_pack_sha256": "0de429b27f78b5e2c5fe724916b14ac8ce45ba05560ab73f3fa4805befd11a0e",
+  "independent_definition_sha256": "f0a9e029c6b8b0e030d3470fe1eec952d24397648c2633ffc9ad38a16078cd6d",
+  "source_snapshot_sha256": "3e7a4e47b5bd990c6f8c26d713d01de85ec96c4ae64a2725b36cf840cb6cd2db",
+  "reference_solver": "p4-t06-g4k-python-numpy-dense-generalized-eigen-v1",
+  "scenario_ids": [
+    "fresh_start",
+    "equilibrium_like",
+    "refuelled_4_bundle_shift",
+    "rrs_tilt_perturbation",
+    "bulk_poison_perturbation"
+  ],
+  "approved_profile_ids": [
+    "P4-T06-G4K-spatial-k-v1",
+    "P4-T06-G4K-spatial-flux-v1",
+    "P4-T06-G4K-spatial-power-v1",
+    "P4-T06-G4K-spatial-total-power-v1",
+    "P4-T06-G4K-spatial-residual-relative-inf-v1",
+    "P4-T06-G4K-spatial-convergence-v1"
+  ]
+}

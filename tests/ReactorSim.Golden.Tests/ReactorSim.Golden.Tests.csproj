@@ -1,0 +1,107 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ReactorSim.Core\ReactorSim.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p4-t06-g4d-independent-reproduction-v1.json" Link="P4T06G4EData\independent-reproduction-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4d-independent-reproduction-v1.manifest.json" Link="P4T06G4EData\independent-reproduction-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-synthetic-input-v1.json" Link="P4T06G4EData\synthetic-input-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-reduced-candidate-v1.json" Link="P4T06G4EData\reduced-candidate-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-reduced-candidate-v1.manifest.json" Link="P4T06G4EData\reduced-candidate-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\benchmarks\P4-T08-static-solver-benchmark.json" Link="P4T06G4EData\static-solver-benchmark.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p4-t06-r5-candidate-snapshots-v1.json" Link="P4T06G4BData\candidate-snapshots-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-synthetic-input-v1.json" Link="P4T06G4BData\synthetic-input-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-reduced-candidate-v1.json" Link="P4T06G4BData\reduced-candidate-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\packs\p4-t06-r4-reduced-candidate-v1.manifest.json" Link="P4T06G4BData\reduced-candidate-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\benchmarks\P4-T08-static-solver-benchmark.json" Link="P4T06G4BData\static-solver-benchmark.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p4-t06-g4i-manufactured-definition-v1.json" Link="P4T06G4IData\manufactured-definition-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4i-manufactured-authority-v1.json" Link="P4T06G4IData\manufactured-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4i-manufactured-authority-v1.manifest.json" Link="P4T06G4IData\manufactured-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p4-t06-g4i-manufactured-authority-v1.json" Link="P4T06G4IData\approved-manufactured-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p4-t06-g4i-manufactured-authority-v1.manifest.json" Link="P4T06G4IData\approved-manufactured-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p4-t06-g4j-representative-definition-v1.json" Link="P4T06G4JData\representative-definition-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4j-representative-authority-v1.json" Link="P4T06G4JData\representative-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4j-representative-authority-v1.manifest.json" Link="P4T06G4JData\representative-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p4-t06-g4k-independent-authority-definition-v1.json" Link="P4T06G4KData\independent-authority-definition-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4k-independent-authority-v1.json" Link="P4T06G4KData\independent-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p4-t06-g4k-independent-authority-v1.manifest.json" Link="P4T06G4KData\independent-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p4-t06-g4k-independent-authority-v1.json" Link="P4T06G4KData\approved-independent-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p4-t06-g4k-independent-authority-v1.manifest.json" Link="P4T06G4KData\approved-independent-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>

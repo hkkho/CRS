@@ -1,0 +1,122 @@
+{
+  "schema_id": "CANDU-LIQUID-ZONE-INFLUENCE-MAP-V1",
+  "schema_version": 1,
+  "fixture_id": "P6-T02-SYNTHETIC-LIQUID-ZONE-MAP-V1",
+  "status": "ApprovedSyntheticTestOnly",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "approval_record": "docs/tasks/P6-T02-OWNER-APPROVAL.md",
+  "map_id": "00000000-0000-0000-0000-00000000a602",
+  "data_version": "p6-t02-synthetic-liquid-zone-map-v1",
+  "mapping": {
+    "mapping_id": "00000000-0000-0000-0000-00000000a601",
+    "mapping_version": "p6-t02-synthetic-grouping-v1",
+    "logical_zone_count": 14,
+    "physical_assembly_count": 6,
+    "mapping_digest": "0be2b126d2fbe6fa17bda290fba044468192266159d11921330a6352f688a713",
+    "logical_to_physical": [
+      { "logical_zone_id": 0, "physical_assembly_id": 0 },
+      { "logical_zone_id": 1, "physical_assembly_id": 0 },
+      { "logical_zone_id": 2, "physical_assembly_id": 1 },
+      { "logical_zone_id": 3, "physical_assembly_id": 1 },
+      { "logical_zone_id": 4, "physical_assembly_id": 2 },
+      { "logical_zone_id": 5, "physical_assembly_id": 2 },
+      { "logical_zone_id": 6, "physical_assembly_id": 3 },
+      { "logical_zone_id": 7, "physical_assembly_id": 3 },
+      { "logical_zone_id": 8, "physical_assembly_id": 4 },
+      { "logical_zone_id": 9, "physical_assembly_id": 4 },
+      { "logical_zone_id": 10, "physical_assembly_id": 5 },
+      { "logical_zone_id": 11, "physical_assembly_id": 5 },
+      { "logical_zone_id": 12, "physical_assembly_id": 0 },
+      { "logical_zone_id": 13, "physical_assembly_id": 1 }
+    ]
+  },
+  "topology": {
+    "topology_id": "00000000-0000-0000-0000-00000000a603",
+    "target_node_count": 6,
+    "target_nodes": [
+      { "channel_id": 0, "bundle_position": 0 },
+      { "channel_id": 1, "bundle_position": 0 },
+      { "channel_id": 2, "bundle_position": 0 },
+      { "channel_id": 3, "bundle_position": 0 },
+      { "channel_id": 4, "bundle_position": 0 },
+      { "channel_id": 5, "bundle_position": 0 }
+    ],
+    "topology_digest": "1df9f9605ca1727989548cd3c6e1a6557da00f74ae23aa73d28218df33ae5d76"
+  },
+  "sign_certificate": "P6-T02-SYNTHETIC-POSITIVE-ABSORPTION-V1",
+  "units": {
+    "source": "dimensionless",
+    "target": "m^-1",
+    "weight": "m^-1 per unit fill fraction"
+  },
+  "reference_state": {
+    "reference_fill_fraction_by_logical_zone": [
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "reference_state_digest": "d2e1d78824833029ee001cca607feef9aa615cb0c86f1878a03309fa64406c3e"
+  },
+  "entries": [
+    { "logical_zone_id": 0, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 0, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 1, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 1, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 2, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 2, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 3, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 3, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 4, "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 4, "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 5, "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 5, "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 6, "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 6, "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 7, "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 7, "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 8, "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 8, "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 9, "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 9, "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 10, "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 10, "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 11, "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 11, "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 12, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 12, "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 13, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_fill_fraction": 0.001, "source_unit": "dimensionless", "target_unit": "m^-1" },
+    { "logical_zone_id": 13, "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_fill_fraction": 0.0005, "source_unit": "dimensionless", "target_unit": "m^-1" }
+  ],
+  "map_digest": "4bc51694741efd9777cb5f9492ecf9fb72376a2a4ccbfd783d88be7f6c33047a",
+  "canonicalization": {
+    "encoding": "UTF-8 no BOM",
+    "integer_encoding": "unsigned little-endian",
+    "double_encoding": "IEEE-754 binary64 little-endian",
+    "map_digest_field": "excluded from the map digest body and appended after all body fields",
+    "entry_order": "logical_zone_id, target_node channel_id, target_node bundle_position, group_index",
+    "target_order": "channel_id, bundle_position",
+    "reference_state_digest_fields": "schema, map_id, mapping_id, mapping_version, mapping_digest, topology_id, topology_digest, data_version, owner_id, sign_certificate, source_unit, target_unit, reference fills",
+    "map_digest_fields": "schema, map_id, mapping_id, mapping_version, mapping_digest, topology_id, topology_digest, data_version, owner_id, sign_certificate, source_unit, target_unit, reference_state_digest, reference fills, target nodes, entries"
+  },
+  "boundary": {
+    "production_candu_claim": false,
+    "external_reference_claim": false,
+    "golden_data_claim": false,
+    "queue_allocation_transition_rollback": "reserved for P6-T06",
+    "scenario_packages": "reserved for P6-T07",
+    "thermal_hydraulics_or_coolant_flow": false,
+    "direct_reactivity_path": false
+  }
+}

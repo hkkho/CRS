@@ -1,0 +1,14 @@
+{
+  "format": "reactorsim.g4i-manufactured-spatial-authority-manifest/v1",
+  "task_id": "P4-T06-G4I",
+  "artifact_id": "p4-t06-g4i-manufactured-authority-v1",
+  "case_id": "g4i_2x2_vacuum_nonuniform",
+  "artifact_path": "data/comparisons/p4-t06-g4i-manufactured-authority-v1.json",
+  "definition_path": "data/comparisons/p4-t06-g4i-manufactured-definition-v1.json",
+  "definition_sha256": "ec1dcb36a4b790e51310b22b57998eaed94ab266dea5718f251316fcb339d7e9",
+  "artifact_sha256": "9e34b8e32574f7732336c6ce91955ee60630448f3e3468a231ff4d4b8a2f49d2",
+  "disposition": "candidate",
+  "generator_id": "p4-t06-g4i-manufactured-spatial-authority",
+  "generator_version": "v1",
+  "source_commit": "UNAVAILABLE: workspace has no committed HEAD; content hashes are the reproducibility binding"
+}

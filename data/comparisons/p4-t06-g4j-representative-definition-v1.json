@@ -1,0 +1,170 @@
+{
+  "format": "reactorsim.g4j-representative-reduced-definition/v1",
+  "task_id": "P4-T06-G4J",
+  "case_id": "g4j_4x12_representative_sequence",
+  "description": "Project-authored reduced-model sequence case covering an explicit 4-channel by 12-position topology, alternating flow, burnup projection, 4-bundle refuelling in both directions, an RRS absorption overlay, and a bulk-poison absorption overlay.",
+  "source_pack": {
+    "relative_path": "data/packs/p4-t06-r4-reduced-candidate-v1.json",
+    "sha256": "0de429b27f78b5e2c5fe724916b14ac8ce45ba05560ab73f3fa4805befd11a0e",
+    "table_id": "00000000-0000-0000-0000-0000000005a1",
+    "material_variant_id": "MAT-SYN",
+    "data_version": "synthetic-v1",
+    "transform_id": "exact_knot_or_linear_lookup_v1"
+  },
+  "topology": {
+    "channel_count": 4,
+    "bundle_position_count": 12,
+    "channels": [
+      { "channel_id": 0, "coordinate_x": 0, "coordinate_y": 0, "flow_direction": "EndAtoEndB" },
+      { "channel_id": 1, "coordinate_x": 1, "coordinate_y": 0, "flow_direction": "EndBtoEndA" },
+      { "channel_id": 2, "coordinate_x": 0, "coordinate_y": 1, "flow_direction": "EndAtoEndB" },
+      { "channel_id": 3, "coordinate_x": 1, "coordinate_y": 1, "flow_direction": "EndBtoEndA" }
+    ],
+    "transverse_links": [
+      { "endpoint_a_channel_id": 0, "endpoint_b_channel_id": 1, "direction_a_to_b": "East", "direction_b_to_a": "West" },
+      { "endpoint_a_channel_id": 0, "endpoint_b_channel_id": 2, "direction_a_to_b": "North", "direction_b_to_a": "South" },
+      { "endpoint_a_channel_id": 1, "endpoint_b_channel_id": 3, "direction_a_to_b": "North", "direction_b_to_a": "South" },
+      { "endpoint_a_channel_id": 2, "endpoint_b_channel_id": 3, "direction_a_to_b": "East", "direction_b_to_a": "West" }
+    ],
+    "cardinal_boundary_classification": "Reflective",
+    "end_boundary_classification": "Vacuum"
+  },
+  "conductances": {
+    "axial_edge_group1_m2": 0.035,
+    "axial_edge_group2_m2": 0.025,
+    "transverse_edge_group1_m2": 0.018,
+    "transverse_edge_group2_m2": 0.014,
+    "end_boundary_group1_m2": 0.010,
+    "end_boundary_group2_m2": 0.008
+  },
+  "node_geometry": {
+    "volume_base_m3": 1.0,
+    "volume_channel_increment_m3": 0.03,
+    "volume_position_increment_m3": 0.004
+  },
+  "material_projection": {
+    "channel_absorption_group1_multiplier": [1.0, 1.015, 0.985, 1.01],
+    "channel_absorption_group2_multiplier": [1.0, 1.01, 0.99, 1.02],
+    "channel_fission_multiplier": [1.0, 0.995, 1.005, 1.0],
+    "channel_downscatter_multiplier": [1.0, 1.01, 0.995, 1.005],
+    "position_absorption_group1_multiplier": [1.0, 1.002, 1.004, 1.006, 1.008, 1.01, 1.008, 1.006, 1.004, 1.002, 1.0, 0.998],
+    "position_absorption_group2_multiplier": [1.0, 1.001, 1.002, 1.003, 1.004, 1.005, 1.004, 1.003, 1.002, 1.001, 1.0, 0.999],
+    "position_fission_multiplier": [1.0, 1.001, 1.002, 1.003, 1.004, 1.005, 1.004, 1.003, 1.002, 1.001, 1.0, 0.999],
+    "position_downscatter_multiplier": [1.0, 1.001, 1.002, 1.003, 1.004, 1.005, 1.004, 1.003, 1.002, 1.001, 1.0, 0.999]
+  },
+  "initial_state": {
+    "initial_eigenvalue": 1.0,
+    "initial_group1_flux": 1.0,
+    "initial_group2_flux": 0.55,
+    "target_power_w": 1000.0,
+    "initial_core_state_version": 100,
+    "initial_spatial_state_version": 200,
+    "initial_power_snapshot_version": 300
+  },
+  "scenarios": [
+    {
+      "scenario_id": "fresh_start",
+      "description": "Fresh reduced-model reference state before positive-duration history.",
+      "simulation_time_s": 0.0,
+      "base_burnup_by_position_j_per_kg_hm": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "channel_burnup_offset_j_per_kg_hm": [0, 0, 0, 0],
+      "fresh_positions_by_channel": [[], [], [], []],
+      "overlay": { "kind": "none" },
+      "events": [
+        { "event_id": "g4j-event-000", "event_rank": 0, "event_type": "scenario_initialization", "time_s": 0.0, "owner_id": "scenario" }
+      ]
+    },
+    {
+      "scenario_id": "equilibrium_like",
+      "description": "Synthetic equilibrium-like burnup gradient used only for reduced sequence comparison.",
+      "simulation_time_s": 86400.0,
+      "base_burnup_by_position_j_per_kg_hm": [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000, 75000],
+      "channel_burnup_offset_j_per_kg_hm": [0, 5000, 10000, 15000],
+      "fresh_positions_by_channel": [[], [], [], []],
+      "overlay": { "kind": "none" },
+      "events": [
+        { "event_id": "g4j-event-100", "event_rank": 0, "event_type": "scenario_initialization", "time_s": 0.0, "owner_id": "scenario" },
+        { "event_id": "g4j-event-101", "event_rank": 0, "event_type": "burnup_commit", "time_s": 86400.0, "owner_id": "P2-T03-burnup" }
+      ]
+    },
+    {
+      "scenario_id": "refuelled_4_bundle_shift",
+      "description": "Post-event state after a 4-bundle shift on one EndA-to-EndB and one EndB-to-EndA channel.",
+      "simulation_time_s": 172800.0,
+      "base_burnup_by_position_j_per_kg_hm": [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000, 75000],
+      "channel_burnup_offset_j_per_kg_hm": [0, 5000, 10000, 15000],
+      "fresh_positions_by_channel": [[0, 1, 2, 3], [8, 9, 10, 11], [], []],
+      "overlay": { "kind": "none" },
+      "events": [
+        { "event_id": "g4j-event-200", "event_rank": 0, "event_type": "scenario_initialization", "time_s": 0.0, "owner_id": "scenario" },
+        { "event_id": "g4j-event-201", "event_rank": 0, "event_type": "burnup_commit", "time_s": 86400.0, "owner_id": "P2-T03-burnup" },
+        { "event_id": "g4j-event-202", "event_rank": 1, "event_type": "refuel_shift", "time_s": 172800.0, "owner_id": "P2-T03-refuelling", "channel_id": 0, "scheme_id": "S4", "shift_direction": "TowardEndB", "inserted_positions": [0, 1, 2, 3], "discharged_positions": [8, 9, 10, 11] },
+        { "event_id": "g4j-event-203", "event_rank": 1, "event_type": "refuel_shift", "time_s": 172800.0, "owner_id": "P2-T03-refuelling", "channel_id": 1, "scheme_id": "S4", "shift_direction": "TowardEndA", "inserted_positions": [8, 9, 10, 11], "discharged_positions": [0, 1, 2, 3] }
+      ]
+    },
+    {
+      "scenario_id": "rrs_tilt_perturbation",
+      "description": "Prescribed RRS overlay that changes absorption on alternating channel columns to create a bounded tilt perturbation.",
+      "simulation_time_s": 259200.0,
+      "base_burnup_by_position_j_per_kg_hm": [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000, 75000],
+      "channel_burnup_offset_j_per_kg_hm": [0, 5000, 10000, 15000],
+      "fresh_positions_by_channel": [[], [], [], []],
+      "overlay": {
+        "kind": "rrs",
+        "source_id": "LZC-SYN-01",
+        "map_id": "MAP-RRS-G4J-V1",
+        "data_version": "g4j-rrs-v1",
+        "state_fraction": 0.65,
+        "reference_fraction": 0.50,
+        "weights_group1_per_unit_by_channel": [-0.04, 0.04, -0.04, 0.04],
+        "weights_group2_per_unit_by_channel": [-0.025, 0.025, -0.025, 0.025]
+      },
+      "events": [
+        { "event_id": "g4j-event-300", "event_rank": 0, "event_type": "scenario_initialization", "time_s": 0.0, "owner_id": "scenario" },
+        { "event_id": "g4j-event-301", "event_rank": 0, "event_type": "burnup_commit", "time_s": 86400.0, "owner_id": "P2-T03-burnup" },
+        { "event_id": "g4j-event-302", "event_rank": 4, "event_type": "rrs_branch_update", "time_s": 259200.0, "owner_id": "P2-T04-rrs" }
+      ]
+    },
+    {
+      "scenario_id": "bulk_poison_perturbation",
+      "description": "Prescribed bulk-poison state and explicit local overlay map applied to the equilibrium-like reduced state.",
+      "simulation_time_s": 345600.0,
+      "base_burnup_by_position_j_per_kg_hm": [20000, 25000, 30000, 35000, 40000, 45000, 50000, 55000, 60000, 65000, 70000, 75000],
+      "channel_burnup_offset_j_per_kg_hm": [0, 5000, 10000, 15000],
+      "fresh_positions_by_channel": [[], [], [], []],
+      "overlay": {
+        "kind": "bulk_poison",
+        "source_id": "BULK-POISON-SYN-01",
+        "map_id": "MAP-POISON-G4J-V1",
+        "data_version": "g4j-poison-v1",
+        "poison_mass_kg": 0.5,
+        "moderator_volume_m3": 5.0,
+        "reference_concentration_kg_per_m3": 0.0,
+        "weights_group1_per_concentration_by_channel": [0.08, 0.08, 0.08, 0.08],
+        "weights_group2_per_concentration_by_channel": [0.05, 0.05, 0.05, 0.05]
+      },
+      "events": [
+        { "event_id": "g4j-event-400", "event_rank": 0, "event_type": "scenario_initialization", "time_s": 0.0, "owner_id": "scenario" },
+        { "event_id": "g4j-event-401", "event_rank": 0, "event_type": "burnup_commit", "time_s": 86400.0, "owner_id": "P2-T03-burnup" },
+        { "event_id": "g4j-event-402", "event_rank": 4, "event_type": "bulk_poison_branch_update", "time_s": 345600.0, "owner_id": "P2-T04-poison" }
+      ]
+    }
+  ],
+  "policies": {
+    "inner_absolute_residual_tolerance": 1e-12,
+    "inner_relative_residual_tolerance": 1e-12,
+    "inner_maximum_iterations": 4096,
+    "outer_k_absolute_tolerance": 1e-12,
+    "outer_k_relative_tolerance": 1e-12,
+    "outer_residual_tolerance": 1e-10,
+    "outer_source_shape_tolerance": 1e-10,
+    "outer_power_balance_tolerance": 1e-12,
+    "outer_maximum_iterations": 4096
+  },
+  "comparison": {
+    "status": "Deferred",
+    "diagnostic_bound": 1e-8,
+    "owner_gate": "G4",
+    "note": "The bound is a consumer diagnostic only; it is not an approved tolerance or golden threshold."
+  }
+}

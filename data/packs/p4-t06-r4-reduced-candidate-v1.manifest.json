@@ -1,0 +1,25 @@
+{
+  "format": "reactorsim.reduced-interpolation-manifest/v1",
+  "manifest_schema_version": 1,
+  "approval_status": "candidate",
+  "evidence_class": "synthetic",
+  "pack_artifact_id": "p4-t06-r4-reduced-candidate-v1",
+  "pack_format": "reactorsim.reduced-interpolation-pack/v1",
+  "pack_sha256": "0de429b27f78b5e2c5fe724916b14ac8ce45ba05560ab73f3fa4805befd11a0e",
+  "source_artifact_id": "p4-t06-r4-synthetic-input-v1",
+  "source_sha256": "1680a075cd34867b603e1e786002815b19be360d4e8557cd5485978dc32c1694",
+  "source_provenance": "synthetic:P5-T05",
+  "transform_id": "identity_projection_v1",
+  "data_version": "synthetic-v1",
+  "units_profile_id": "SI-v1",
+  "tables": [
+    {
+      "table_id": "00000000-0000-0000-0000-0000000005a1",
+      "material_variant_id": "MAT-SYN",
+      "checksum": "4b1e27cb954d6bcbd6f25d12128a9bb1225ce8ae751ad10c3097ff470b881d40",
+      "row_count": 3,
+      "burnup_min_j_per_kg_hm": 0,
+      "burnup_max_j_per_kg_hm": 100000
+    }
+  ]
+}

@@ -1,0 +1,544 @@
+{
+  "format": "reactorsim.g4i-manufactured-spatial-authority/v1",
+  "task_id": "P4-T06-G4I",
+  "artifact_id": "p4-t06-g4i-manufactured-authority-v1",
+  "case_id": "g4i_2x2_vacuum_nonuniform",
+  "status": "approved_golden",
+  "evidence_class": "synthetic",
+  "coverage_class": "Synthetic",
+  "artifact_availability": "CommittedSynthetic",
+  "evidence_approval": "Approved",
+  "validation_domain": "Synthetic",
+  "comparison_status": "Approved",
+  "tolerance_status": "Approved",
+  "golden_status": "ApprovedGolden",
+  "approval_scope": "Synthetic manufactured spatial-solver authority only; not a direct CANDU physics baseline.",
+  "evidence_path": "data/golden/p4-t06-g4i-manufactured-authority-v1.json",
+  "definition_path": "data/comparisons/p4-t06-g4i-manufactured-definition-v1.json",
+  "definition_sha256": "ec1dcb36a4b790e51310b22b57998eaed94ab266dea5718f251316fcb339d7e9",
+  "source_authority": {
+    "source_program": "Project-authored deterministic manufactured-solution generator",
+    "source_version": "v1",
+    "build_identity": "ReactorSim.ManufacturedSpatialAuthority net10.0; Release build; dotnet SDK recorded by task validation",
+    "source_commit": "UNAVAILABLE: workspace has no committed HEAD; definition, artifact, manifest, and source paths are hash-bound in the task report",
+    "coupling_tool_identity": "None; standalone algebraic reference with no external solver or runtime coupling",
+    "generator_id": "p4-t06-g4i-manufactured-spatial-authority",
+    "generator_version": "v1"
+  },
+  "nuclear_data": {
+    "library": "NotApplicable",
+    "version": "NotApplicable",
+    "processing": "NotApplicable",
+    "format": "NotApplicable",
+    "checksum": "NotApplicable",
+    "applicability": "NotApplicable: all coefficients are project-authored synthetic values derived from the manufactured balance",
+    "external_data_used": false
+  },
+  "geometry": {
+    "channel_count": 2,
+    "bundle_position_count": 2,
+    "flow_direction": "EndAtoEndB",
+    "node_order": [
+      {
+        "channel_id": 0,
+        "position": 0,
+        "flat_index": 0
+      },
+      {
+        "channel_id": 0,
+        "position": 1,
+        "flat_index": 1
+      },
+      {
+        "channel_id": 1,
+        "position": 0,
+        "flat_index": 2
+      },
+      {
+        "channel_id": 1,
+        "position": 1,
+        "flat_index": 3
+      }
+    ],
+    "edges": [
+      {
+        "endpoint_a": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "endpoint_b": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "direction_a_to_b": "TowardEndB",
+        "direction_b_to_a": "TowardEndA",
+        "group1_m2": 0.12,
+        "group2_m2": 0.08
+      },
+      {
+        "endpoint_a": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "endpoint_b": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "direction_a_to_b": "TowardEndB",
+        "direction_b_to_a": "TowardEndA",
+        "group1_m2": 0.12,
+        "group2_m2": 0.08
+      },
+      {
+        "endpoint_a": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "endpoint_b": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "direction_a_to_b": "East",
+        "direction_b_to_a": "West",
+        "group1_m2": 0.12,
+        "group2_m2": 0.08
+      },
+      {
+        "endpoint_a": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "endpoint_b": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "direction_a_to_b": "East",
+        "direction_b_to_a": "West",
+        "group1_m2": 0.12,
+        "group2_m2": 0.08
+      }
+    ],
+    "boundaries": [
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "face": "North",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "face": "South",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "face": "West",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 0,
+          "flat_index": 0
+        },
+        "face": "EndA",
+        "classification": "Vacuum",
+        "group1_m2": 0.07,
+        "group2_m2": 0.05
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "face": "North",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "face": "South",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "face": "West",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 0,
+          "position": 1,
+          "flat_index": 1
+        },
+        "face": "EndB",
+        "classification": "Vacuum",
+        "group1_m2": 0.09,
+        "group2_m2": 0.07
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "face": "North",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "face": "South",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "face": "East",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 0,
+          "flat_index": 2
+        },
+        "face": "EndA",
+        "classification": "Vacuum",
+        "group1_m2": 0.06,
+        "group2_m2": 0.045
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "face": "North",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "face": "South",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "face": "East",
+        "classification": "Reflective",
+        "group1_m2": 0,
+        "group2_m2": 0
+      },
+      {
+        "node": {
+          "channel_id": 1,
+          "position": 1,
+          "flat_index": 3
+        },
+        "face": "EndB",
+        "classification": "Vacuum",
+        "group1_m2": 0.08,
+        "group2_m2": 0.065
+      }
+    ],
+    "homogenization_mapping": "NotApplicable: each synthetic node coefficient is bound directly to one explicit node"
+  },
+  "state": {
+    "initial_eigenvalue": 1,
+    "initial_group1_flux": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "initial_group2_flux": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "state_identity": "g4i_manufactured_static_state_v1",
+    "depletion_history": "NotApplicable: static manufactured state; no burnup or refuelling history",
+    "event_ordering": "NotApplicable: no state-transition events"
+  },
+  "units": {
+    "profile_id": "SI-v1",
+    "flux": "m^-2 s^-1",
+    "volume": "m^3",
+    "cross_sections": "m^-1",
+    "conductances": "m^2",
+    "energy_per_fission": "J",
+    "power": "W",
+    "eigenvalue": "1",
+    "conversion_rules": "No implicit conversions; all values are serialized in the listed SI units"
+  },
+  "normalization": {
+    "target_power_w": 0.46863410000000005,
+    "reference_state": "Exact manufactured flux shape before any iterative normalization scale",
+    "sign_convention": "Positive removal, positive leakage, positive fission source; operator is A(phi)=F(phi)/k",
+    "flux_scale": "The exact manufactured shape is already normalized to target_power_w; standalone and Core consumers must preserve this power"
+  },
+  "coefficients": [
+    {
+      "flat_index": 0,
+      "channel_id": 0,
+      "position": 0,
+      "volume_m3": 1,
+      "absorption_group1_per_m": 0.44,
+      "absorption_group2_per_m": 0.25,
+      "downscatter_group1_to2_per_m": 0.18100000000000002,
+      "fission_group1_per_m": 0.08359285000000001,
+      "fission_group2_per_m": 0.12435299999999999,
+      "nu_fission_group1_per_m": 0.33437140000000004,
+      "nu_fission_group2_per_m": 0.49741199999999997,
+      "chi_group1": 1,
+      "chi_group2": 0,
+      "energy_per_fission_j": 1
+    },
+    {
+      "flat_index": 1,
+      "channel_id": 0,
+      "position": 1,
+      "volume_m3": 1.2,
+      "absorption_group1_per_m": 0.46,
+      "absorption_group2_per_m": 0.27,
+      "downscatter_group1_to2_per_m": 0.1859722222222222,
+      "fission_group1_per_m": 0.07862746527777778,
+      "fission_group2_per_m": 0.11028267857142857,
+      "nu_fission_group1_per_m": 0.3145098611111111,
+      "nu_fission_group2_per_m": 0.44113071428571426,
+      "chi_group1": 1,
+      "chi_group2": 0,
+      "energy_per_fission_j": 1
+    },
+    {
+      "flat_index": 2,
+      "channel_id": 1,
+      "position": 0,
+      "volume_m3": 0.9,
+      "absorption_group1_per_m": 0.43,
+      "absorption_group2_per_m": 0.24,
+      "downscatter_group1_to2_per_m": 0.16806201550387595,
+      "fission_group1_per_m": 0.07687102713178294,
+      "fission_group2_per_m": 0.11268593749999999,
+      "nu_fission_group1_per_m": 0.30748410852713176,
+      "nu_fission_group2_per_m": 0.45074374999999994,
+      "chi_group1": 1,
+      "chi_group2": 0,
+      "energy_per_fission_j": 1
+    },
+    {
+      "flat_index": 3,
+      "channel_id": 1,
+      "position": 1,
+      "volume_m3": 1.1,
+      "absorption_group1_per_m": 0.45,
+      "absorption_group2_per_m": 0.26,
+      "downscatter_group1_to2_per_m": 0.15923994038748138,
+      "fission_group1_per_m": 0.06963278688524592,
+      "fission_group2_per_m": 0.09929454545454547,
+      "nu_fission_group1_per_m": 0.2785311475409837,
+      "nu_fission_group2_per_m": 0.3971781818181819,
+      "chi_group1": 1,
+      "chi_group2": 0,
+      "energy_per_fission_j": 1
+    }
+  ],
+  "manufactured_solution": {
+    "exact_eigenvalue": 0.82,
+    "exact_group1_flux": [
+      1,
+      0.72,
+      0.86,
+      0.61
+    ],
+    "exact_group2_flux": [
+      0.55,
+      0.42,
+      0.48,
+      0.35
+    ],
+    "exact_fission_source_by_node": [
+      0.607948,
+      0.41172200000000003,
+      0.4807933333333333,
+      0.3089163636363637
+    ],
+    "equation_residual_absolute_infinity": 5.551115123125783E-17,
+    "equation_residual_relative_infinity": 3.7436708410613586E-17,
+    "group1_equation_residual_absolute_infinity": 5.551115123125783E-17,
+    "group2_equation_residual_absolute_infinity": 0
+  },
+  "observables": {
+    "quantity_ids": [
+      "spatial.k",
+      "spatial.flux",
+      "spatial.node_power",
+      "spatial.total_power",
+      "spatial.equation_residual",
+      "spatial.convergence"
+    ],
+    "node_ordering": "flat_index ascending; channel_id ascending then position ascending; group order group1 then group2",
+    "comparison_rule": "Exact quantity identity and state binding; numeric profiles are explicit and no hidden epsilon is permitted",
+    "schema_version": "P2-T05-observables-v1"
+  },
+  "convergence": {
+    "inner_method": "deterministic scalar Jacobi",
+    "inner_method_version": "P2-T02-jacobi-v1",
+    "inner_absolute_residual_tolerance": 1E-13,
+    "inner_relative_residual_tolerance": 1E-13,
+    "inner_maximum_iterations": 4096,
+    "outer_k_absolute_tolerance": 1E-12,
+    "outer_k_relative_tolerance": 1E-12,
+    "outer_residual_tolerance": 1E-12,
+    "outer_source_shape_tolerance": 1E-12,
+    "outer_power_balance_tolerance": 1E-12,
+    "outer_maximum_iterations": 256,
+    "independent_reproduction": {
+      "converged": true,
+      "convergence_reason": "converged",
+      "outer_iterations": 54,
+      "group1_inner_iterations": 22,
+      "group2_inner_iterations": 27,
+      "eigenvalue": 0.8199999999995526,
+      "normalization_scale": 0.9999999999998512,
+      "total_power_w": 0.46863410000000005,
+      "group1_flux": [
+        0.999999999996916,
+        0.720000000003548,
+        0.8599999999973675,
+        0.6100000000020488
+      ],
+      "group2_flux": [
+        0.5499999999986983,
+        0.420000000001225,
+        0.4799999999988298,
+        0.35000000000061054
+      ],
+      "fission_source_by_node": [
+        0.6079479999983214,
+        0.41172200000165626,
+        0.48079333333199636,
+        0.3089163636371769
+      ],
+      "residual_absolute_infinity": 1.3383738561856262E-12,
+      "residual_relative_infinity": 9.025990397827082E-13,
+      "source_shape_change_infinity": 6.106226635438361E-13,
+      "power_balance_relative": 0
+    }
+  },
+  "tolerance": {
+    "status": "Approved",
+    "authority": "G4-R4 synthetic-only disposition",
+    "basis": "Explicit G4 profile selected after exact manufactured balance, standalone repeat, Core consumer, and T3/T6 validation",
+    "profiles": {
+      "spatial.k": {
+        "rule": "absolute",
+        "absolute": 1E-10,
+        "relative": 1E-10
+      },
+      "spatial.flux": {
+        "rule": "absolute_and_relative",
+        "absolute": 1E-10,
+        "relative": 1E-10
+      },
+      "spatial.node_power": {
+        "rule": "absolute_and_relative",
+        "absolute": 1E-10,
+        "relative": 1E-10
+      },
+      "spatial.total_power": {
+        "rule": "absolute",
+        "absolute": 1E-10,
+        "relative": 1E-10
+      },
+      "spatial.equation_residual": {
+        "rule": "relative",
+        "absolute": 1E-10,
+        "relative": 1E-10
+      },
+      "spatial.convergence": {
+        "rule": "exact_discrete_and_profile",
+        "absolute": 0,
+        "relative": 0
+      }
+    }
+  },
+  "rights": {
+    "license": "Project-authored synthetic fixture; no third-party input or nuclear-data payload",
+    "redistribution": "Permitted for repository review and downstream test use within this project",
+    "external_restrictions": "None identified; this artifact is not a redistribution of DRAGON5, DONJON5, or nuclear-data files"
+  },
+  "generator_checks": {
+    "independent_repeat_equal": true,
+    "independent_result_sha256": "7876dd83366a12de5caf3ba28546f425cec1b883304141574705dc0dc8990651",
+    "independent_repeat_result_sha256": "7876dd83366a12de5caf3ba28546f425cec1b883304141574705dc0dc8990651",
+    "independent_maximum_flux_absolute_error": 3.5480507420970753E-12,
+    "independent_eigenvalue_absolute_error": 4.4730885662147557E-13,
+    "independent_total_power_absolute_error": 0,
+    "generator_validation": "Generate/validate byte equality plus standalone repeat equality"
+  }
+}

@@ -1,0 +1,1037 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+
+namespace ReactorSim.Core
+{
+    public enum SpatialEnergyGroup : byte
+    {
+        Group1 = 1,
+        Group2 = 2
+    }
+
+    /// <summary>
+    /// In-memory node coefficients for the approved P2-T02 static model.
+    /// Loading, versioning, hashing, and serialization belong to a later
+    /// data-pack task.
+    /// </summary>
+    public sealed class SpatialNodeCoefficients
+    {
+        public SpatialNodeCoefficients(
+            NodeKey node,
+            double volumeM3,
+            double absorptionGroup1PerM,
+            double absorptionGroup2PerM,
+            double downscatterGroup1To2PerM,
+            double fissionGroup1PerM,
+            double fissionGroup2PerM,
+            double nuFissionGroup1PerM,
+            double nuFissionGroup2PerM,
+            double chiGroup1,
+            double chiGroup2,
+            double energyPerFissionJ)
+        {
+            Node = node;
+            VolumeM3 = volumeM3;
+            AbsorptionGroup1PerM = absorptionGroup1PerM;
+            AbsorptionGroup2PerM = absorptionGroup2PerM;
+            DownscatterGroup1To2PerM = downscatterGroup1To2PerM;
+            FissionGroup1PerM = fissionGroup1PerM;
+            FissionGroup2PerM = fissionGroup2PerM;
+            NuFissionGroup1PerM = nuFissionGroup1PerM;
+            NuFissionGroup2PerM = nuFissionGroup2PerM;
+            ChiGroup1 = chiGroup1;
+            ChiGroup2 = chiGroup2;
+            EnergyPerFissionJ = energyPerFissionJ;
+        }
+
+        public NodeKey Node { get; }
+
+        public double VolumeM3 { get; }
+
+        public double AbsorptionGroup1PerM { get; }
+
+        public double AbsorptionGroup2PerM { get; }
+
+        public double DownscatterGroup1To2PerM { get; }
+
+        public double FissionGroup1PerM { get; }
+
+        public double FissionGroup2PerM { get; }
+
+        public double NuFissionGroup1PerM { get; }
+
+        public double NuFissionGroup2PerM { get; }
+
+        public double ChiGroup1 { get; }
+
+        public double ChiGroup2 { get; }
+
+        public double EnergyPerFissionJ { get; }
+    }
+
+    /// <summary>
+    /// One shared conductance for a canonical reciprocal interior edge.
+    /// </summary>
+    public sealed class SpatialEdgeConductance
+    {
+        public SpatialEdgeConductance(
+            NodeKey endpointA,
+            NodeKey endpointB,
+            double group1M2,
+            double group2M2)
+        {
+            EndpointA = endpointA;
+            EndpointB = endpointB;
+            Group1M2 = group1M2;
+            Group2M2 = group2M2;
+        }
+
+        public NodeKey EndpointA { get; }
+
+        public NodeKey EndpointB { get; }
+
+        public double Group1M2 { get; }
+
+        public double Group2M2 { get; }
+    }
+
+    /// <summary>
+    /// Conductances for one explicit topology boundary face.
+    /// </summary>
+    public sealed class SpatialBoundaryConductance
+    {
+        public SpatialBoundaryConductance(
+            NodeKey node,
+            TopologyFace face,
+            double group1M2,
+            double group2M2)
+        {
+            Node = node;
+            Face = face;
+            Group1M2 = group1M2;
+            Group2M2 = group2M2;
+        }
+
+        public NodeKey Node { get; }
+
+        public TopologyFace Face { get; }
+
+        public double Group1M2 { get; }
+
+        public double Group2M2 { get; }
+    }
+
+    /// <summary>
+    /// Validated immutable in-memory coefficients bound to one stencil.
+    /// </summary>
+    public sealed class SpatialCoefficientSet
+    {
+        private readonly ReadOnlyCollection<SpatialNodeCoefficients> _nodes;
+        private readonly Dictionary<SpatialEdgeKey, SpatialConductancePair> _edges;
+        private readonly Dictionary<SpatialBoundaryKey, SpatialConductancePair> _boundaries;
+        private readonly SpatialStencil _stencil;
+
+        private SpatialCoefficientSet(
+            SpatialStencil stencil,
+            IReadOnlyList<SpatialNodeCoefficients> nodes,
+            Dictionary<SpatialEdgeKey, SpatialConductancePair> edges,
+            Dictionary<SpatialBoundaryKey, SpatialConductancePair> boundaries)
+        {
+            _stencil = stencil;
+            _nodes = new ReadOnlyCollection<SpatialNodeCoefficients>(nodes.ToArray());
+            _edges = edges;
+            _boundaries = boundaries;
+        }
+
+        public int NodeCount
+        {
+            get { return _nodes.Count; }
+        }
+
+        public int EdgeCount
+        {
+            get { return _edges.Count; }
+        }
+
+        public int BoundaryCount
+        {
+            get { return _boundaries.Count; }
+        }
+
+        public IReadOnlyList<SpatialNodeCoefficients> Nodes
+        {
+            get { return _nodes; }
+        }
+
+        public static ContractValidationResult<SpatialCoefficientSet> TryCreate(
+            SpatialStencil stencil,
+            IEnumerable<SpatialNodeCoefficients> nodeCoefficients,
+            IEnumerable<SpatialEdgeConductance> edgeConductances,
+            IEnumerable<SpatialBoundaryConductance> boundaryConductances)
+        {
+            if (stencil == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Stencil.Missing",
+                    "stencil",
+                    "Coefficient binding requires an assembled stencil.");
+            }
+
+            if (nodeCoefficients == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Nodes.Missing",
+                    "node_coefficients",
+                    "Node coefficients are required for every stencil node.");
+            }
+
+            if (edgeConductances == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Edges.Missing",
+                    "edge_conductances",
+                    "Interior edge conductances are required for every stencil edge.");
+            }
+
+            if (boundaryConductances == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Boundaries.Missing",
+                    "boundary_conductances",
+                    "Boundary conductances are required for every stencil boundary face.");
+            }
+
+            SpatialNodeCoefficients[] nodeRecords = nodeCoefficients.ToArray();
+            SpatialEdgeConductance[] edgeRecords = edgeConductances.ToArray();
+            SpatialBoundaryConductance[] boundaryRecords = boundaryConductances.ToArray();
+
+            if (nodeRecords.Any(record => record == null))
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Node.Null",
+                    "node_coefficients",
+                    "A node coefficient record may not be null.");
+            }
+
+            if (edgeRecords.Any(record => record == null))
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Edge.Null",
+                    "edge_conductances",
+                    "An edge conductance record may not be null.");
+            }
+
+            if (boundaryRecords.Any(record => record == null))
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Boundary.Null",
+                    "boundary_conductances",
+                    "A boundary conductance record may not be null.");
+            }
+
+            var nodeSet = new HashSet<NodeKey>(stencil.Nodes.Select(node => node.Node));
+            var nodeMap = new Dictionary<NodeKey, SpatialNodeCoefficients>();
+            foreach (SpatialNodeCoefficients record in nodeRecords.OrderBy(record => record.Node))
+            {
+                if (!nodeSet.Contains(record.Node))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Node.Unknown",
+                        "nodes[" + record.Node + "]",
+                        "A node coefficient record must match a stencil node.");
+                }
+
+                if (nodeMap.ContainsKey(record.Node))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Node.Duplicate",
+                        ContractValidation.NodePath(record.Node, ".coefficients"),
+                        "Exactly one node coefficient record is required.");
+                }
+
+                nodeMap.Add(record.Node, record);
+            }
+
+            var orderedNodes = new SpatialNodeCoefficients[stencil.NodeCount];
+            for (int nodeIndex = 0; nodeIndex < stencil.NodeCount; nodeIndex++)
+            {
+                NodeKey node = stencil.Nodes[nodeIndex].Node;
+                SpatialNodeCoefficients record;
+                if (!nodeMap.TryGetValue(node, out record!))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Node.Missing",
+                        ContractValidation.NodePath(node, ".coefficients"),
+                        "Exactly one node coefficient record is required.");
+                }
+
+                ContractDiagnostic? failure = ValidateNodeCoefficients(record);
+                if (failure != null)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        failure.Code,
+                        failure.Path,
+                        failure.Message);
+                }
+
+                orderedNodes[nodeIndex] = record;
+            }
+
+            var expectedEdges = new Dictionary<SpatialEdgeKey, int>();
+            foreach (SpatialNodeStencil node in stencil.Nodes)
+            {
+                foreach (SpatialNeighborTerm neighbor in node.NeighborTerms)
+                {
+                    SpatialEdgeKey key = new SpatialEdgeKey(node.Node, neighbor.TargetNode);
+                    int count;
+                    expectedEdges.TryGetValue(key, out count);
+                    expectedEdges[key] = count + 1;
+                }
+            }
+
+            foreach (KeyValuePair<SpatialEdgeKey, int> expected in expectedEdges.OrderBy(pair => pair.Key))
+            {
+                if (expected.Value != 2)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.TopologyMismatch",
+                        "edges[" + expected.Key + "]",
+                        "Every interior conductance key must bind exactly one reciprocal pair.");
+                }
+            }
+
+            var boundEdges = new Dictionary<SpatialEdgeKey, SpatialConductancePair>();
+            foreach (SpatialEdgeConductance record in edgeRecords
+                         .OrderBy(record => new SpatialEdgeKey(record.EndpointA, record.EndpointB)))
+            {
+                SpatialEdgeKey key = new SpatialEdgeKey(record.EndpointA, record.EndpointB);
+                if (!nodeSet.Contains(key.First) || !nodeSet.Contains(key.Second))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.UnknownNode",
+                        "edges[" + key + "]",
+                        "An edge conductance endpoint must match a stencil node.");
+                }
+
+                if (key.First == key.Second)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.SelfReference",
+                        "edges[" + key + "]",
+                        "An interior conductance may not bind a node to itself.");
+                }
+
+                if (!expectedEdges.ContainsKey(key))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.Extra",
+                        "edges[" + key + "]",
+                        "Every conductance key must correspond to a validated reciprocal stencil edge.");
+                }
+
+                if (boundEdges.ContainsKey(key))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.Duplicate",
+                        "edges[" + key + "]",
+                        "Exactly one shared conductance record is required per reciprocal edge.");
+                }
+
+                ContractDiagnostic? failure = ValidatePositiveConductances(
+                    record.Group1M2,
+                    record.Group2M2,
+                    "edges[" + key + "]");
+                if (failure != null)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        failure.Code,
+                        failure.Path,
+                        failure.Message);
+                }
+
+                boundEdges.Add(key, new SpatialConductancePair(record.Group1M2, record.Group2M2));
+            }
+
+            foreach (SpatialEdgeKey key in expectedEdges.Keys.OrderBy(value => value))
+            {
+                if (!boundEdges.ContainsKey(key))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Edge.Missing",
+                        "edges[" + key + "]",
+                        "Exactly one shared conductance record is required per reciprocal edge.");
+                }
+            }
+
+            var expectedBoundaries = new Dictionary<SpatialBoundaryKey, BoundaryClassification>();
+            foreach (SpatialNodeStencil node in stencil.Nodes)
+            {
+                foreach (SpatialBoundaryTerm boundary in node.BoundaryTerms)
+                {
+                    expectedBoundaries.Add(
+                        new SpatialBoundaryKey(node.Node, boundary.Face),
+                        boundary.Classification);
+                }
+            }
+
+            var boundBoundaries = new Dictionary<SpatialBoundaryKey, SpatialConductancePair>();
+            foreach (SpatialBoundaryConductance record in boundaryRecords
+                         .OrderBy(record => new SpatialBoundaryKey(record.Node, record.Face)))
+            {
+                SpatialBoundaryKey key = new SpatialBoundaryKey(record.Node, record.Face);
+                BoundaryClassification classification;
+                if (!expectedBoundaries.TryGetValue(key, out classification))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Boundary.Extra",
+                        "boundaries[" + key + "]",
+                        "Every boundary conductance key must match a validated stencil face.");
+                }
+
+                if (boundBoundaries.ContainsKey(key))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Boundary.Duplicate",
+                        "boundaries[" + key + "]",
+                        "Exactly one conductance record is required per boundary face.");
+                }
+
+                ContractDiagnostic? failure = ValidateBoundaryConductances(
+                    classification,
+                    record.Group1M2,
+                    record.Group2M2,
+                    "boundaries[" + key + "]");
+                if (failure != null)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        failure.Code,
+                        failure.Path,
+                        failure.Message);
+                }
+
+                boundBoundaries.Add(key, new SpatialConductancePair(record.Group1M2, record.Group2M2));
+            }
+
+            foreach (SpatialBoundaryKey key in expectedBoundaries.Keys.OrderBy(value => value))
+            {
+                if (!boundBoundaries.ContainsKey(key))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Boundary.Missing",
+                        "boundaries[" + key + "]",
+                        "Exactly one conductance record is required per boundary face.");
+                }
+            }
+
+            return ContractValidationResult<SpatialCoefficientSet>.Valid(
+                new SpatialCoefficientSet(stencil, orderedNodes, boundEdges, boundBoundaries));
+        }
+
+        internal SpatialStencil Stencil
+        {
+            get { return _stencil; }
+        }
+
+        internal bool TryGetEdge(
+            SpatialEdgeKey key,
+            out SpatialConductancePair conductance)
+        {
+            return _edges.TryGetValue(key, out conductance);
+        }
+
+        internal bool TryGetBoundary(
+            SpatialBoundaryKey key,
+            out SpatialConductancePair conductance)
+        {
+            return _boundaries.TryGetValue(key, out conductance);
+        }
+
+        private static ContractDiagnostic? ValidateNodeCoefficients(SpatialNodeCoefficients record)
+        {
+            string path = ContractValidation.NodePath(record.Node, ".coefficients");
+            double[] values =
+            {
+                record.VolumeM3,
+                record.AbsorptionGroup1PerM,
+                record.AbsorptionGroup2PerM,
+                record.DownscatterGroup1To2PerM,
+                record.FissionGroup1PerM,
+                record.FissionGroup2PerM,
+                record.NuFissionGroup1PerM,
+                record.NuFissionGroup2PerM,
+                record.ChiGroup1,
+                record.ChiGroup2,
+                record.EnergyPerFissionJ
+            };
+            if (values.Any(value => !ContractValidation.IsFinite(value)))
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Node.NonFinite",
+                    path,
+                    "All node coefficients must be finite doubles.");
+            }
+
+            if (record.VolumeM3 <= 0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Volume.Invalid",
+                    path + ".volume_m3",
+                    "Node volume must be strictly positive SI cubic metres.");
+            }
+
+            if (record.EnergyPerFissionJ <= 0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.EnergyPerFission.Invalid",
+                    path + ".energy_per_fission_j",
+                    "Energy per fission must be strictly positive SI joules.");
+            }
+
+            double[] nonnegativeValues =
+            {
+                record.AbsorptionGroup1PerM,
+                record.AbsorptionGroup2PerM,
+                record.DownscatterGroup1To2PerM,
+                record.FissionGroup1PerM,
+                record.FissionGroup2PerM,
+                record.NuFissionGroup1PerM,
+                record.NuFissionGroup2PerM,
+                record.ChiGroup1,
+                record.ChiGroup2
+            };
+            if (nonnegativeValues.Any(value => value < 0))
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Node.Negative",
+                    path,
+                    "Cross sections, fission spectrum, and downscatter must be nonnegative.");
+            }
+
+            if (record.AbsorptionGroup1PerM < record.FissionGroup1PerM ||
+                record.AbsorptionGroup2PerM < record.FissionGroup2PerM)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.AbsorptionBelowFission",
+                    path,
+                    "Total absorption must be greater than or equal to fission absorption in each group.");
+            }
+
+            if (record.ChiGroup1 + record.ChiGroup2 != 1.0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.FissionSpectrum.SumInvalid",
+                    path,
+                    "The local fission spectrum must sum exactly to one.");
+            }
+
+            bool group1FissionZero = record.FissionGroup1PerM == 0;
+            bool group1NuFissionZero = record.NuFissionGroup1PerM == 0;
+            bool group2FissionZero = record.FissionGroup2PerM == 0;
+            bool group2NuFissionZero = record.NuFissionGroup2PerM == 0;
+            if (group1FissionZero != group1NuFissionZero ||
+                group2FissionZero != group2NuFissionZero)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.FissionSupportMismatch",
+                    path,
+                    "Sigma_f must be zero if and only if nuSigma_f is zero in each group.");
+            }
+
+            return null;
+        }
+
+        private static ContractDiagnostic? ValidatePositiveConductances(
+            double group1,
+            double group2,
+            string path)
+        {
+            if (!ContractValidation.IsFinite(group1) || !ContractValidation.IsFinite(group2))
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Conductance.NonFinite",
+                    path,
+                    "Interior conductances must be finite doubles.");
+            }
+
+            if (group1 <= 0 || group2 <= 0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Conductance.NonPositive",
+                    path,
+                    "Interior conductances must be strictly positive SI square metres.");
+            }
+
+            return null;
+        }
+
+        private static ContractDiagnostic? ValidateBoundaryConductances(
+            BoundaryClassification classification,
+            double group1,
+            double group2,
+            string path)
+        {
+            if (!ContractValidation.IsFinite(group1) || !ContractValidation.IsFinite(group2))
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Boundary.NonFinite",
+                    path,
+                    "Boundary conductances must be finite doubles.");
+            }
+
+            if (classification == BoundaryClassification.Reflective)
+            {
+                if (group1 != 0 || group2 != 0)
+                {
+                    return new ContractDiagnostic(
+                        "SpatialCoefficients.Boundary.ReflectiveNonZero",
+                        path,
+                        "A reflective boundary must have zero conductance in both groups.");
+                }
+
+                return null;
+            }
+
+            if (group1 <= 0 || group2 <= 0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Boundary.NonPositive",
+                    path,
+                    "Vacuum and specified-leakage conductances must be strictly positive SI square metres.");
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Matrix-free application of the approved removal-plus-leakage operator.
+    /// The caller owns and reuses the input/output arrays.
+    /// </summary>
+    public sealed class SpatialOperator
+    {
+        private readonly SpatialStencil _stencil;
+        private readonly CompiledNode[] _nodes;
+
+        private SpatialOperator(SpatialStencil stencil, CompiledNode[] nodes)
+        {
+            _stencil = stencil;
+            _nodes = nodes;
+        }
+
+        public int NodeCount
+        {
+            get { return _nodes.Length; }
+        }
+
+        public static ContractValidationResult<SpatialOperator> TryCreate(
+            SpatialStencil stencil,
+            SpatialCoefficientSet coefficients)
+        {
+            if (stencil == null)
+            {
+                return ContractValidationResult<SpatialOperator>.Invalid(
+                    "SpatialOperator.Stencil.Missing",
+                    "stencil",
+                    "Operator construction requires an assembled stencil.");
+            }
+
+            if (coefficients == null)
+            {
+                return ContractValidationResult<SpatialOperator>.Invalid(
+                    "SpatialOperator.Coefficients.Missing",
+                    "coefficients",
+                    "Operator construction requires validated coefficients.");
+            }
+
+            if (!ReferenceEquals(stencil, coefficients.Stencil))
+            {
+                return ContractValidationResult<SpatialOperator>.Invalid(
+                    "SpatialOperator.Binding.Mismatch",
+                    "coefficients",
+                    "Coefficients must be bound to the exact stencil used to build the operator.");
+            }
+
+            var compiledNodes = new CompiledNode[stencil.NodeCount];
+            for (int nodeIndex = 0; nodeIndex < stencil.NodeCount; nodeIndex++)
+            {
+                SpatialNodeStencil node = stencil.Nodes[nodeIndex];
+                var compiledNeighbors = new CompiledNeighbor[node.NeighborTerms.Count];
+                for (int termIndex = 0; termIndex < node.NeighborTerms.Count; termIndex++)
+                {
+                    SpatialNeighborTerm term = node.NeighborTerms[termIndex];
+                    SpatialConductancePair conductance;
+                    if (!coefficients.TryGetEdge(
+                            new SpatialEdgeKey(node.Node, term.TargetNode),
+                            out conductance))
+                    {
+                        return ContractValidationResult<SpatialOperator>.Invalid(
+                            "SpatialOperator.EdgeBinding.Missing",
+                            ContractValidation.NodePath(node.Node, ".neighbors"),
+                            "Every stencil neighbor must have a bound conductance.");
+                    }
+
+                    compiledNeighbors[termIndex] = new CompiledNeighbor(
+                        term.TargetFlatIndex,
+                        conductance.Group1,
+                        conductance.Group2);
+                }
+
+                var compiledBoundaries = new CompiledBoundary[node.BoundaryTerms.Count];
+                for (int termIndex = 0; termIndex < node.BoundaryTerms.Count; termIndex++)
+                {
+                    SpatialBoundaryTerm term = node.BoundaryTerms[termIndex];
+                    SpatialConductancePair conductance;
+                    if (!coefficients.TryGetBoundary(
+                            new SpatialBoundaryKey(node.Node, term.Face),
+                            out conductance))
+                    {
+                        return ContractValidationResult<SpatialOperator>.Invalid(
+                            "SpatialOperator.BoundaryBinding.Missing",
+                            ContractValidation.NodePath(node.Node, ".boundary_faces"),
+                            "Every stencil boundary face must have a bound conductance.");
+                    }
+
+                    compiledBoundaries[termIndex] = new CompiledBoundary(
+                        conductance.Group1,
+                        conductance.Group2);
+                }
+
+                compiledNodes[nodeIndex] = new CompiledNode(
+                    coefficients.Nodes[nodeIndex],
+                    compiledNeighbors,
+                    compiledBoundaries);
+            }
+
+            return ContractValidationResult<SpatialOperator>.Valid(
+                new SpatialOperator(stencil, compiledNodes));
+        }
+
+        public bool TryApply(
+            SpatialEnergyGroup group,
+            double[] flux,
+            double[] destination,
+            out ContractDiagnostic diagnostic)
+        {
+            if (group != SpatialEnergyGroup.Group1 && group != SpatialEnergyGroup.Group2)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Group.Invalid",
+                    "group",
+                    "The energy group must be Group1 or Group2.");
+                return false;
+            }
+
+            if (flux == null)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Flux.Missing",
+                    "flux",
+                    "A flux vector is required.");
+                return false;
+            }
+
+            if (destination == null)
+            {
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.Missing",
+                    "destination",
+                    "A destination vector is required.");
+                return false;
+            }
+
+            if (flux.Length != NodeCount)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Flux.DimensionMismatch",
+                    "flux",
+                    "The flux vector length must equal the stencil node count.");
+                return false;
+            }
+
+            if (destination.Length != NodeCount)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.DimensionMismatch",
+                    "destination",
+                    "The destination vector length must equal the stencil node count.");
+                return false;
+            }
+
+            if (ReferenceEquals(flux, destination))
+            {
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Buffers.Alias",
+                    "destination",
+                    "The input and destination buffers must be distinct for deterministic application.");
+                Array.Clear(destination, 0, destination.Length);
+                return false;
+            }
+
+            for (int nodeIndex = 0; nodeIndex < flux.Length; nodeIndex++)
+            {
+                if (!ContractValidation.IsFinite(flux[nodeIndex]) || flux[nodeIndex] < 0)
+                {
+                    diagnostic = new ContractDiagnostic(
+                        "SpatialOperator.Flux.Invalid",
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".flux"),
+                        "Flux values must be finite and componentwise nonnegative.");
+                    Array.Clear(destination, 0, destination.Length);
+                    return false;
+                }
+            }
+
+            for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
+            {
+                CompiledNode node = _nodes[nodeIndex];
+                double removal = group == SpatialEnergyGroup.Group1
+                    ? node.Coefficients.AbsorptionGroup1PerM + node.Coefficients.DownscatterGroup1To2PerM
+                    : node.Coefficients.AbsorptionGroup2PerM;
+                double result = removal * flux[nodeIndex];
+                double leakage = 0.0;
+
+                if (!ContractValidation.IsFinite(removal) || !ContractValidation.IsFinite(result))
+                {
+                    return FailAndClear(
+                        destination,
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
+                        "SpatialOperator.Result.NonFinite",
+                        "The removal contribution became non-finite.",
+                        out diagnostic);
+                }
+
+                foreach (CompiledNeighbor neighbor in node.Neighbors)
+                {
+                    double difference = flux[nodeIndex] - flux[neighbor.TargetFlatIndex];
+                    double conductance = group == SpatialEnergyGroup.Group1
+                        ? neighbor.Group1
+                        : neighbor.Group2;
+                    double term = conductance * difference;
+                    leakage += term;
+                    if (!ContractValidation.IsFinite(term) || !ContractValidation.IsFinite(leakage))
+                    {
+                        return FailAndClear(
+                            destination,
+                            ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
+                            "SpatialOperator.Leakage.NonFinite",
+                            "The interior leakage contribution became non-finite.",
+                            out diagnostic);
+                    }
+                }
+
+                foreach (CompiledBoundary boundary in node.Boundaries)
+                {
+                    double conductance = group == SpatialEnergyGroup.Group1
+                        ? boundary.Group1
+                        : boundary.Group2;
+                    double term = conductance * flux[nodeIndex];
+                    leakage += term;
+                    if (!ContractValidation.IsFinite(term) || !ContractValidation.IsFinite(leakage))
+                    {
+                        return FailAndClear(
+                            destination,
+                            ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
+                            "SpatialOperator.BoundaryLeakage.NonFinite",
+                            "The boundary leakage contribution became non-finite.",
+                            out diagnostic);
+                    }
+                }
+
+                double leakageContribution = leakage / node.Coefficients.VolumeM3;
+                result += leakageContribution;
+                if (!ContractValidation.IsFinite(leakageContribution) || !ContractValidation.IsFinite(result))
+                {
+                    return FailAndClear(
+                        destination,
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
+                        "SpatialOperator.Result.NonFinite",
+                        "The removal-plus-leakage result became non-finite.",
+                        out diagnostic);
+                }
+
+                destination[nodeIndex] = result;
+            }
+
+            diagnostic = null!;
+            return true;
+        }
+
+        private static bool FailAndClear(
+            double[] destination,
+            string path,
+            string code,
+            string message,
+            out ContractDiagnostic diagnostic)
+        {
+            Array.Clear(destination, 0, destination.Length);
+            diagnostic = new ContractDiagnostic(code, path, message);
+            return false;
+        }
+
+        private static void ClearIfSupplied(double[] destination)
+        {
+            if (destination != null)
+            {
+                Array.Clear(destination, 0, destination.Length);
+            }
+        }
+
+        private sealed class CompiledNode
+        {
+            public CompiledNode(
+                SpatialNodeCoefficients coefficients,
+                CompiledNeighbor[] neighbors,
+                CompiledBoundary[] boundaries)
+            {
+                Coefficients = coefficients;
+                Neighbors = neighbors;
+                Boundaries = boundaries;
+            }
+
+            public SpatialNodeCoefficients Coefficients { get; }
+
+            public CompiledNeighbor[] Neighbors { get; }
+
+            public CompiledBoundary[] Boundaries { get; }
+        }
+
+        private sealed class CompiledNeighbor
+        {
+            public CompiledNeighbor(int targetFlatIndex, double group1, double group2)
+            {
+                TargetFlatIndex = targetFlatIndex;
+                Group1 = group1;
+                Group2 = group2;
+            }
+
+            public int TargetFlatIndex { get; }
+
+            public double Group1 { get; }
+
+            public double Group2 { get; }
+        }
+
+        private sealed class CompiledBoundary
+        {
+            public CompiledBoundary(double group1, double group2)
+            {
+                Group1 = group1;
+                Group2 = group2;
+            }
+
+            public double Group1 { get; }
+
+            public double Group2 { get; }
+        }
+    }
+
+    internal readonly struct SpatialConductancePair
+    {
+        public SpatialConductancePair(double group1, double group2)
+        {
+            Group1 = group1;
+            Group2 = group2;
+        }
+
+        public double Group1 { get; }
+
+        public double Group2 { get; }
+    }
+
+    internal readonly struct SpatialEdgeKey : IEquatable<SpatialEdgeKey>, IComparable<SpatialEdgeKey>
+    {
+        public SpatialEdgeKey(NodeKey endpointA, NodeKey endpointB)
+        {
+            if (endpointA.CompareTo(endpointB) <= 0)
+            {
+                First = endpointA;
+                Second = endpointB;
+            }
+            else
+            {
+                First = endpointB;
+                Second = endpointA;
+            }
+        }
+
+        public NodeKey First { get; }
+
+        public NodeKey Second { get; }
+
+        public int CompareTo(SpatialEdgeKey other)
+        {
+            int first = First.CompareTo(other.First);
+            return first != 0 ? first : Second.CompareTo(other.Second);
+        }
+
+        public bool Equals(SpatialEdgeKey other)
+        {
+            return First == other.First && Second == other.Second;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is SpatialEdgeKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (First.GetHashCode() * 397) ^ Second.GetHashCode();
+            }
+        }
+
+        public override string ToString()
+        {
+            return First + "-" + Second;
+        }
+    }
+
+    internal readonly struct SpatialBoundaryKey : IEquatable<SpatialBoundaryKey>, IComparable<SpatialBoundaryKey>
+    {
+        public SpatialBoundaryKey(NodeKey node, TopologyFace face)
+        {
+            Node = node;
+            Face = face;
+        }
+
+        public NodeKey Node { get; }
+
+        public TopologyFace Face { get; }
+
+        public int CompareTo(SpatialBoundaryKey other)
+        {
+            int node = Node.CompareTo(other.Node);
+            return node != 0 ? node : ((byte)Face).CompareTo((byte)other.Face);
+        }
+
+        public bool Equals(SpatialBoundaryKey other)
+        {
+            return Node == other.Node && Face == other.Face;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is SpatialBoundaryKey other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (Node.GetHashCode() * 397) ^ (byte)Face;
+            }
+        }
+
+        public override string ToString()
+        {
+            return Node + "/" + Face;
+        }
+    }
+}

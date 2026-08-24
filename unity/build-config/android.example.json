@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "platform": "android",
+  "application": {
+    "identifier": "com.example.reactorgame",
+    "versionName": "0.0.0-placeholder",
+    "versionCode": 1
+  },
+  "output": {
+    "path": "artifacts/android/ReactorGame-placeholder.apk",
+    "format": "apk"
+  },
+  "developmentBuild": true,
+  "signing": {
+    "keystorePathEnvironmentVariable": "REACTORGAME_ANDROID_KEYSTORE_PATH",
+    "keystorePasswordEnvironmentVariable": "REACTORGAME_ANDROID_KEYSTORE_PASSWORD",
+    "keyAliasEnvironmentVariable": "REACTORGAME_ANDROID_KEY_ALIAS",
+    "keyAliasPasswordEnvironmentVariable": "REACTORGAME_ANDROID_KEY_ALIAS_PASSWORD"
+  }
+}

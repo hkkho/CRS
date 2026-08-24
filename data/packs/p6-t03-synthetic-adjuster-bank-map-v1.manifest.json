@@ -1,0 +1,42 @@
+{
+  "manifest_schema_id": "CANDU-SYNTHETIC-PACK-MANIFEST-V1",
+  "fixture_id": "P6-T03-SYNTHETIC-ADJUSTER-BANK-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "artifact": {
+    "path": "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.json",
+    "byte_length": 9209,
+    "sha256": "cb0fbcd3d88d74b209003300a428e2871cf33dd998e38e5b2cf098d6343d8059"
+  },
+  "identity": {
+    "adjuster_set_id": "00000000-0000-0000-0000-00000000a701",
+    "map_id": "00000000-0000-0000-0000-00000000a702",
+    "grouping_id": "00000000-0000-0000-0000-00000000a703",
+    "topology_id": "00000000-0000-0000-0000-00000000a704",
+    "bank_a_id": "00000000-0000-0000-0000-00000000a705",
+    "bank_b_id": "00000000-0000-0000-0000-00000000a706",
+    "queue_b_id": "00000000-0000-0000-0000-00000000a708",
+    "owner_branch_id": "00000000-0000-0000-0000-00000000a709"
+  },
+  "digests": {
+    "grouping_digest": "10548c8327f72dc9fa94f61b7698d3fdd5357ea040bae4ff32a422cbbe0d6060",
+    "topology_digest": "6a6c05591867951d0b1fab2328673de198d9d476fc6aee242d2482d033bfbaa2",
+    "reference_state_digest": "a9021ac5ba4a391752d3ffcceb36f0b7ccfa298638dc03d4e545d06c4bfbcca2",
+    "map_digest": "37ae2378ffe32a05fa34f37021687eeb6fb921bc154aec44ff4ecf4e2b6f9ce0",
+    "queue_digest": "e28c0f4363a7bfda5c5098975b52acf3916a9c80b6598003ccf131dc4a6b3eec",
+    "bank_a_state_digest": "b90d9c5d4b7e85dfea7496f6cc8596e15c89c11333817531c5b47d1cb713e002",
+    "bank_b_state_digest": "72df5fe5d7b9889d465016e7730b82734abd08719bcca73b389cb20b06a564b7",
+    "set_state_digest": "2705cbc47e36f37a744d2d909143d58b16e6849fcbbd9b09e408fe3b2efc23cf"
+  },
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_state_map_scratch_rollback": "VALIDATED_P6-T03"
+  },
+  "authority": "Owner approval is the authority for this synthetic fixture. It makes no production CANDU, external-reference, or golden-data claim."
+}

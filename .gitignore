@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+
+# Unity-generated state and the reproducible Core plugin output.
+unity/ReactorGame/Library/
+unity/ReactorGame/Logs/
+unity/ReactorGame/Temp/
+unity/ReactorGame/UserSettings/
+unity/ReactorGame/Assets/Plugins/ReactorSim.Core.dll
+

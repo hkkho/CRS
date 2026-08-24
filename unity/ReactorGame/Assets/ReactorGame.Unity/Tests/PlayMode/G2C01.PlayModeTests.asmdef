@@ -1,0 +1,11 @@
+{
+  "name": "ReactorGame.Unity.G2C01.PlayModeTests",
+  "rootNamespace": "ReactorGame.Unity.G2C01",
+  "references": [
+    "ReactorGame.Unity"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false
+}

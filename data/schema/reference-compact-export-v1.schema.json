@@ -1,0 +1,367 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:reactorsim:schema:reference-compact-export:v1",
+  "title": "ReactorSim deterministic compact reference export v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "approval_status",
+    "retention",
+    "publication",
+    "case",
+    "tool_provenance",
+    "observations",
+    "diagnostics"
+  ],
+  "properties": {
+    "format": { "const": "reactorsim.reference-compact-export/v1" },
+    "approval_status": {
+      "enum": ["unapproved_schema_example", "candidate_reference"]
+    },
+    "retention": { "const": "external-private" },
+    "publication": { "const": "not-approved" },
+    "case": { "$ref": "#/$defs/case" },
+    "tool_provenance": { "$ref": "#/$defs/toolProvenance" },
+    "observations": { "type": "array" },
+    "diagnostics": { "$ref": "#/$defs/diagnostics" }
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/dragonBranch" },
+    { "$ref": "#/$defs/donjonBranch" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitObject": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["case_id", "descriptor_sha256"],
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "descriptor_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "toolProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "program",
+        "version",
+        "source_commit",
+        "source_tree",
+        "executable_sha256",
+        "container_image_digest"
+      ],
+      "properties": {
+        "program": { "enum": ["dragon5", "donjon5"] },
+        "version": { "const": "5.1.0" },
+        "source_commit": { "$ref": "#/$defs/gitObject" },
+        "source_tree": { "$ref": "#/$defs/gitObject" },
+        "executable_sha256": { "$ref": "#/$defs/sha256" },
+        "container_image_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_ordinal", "quantity_id", "value", "source_lexeme", "unit_id"],
+      "properties": {
+        "source_ordinal": { "type": "integer", "minimum": 1 },
+        "quantity_id": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "source_lexeme": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+        },
+        "unit_id": { "const": "1" }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assertion_id", "passed", "count"],
+      "properties": {
+        "assertion_id": { "type": "string", "minLength": 1 },
+        "passed": { "const": true },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "warningCode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "count"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "measure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quantity_id", "value", "source_lexeme"],
+      "properties": {
+        "quantity_id": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "source_lexeme": {
+          "type": "string",
+          "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?$"
+        }
+      }
+    },
+    "diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["normal_end", "warning_codes", "assertions", "convergence_status", "convergence"],
+      "properties": {
+        "normal_end": { "const": true },
+        "warning_codes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/warningCode" }
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/assertion" }
+        },
+        "convergence_status": {
+          "enum": ["converged", "not-recorded"]
+        },
+        "convergence": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/measure" }
+        }
+      }
+    },
+    "dragonBranch": {
+      "properties": {
+        "case": {
+          "properties": {
+            "case_id": { "const": "dragon5-lumpss-v5.1.0-source-era" }
+          }
+        },
+        "tool_provenance": {
+          "properties": { "program": { "const": "dragon5" } }
+        },
+        "observations": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/observation" },
+                {
+                  "properties": {
+                    "source_ordinal": { "const": 1 },
+                    "quantity_id": { "const": "dragon5.lumpSS.final_kinf.source_1" }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/observation" },
+                {
+                  "properties": {
+                    "source_ordinal": { "const": 2 },
+                    "quantity_id": { "const": "dragon5.lumpSS.final_kinf.source_2" }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                { "$ref": "#/$defs/observation" },
+                {
+                  "properties": {
+                    "source_ordinal": { "const": 3 },
+                    "quantity_id": { "const": "dragon5.lumpSS.final_kinf.source_3" }
+                  }
+                }
+              ]
+            }
+          ],
+          "items": false
+        },
+        "diagnostics": {
+          "properties": {
+            "warning_codes": { "maxItems": 0 },
+            "assertions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "prefixItems": [
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/assertion" },
+                    {
+                      "properties": {
+                        "assertion_id": { "const": "dragon5.lumpSS.upstream_assertions" },
+                        "count": { "const": 3 }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false
+            },
+            "convergence_status": { "const": "converged" },
+            "convergence": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "prefixItems": [
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/measure" },
+                    {
+                      "properties": {
+                        "quantity_id": {
+                          "const": "dragon5.lumpSS.final_external_convergence_count"
+                        }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false
+            }
+          }
+        }
+      }
+    },
+    "donjonBranch": {
+      "properties": {
+        "case": {
+          "properties": {
+            "case_id": { "const": "donjon5-afa-180-310-type1-dual-v5.1.0" }
+          }
+        },
+        "tool_provenance": {
+          "properties": { "program": { "const": "donjon5" } }
+        },
+        "observations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "allOf": [
+                { "$ref": "#/$defs/observation" },
+                {
+                  "properties": {
+                    "source_ordinal": { "const": 1 },
+                    "quantity_id": {
+                      "const": "donjon5.AFA_180_310_type1_dual.flddir.k_effective"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "items": false
+        },
+        "diagnostics": {
+          "properties": {
+            "warning_codes": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "prefixItems": [
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/warningCode" },
+                    {
+                      "properties": {
+                        "code": { "const": "donjon5.sphapx.media_volume_missing" },
+                        "count": { "const": 2 }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false
+            },
+            "assertions": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1,
+              "prefixItems": [
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/assertion" },
+                    {
+                      "properties": {
+                        "assertion_id": { "const": "donjon5.AFA_180_310_type1_dual.k_effective" },
+                        "count": { "const": 1 }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false
+            },
+            "convergence_status": { "const": "converged" },
+            "convergence": {
+              "type": "array",
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/measure" },
+                    {
+                      "properties": {
+                        "quantity_id": { "const": "donjon5.flddir.outer_iteration" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/measure" },
+                    {
+                      "properties": {
+                        "quantity_id": { "const": "donjon5.flddir.dels" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/measure" },
+                    {
+                      "properties": {
+                        "quantity_id": { "const": "donjon5.flddir.delt" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "allOf": [
+                    { "$ref": "#/$defs/measure" },
+                    {
+                      "properties": {
+                        "quantity_id": { "const": "donjon5.flddir.epsout" }
+                      }
+                    }
+                  ]
+                }
+              ],
+              "items": false
+            }
+          }
+        }
+      }
+    }
+  }
+}

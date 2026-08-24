@@ -1,0 +1,51 @@
+{
+  "format": "reactorsim.synthetic-benchmark-scenario/v1",
+  "task_id": "P4-T08",
+  "scenario_id": "p4-t05-homogeneous-three-node-static-solve-v1",
+  "status": "synthetic_not_golden",
+  "purpose": "Measure the current deterministic scalar Core spatial solve without selecting a performance target or changing runtime code.",
+  "case": {
+    "node_count": 3,
+    "topology": "one channel, three explicit within-channel positions",
+    "boundary_classification": "all reflective",
+    "interior_edge_conductance_group1_m2": 0.6,
+    "interior_edge_conductance_group2_m2": 0.6,
+    "node_volume_m3": 1.0,
+    "absorption_group1_per_m": 0.3,
+    "absorption_group2_per_m": 0.2,
+    "downscatter_group1_to_2_per_m": 0.1,
+    "fission_group1_per_m": 0.1,
+    "fission_group2_per_m": 0.1,
+    "nu_fission_group1_per_m": 0.15,
+    "nu_fission_group2_per_m": 0.25,
+    "chi_group1": 1.0,
+    "chi_group2": 0.0,
+    "energy_per_fission_j": 1.0,
+    "initial_flux_group1": [1.0, 1.0, 1.0],
+    "initial_flux_group2": [1.0, 1.0, 1.0],
+    "target_power_w": 0.9,
+    "initial_eigenvalue": 1.0
+  },
+  "linear_solve_policy": {
+    "method_id": "jacobi-v1",
+    "absolute_residual_tolerance": 1e-14,
+    "relative_residual_tolerance": 1e-14,
+    "maximum_inner_iterations": 512
+  },
+  "convergence_policy": {
+    "k_absolute_tolerance": 1e-6,
+    "k_relative_tolerance": 1e-6,
+    "residual_tolerance": 1e-6,
+    "source_shape_tolerance": 1e-6,
+    "power_balance_tolerance": 1e-6,
+    "maximum_iterations": 2
+  },
+  "measurement": {
+    "warmup_iterations": 10,
+    "measured_iterations": 200,
+    "clock": "System.Diagnostics.Stopwatch",
+    "allocation_counter": "GC.GetAllocatedBytesForCurrentThread",
+    "performance_target": null
+  },
+  "evidence_boundary": "Synthetic scenario and machine-specific observation only; no DONJON5 comparison, golden value, tolerance approval, or release budget."
+}

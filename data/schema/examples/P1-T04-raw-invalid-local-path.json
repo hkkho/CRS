@@ -1,0 +1,9 @@
+{
+  "format": "reactorsim.reference-raw-run/v1",
+  "approval_status": "unapproved_schema_example",
+  "case": { "case_id": "dragon5-lumpss-v5.1.0-source-era", "descriptor_path": "reference/dragon5/P1-T02-lumpSS.case.json", "descriptor_sha256": "ce053458cbd18987a9ca81dd15a088b0d64b36eebded23395bf928786ee399ae" },
+  "tool": { "program": "dragon5", "version": "5.1.0", "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "source_tree": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "executable_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "container_image_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" },
+  "execution": { "runner_path": "C:\\private\\runner.ps1", "runner_sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "started_utc": "2026-08-07T12:00:00Z", "finished_utc": "2026-08-07T12:01:00Z", "invocation_id": "x", "network_mode": "none" },
+  "artifacts": [{ "artifact_id": "listing", "role": "listing", "media_type": "text/plain", "byte_length": 1, "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "retention": "external-private", "publication": "not-approved" }, { "artifact_id": "stderr", "role": "stderr", "media_type": "text/plain", "byte_length": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "retention": "external-private", "publication": "not-approved" }],
+  "outcome": { "status": "succeeded", "normal_end": true, "warning_codes": [], "error_codes": [], "assertions": [], "convergence": { "status": "converged", "measures": [] } }
+}

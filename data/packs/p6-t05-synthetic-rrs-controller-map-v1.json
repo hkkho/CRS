@@ -1,0 +1,251 @@
+{
+  "schema_id": "CANDU-RRS-INFLUENCE-MAP-PACKAGE-V1",
+  "fixture_id": "P6-T05-SYNTHETIC-RRS-CONTROLLER-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "approval_record": "docs/tasks/P6-T05-OWNER-APPROVAL.md",
+  "scope": "Synthetic test-only engine-neutral Core / ReducedModel P6-T05 controller state, explicit setpoint/error/integral units, automatic/manual/held projections, negative-feedback sign certificate, local RRS influence map, and deterministic scratch rollback; no production CANDU, external reference, or golden-data claim.",
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_command_identity_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_actuator_motion": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_controller_map_scratch_rollback": "VALIDATED_P6-T05",
+    "hidden_reactivity_shutdown_scram_trip_safety": "FORBIDDEN",
+    "production_external_golden_claim": "FORBIDDEN"
+  },
+  "identity": {
+    "controller_id": "00000000-0000-0000-0000-00000000c501",
+    "map_id": "00000000-0000-0000-0000-00000000c502",
+    "queue_id": "00000000-0000-0000-0000-00000000c503",
+    "topology_id": "00000000-0000-0000-0000-00000000c504",
+    "region_set_id": "00000000-0000-0000-0000-00000000c505",
+    "total_power_actuator_id": "00000000-0000-0000-0000-00000000c521",
+    "tilt_actuator_id": "00000000-0000-0000-0000-00000000c522",
+    "left_region_id": "00000000-0000-0000-0000-00000000c511",
+    "right_region_id": "00000000-0000-0000-0000-00000000c512"
+  },
+  "data_version": "p6-t05-synthetic-rrs-controller-map-v1",
+  "map_version": "p6-t05-synthetic-rrs-controller-map-v1",
+  "controller_schema_id": "CANDU-RRS-CONTROLLER-STATE-V1",
+  "map_schema_id": "CANDU-RRS-INFLUENCE-MAP-V1",
+  "queue_schema_id": "CANDU-RRS-QUEUE-V1",
+  "region_set_schema_id": "CANDU-RRS-REGION-SET-V1",
+  "control": {
+    "polarity": "NegativeFeedback",
+    "sign_certificate": "P6-T05-SYNTHETIC-NEGATIVE-FEEDBACK-V1",
+    "normalization": "None",
+    "sign_assertion": "Positive total-power error raises the total-power command; a total-power state above reference produces negative local absorption overlay; the signed tilt gains and map weights produce the approved left/right synthetic sign response."
+  },
+  "units": {
+    "power": "W",
+    "power_integral": "W s",
+    "tilt_error": "1",
+    "tilt_integral": "s",
+    "actuator_state": "1",
+    "actuator_rate": "s^-1",
+    "delay": "s",
+    "controller_time": "s",
+    "map_source": "1",
+    "map_target": "m^-1"
+  },
+  "topology": {
+    "ordered_target_nodes": [
+      { "channel_id": 0, "bundle_position": 0 },
+      { "channel_id": 1, "bundle_position": 0 },
+      { "channel_id": 2, "bundle_position": 0 },
+      { "channel_id": 3, "bundle_position": 0 },
+      { "channel_id": 4, "bundle_position": 0 },
+      { "channel_id": 5, "bundle_position": 0 }
+    ],
+    "topology_digest": "77dac0b13d6d4d7aca0c34f6bd8cf932b22146dff697ec89979790a4f7e4a472"
+  },
+  "regions": {
+    "target_fraction_sum": 1.0,
+    "region_set_digest": "8932d81d8268c64318b4624d2eae1fa13f7d02139c66896c42b2eccfde334eb6",
+    "ordered_regions": [
+      {
+        "region_id": "00000000-0000-0000-0000-00000000c511",
+        "target_fraction": 0.5,
+        "target_nodes": [
+          { "channel_id": 0, "bundle_position": 0 },
+          { "channel_id": 1, "bundle_position": 0 },
+          { "channel_id": 2, "bundle_position": 0 }
+        ]
+      },
+      {
+        "region_id": "00000000-0000-0000-0000-00000000c512",
+        "target_fraction": 0.5,
+        "target_nodes": [
+          { "channel_id": 3, "bundle_position": 0 },
+          { "channel_id": 4, "bundle_position": 0 },
+          { "channel_id": 5, "bundle_position": 0 }
+        ]
+      }
+    ]
+  },
+  "reference_state": {
+    "actuator_reference_states": [
+      { "actuator_id": "00000000-0000-0000-0000-00000000c521", "reference_state": 0.5 },
+      { "actuator_id": "00000000-0000-0000-0000-00000000c522", "reference_state": 0.5 }
+    ],
+    "reference_state_digest": "97b54fd75bd5636bb6b5433b10b6ff831f7dca0fa04647569b15aaa485776603"
+  },
+  "controller_reference": {
+    "mode": "Automatic",
+    "power_setpoint_w": 1000.0,
+    "measured_power_w": 1000.0,
+    "power_error_w": 0.0,
+    "integral_error_w_s": 0.0,
+    "left_measured_fraction": 0.5,
+    "right_measured_fraction": 0.5,
+    "left_tilt_error": 0.0,
+    "right_tilt_error": 0.0,
+    "left_tilt_integral_s": 0.0,
+    "right_tilt_integral_s": 0.0,
+    "automatic_cadence_s": 1.0,
+    "last_update_time_s": 0.0,
+    "actuators": [
+      {
+        "actuator_id": "00000000-0000-0000-0000-00000000c521",
+        "bias": 0.5,
+        "kp_w_inverse": 0.001,
+        "ki_w_s_inverse": 0.0001,
+        "kt_left": 0.0,
+        "kt_right": 0.0,
+        "kti_left_s_inverse": 0.0,
+        "kti_right_s_inverse": 0.0,
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "rate_limit_s_inverse": 0.1,
+        "delay_s": 0.5,
+        "reference_state": 0.5,
+        "state": 0.5,
+        "command": 0.5,
+        "available_command": 0.5
+      },
+      {
+        "actuator_id": "00000000-0000-0000-0000-00000000c522",
+        "bias": 0.5,
+        "kp_w_inverse": 0.0,
+        "ki_w_s_inverse": 0.0,
+        "kt_left": -0.5,
+        "kt_right": 0.5,
+        "kti_left_s_inverse": -0.05,
+        "kti_right_s_inverse": 0.05,
+        "lower_bound": 0.0,
+        "upper_bound": 1.0,
+        "rate_limit_s_inverse": 0.1,
+        "delay_s": 0.5,
+        "reference_state": 0.5,
+        "state": 0.5,
+        "command": 0.5,
+        "available_command": 0.5
+      }
+    ],
+    "feedback_reference_state_digest": "97b54fd75bd5636bb6b5433b10b6ff831f7dca0fa04647569b15aaa485776603",
+    "controller_state_digest": "f776bf33d7655def0cca5d2d8d91979b7d74c5fb374a3db76ca7b8dcdcf689fe"
+  },
+  "supplied_queue": {
+    "owner_key": "Entity.Controller(00000000-0000-0000-0000-00000000c501)",
+    "generation_cadence_or_na_s": 1.0,
+    "initial_next_sequence": 0,
+    "next_sequence": 0,
+    "last_motion_time_s": 0.0,
+    "available_commands": [
+      { "actuator_id": "00000000-0000-0000-0000-00000000c521", "bounded_command": 0.5, "lower_bound": 0.0, "upper_bound": 1.0, "rate_limit_s_inverse": 0.1 },
+      { "actuator_id": "00000000-0000-0000-0000-00000000c522", "bounded_command": 0.5, "lower_bound": 0.0, "upper_bound": 1.0, "rate_limit_s_inverse": 0.1 }
+    ],
+    "pending_commands": [],
+    "applied_source_event_ids": [],
+    "allocated_command_ids": [],
+    "queue_digest": "59ae75e357b6ecf48c39a47daf7c2bfbdc6dce91b8a7f66eef887ac893de55a9"
+  },
+  "entries": [
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.02, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c521", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": 0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": 0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": 0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": 0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": 0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": 0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_1": -0.01, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 },
+    { "actuator_id": "00000000-0000-0000-0000-00000000c522", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_1": -0.006, "source_unit": "1", "target_unit": "m^-1", "reference_actuator_state": 0.5 }
+  ],
+  "deterministic_check_vector": {
+    "measurement": {
+      "snapshot_time_s": 1.0,
+      "measured_power_w": 800.0,
+      "left_power_w": 480.0,
+      "right_power_w": 320.0,
+      "power_error_w": 200.0,
+      "left_tilt_error": -0.1,
+      "right_tilt_error": 0.1,
+      "snapshot_digest": "46687931013d0465a7880d131eb705cffb1a4e3f11e3fca0c632441736b6b2e7"
+    },
+    "automatic_projection": {
+      "delta_t_s": 1.0,
+      "next_integral_error_w_s": 200.0,
+      "next_left_tilt_integral_s": -0.1,
+      "next_right_tilt_integral_s": 0.1,
+      "total_power_requested_command": 0.72,
+      "tilt_requested_command": 0.61,
+      "projection_digest": "83639b8d5325251757c9cc6bcce7f5dc8a6aec4665a86d7a09c5a3c5e19acfb4"
+    },
+    "manual_projection": {
+      "pre_state_mode": "Manual",
+      "current_time_s": 2.0,
+      "actuator_id": "00000000-0000-0000-0000-00000000c521",
+      "requested_command": 0.65,
+      "integral_advanced": false,
+      "last_update_advanced": false
+    }
+  },
+  "overlay": {
+    "reference_state_all_values_zero": true,
+    "reference_overlay_digest": "f48cc854c0a64d4fd1c027d56ed3b1afd0b23396ea29e634976ffe2d7e020c94",
+    "raised_state": {
+      "total_power_state": 0.7,
+      "tilt_state": 0.6,
+      "left_group0_delta_sigma_a_m_inverse": -0.003,
+      "right_group0_delta_sigma_a_m_inverse": -0.005,
+      "left_group1_delta_sigma_a_m_inverse": -0.0014,
+      "right_group1_delta_sigma_a_m_inverse": -0.0026
+    },
+    "raised_overlay_digest": "0ab43d7dc3afe4e208d97b1aa702307c7d4fb9392552add6c9e968303ea957be",
+    "disabled_zero_assertion": true
+  },
+  "digests": {
+    "topology_digest": "77dac0b13d6d4d7aca0c34f6bd8cf932b22146dff697ec89979790a4f7e4a472",
+    "region_set_digest": "8932d81d8268c64318b4624d2eae1fa13f7d02139c66896c42b2eccfde334eb6",
+    "reference_state_digest": "97b54fd75bd5636bb6b5433b10b6ff831f7dca0fa04647569b15aaa485776603",
+    "map_digest": "d198c27636f58b612fe7c184e90b329874535d0d9dd1f5de1ce6a954ba0fd1e8",
+    "queue_digest": "59ae75e357b6ecf48c39a47daf7c2bfbdc6dce91b8a7f66eef887ac893de55a9",
+    "controller_digest": "f776bf33d7655def0cca5d2d8d91979b7d74c5fb374a3db76ca7b8dcdcf689fe",
+    "measurement_digest": "46687931013d0465a7880d131eb705cffb1a4e3f11e3fca0c632441736b6b2e7",
+    "command_projection_digest": "83639b8d5325251757c9cc6bcce7f5dc8a6aec4665a86d7a09c5a3c5e19acfb4",
+    "reference_overlay_digest": "f48cc854c0a64d4fd1c027d56ed3b1afd0b23396ea29e634976ffe2d7e020c94",
+    "raised_overlay_digest": "0ab43d7dc3afe4e208d97b1aa702307c7d4fb9392552add6c9e968303ea957be"
+  },
+  "authority": "Owner approval is the authority for this synthetic fixture. It makes no production CANDU, external-reference, or golden-data claim."
+}

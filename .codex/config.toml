@@ -1,0 +1,4 @@
+# Project-local Codex execution policy.
+# The project is trusted in the user-level Codex configuration.
+default_permissions = ":danger-full-access"
+approval_policy = "never"

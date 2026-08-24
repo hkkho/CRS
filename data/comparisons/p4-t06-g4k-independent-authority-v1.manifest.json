@@ -1,0 +1,61 @@
+{
+  "format": "reactorsim.g4k-independent-reduced-authority-manifest/v1",
+  "task_id": "P4-T06-G4K",
+  "artifact_id": "p4-t06-g4k-independent-authority-v1",
+  "disposition": "candidate",
+  "artifact_sha256": "a056fb2292450ac251d79716db2091325830d0536fd98d5cbdbe91ae99363fe0",
+  "definition_sha256": "bf227e60bd2c9540c699786c530c079bb31caf4108cf461704f37c81f6758b6e",
+  "source_pack_sha256": "0de429b27f78b5e2c5fe724916b14ac8ce45ba05560ab73f3fa4805befd11a0e",
+  "independent_definition_sha256": "f0a9e029c6b8b0e030d3470fe1eec952d24397648c2633ffc9ad38a16078cd6d",
+  "source_snapshot_sha256": "3e7a4e47b5bd990c6f8c26d713d01de85ec96c4ae64a2725b36cf840cb6cd2db",
+  "reference_solver": "p4-t06-g4k-python-numpy-dense-generalized-eigen-v1",
+  "scenario_ids": [
+    "fresh_start",
+    "equilibrium_like",
+    "refuelled_4_bundle_shift",
+    "rrs_tilt_perturbation",
+    "bulk_poison_perturbation"
+  ],
+  "scenario_results": [
+    {
+      "scenario_id": "fresh_start",
+      "eigenvalue": 0.3256933381296984,
+      "total_power_w": 1000.0,
+      "reference_matrix_residual_relative_infinity": 1.8927798204935283e-15,
+      "reference_matrix_condition_number_inf": 2.8777862863578236,
+      "dominant_eigenvalue_gap": 0.0025490821331793367
+    },
+    {
+      "scenario_id": "equilibrium_like",
+      "eigenvalue": 0.3067650216570954,
+      "total_power_w": 999.9999999999999,
+      "reference_matrix_residual_relative_infinity": 1.2397838455467547e-15,
+      "reference_matrix_condition_number_inf": 3.068109330619744,
+      "dominant_eigenvalue_gap": 0.00841195997160693
+    },
+    {
+      "scenario_id": "refuelled_4_bundle_shift",
+      "eigenvalue": 0.31039330414019817,
+      "total_power_w": 1000.0000000000002,
+      "reference_matrix_residual_relative_infinity": 2.4244824322576626e-15,
+      "reference_matrix_condition_number_inf": 3.539971257405796,
+      "dominant_eigenvalue_gap": 0.006838641170153481
+    },
+    {
+      "scenario_id": "rrs_tilt_perturbation",
+      "eigenvalue": 0.3085369346511444,
+      "total_power_w": 1000.0000000000003,
+      "reference_matrix_residual_relative_infinity": 1.4847079646802727e-15,
+      "reference_matrix_condition_number_inf": 3.124519437298834,
+      "dominant_eigenvalue_gap": 0.008532855632533698
+    },
+    {
+      "scenario_id": "bulk_poison_perturbation",
+      "eigenvalue": 0.30225450190524505,
+      "total_power_w": 1000.0,
+      "reference_matrix_residual_relative_infinity": 2.3345511741805998e-15,
+      "reference_matrix_condition_number_inf": 3.044948440481475,
+      "dominant_eigenvalue_gap": 0.00796742335773204
+    }
+  ]
+}

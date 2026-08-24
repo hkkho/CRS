@@ -1,0 +1,107 @@
+{
+  "schema_id": "CANDU-BULK-POISON-INFLUENCE-MAP-PACKAGE-V1",
+  "fixture_id": "P6-T04-SYNTHETIC-BULK-POISON-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "approval_record": "docs/tasks/P6-T04-OWNER-APPROVAL.md",
+  "scope": "Synthetic test-only engine-neutral Core / ReducedModel P6-T04 state, moderator volume, derived concentration, map binding, separate rate-limited add and slow withdraw/cleanup actions, setup limits, exact mass accounting, and deterministic local overlay/rollback evidence; no production CANDU, external reference, or golden-data claim.",
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_state_map_scratch_rollback": "VALIDATED_P6-T04",
+    "hidden_chemistry_decay_transport_cleanup": "FORBIDDEN",
+    "production_external_golden_claim": "FORBIDDEN"
+  },
+  "poison_source_id": "00000000-0000-0000-0000-00000000b405",
+  "map_id": "00000000-0000-0000-0000-00000000b401",
+  "topology_id": "00000000-0000-0000-0000-00000000b404",
+  "data_version": "p6-t04-synthetic-bulk-poison-map-v1",
+  "sign_certificate": "P6-T04-SYNTHETIC-POSITIVE-ABSORPTION-V1",
+  "normalization": "None",
+  "units": {
+    "source": "kg/m^3",
+    "target": "m^-1",
+    "mass": "kg",
+    "volume": "m^3",
+    "concentration": "kg/m^3",
+    "rate": "kg/s",
+    "time": "s"
+  },
+  "limits": {
+    "moderator_volume_m3": 5.0,
+    "reference_concentration_kg_per_m3": 0.0,
+    "setup_maximum_mass_kg": 1.0,
+    "add_rate_kg_per_second": 0.1,
+    "withdraw_rate_kg_per_second": 0.01
+  },
+  "topology": {
+    "ordered_target_nodes": [
+      { "channel_id": 0, "bundle_position": 0 },
+      { "channel_id": 1, "bundle_position": 0 },
+      { "channel_id": 2, "bundle_position": 0 },
+      { "channel_id": 3, "bundle_position": 0 },
+      { "channel_id": 4, "bundle_position": 0 },
+      { "channel_id": 5, "bundle_position": 0 }
+    ],
+    "topology_digest": "eaa45936722cb7eafa9e6493918ce1329e90e73b75bcf86a2ea9286db0e3798a"
+  },
+  "reference_state": {
+    "moderator_volume_m3": 5.0,
+    "reference_concentration_kg_per_m3": 0.0,
+    "add_rate_kg_per_second": 0.1,
+    "withdraw_rate_kg_per_second": 0.01,
+    "setup_maximum_mass_kg": 1.0,
+    "reference_state_digest": "84518339725ff79e6714fa84ca7ae6719544c453647753c7dd874c0d3b64c38e"
+  },
+  "entries": [
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 0, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 1, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 2, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 3, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 4, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 0, "weight_m_inverse_per_kg_per_m3": 0.08, "source_unit": "kg/m^3", "target_unit": "m^-1" },
+    { "poison_source_id": "00000000-0000-0000-0000-00000000b405", "target_node": { "channel_id": 5, "bundle_position": 0 }, "group_index": 1, "weight_m_inverse_per_kg_per_m3": 0.05, "source_unit": "kg/m^3", "target_unit": "m^-1" }
+  ],
+  "state": {
+    "schema_id": "CANDU-BULK-POISON-STATE-V1",
+    "enabled": true,
+    "mode": "Add",
+    "poison_mass_kg": 0.5,
+    "moderator_volume_m3": 5.0,
+    "poison_mass_concentration_kg_per_m3": 0.1,
+    "reference_concentration_kg_per_m3": 0.0,
+    "add_rate_kg_per_second": 0.1,
+    "withdraw_rate_kg_per_second": 0.01,
+    "update_time_s": 0.0,
+    "influence_map_digest": "57fda945e7f24d33d118e3526cdca6401eea8213ee930cb771260c03ec825d19",
+    "state_digest": "fa37ad317267e00aff656341786789ca090eeb93bb4e3e552af7535e080ac194"
+  },
+  "overlay": {
+    "reference_state_group0_delta_sigma_a_m_inverse": 0.008,
+    "reference_state_group1_delta_sigma_a_m_inverse": 0.005,
+    "overlay_digest": "bb2ca729938811b01c2c6d104a979fd0c744763b9d92a42fa9e48c903a6023f2"
+  },
+  "accounting_examples": [
+    {
+      "mode": "Add",
+      "initial_mass_kg": 0.5,
+      "current_time_s": 2.0,
+      "requested_mass_delta_kg": 0.2,
+      "applied_mass_delta_kg": 0.2,
+      "mass_after_kg": 0.7,
+      "concentration_after_kg_per_m3": 0.14,
+      "action_digest": "d289b53a11551b0deaddb3d6946ca082e45c924e1e0bf924613fbd9a9b0eca53"
+    }
+  ],
+  "authority": "Owner approval is the authority for this synthetic fixture. It makes no production CANDU, external-reference, or golden-data claim."
+}

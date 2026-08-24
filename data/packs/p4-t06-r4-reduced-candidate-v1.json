@@ -1,0 +1,68 @@
+{
+  "format": "reactorsim.reduced-interpolation-pack/v1",
+  "approval_status": "candidate",
+  "evidence_class": "synthetic",
+  "runtime_use": "candidate_interpolation_input",
+  "pack_artifact_id": "p4-t06-r4-reduced-candidate-v1",
+  "schema_version": 1,
+  "data_version": "synthetic-v1",
+  "units_profile_id": "SI-v1",
+  "source_artifact_id": "p4-t06-r4-synthetic-input-v1",
+  "source_provenance": "synthetic:P5-T05",
+  "transform_id": "identity_projection_v1",
+  "tables": [
+    {
+      "table_id": "00000000-0000-0000-0000-0000000005a1",
+      "schema_version": 1,
+      "data_version": "synthetic-v1",
+      "material_variant_id": "MAT-SYN",
+      "units_profile_id": "SI-v1",
+      "source_provenance": "synthetic:P5-T05",
+      "checksum": "4b1e27cb954d6bcbd6f25d12128a9bb1225ce8ae751ad10c3097ff470b881d40",
+      "rows": [
+        {
+          "burnup_j_per_kg_hm": 0,
+          "coefficients": {
+            "absorption_group1_per_m": 0.4,
+            "absorption_group2_per_m": 0.3,
+            "fission_group1_per_m": 0.1,
+            "fission_group2_per_m": 0.05,
+            "nu_fission_group1_per_m": 0.15,
+            "nu_fission_group2_per_m": 0.08,
+            "downscatter_group1_to2_per_m": 0.1,
+            "chi_group1": 0.7,
+            "energy_per_fission_j": 200
+          }
+        },
+        {
+          "burnup_j_per_kg_hm": 50000,
+          "coefficients": {
+            "absorption_group1_per_m": 0.5,
+            "absorption_group2_per_m": 0.4,
+            "fission_group1_per_m": 0.12,
+            "fission_group2_per_m": 0.06,
+            "nu_fission_group1_per_m": 0.18,
+            "nu_fission_group2_per_m": 0.1,
+            "downscatter_group1_to2_per_m": 0.12,
+            "chi_group1": 0.6,
+            "energy_per_fission_j": 210
+          }
+        },
+        {
+          "burnup_j_per_kg_hm": 100000,
+          "coefficients": {
+            "absorption_group1_per_m": 0.6,
+            "absorption_group2_per_m": 0.5,
+            "fission_group1_per_m": 0.14,
+            "fission_group2_per_m": 0.07,
+            "nu_fission_group1_per_m": 0.21,
+            "nu_fission_group2_per_m": 0.12,
+            "downscatter_group1_to2_per_m": 0.14,
+            "chi_group1": 0.5,
+            "energy_per_fission_j": 220
+          }
+        }
+      ]
+    }
+  ]
+}

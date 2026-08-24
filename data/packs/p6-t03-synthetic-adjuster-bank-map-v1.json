@@ -1,0 +1,252 @@
+{
+  "schema_id": "CANDU-ADJUSTER-INFLUENCE-MAP-PACKAGE-V1",
+  "fixture_id": "P6-T03-SYNTHETIC-ADJUSTER-BANK-MAP-V1",
+  "status": "SYNTHETIC_TEST_ONLY",
+  "owner_id": "Kevin Ho",
+  "approval_date": "2026-08-20",
+  "approval_record": "docs/tasks/P6-T03-OWNER-APPROVAL.md",
+  "scope": "Synthetic test-only engine-neutral Core / ReducedModel P6-T03 state, grouping, bounds, modes, sign, rate/delay, owner-binding, and deterministic local overlay/rollback evidence; no production CANDU, external reference, or golden-data claim.",
+  "boundary": {
+    "queue_allocation": "RESERVED_P6-T06",
+    "queue_enqueue": "RESERVED_P6-T06",
+    "queue_consume": "RESERVED_P6-T06",
+    "queue_transition": "RESERVED_P6-T06",
+    "queue_rollback": "RESERVED_P6-T06",
+    "scenario_packages": "RESERVED_P6-T07",
+    "local_state_map_scratch_rollback": "VALIDATED_P6-T03"
+  },
+  "adjuster_set_id": "00000000-0000-0000-0000-00000000a701",
+  "map_id": "00000000-0000-0000-0000-00000000a702",
+  "grouping": {
+    "schema_id": "CANDU-ADJUSTER-BANK-GROUPING-V1",
+    "grouping_id": "00000000-0000-0000-0000-00000000a703",
+    "mapping_version": "p6-t03-synthetic-bank-grouping-v1",
+    "grouping_digest": "10548c8327f72dc9fa94f61b7698d3fdd5357ea040bae4ff32a422cbbe0d6060",
+    "bank_count": 2,
+    "target_count": 6,
+    "ordered_banks": [
+      {
+        "bank_ordinal": 0,
+        "bank_id": "00000000-0000-0000-0000-00000000a705",
+        "target_nodes": [
+          { "channel_id": 0, "bundle_position": 0 },
+          { "channel_id": 1, "bundle_position": 0 },
+          { "channel_id": 2, "bundle_position": 0 }
+        ]
+      },
+      {
+        "bank_ordinal": 1,
+        "bank_id": "00000000-0000-0000-0000-00000000a706",
+        "target_nodes": [
+          { "channel_id": 3, "bundle_position": 0 },
+          { "channel_id": 4, "bundle_position": 0 },
+          { "channel_id": 5, "bundle_position": 0 }
+        ]
+      }
+    ]
+  },
+  "topology": {
+    "topology_id": "00000000-0000-0000-0000-00000000a704",
+    "topology_version": "p6-t03-synthetic-topology-v1",
+    "ordered_target_nodes": [
+      { "channel_id": 0, "bundle_position": 0 },
+      { "channel_id": 1, "bundle_position": 0 },
+      { "channel_id": 2, "bundle_position": 0 },
+      { "channel_id": 3, "bundle_position": 0 },
+      { "channel_id": 4, "bundle_position": 0 },
+      { "channel_id": 5, "bundle_position": 0 }
+    ],
+    "topology_digest": "6a6c05591867951d0b1fab2328673de198d9d476fc6aee242d2482d033bfbaa2"
+  },
+  "data_version": "p6-t03-synthetic-adjuster-bank-map-v1",
+  "sign_certificate": "P6-T03-SYNTHETIC-POSITIVE-ABSORPTION-V1",
+  "normalization": "None",
+  "units": {
+    "source": "dimensionless",
+    "target": "m^-1",
+    "fraction": "dimensionless",
+    "rate": "fraction/s",
+    "delay": "s",
+    "time": "s"
+  },
+  "reference_state": {
+    "reference_fraction_by_bank": [
+      {
+        "bank_id": "00000000-0000-0000-0000-00000000a705",
+        "reference_fraction": 0.5
+      },
+      {
+        "bank_id": "00000000-0000-0000-0000-00000000a706",
+        "reference_fraction": 0.5
+      }
+    ],
+    "reference_state_digest": "a9021ac5ba4a391752d3ffcceb36f0b7ccfa298638dc03d4e545d06c4bfbcca2"
+  },
+  "banks": [
+    {
+      "bank_ordinal": 0,
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "enabled": true,
+      "mode": "Manual",
+      "reference_fraction": 0.5,
+      "command_fraction": 0.5,
+      "state_fraction": 0.5,
+      "rate_limit_fraction_per_s": 0.1,
+      "delay_s": 2.0,
+      "influence_map_id": "00000000-0000-0000-0000-00000000a702",
+      "data_version": "p6-t03-synthetic-adjuster-bank-map-v1",
+      "data_digest": "37ae2378ffe32a05fa34f37021687eeb6fb921bc154aec44ff4ecf4e2b6f9ce0",
+      "update_time_s": 0.0,
+      "queue_state": "NotApplicable (Manual)",
+      "state_digest": "b90d9c5d4b7e85dfea7496f6cc8596e15c89c11333817531c5b47d1cb713e002"
+    },
+    {
+      "bank_ordinal": 1,
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "enabled": true,
+      "mode": "RateLimited",
+      "reference_fraction": 0.5,
+      "command_fraction": 0.5,
+      "state_fraction": 0.5,
+      "rate_limit_fraction_per_s": 0.1,
+      "delay_s": 2.0,
+      "influence_map_id": "00000000-0000-0000-0000-00000000a702",
+      "data_version": "p6-t03-synthetic-adjuster-bank-map-v1",
+      "data_digest": "37ae2378ffe32a05fa34f37021687eeb6fb921bc154aec44ff4ecf4e2b6f9ce0",
+      "update_time_s": 0.0,
+      "queue_state": {
+        "schema_id": "CANDU-ADJUSTER-QUEUE-V1",
+        "queue_id": "00000000-0000-0000-0000-00000000a708",
+        "owner_key": {
+          "kind": "Entity.Branch",
+          "id": "00000000-0000-0000-0000-00000000a709"
+        },
+        "generation_cadence_or_na": "NotApplicable",
+        "initial_next_sequence": 0,
+        "next_sequence": 0,
+        "available_commands": [
+          {
+            "target_bank_id": "00000000-0000-0000-0000-00000000a706",
+            "bounded_fraction": 0.5,
+            "lower_bound": 0.0,
+            "upper_bound": 1.0,
+            "rate_limit_fraction_per_s": 0.1
+          }
+        ],
+        "last_motion_time_s": 0.0,
+        "pending_commands": [],
+        "applied_source_event_ids": [],
+        "allocated_command_ids": [],
+        "queue_digest": "e28c0f4363a7bfda5c5098975b52acf3916a9c80b6598003ccf131dc4a6b3eec"
+      },
+      "state_digest": "72df5fe5d7b9889d465016e7730b82734abd08719bcca73b389cb20b06a564b7"
+    }
+  ],
+  "entries": [
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 0, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.002,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 0, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.001,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 1, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.002,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 1, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.001,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 2, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.002,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a705",
+      "target_node": { "channel_id": 2, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.001,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 3, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.0015,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 3, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.00075,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 4, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.0015,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 4, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.00075,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 5, "bundle_position": 0 },
+      "group_index": 0,
+      "weight_m_inverse_per_fraction": 0.0015,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    },
+    {
+      "bank_id": "00000000-0000-0000-0000-00000000a706",
+      "target_node": { "channel_id": 5, "bundle_position": 0 },
+      "group_index": 1,
+      "weight_m_inverse_per_fraction": 0.00075,
+      "source_unit": "dimensionless",
+      "target_unit": "m^-1"
+    }
+  ],
+  "map_digest": "37ae2378ffe32a05fa34f37021687eeb6fb921bc154aec44ff4ecf4e2b6f9ce0",
+  "set_state_digest": "2705cbc47e36f37a744d2d909143d58b16e6849fcbbd9b09e408fe3b2efc23cf",
+  "canonicalization": {
+    "encoding": "UTF-8 field-tagged canonical bytes",
+    "digest_algorithm": "SHA-256",
+    "ordering": "bank ordinal, bank identity, NodeKey channel then bundle position, group index",
+    "digest_fields_excluded_from_body": "the digest field currently being computed",
+    "runtime_claim": "synthetic contract evidence only"
+  }
+}
