@@ -103,7 +103,10 @@ non-physics Phase 8 activation has completed `P8-T01`: the CLI now provides a
 deterministic inspection shell over the existing synthetic Core fixture. It
 does not add physics, time advancement, refuelling, RRS actions, save/load,
 replay, or gameplay scoring. The next Phase 8 task remains unselected until
-approved scenario/difficulty parameter authority exists.
+approved scenario/difficulty parameter authority exists. The owner-authorized
+Phase 7A activation has also completed `P7-T01`: the approved point-kinetics
+contract and explicit Euler transition are implemented and T3-validated; Xe,
+cadence, spatial coupling, scenarios, and G7A evidence remain deferred.
 
 ## Fast routing
 
@@ -216,6 +219,12 @@ Historical context is intentionally short:
 | Key | Status | Boundary and evidence | Next handoff |
 |---|---|---|---|
 | `P8-T01` | `COMPLETE` | The first Phase 8 CLI slice provides `help`, `new run`, `inspect core`, `inspect channel`, `inspect bundle`, `pause`, and `quit` over the explicit synthetic Core fixture. Output uses canonical LF line endings, invariant numeric formatting, separate stdout/stderr, deterministic errors, and exit code `2` for malformed commands. Focused CLI tests `5/5`, full T3 Core `158/158`, Golden `19/19`, CLI `5/5`, and release build `0` warnings/errors passed; independent review final `PASS` with telemetry `UNVERIFIED`. | No next Phase 8 task is selected until an approved scenario/difficulty parameter authority is available; the remaining Phase 8 work packages and G8 evidence are not implied by this slice. |
+
+## Phase 7A kinetics sequence — 2026-08-24
+
+| Key | Status | Boundary and evidence | Next handoff |
+|---|---|---|---|
+| `P7-T01` | `COMPLETE` | Implements only the approved point-kinetics/quasi-static amplitude package: immutable delayed-neutron data and kinetic state contracts, exact spatial/data binding, explicit left-endpoint Euler transition, audit record, and focused edge coverage. Focused tests `10/10`, full T3 CLI `5/5`, Core `168/168`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T02` is next eligible for I-135/Xe-135 production, decay, absorption, and spatial/coarse-region mapping. Timestep policy, cadence, scenarios, and G7A evidence are not implied by this slice. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
