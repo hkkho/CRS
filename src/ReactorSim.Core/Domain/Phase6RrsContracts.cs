@@ -744,7 +744,10 @@ namespace ReactorSim.Core
 
     /// <summary>
     /// Complete, immutable supplied queue projection. It contains no mutating
-    /// API; P6-T06 owns allocation, enqueue, consume, transition, and rollback.
+    /// API; P6-T06 owns allocation, enqueue, consume, transition, and rollback
+    /// at the integration boundary. This read-only P6-T05 projection remains a
+    /// distinct public v1 contract because its canonical layout is not the
+    /// P6-T06 transition-queue layout.
     /// </summary>
     public sealed class RrsQueueStateV1
     {

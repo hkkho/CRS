@@ -349,15 +349,12 @@ namespace ReactorSim.Core
             string mappingVersion,
             IReadOnlyList<LiquidZoneAssemblyBindingV1> mappings)
         {
-            return new Digest32(
-                Phase5CanonicalBytesV1.Sha256(
-                    BuildBytes(
-                        schemaVersion,
-                        mappingId,
-                        mappingVersion,
-                        mappings,
-                        null,
-                        false)));
+            return Phase6CanonicalDigestPrimitives.ComputeVersionedCollectionDigest(
+                "CANDU-ZONE-GROUPING-V1",
+                schemaVersion,
+                mappingId,
+                mappingVersion,
+                mappings.Select(mapping => mapping.ToCanonicalBytes()).ToArray());
         }
 
         private static byte[] BuildBytes(
@@ -368,24 +365,13 @@ namespace ReactorSim.Core
             Digest32? mappingDigest,
             bool includeDigest)
         {
-            return Phase5CanonicalBytesV1.Build(writer =>
-            {
-                Phase5CanonicalBytesV1.WriteAscii(writer, "CANDU-ZONE-GROUPING-V1");
-                writer.Write((byte)0);
-                Phase5CanonicalBytesV1.WriteUInt32(writer, schemaVersion);
-                Phase5CanonicalBytesV1.WriteStableId(writer, mappingId);
-                Phase5CanonicalBytesV1.WriteString(writer, mappingVersion);
-                Phase5CanonicalBytesV1.WriteUInt32(writer, checked((uint)mappings.Count));
-                foreach (LiquidZoneAssemblyBindingV1 mapping in mappings)
-                {
-                    Phase5CanonicalBytesV1.WriteBytes(writer, mapping.ToCanonicalBytes());
-                }
-
-                if (includeDigest)
-                {
-                    Phase5CanonicalBytesV1.WriteDigest(writer, mappingDigest!);
-                }
-            });
+            return Phase6CanonicalDigestPrimitives.BuildVersionedCollectionBytes(
+                "CANDU-ZONE-GROUPING-V1",
+                schemaVersion,
+                mappingId,
+                mappingVersion,
+                mappings.Select(mapping => mapping.ToCanonicalBytes()).ToArray(),
+                includeDigest ? mappingDigest : null);
         }
 
         private static bool IsCanonicalText(string? value)

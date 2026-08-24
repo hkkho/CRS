@@ -1394,7 +1394,9 @@ namespace ReactorSim.Core
     /// <summary>
     /// Complete immutable owner-bound queue state. Both historical registries
     /// remain in the state after consume; consumed command IDs are never
-    /// released or reallocated.
+    /// released or reallocated. At the integration boundary this is the
+    /// semantic owner of queue admission and transitions; RrsQueueStateV1 is
+    /// retained only as the separate read-only P6-T05 projection contract.
     /// </summary>
     public sealed class P6T06QueueStateV1
     {

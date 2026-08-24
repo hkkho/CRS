@@ -46,6 +46,9 @@ public sealed class P6T02LiquidZoneInfluenceMapTests
         Assert.Equal(28, map.Entries.Count);
         Assert.Equal(map.MappingId, LiquidZoneInfluenceMapV1.ApprovedMappingId);
         Assert.Equal(LiquidZoneInfluenceMapV1.ApprovedMappingVersion, map.MappingVersion);
+        Assert.Equal(
+            "0be2b126d2fbe6fa17bda290fba044468192266159d11921330a6352f688a713",
+            Hex(map.MappingDigest));
         Assert.Equal(map.MapDigest, reordered.MapDigest);
         Assert.Equal(map.ToCanonicalBytes(), reordered.ToCanonicalBytes());
 

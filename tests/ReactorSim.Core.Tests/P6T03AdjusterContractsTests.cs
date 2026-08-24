@@ -54,6 +54,9 @@ public sealed class P6T03AdjusterContractsTests
         Assert.Equal(AdjusterInfluenceMapV1.ApprovedDataVersion, map.DataVersion);
         Assert.Equal(AdjusterInfluenceMapV1.ApprovedSignCertificate, map.SignCertificate);
         Assert.Equal("None", map.Normalization);
+        Assert.Equal(
+            "10548c8327f72dc9fa94f61b7698d3fdd5357ea040bae4ff32a422cbbe0d6060",
+            Hex(map.GroupingDigest));
         Assert.Equal(map.MapDigest, reordered.MapDigest);
         Assert.Equal(map.ToCanonicalBytes(), reordered.ToCanonicalBytes());
 

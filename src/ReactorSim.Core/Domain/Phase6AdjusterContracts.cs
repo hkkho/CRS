@@ -1095,9 +1095,12 @@ namespace ReactorSim.Core
                 .ThenBy(entry => entry.BankId)
                 .ThenBy(entry => entry.TargetNode)
                 .ToArray();
-            return new Digest32(
-                Phase5CanonicalBytesV1.Sha256(
-                    BuildBytes(schemaVersion, groupingId, mappingVersion, canonical, null)));
+            return Phase6CanonicalDigestPrimitives.ComputeVersionedCollectionDigest(
+                SchemaId,
+                schemaVersion,
+                groupingId,
+                mappingVersion,
+                canonical.Select(mapping => mapping.ToCanonicalBytes()).ToArray());
         }
 
         public bool TryGetBankOrdinal(StableId bankId, out uint bankOrdinal)
@@ -1164,24 +1167,13 @@ namespace ReactorSim.Core
             IReadOnlyList<AdjusterBankTargetBindingV1> mappings,
             Digest32? mappingDigest)
         {
-            return Phase5CanonicalBytesV1.Build(writer =>
-            {
-                Phase5CanonicalBytesV1.WriteAscii(writer, SchemaId);
-                writer.Write((byte)0);
-                Phase5CanonicalBytesV1.WriteUInt32(writer, schemaVersion);
-                Phase5CanonicalBytesV1.WriteStableId(writer, groupingId);
-                Phase5CanonicalBytesV1.WriteString(writer, mappingVersion);
-                Phase5CanonicalBytesV1.WriteUInt32(writer, checked((uint)mappings.Count));
-                foreach (AdjusterBankTargetBindingV1 mapping in mappings)
-                {
-                    Phase5CanonicalBytesV1.WriteBytes(writer, mapping.ToCanonicalBytes());
-                }
-
-                if (mappingDigest != null)
-                {
-                    Phase5CanonicalBytesV1.WriteDigest(writer, mappingDigest);
-                }
-            });
+            return Phase6CanonicalDigestPrimitives.BuildVersionedCollectionBytes(
+                SchemaId,
+                schemaVersion,
+                groupingId,
+                mappingVersion,
+                mappings.Select(mapping => mapping.ToCanonicalBytes()).ToArray(),
+                mappingDigest);
         }
 
         private static ContractValidationResult<AdjusterBankGroupingV1> Invalid(
