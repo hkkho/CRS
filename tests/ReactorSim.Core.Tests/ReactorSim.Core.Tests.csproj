@@ -17,4 +17,51 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ReactorSim.Core\ReactorSim.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\TestInfrastructure\TestDataLocator.cs" Link="TestInfrastructure\TestDataLocator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json" Link="TestData\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t02-synthetic-liquid-zone-map-v1.manifest.json" Link="TestData\data\packs\p6-t02-synthetic-liquid-zone-map-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.json" Link="TestData\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.manifest.json" Link="TestData\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t04-synthetic-bulk-poison-map-v1.json" Link="TestData\data\packs\p6-t04-synthetic-bulk-poison-map-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t04-synthetic-bulk-poison-map-v1.manifest.json" Link="TestData\data\packs\p6-t04-synthetic-bulk-poison-map-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t05-synthetic-rrs-controller-map-v1.json" Link="TestData\data\packs\p6-t05-synthetic-rrs-controller-map-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\packs\p6-t05-synthetic-rrs-controller-map-v1.manifest.json" Link="TestData\data\packs\p6-t05-synthetic-rrs-controller-map-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.json" Link="TestData\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Include="..\..\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.manifest.json" Link="TestData\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
 </Project>

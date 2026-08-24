@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Core.Tests;
@@ -346,16 +347,10 @@ public sealed class P6T03AdjusterContractsTests
     [Fact]
     public void PackageBindsCanonicalFixtureAndManifestHash()
     {
-        string packagePath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t03-synthetic-adjuster-bank-map-v1.json");
-        string manifestPath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t03-synthetic-adjuster-bank-map-v1.manifest.json");
+        string packagePath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.json");
+        string manifestPath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t03-synthetic-adjuster-bank-map-v1.manifest.json");
         Assert.True(File.Exists(packagePath), "The approved P6-T03 package must exist.");
         Assert.True(File.Exists(manifestPath), "The approved P6-T03 manifest must exist.");
 
@@ -630,17 +625,6 @@ public sealed class P6T03AdjusterContractsTests
     private static string Hex(Digest32 digest)
     {
         return Convert.ToHexString(digest.ToArray()).ToLowerInvariant();
-    }
-
-    private static string RepositoryRoot()
-    {
-        return Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
-            ".."));
     }
 
     private static StableId Id(uint value)

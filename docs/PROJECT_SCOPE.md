@@ -12,7 +12,7 @@ gate reports preserve evidence. Templates and derived guides explain or
 structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
-**Reconciled:** 2026-08-21 against the implementation plan, completed reports
+**Reconciled:** 2026-08-24 against the implementation plan, completed reports
 through `P6-T07` implementation, `P4-T06-G4J`, and `P4-T06-G4K`, gates through `G5`, `G6` (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
 `DOC-INSTRUCTIONS-01` documentation-authority audit, and the user-authorized
 P4-T06 follow-up chain plus the completed `P4-T06-G4K` task and fresh `G4-R6` disposition
@@ -73,6 +73,14 @@ the synthetic/test-only Core/ReducedModel contract scope. An applicable P6 RRS
 comparison package is absent, so unconditional comparison, production,
 external-reference, and golden authority remain deferred to a separately
 authorized G6 re-entry.
+
+The user-authorized `TEST-INFRA-01` recovery task is now complete. The shared
+test-output locator and explicit test-data declarations make the standard
+artifact-output wrapper portable: the direct and wrapper runs both pass Core
+`156/156` and Golden `19/19`, with zero failures and zero skips. This is test
+evidence only; it changes no runtime physics, schema, tolerance, or golden
+authority. The next eligible recovery task is `P6-INTEGRATION-01` after this
+portable baseline.
 
 ## Fast routing
 
@@ -145,7 +153,7 @@ Historical context is intentionally short:
 
 | Key | Status | Established | Still not established |
 |---|---|---|---|
-| `PHASE-0` / `G0` | Complete; `G0-R1` PASS | Repository layout, pinned toolchain, Core/CLI/test boundary, Unity bootstrap, focused/full test wrappers, and engine-neutral JSON boundary. | Cross-platform automation remains a later platform concern; it does not block current Core work. |
+| `PHASE-0` / `G0` | Complete; `G0-R1` PASS | Repository layout, pinned toolchain, Core/CLI/test boundary, Unity bootstrap, focused/full test wrappers, engine-neutral JSON boundary, and the completed `TEST-INFRA-01` artifact-portable full-suite recovery. | Cross-platform automation remains a later platform concern; it does not block current Core work. |
 | `PHASE-1` / `G1` | Complete; `G1` PASS | Reproducible private DRAGON5/DONJON5 smoke workflow, parsers, schemas, manifests, and `P1-T08` six-source literature digest/crosswalk. | The compact smoke exports are not yet a solver-ready golden baseline or a published dataset. |
 | `PHASE-2` / `G2` | Specifications complete; active status `FORCED CLOSED / WAIVED` | Topology/indexing/units, two-group equations, refuelling/burnup, kinetics/I-Xe/RRS/feedback contracts, and validation methodology are frozen inputs. | Numeric acceptance thresholds and golden values remain deferred to their owner gates; the waiver authorizes none. |
 | `PHASE-3` / `G3` | Complete; `G3` PASS | Deterministic identity/topology/inventory, lifecycle/snapshots/diagnostics, clock/queue, archive/replay, atomic application, and invalid-data rejection. The final G3 review is receipt-verified `gpt-5.6-terra` / high. | No solver, refuelling, depletion, kinetics, gameplay, or Unity behavior was introduced by this phase. |
@@ -169,6 +177,18 @@ Historical context is intentionally short:
   - `PHASE-6`: `P6-T01` through `P6-T07` and `G6` are activated as task-definition routing IDs in [`ROUND-2026-08-17-P6-RRS-CHAIN.md`](tasks/ROUND-2026-08-17-P6-RRS-CHAIN.md); `P6-T01` through `P6-T07` are complete within their approved synthetic boundaries and `G6` is `CONDITIONAL PASS` for that scope, with the original authority stops preserved historically in their reports.
 - Policy history: `PLAN-C01`, `PLAN-C02`, `PLAN-C03`, and `PLAN-C04` remain
   complete documentation/policy records.
+
+## Recovery sequence — 2026-08-24
+
+| Key | Status | Boundary and evidence | Next handoff |
+|---|---|---|---|
+| `TEST-INFRA-01` | `COMPLETE` | Test-only output-root resolution and explicit Core fixture declarations; direct Core `156/156`, Golden `19/19`, and fresh artifact-output wrapper Core `156/156`, Golden `19/19`, all with zero failures/skips. | Baseline is portable; no further work remains in this task. |
+| `P6-INTEGRATION-01` | `NEXT ELIGIBLE` | Separate Phase 6 Core-only integration task from the approved refactoring proposal; it must preserve v1 contracts, canonical bytes/digests, synthetic values, and queue behavior. | Requires its own task report, focused mismatch/atomicity evidence, T3 regression, and independent code review (high). |
+
+The refactoring proposal remains a sequencing aid rather than a technical
+authority. The current user authorization selects one task at a time; it does
+not authorize new equations, units, tolerances, golden values, public schema
+versions, or production/external RRS claims.
 
 ## `PHASE-4` - immediate delivery plan
 
@@ -1589,4 +1609,5 @@ goal allocation was available.
 - [P5-T06 affected coefficient and spatial-state recomputation](tasks/P5-T06.md)
 - [P5-T07 Phase 5 identity, location, burnup, and energy invariants](tasks/P5-T07.md)
 - [P5-T08 deterministic multistep refuelling histories](tasks/P5-T08.md)
+- [TEST-INFRA-01 artifact-portable full-suite recovery](tasks/TEST-INFRA-01.md)
 - [Documentation-authority audit](tasks/DOC-INSTRUCTIONS-01.md)

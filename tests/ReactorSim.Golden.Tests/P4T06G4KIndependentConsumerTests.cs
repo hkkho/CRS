@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Golden.Tests;
@@ -513,19 +514,19 @@ public sealed class P4T06G4KIndependentConsumerTests
     private static JsonDocument ReadJson(string fileName)
     {
         return JsonDocument.Parse(File.ReadAllBytes(
-            Path.Combine(AppContext.BaseDirectory, TestArtifactDirectory, fileName)));
+            TestDataLocator.RequireFile(Path.Combine(TestArtifactDirectory, fileName))));
     }
 
     private static byte[] ReadArtifactBytes()
     {
-        return File.ReadAllBytes(Path.Combine(
-            AppContext.BaseDirectory, TestArtifactDirectory, ArtifactFileName));
+        return File.ReadAllBytes(TestDataLocator.RequireFile(
+            Path.Combine(TestArtifactDirectory, ArtifactFileName)));
     }
 
     private static byte[] ReadApprovedArtifactBytes()
     {
-        return File.ReadAllBytes(Path.Combine(
-            AppContext.BaseDirectory, TestArtifactDirectory, ApprovedArtifactFileName));
+        return File.ReadAllBytes(TestDataLocator.RequireFile(
+            Path.Combine(TestArtifactDirectory, ApprovedArtifactFileName)));
     }
 
     private static bool WithinProfile(double error, double expected, JsonElement profile)

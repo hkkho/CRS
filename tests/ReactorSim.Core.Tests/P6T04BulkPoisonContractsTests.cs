@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Core.Tests;
@@ -276,16 +277,10 @@ public sealed class P6T04BulkPoisonContractsTests
     [Fact]
     public void PackageAndManifestBindCanonicalFixtureAndArtifactHash()
     {
-        string packagePath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t04-synthetic-bulk-poison-map-v1.json");
-        string manifestPath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t04-synthetic-bulk-poison-map-v1.manifest.json");
+        string packagePath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t04-synthetic-bulk-poison-map-v1.json");
+        string manifestPath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t04-synthetic-bulk-poison-map-v1.manifest.json");
         Assert.True(File.Exists(packagePath), "The approved P6-T04 package must exist.");
         Assert.True(File.Exists(manifestPath), "The approved P6-T04 manifest must exist.");
 
@@ -601,14 +596,4 @@ public sealed class P6T04BulkPoisonContractsTests
         return Convert.ToHexString(digest.ToArray()).ToLowerInvariant();
     }
 
-    private static string RepositoryRoot()
-    {
-        return Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
-            ".."));
-    }
 }

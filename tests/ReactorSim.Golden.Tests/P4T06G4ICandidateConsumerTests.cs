@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Golden.Tests;
@@ -329,7 +330,7 @@ public sealed class P4T06G4ICandidateConsumerTests
 
     private static string TestArtifactPath(string fileName)
     {
-        return Path.Combine(AppContext.BaseDirectory, TestArtifactDirectory, fileName);
+        return TestDataLocator.RequireFile(Path.Combine(TestArtifactDirectory, fileName));
     }
 
     internal static string StringValue(JsonElement parent, string propertyName)

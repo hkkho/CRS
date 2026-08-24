@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Core.Tests;
@@ -34,11 +35,8 @@ public sealed class P6T07ScenarioEvidenceTests
     [Fact]
     public void ScenarioPackageBindsApprovedInputsAndExplicitBoundaries()
     {
-        string packagePath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "scenarios",
-            "p6-t07-synthetic-rrs-scenarios-v1.json");
+        string packagePath = TestDataLocator.RequireRepositoryFile(
+            "data/scenarios/p6-t07-synthetic-rrs-scenarios-v1.json");
         string manifestPath = packagePath.Replace(
             ".json",
             ".manifest.json",
@@ -239,11 +237,8 @@ public sealed class P6T07ScenarioEvidenceTests
 
     private static string ScenarioPackagePath()
     {
-        return Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "scenarios",
-            "p6-t07-synthetic-rrs-scenarios-v1.json");
+        return TestDataLocator.RequireRepositoryFile(
+            "data/scenarios/p6-t07-synthetic-rrs-scenarios-v1.json");
     }
 
     private static JsonElement LoadScenario(string scenarioId)
@@ -345,9 +340,7 @@ public sealed class P6T07ScenarioEvidenceTests
 
     private static string ResolveRepositoryPath(string relativePath)
     {
-        return Path.Combine(
-            RepositoryRoot(),
-            relativePath.Replace('/', Path.DirectorySeparatorChar));
+        return TestDataLocator.RequireRepositoryFile(relativePath);
     }
 
     private static ScenarioTrace RunCenteredPerturbation()
@@ -1756,22 +1749,6 @@ public sealed class P6T07ScenarioEvidenceTests
     private static string Hex(Digest32 digest)
     {
         return Convert.ToHexString(digest.ToArray()).ToLowerInvariant();
-    }
-
-    private static string RepositoryRoot()
-    {
-        string? directory = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(directory))
-        {
-            if (File.Exists(Path.Combine(directory, "ReactorSim.sln")))
-            {
-                return directory;
-            }
-
-            directory = Directory.GetParent(directory)?.FullName;
-        }
-
-        throw new DirectoryNotFoundException("The repository root could not be located from the test base directory.");
     }
 
     private static StableId Id(uint value)

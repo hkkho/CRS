@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Golden.Tests;
@@ -338,7 +339,7 @@ public sealed class P4T06G4JRepresentativeConsumerTests
     private static JsonDocument ReadJson(string fileName)
     {
         return JsonDocument.Parse(File.ReadAllBytes(
-            Path.Combine(AppContext.BaseDirectory, TestArtifactDirectory, fileName)));
+            TestDataLocator.RequireFile(Path.Combine(TestArtifactDirectory, fileName))));
     }
 
     private static string StringValue(JsonElement parent, string propertyName)

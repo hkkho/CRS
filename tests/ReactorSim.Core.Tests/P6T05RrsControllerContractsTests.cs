@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Core.Tests;
@@ -438,16 +439,10 @@ public sealed class P6T05RrsControllerContractsTests
     public void PackageAndManifestBindTheTypedApprovedFixtureAndArtifactHash()
     {
         RrsFixture fixture = CreateFixture();
-        string packagePath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t05-synthetic-rrs-controller-map-v1.json");
-        string manifestPath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t05-synthetic-rrs-controller-map-v1.manifest.json");
+        string packagePath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t05-synthetic-rrs-controller-map-v1.json");
+        string manifestPath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t05-synthetic-rrs-controller-map-v1.manifest.json");
         Assert.True(File.Exists(packagePath));
         Assert.True(File.Exists(manifestPath));
 
@@ -788,22 +783,6 @@ public sealed class P6T05RrsControllerContractsTests
     private static string Hex(Digest32 digest)
     {
         return Convert.ToHexString(digest.ToArray()).ToLowerInvariant();
-    }
-
-    private static string RepositoryRoot()
-    {
-        string? directory = AppContext.BaseDirectory;
-        while (!string.IsNullOrEmpty(directory))
-        {
-            if (File.Exists(Path.Combine(directory, "ReactorSim.sln")))
-            {
-                return directory;
-            }
-
-            directory = Directory.GetParent(directory)?.FullName;
-        }
-
-        throw new DirectoryNotFoundException("The repository root could not be located from the test base directory.");
     }
 
     private sealed class RrsFixture

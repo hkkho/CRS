@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Core.Tests;
@@ -201,16 +202,10 @@ public sealed class P6T02LiquidZoneInfluenceMapTests
     public void RecordedPackageAndManifestBindToTheTypedApprovedFixture()
     {
         LiquidZoneInfluenceMapV1 map = CreateMap();
-        string packagePath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t02-synthetic-liquid-zone-map-v1.json");
-        string manifestPath = Path.Combine(
-            RepositoryRoot(),
-            "data",
-            "packs",
-            "p6-t02-synthetic-liquid-zone-map-v1.manifest.json");
+        string packagePath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t02-synthetic-liquid-zone-map-v1.json");
+        string manifestPath = TestDataLocator.RequireRepositoryFile(
+            "data/packs/p6-t02-synthetic-liquid-zone-map-v1.manifest.json");
 
         using (JsonDocument packageDocument = JsonDocument.Parse(File.ReadAllText(packagePath)))
         using (JsonDocument manifestDocument = JsonDocument.Parse(File.ReadAllText(manifestPath)))
@@ -597,17 +592,6 @@ public sealed class P6T02LiquidZoneInfluenceMapTests
     private static string Hex(Digest32 digest)
     {
         return Convert.ToHexString(digest.ToArray()).ToLowerInvariant();
-    }
-
-    private static string RepositoryRoot()
-    {
-        return Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..",
-            "..",
-            "..",
-            "..",
-            ".."));
     }
 
     private static StableId Id(uint value)

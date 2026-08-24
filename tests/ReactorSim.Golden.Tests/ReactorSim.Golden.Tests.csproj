@@ -19,6 +19,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\TestInfrastructure\TestDataLocator.cs" Link="TestInfrastructure\TestDataLocator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="..\..\data\comparisons\p4-t06-g4d-independent-reproduction-v1.json" Link="P4T06G4EData\independent-reproduction-v1.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

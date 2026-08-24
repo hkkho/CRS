@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using ReactorSim.Core;
+using ReactorSim.TestInfrastructure;
 using Xunit;
 
 namespace ReactorSim.Golden.Tests;
@@ -473,10 +474,8 @@ public sealed class P5T10ReducedModelSequenceComparisonTests
         string directory = fileName == ApprovedArtifactFileName
             ? ApprovedArtifactDirectory
             : DefinitionArtifactDirectory;
-        return JsonDocument.Parse(File.ReadAllBytes(Path.Combine(
-            AppContext.BaseDirectory,
-            directory,
-            fileName)));
+        return JsonDocument.Parse(File.ReadAllBytes(TestDataLocator.RequireFile(
+            Path.Combine(directory, fileName))));
     }
 
     private static JsonElement FindScenario(JsonElement root, string scenarioId)
