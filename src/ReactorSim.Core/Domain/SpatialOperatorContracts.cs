@@ -132,17 +132,23 @@ namespace ReactorSim.Core
         private readonly Dictionary<SpatialEdgeKey, SpatialConductancePair> _edges;
         private readonly Dictionary<SpatialBoundaryKey, SpatialConductancePair> _boundaries;
         private readonly SpatialStencil _stencil;
+        private readonly XenonBasisV1 _xenonBasis;
+        private readonly double _referenceXeNumberDensityM3;
 
         private SpatialCoefficientSet(
             SpatialStencil stencil,
             IReadOnlyList<SpatialNodeCoefficients> nodes,
             Dictionary<SpatialEdgeKey, SpatialConductancePair> edges,
-            Dictionary<SpatialBoundaryKey, SpatialConductancePair> boundaries)
+            Dictionary<SpatialBoundaryKey, SpatialConductancePair> boundaries,
+            XenonBasisV1 xenonBasis,
+            double referenceXeNumberDensityM3)
         {
             _stencil = stencil;
             _nodes = new ReadOnlyCollection<SpatialNodeCoefficients>(nodes.ToArray());
             _edges = edges;
             _boundaries = boundaries;
+            _xenonBasis = xenonBasis;
+            _referenceXeNumberDensityM3 = referenceXeNumberDensityM3;
         }
 
         public int NodeCount
@@ -165,12 +171,83 @@ namespace ReactorSim.Core
             get { return _nodes; }
         }
 
+        /// <summary>
+        /// Explicit xenon basis marker carried with the coefficient identity.
+        /// Existing callers that do not provide P7 metadata remain
+        /// <see cref="XenonBasisV1.Unspecified"/> and cannot enter the
+        /// dynamic-Xe coupling boundary.
+        /// </summary>
+        public XenonBasisV1 XenonBasis
+        {
+            get { return _xenonBasis; }
+        }
+
+        public double ReferenceXeNumberDensityM3
+        {
+            get { return _referenceXeNumberDensityM3; }
+        }
+
         public static ContractValidationResult<SpatialCoefficientSet> TryCreate(
             SpatialStencil stencil,
             IEnumerable<SpatialNodeCoefficients> nodeCoefficients,
             IEnumerable<SpatialEdgeConductance> edgeConductances,
             IEnumerable<SpatialBoundaryConductance> boundaryConductances)
         {
+            return TryCreateCore(
+                stencil,
+                nodeCoefficients,
+                edgeConductances,
+                boundaryConductances,
+                XenonBasisV1.Unspecified,
+                0.0);
+        }
+
+        public static ContractValidationResult<SpatialCoefficientSet> TryCreateWithXenonBasis(
+            SpatialStencil stencil,
+            IEnumerable<SpatialNodeCoefficients> nodeCoefficients,
+            IEnumerable<SpatialEdgeConductance> edgeConductances,
+            IEnumerable<SpatialBoundaryConductance> boundaryConductances,
+            XenonBasisV1 xenonBasis,
+            double referenceXeNumberDensityM3)
+        {
+            return TryCreateCore(
+                stencil,
+                nodeCoefficients,
+                edgeConductances,
+                boundaryConductances,
+                xenonBasis,
+                referenceXeNumberDensityM3);
+        }
+
+        private static ContractValidationResult<SpatialCoefficientSet> TryCreateCore(
+            SpatialStencil stencil,
+            IEnumerable<SpatialNodeCoefficients> nodeCoefficients,
+            IEnumerable<SpatialEdgeConductance> edgeConductances,
+            IEnumerable<SpatialBoundaryConductance> boundaryConductances,
+            XenonBasisV1 xenonBasis,
+            double referenceXeNumberDensityM3)
+        {
+            if (xenonBasis != XenonBasisV1.Excluded &&
+                xenonBasis != XenonBasisV1.Included &&
+                xenonBasis != XenonBasisV1.Equilibrium &&
+                xenonBasis != XenonBasisV1.Unspecified)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.XenonBasis.Invalid",
+                    "xenon_basis",
+                    "The coefficient set requires an explicit supported xenon basis marker.");
+            }
+
+            if (!ContractValidation.IsFinite(referenceXeNumberDensityM3) ||
+                referenceXeNumberDensityM3 < 0.0 ||
+                BitConverter.DoubleToInt64Bits(referenceXeNumberDensityM3) < 0)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.ReferenceXe.Invalid",
+                    "reference_xe_number_density_m3",
+                    "Reference Xe number density must be finite, canonical, and nonnegative SI m^-3.");
+            }
+
             if (stencil == null)
             {
                 return ContractValidationResult<SpatialCoefficientSet>.Invalid(
@@ -426,7 +503,13 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<SpatialCoefficientSet>.Valid(
-                new SpatialCoefficientSet(stencil, orderedNodes, boundEdges, boundBoundaries));
+                new SpatialCoefficientSet(
+                    stencil,
+                    orderedNodes,
+                    boundEdges,
+                    boundBoundaries,
+                    xenonBasis,
+                    referenceXeNumberDensityM3));
         }
 
         internal SpatialStencil Stencil
@@ -446,6 +529,49 @@ namespace ReactorSim.Core
             out SpatialConductancePair conductance)
         {
             return _boundaries.TryGetValue(key, out conductance);
+        }
+
+        /// <summary>
+        /// Rebinds only the node coefficients while retaining the already
+        /// validated topology conductances. This is an internal composition
+        /// boundary for state-dependent overlays; the complete coefficient
+        /// set is still validated by <see cref="TryCreate"/>.
+        /// </summary>
+        internal ContractValidationResult<SpatialCoefficientSet> TryRebindNodeCoefficients(
+            IEnumerable<SpatialNodeCoefficients> nodeCoefficients)
+        {
+            if (nodeCoefficients == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Rebind.Nodes.Missing",
+                    "node_coefficients",
+                    "A node coefficient collection is required for a rebind.");
+            }
+
+            SpatialEdgeConductance[] edges = _edges
+                .OrderBy(pair => pair.Key)
+                .Select(pair => new SpatialEdgeConductance(
+                    pair.Key.First,
+                    pair.Key.Second,
+                    pair.Value.Group1,
+                    pair.Value.Group2))
+                .ToArray();
+            SpatialBoundaryConductance[] boundaries = _boundaries
+                .OrderBy(pair => pair.Key)
+                .Select(pair => new SpatialBoundaryConductance(
+                    pair.Key.Node,
+                    pair.Key.Face,
+                    pair.Value.Group1,
+                    pair.Value.Group2))
+                .ToArray();
+
+            return TryCreateCore(
+                _stencil,
+                nodeCoefficients,
+                edges,
+                boundaries,
+                _xenonBasis,
+                _referenceXeNumberDensityM3);
         }
 
         private static ContractDiagnostic? ValidateNodeCoefficients(SpatialNodeCoefficients record)

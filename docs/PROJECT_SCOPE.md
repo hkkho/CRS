@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-24 against the implementation plan, completed reports
-through `P6-T07` implementation, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+through `P7-T05` implementation, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -104,10 +104,13 @@ deterministic inspection shell over the existing synthetic Core fixture. It
 does not add physics, time advancement, refuelling, RRS actions, save/load,
 replay, or gameplay scoring. The next Phase 8 task remains unselected until
 approved scenario/difficulty parameter authority exists. The owner-authorized
-Phase 7A activation has also completed `P7-T01` through `P7-T04`: the approved
+Phase 7A activation has also completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
-and synthetic scenario histories are implemented and T3-validated; dynamic
-spatial coupling and G7A evidence remain deferred.
+synthetic scenario histories, authenticated dynamic-Xe absorption overlay,
+exact state/time/version binding, and controlled P2-T02 spatial solve are
+implemented and T3-validated. G7A long-history, timestep-convergence,
+nonnegative-concentration, and approved-reference/golden evidence remain
+deferred to the gate.
 
 ## Fast routing
 
@@ -229,6 +232,8 @@ Historical context is intentionally short:
 | `P7-T02` | `COMPLETE` | Closes the I-135/Xe-135 production, decay, absorption, and local node-volume/flux/fission-rate mapping boundary over the existing P5-T09 contracts; hardens canonical finite/range handling and canonical zero loss terms without adding data constants or a new spatial schema. Focused tests `7/7`, full T3 CLI `5/5`, Core `175/175`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T03` is next eligible for stable integration methods and timestep limits. Dynamic Xe-to-P2-T02 coupling, scenarios, and G7A evidence are not implied by this slice. |
 | `P7-T03` | `COMPLETE` | Defines the caller-supplied explicit-Euler stability policy: canonical finite/positive five-term inputs, exact authoritative `H` minimum, direct/dimensionless substep validation, active decay/prompt-rate envelope coverage, and immutable deterministic `ceil(gap/H)` first-`n-1`/remainder scheduling. Focused tests `5/5`, full T3 CLI `5/5`, Core `180/180`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T04` is next eligible for startup/equilibrium, power-change, shutdown-like reduction without safety-system modeling, and xenon-oscillation scenarios. Dynamic Xe-to-P2-T02 coupling and G7A evidence are not implied by this slice. |
 | `P7-T04` | `COMPLETE` | Adds three focused synthetic scenario histories over the approved transitions and shared stability schedule: explicit equilibrium-like startup, ordinary power increase/reduction with no safety-system state, and high-power xenon production followed by low-power relaxation. Determinism, explicit initial values, policy partitioning, and finite nonnegative histories are covered. Focused tests `3/3`, full T3 CLI `5/5`, Core `183/183`, Golden `19/19`, and format verification passed with zero failures/skips; independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `P7-T05` is next eligible for controlled xenon coefficient coupling to the spatial solve. G7A long histories, convergence, and golden/reference evidence are not implied by this slice. |
+
+| `P7-T05` | `COMPLETE` | Adds an explicit xenon basis/reference marker to spatial coefficient identity, canonical base digest authentication over stencil/coefficient/conductance content, absorption-only `sigma_Xe * N_Xe` overlay, complete effective P2-T02 revalidation, exact state/time/amplitude/core/topology/data-pack/node-version binding, deterministic dynamic/effective digests, and an explicit cadence-bound P2-T02 solve that fails closed on nonconvergence or stale binding. Focused tests `4/4`, full T3 CLI `5/5`, Core `187/187`, Golden `19/19`, and format verification passed with zero failures/skips; same-context independent high review final `PASS` with telemetry `UNVERIFIED`. Applicable literature rows were `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`; P2-T04 remained the runtime authority. | `G7A` is next: run long histories, timestep-convergence, nonnegative-concentration, and approved-reference/golden evidence without promoting synthetic traces. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
