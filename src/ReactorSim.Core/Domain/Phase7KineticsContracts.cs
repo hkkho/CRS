@@ -674,7 +674,7 @@ namespace ReactorSim.Core
             {
                 DelayedNeutronGroupV1 group = data.Groups[index];
                 double delayedTerm = group.DecayConstantPerSecond * current.Precursor[index];
-                if (!KineticContractValidation.IsFinite(delayedTerm))
+                if (!KineticContractValidation.IsCanonicalFinite(delayedTerm))
                 {
                     return Invalid(
                         "KineticIntegration.DelayedSource.Invalid",
@@ -683,7 +683,7 @@ namespace ReactorSim.Core
                 }
 
                 delayedSource += delayedTerm;
-                if (!KineticContractValidation.IsFinite(delayedSource))
+                if (!KineticContractValidation.IsCanonicalFinite(delayedSource))
                 {
                     return Invalid(
                         "KineticIntegration.DelayedSource.Invalid",
@@ -695,7 +695,7 @@ namespace ReactorSim.Core
             double promptCoefficient =
                 (current.SpatialReactivity - data.TotalDelayedFraction) /
                 data.PromptGenerationTimeSeconds;
-            if (!KineticContractValidation.IsFinite(promptCoefficient))
+            if (!KineticContractValidation.IsCanonicalFinite(promptCoefficient))
             {
                 return Invalid(
                     "KineticIntegration.PromptCoefficient.Invalid",
@@ -704,7 +704,7 @@ namespace ReactorSim.Core
             }
 
             double promptDerivative = promptCoefficient * current.Amplitude;
-            if (!KineticContractValidation.IsFinite(promptDerivative))
+            if (!KineticContractValidation.IsCanonicalFinite(promptDerivative))
             {
                 return Invalid(
                     "KineticIntegration.PromptDerivative.Invalid",
@@ -713,7 +713,7 @@ namespace ReactorSim.Core
             }
 
             double amplitudeDerivative = promptDerivative + delayedSource;
-            if (!KineticContractValidation.IsFinite(amplitudeDerivative))
+            if (!KineticContractValidation.IsCanonicalFinite(amplitudeDerivative))
             {
                 return Invalid(
                     "KineticIntegration.AmplitudeDerivative.Invalid",
@@ -723,7 +723,7 @@ namespace ReactorSim.Core
 
             double amplitudeDelta = deltaTimeSeconds * amplitudeDerivative;
             double nextAmplitude = current.Amplitude + amplitudeDelta;
-            if (!KineticContractValidation.IsFinite(amplitudeDelta))
+            if (!KineticContractValidation.IsCanonicalFinite(amplitudeDelta))
             {
                 return Invalid(
                     "KineticIntegration.AmplitudeDelta.Invalid",
@@ -751,11 +751,11 @@ namespace ReactorSim.Core
                 double derivative = production - decay;
                 double delta = deltaTimeSeconds * derivative;
                 double next = current.Precursor[index] + delta;
-                if (!KineticContractValidation.IsFinite(productionCoefficient) ||
-                    !KineticContractValidation.IsFinite(production) ||
-                    !KineticContractValidation.IsFinite(decay) ||
-                    !KineticContractValidation.IsFinite(derivative) ||
-                    !KineticContractValidation.IsFinite(delta) ||
+                if (!KineticContractValidation.IsCanonicalFinite(productionCoefficient) ||
+                    !KineticContractValidation.IsCanonicalFinite(production) ||
+                    !KineticContractValidation.IsCanonicalFinite(decay) ||
+                    !KineticContractValidation.IsCanonicalFinite(derivative) ||
+                    !KineticContractValidation.IsCanonicalFinite(delta) ||
                     !KineticContractValidation.IsCanonicalNonnegativeFinite(next))
                 {
                     return Invalid(
@@ -830,11 +830,6 @@ namespace ReactorSim.Core
         internal static bool IsPositiveFinite(double value)
         {
             return IsCanonicalFinite(value) && value > 0.0;
-        }
-
-        internal static bool IsFinite(double value)
-        {
-            return ContractValidation.IsFinite(value);
         }
 
         internal static bool IsCanonicalNonnegativeFinite(double value)

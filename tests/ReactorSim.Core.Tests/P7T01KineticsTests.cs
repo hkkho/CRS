@@ -12,6 +12,7 @@ public sealed class P7T01KineticsTests
     private static readonly double[] ExpectedPrecursor = { 0.475, 0.25 };
     private static readonly double[] ExpectedPrecursorDerivative = { -0.05, 0.0 };
     private static readonly double[] ZeroPrecursor = { 0.0 };
+    private static readonly double[] MaxPrecursor = { double.MaxValue };
 
     [Fact]
     public void AppliesApprovedEulerUpdateAndRecordsExactBinding()
@@ -155,6 +156,185 @@ public sealed class P7T01KineticsTests
     }
 
     [Fact]
+    public void RejectsNegativeZeroAndNonfiniteKineticValues()
+    {
+        AssertInvalid(
+            DelayedNeutronGroupV1.TryCreate(0, NegativeZero, 0.1),
+            "DelayedNeutronGroup.BetaFraction.Invalid");
+        AssertInvalid(
+            DelayedNeutronGroupV1.TryCreate(0, 0.1, double.PositiveInfinity),
+            "DelayedNeutronGroup.DecayConstant.Invalid");
+
+        DelayedNeutronGroupV1 validGroup = CreateGroup(0, 0.0, 1.0);
+        AssertInvalid(
+            DelayedNeutronDataV1.TryCreate(
+                Id("99999999-9999-4999-8999-999999999999"),
+                "synthetic-p7-invalid-prompt-time",
+                Digest(0x99),
+                NegativeZero,
+                new[] { validGroup }),
+            "DelayedNeutronData.PromptGenerationTime.Invalid");
+
+        DelayedNeutronDataV1 data = CreateSingleGroupData(0.0, 1.0, 0x9A);
+        AssertInvalid(
+            KineticStateV1.TryCreate(
+                0.0,
+                double.PositiveInfinity,
+                ZeroPrecursor,
+                1.0,
+                ZeroPrecursor,
+                1000.0,
+                data,
+                OptionalStableId.Applicable(Id("9a9a9a9a-9a9a-49a9-89a9-9a9a9a9a9a9a")),
+                OptionalUInt64.Applicable(0),
+                0.0,
+                OptionalDigest32.Applicable(Digest(0x9B)),
+                0),
+            "KineticState.Amplitude.Invalid");
+
+        AssertInvalid(
+            KineticStateV1.TryCreate(
+                NegativeZero,
+                0.0,
+                ZeroPrecursor,
+                0.0,
+                ZeroPrecursor,
+                1000.0,
+                data,
+                OptionalStableId.Applicable(Id("9c9c9c9c-9c9c-49c9-89c9-9c9c9c9c9c9c")),
+                OptionalUInt64.Applicable(0),
+                0.0,
+                OptionalDigest32.Applicable(Digest(0x9C)),
+                0),
+            "KineticState.SimulationTime.Invalid");
+
+        KineticStateV1 zeroAmplitude = CreateBoundState(
+            data,
+            simulationTimeSeconds: 0.0,
+            amplitude: 0.0,
+            precursor: ZeroPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: -1.0,
+            kineticStepIndex: 0);
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(zeroAmplitude, data, 1.0),
+            "KineticIntegration.PromptDerivative.Invalid");
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(zeroAmplitude, data, NegativeZero),
+            "KineticIntegration.Interval.Invalid");
+    }
+
+    [Fact]
+    public void RejectsSimulationTimeAndStepIndexOverflow()
+    {
+        DelayedNeutronDataV1 data = CreateSingleGroupData(0.0, 1.0, 0x9D);
+        KineticStateV1 atMaximumTime = CreateBoundState(
+            data,
+            simulationTimeSeconds: double.MaxValue,
+            amplitude: 1.0,
+            precursor: ZeroPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: 0.0,
+            kineticStepIndex: 0);
+
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(atMaximumTime, data, double.MaxValue),
+            "KineticIntegration.Time.Invalid");
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(atMaximumTime, data, double.Epsilon),
+            "KineticIntegration.Time.Invalid");
+
+        KineticStateV1 atMaximumStep = CreateBoundState(
+            data,
+            simulationTimeSeconds: 0.0,
+            amplitude: 1.0,
+            precursor: ZeroPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: 0.0,
+            kineticStepIndex: ulong.MaxValue);
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(atMaximumStep, data, 1.0),
+            "KineticIntegration.StepIndex.Overflow");
+    }
+
+    [Fact]
+    public void RejectsAmplitudeDelayedSourceAndPrecursorOverflow()
+    {
+        DelayedNeutronDataV1 amplitudeData = CreateSingleGroupData(0.0, 1.0, 0x9E);
+        KineticStateV1 amplitudeOverflow = CreateBoundState(
+            amplitudeData,
+            simulationTimeSeconds: 0.0,
+            amplitude: double.MaxValue,
+            precursor: ZeroPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: 2.0,
+            kineticStepIndex: 0);
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(amplitudeOverflow, amplitudeData, 1.0),
+            "KineticIntegration.PromptDerivative.Invalid");
+
+        DelayedNeutronDataV1 delayedSourceData = CreateSingleGroupData(0.0, 2.0, 0x9F);
+        KineticStateV1 delayedSourceOverflow = CreateBoundState(
+            delayedSourceData,
+            simulationTimeSeconds: 0.0,
+            amplitude: 0.0,
+            precursor: MaxPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: 0.0,
+            kineticStepIndex: 0);
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(delayedSourceOverflow, delayedSourceData, 1.0),
+            "KineticIntegration.DelayedSource.Invalid");
+
+        DelayedNeutronDataV1 precursorData = CreateSingleGroupData(0.5, 1.0, 0xA0);
+        KineticStateV1 precursorOverflow = CreateBoundState(
+            precursorData,
+            simulationTimeSeconds: 0.0,
+            amplitude: double.MaxValue,
+            precursor: ZeroPrecursor,
+            initialPrecursor: ZeroPrecursor,
+            spatialReactivity: 0.5,
+            kineticStepIndex: 0);
+        AssertInvalid(
+            KineticIntegrationTransitionV1.TryApply(precursorOverflow, precursorData, 4.0),
+            "KineticIntegration.PrecursorResult.Invalid");
+    }
+
+    [Fact]
+    public void PreservesDataAndStepVectorImmutability()
+    {
+        DelayedNeutronGroupV1[] inputGroups =
+        {
+            CreateGroup(0, 0.1, 0.2),
+            CreateGroup(1, 0.2, 0.4)
+        };
+        ContractValidationResult<DelayedNeutronDataV1> createdData =
+            DelayedNeutronDataV1.TryCreate(
+                Id("a1a1a1a1-a1a1-41a1-81a1-a1a1a1a1a1a1"),
+                "synthetic-p7-immutable-data",
+                Digest(0xA1),
+                2.0,
+                inputGroups);
+
+        AssertValid(createdData);
+        DelayedNeutronDataV1 data = createdData.Value;
+        inputGroups[0] = CreateGroup(0, 0.8, 0.8);
+        Assert.Equal(0.1, data.Groups[0].BetaFraction, 12);
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<DelayedNeutronGroupV1>)data.Groups)[0] = inputGroups[0]);
+
+        KineticStateV1 state = CreateState(data, amplitude: 1.0, precursor: NominalPrecursor);
+        KineticIntegrationResultV1 result = AssertValid(
+            KineticIntegrationTransitionV1.TryApply(state, data, 0.5)).Value;
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<double>)result.Step.PrecursorBefore)[0] = 0.0);
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<double>)result.Step.PrecursorAfter)[0] = 0.0);
+        Assert.Throws<NotSupportedException>(
+            () => ((IList<double>)result.Step.PrecursorDerivative)[0] = 0.0);
+    }
+
+    [Fact]
     public void RejectsStaleDataInvalidIntervalAndNegativeResultWithoutClamping()
     {
         DelayedNeutronDataV1 data = CreateData();
@@ -243,6 +423,20 @@ public sealed class P7T01KineticsTests
         return AssertValid(result).Value;
     }
 
+    private static DelayedNeutronDataV1 CreateSingleGroupData(
+        double betaFraction,
+        double decayConstantPerSecond,
+        byte digestValue)
+    {
+        ContractValidationResult<DelayedNeutronDataV1> result = DelayedNeutronDataV1.TryCreate(
+            Id("abababab-abab-4bab-8bab-abababababab"),
+            "synthetic-p7-single-group-" + digestValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Digest(digestValue),
+            1.0,
+            new[] { CreateGroup(0, betaFraction, decayConstantPerSecond) });
+        return AssertValid(result).Value;
+    }
+
     private static DelayedNeutronGroupV1 CreateGroup(
         int groupIndex,
         double betaFraction,
@@ -258,20 +452,44 @@ public sealed class P7T01KineticsTests
         double amplitude,
         IEnumerable<double> precursor)
     {
+        return CreateBoundState(
+            data,
+            simulationTimeSeconds: 0.0,
+            amplitude: amplitude,
+            precursor: precursor,
+            initialPrecursor: NominalInitialPrecursor,
+            spatialReactivity: 0.4,
+            kineticStepIndex: 0);
+    }
+
+    private static KineticStateV1 CreateBoundState(
+        DelayedNeutronDataV1 data,
+        double simulationTimeSeconds,
+        double amplitude,
+        IEnumerable<double> precursor,
+        IEnumerable<double> initialPrecursor,
+        double spatialReactivity,
+        ulong kineticStepIndex)
+    {
         ContractValidationResult<KineticStateV1> result = KineticStateV1.TryCreate(
-            0.0,
+            simulationTimeSeconds,
             amplitude,
             precursor,
             1.0,
-            NominalInitialPrecursor,
+            initialPrecursor,
             1000.0,
             data,
             OptionalStableId.Applicable(Id("22222222-2222-4222-8222-222222222222")),
             OptionalUInt64.Applicable(7),
-            0.4,
+            spatialReactivity,
             OptionalDigest32.Applicable(Digest(0x22)),
-            0);
+            kineticStepIndex);
         return AssertValid(result).Value;
+    }
+
+    private static double NegativeZero
+    {
+        get { return BitConverter.Int64BitsToDouble(long.MinValue); }
     }
 
     private static StableId Id(string value)
