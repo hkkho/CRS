@@ -101,23 +101,27 @@ namespace ReactorSim.Core
                 sigmaXeGroup1M2,
                 sigmaXeGroup2M2
             };
-            if (values.Any(value => !ContractValidation.IsFinite(value)))
+            if (values.Any(value => !PowerHistoryRecordV1.IsCanonicalFinite(value)))
             {
                 return Invalid(
                     "NuclideData.NonFinite",
                     "data",
-                    "Every nuclide-data value must be finite.");
+                    "Every nuclide-data value must be finite and canonical.");
             }
 
-            if (gammaI < 0 || gammaXe < 0 || sigmaXeGroup1M2 < 0 || sigmaXeGroup2M2 < 0)
+            if (!PowerHistoryRecordV1.IsCanonicalNonnegative(gammaI) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(gammaXe) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(sigmaXeGroup1M2) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(sigmaXeGroup2M2))
             {
                 return Invalid(
                     "NuclideData.Negative",
                     "data",
-                    "Yields and microscopic absorption cross sections must be nonnegative.");
+                    "Yields and microscopic absorption cross sections must be finite, canonical, and nonnegative.");
             }
 
-            if (lambdaI <= 0 || lambdaXe <= 0)
+            if (!PowerHistoryRecordV1.IsCanonicalPositiveFinite(lambdaI) ||
+                !PowerHistoryRecordV1.IsCanonicalPositiveFinite(lambdaXe))
             {
                 return Invalid(
                     "NuclideData.Decay.Invalid",
@@ -231,8 +235,18 @@ namespace ReactorSim.Core
 
         internal static bool IsCanonicalNonnegative(double value)
         {
-            return ContractValidation.IsFinite(value) && value >= 0 &&
-                   BitConverter.DoubleToInt64Bits(value) >= 0;
+            return IsCanonicalFinite(value) && value >= 0;
+        }
+
+        internal static bool IsCanonicalFinite(double value)
+        {
+            return ContractValidation.IsFinite(value) &&
+                   BitConverter.DoubleToInt64Bits(value) != long.MinValue;
+        }
+
+        internal static bool IsCanonicalPositiveFinite(double value)
+        {
+            return IsCanonicalFinite(value) && value > 0;
         }
 
         private static ContractValidationResult<PowerHistoryRecordV1> Invalid(
@@ -559,8 +573,7 @@ namespace ReactorSim.Core
             }
 
             if (!PowerHistoryRecordV1.IsCanonicalTime(eventTimeSeconds) ||
-                !ContractValidation.IsFinite(deltaTimeSeconds) || deltaTimeSeconds <= 0 ||
-                BitConverter.DoubleToInt64Bits(deltaTimeSeconds) < 0)
+                !PowerHistoryRecordV1.IsCanonicalPositiveFinite(deltaTimeSeconds))
             {
                 return Invalid(
                     "NuclideTransition.Time.Invalid",
@@ -620,21 +633,28 @@ namespace ReactorSim.Core
                 xeDecayLossAtomsPerSecond,
                 xeAbsorptionLossAtomsPerSecond
             };
-            if (values.Any(value => !ContractValidation.IsFinite(value)))
+            if (values.Any(value => !PowerHistoryRecordV1.IsCanonicalFinite(value)))
             {
                 return Invalid(
                     "NuclideTransition.NonFinite",
                     "transition",
-                    "Every nuclide transition value must be finite.");
+                    "Every nuclide transition value must be finite and canonical.");
             }
 
-            if (nodeVolumeM3 <= 0 || iBefore < 0 || iAfter < 0 || xeBefore < 0 || xeAfter < 0 ||
-                iDensityBefore < 0 || iDensityAfter < 0 || xeDensityBefore < 0 || xeDensityAfter < 0)
+            if (!PowerHistoryRecordV1.IsCanonicalPositiveFinite(nodeVolumeM3) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(iBefore) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(iAfter) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeBefore) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeAfter) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(iDensityBefore) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(iDensityAfter) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeDensityBefore) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeDensityAfter))
             {
                 return Invalid(
                     "NuclideTransition.Inventory.Invalid",
                     "transition.inventory",
-                    "Atom inventories, derived densities, and node volume must be nonnegative/positive as specified.");
+                    "Atom inventories and derived densities must be finite, canonical, and nonnegative; node volume must be finite, canonical, and positive.");
             }
 
             if (iDensityBefore != iBefore / nodeVolumeM3 || iDensityAfter != iAfter / nodeVolumeM3 ||
@@ -1011,20 +1031,24 @@ namespace ReactorSim.Core
             }
 
             double[] values = { iInventory, xeInventory, initialI, initialXe, nodeVolumeM3 };
-            if (values.Any(value => !ContractValidation.IsFinite(value)))
+            if (values.Any(value => !PowerHistoryRecordV1.IsCanonicalFinite(value)))
             {
                 return Invalid(
                     "NuclideState.NonFinite",
                     "state",
-                    "Nuclide inventories, initial values, and volume must be finite.");
+                    "Nuclide inventories, initial values, and volume must be finite and canonical.");
             }
 
-            if (iInventory < 0 || xeInventory < 0 || initialI < 0 || initialXe < 0 || nodeVolumeM3 <= 0)
+            if (!PowerHistoryRecordV1.IsCanonicalNonnegative(iInventory) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeInventory) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(initialI) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(initialXe) ||
+                !PowerHistoryRecordV1.IsCanonicalPositiveFinite(nodeVolumeM3))
             {
                 return Invalid(
                     "NuclideState.Range.Invalid",
                     "state",
-                    "Atom inventories must be nonnegative and node volume must be strictly positive.");
+                    "Atom inventories must be finite, canonical, and nonnegative; node volume must be finite, canonical, and strictly positive.");
             }
 
             if (data.MaterialVariantId.Value.Length == 0)
@@ -1037,12 +1061,13 @@ namespace ReactorSim.Core
 
             double iDensity = iInventory / nodeVolumeM3;
             double xeDensity = xeInventory / nodeVolumeM3;
-            if (!ContractValidation.IsFinite(iDensity) || !ContractValidation.IsFinite(xeDensity))
+            if (!PowerHistoryRecordV1.IsCanonicalNonnegative(iDensity) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(xeDensity))
             {
                 return Invalid(
                     "NuclideState.Density.NonFinite",
                     "state.density",
-                    "Derived number densities must remain finite.");
+                    "Derived number densities must remain finite, canonical, and nonnegative.");
             }
 
             NuclideTransitionRecordV1[] records = history.ToArray();
@@ -1448,8 +1473,7 @@ namespace ReactorSim.Core
 
             if (!Enum.IsDefined(typeof(EventRankV1), eventRank) ||
                 !PowerHistoryRecordV1.IsCanonicalTime(eventTimeSeconds) ||
-                !ContractValidation.IsFinite(deltaTimeSeconds) || deltaTimeSeconds <= 0 ||
-                BitConverter.DoubleToInt64Bits(deltaTimeSeconds) < 0)
+                !PowerHistoryRecordV1.IsCanonicalPositiveFinite(deltaTimeSeconds))
             {
                 return Invalid(
                     "NuclideIntegrationInput.Time.Invalid",
@@ -1458,12 +1482,12 @@ namespace ReactorSim.Core
             }
 
             double[] values = { fissionRateDensity, fluxGroup1, fluxGroup2 };
-            if (values.Any(value => !ContractValidation.IsFinite(value) || value < 0))
+            if (values.Any(value => !PowerHistoryRecordV1.IsCanonicalNonnegative(value)))
             {
                 return Invalid(
                     "NuclideIntegrationInput.FluxOrRate.Invalid",
                     "input.flux_or_fission_rate",
-                    "Fission rate density and actual group fluxes must be finite and nonnegative.");
+                    "Fission rate density and actual group fluxes must be finite, canonical, and nonnegative.");
             }
 
             return ContractValidationResult<NuclideIntegrationInputV1>.Valid(
@@ -1543,23 +1567,32 @@ namespace ReactorSim.Core
 
             NuclideDataV1 data = input.Data;
             double iDirect = current.NodeVolumeM3 * data.GammaI * input.FissionRateDensity;
-            double iDecay = -data.LambdaI * current.I135AtomInventory;
+            double iDecay = CanonicalNegativeLoss(data.LambdaI * current.I135AtomInventory);
             double xeDirect = current.NodeVolumeM3 * data.GammaXe * input.FissionRateDensity;
-            double xeFromI = -iDecay;
+            double xeFromI = iDecay == 0.0 ? 0.0 : -iDecay;
             double absorptionRate =
                 (data.SigmaXeGroup1M2 * input.FluxGroup1) +
                 (data.SigmaXeGroup2M2 * input.FluxGroup2);
-            double xeDecay = -data.LambdaXe * current.Xe135AtomInventory;
-            double xeAbsorption = -absorptionRate * current.Xe135AtomInventory;
+            double xeDecay = CanonicalNegativeLoss(data.LambdaXe * current.Xe135AtomInventory);
+            double xeAbsorption = CanonicalNegativeLoss(absorptionRate * current.Xe135AtomInventory);
 
             double nextI = current.I135AtomInventory +
                 (input.DeltaTimeSeconds * (iDirect + iDecay));
             double nextXe = current.Xe135AtomInventory +
                 (input.DeltaTimeSeconds * (xeDirect + xeFromI + xeDecay + xeAbsorption));
-            if (!ContractValidation.IsFinite(nextI) || !ContractValidation.IsFinite(nextXe) ||
-                nextI < 0 || nextXe < 0 ||
-                new[] { iDirect, iDecay, xeDirect, xeFromI, xeDecay, xeAbsorption }
-                    .Any(value => !ContractValidation.IsFinite(value)))
+            double[] computedTerms =
+            {
+                absorptionRate,
+                iDirect,
+                iDecay,
+                xeDirect,
+                xeFromI,
+                xeDecay,
+                xeAbsorption
+            };
+            if (!PowerHistoryRecordV1.IsCanonicalNonnegative(nextI) ||
+                !PowerHistoryRecordV1.IsCanonicalNonnegative(nextXe) ||
+                computedTerms.Any(value => !PowerHistoryRecordV1.IsCanonicalFinite(value)))
             {
                 return Invalid(
                     "NuclideIntegration.Result.Invalid",
@@ -1627,6 +1660,11 @@ namespace ReactorSim.Core
 
             return ContractValidationResult<NuclideIntegrationResultV1>.Valid(
                 new NuclideIntegrationResultV1(next.Value, record.Value));
+        }
+
+        private static double CanonicalNegativeLoss(double nonnegativeMagnitude)
+        {
+            return nonnegativeMagnitude == 0.0 ? 0.0 : -nonnegativeMagnitude;
         }
 
         private static ContractValidationResult<NuclideIntegrationResultV1> Invalid(
