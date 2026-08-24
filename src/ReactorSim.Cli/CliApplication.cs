@@ -14,6 +14,7 @@ namespace ReactorSim.Cli
     {
         private const int SuccessExitCode = 0;
         private const int CommandErrorExitCode = 2;
+        private const string CanonicalNewLine = "\n";
         private static readonly char[] CommandSeparators = { ' ', '\t' };
 
         public static int Run(TextReader input, TextWriter output, TextWriter error)
@@ -101,9 +102,9 @@ namespace ReactorSim.Cli
                     }
 
                     session = new CliSession(SyntheticFixtures.CreateTwoChannelThreePosition());
-                    output.WriteLine("run: created");
-                    output.WriteLine("run_kind=synthetic-inspection");
-                    output.WriteLine("data_pack_version=synthetic-p3-t01");
+                    WriteLine(output, "run: created");
+                    WriteLine(output, "run_kind=synthetic-inspection");
+                    WriteLine(output, "data_pack_version=synthetic-p3-t01");
                     return CommandResult.Success;
 
                 case "inspect":
@@ -121,17 +122,16 @@ namespace ReactorSim.Cli
                     }
 
                     session.Pause();
-                    output.WriteLine("paused=true");
+                    WriteLine(output, "paused=true");
                     return CommandResult.Success;
 
                 case "quit":
-                case "exit":
                     if (tokens.Length != 1)
                     {
                         return Fail(error, "CLI.Command.Usage", "usage: quit");
                     }
 
-                    output.WriteLine("bye");
+                    WriteLine(output, "bye");
                     return new CommandResult(true, true);
 
                 default:
@@ -188,31 +188,31 @@ namespace ReactorSim.Cli
 
         private static void WriteHelp(TextWriter output)
         {
-            output.WriteLine("commands:");
-            output.WriteLine("  help");
-            output.WriteLine("  new run");
-            output.WriteLine("  inspect core");
-            output.WriteLine("  inspect channel <channel_id>");
-            output.WriteLine("  inspect bundle <channel_id> <position>");
-            output.WriteLine("  pause");
-            output.WriteLine("  quit");
+            WriteLine(output, "commands:");
+            WriteLine(output, "  help");
+            WriteLine(output, "  new run");
+            WriteLine(output, "  inspect core");
+            WriteLine(output, "  inspect channel <channel_id>");
+            WriteLine(output, "  inspect bundle <channel_id> <position>");
+            WriteLine(output, "  pause");
+            WriteLine(output, "  quit");
         }
 
         private static void WriteCoreInspection(CliSession session, TextWriter output)
         {
             SyntheticCoreFixture fixture = session.Fixture;
-            output.WriteLine("core:");
-            output.WriteLine("  run_kind=synthetic-inspection");
-            output.WriteLine("  topology_channel_count=" + fixture.Topology.ChannelCount.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  topology_bundle_position_count=" + fixture.Topology.BundlePositionCount.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  inventory_slot_count=" + fixture.Inventory.SlotCount.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  inventory_occupied_count=" + fixture.Inventory.OccupiedCount.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  data_pack_version=" + fixture.DataPack.DataPackVersion);
-            output.WriteLine("  simulation_time_s=" + FormatDouble(fixture.Configuration.InitialSimulationTimeSeconds));
-            output.WriteLine("  core_state_version=" + fixture.Configuration.InitialCoreStateVersion.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  spatial_state_version=" + fixture.Configuration.InitialSpatialStateVersion.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  power_snapshot_version=" + fixture.Configuration.InitialPowerSnapshotVersion.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  paused=" + session.IsPaused.ToString().ToLowerInvariant());
+            WriteLine(output, "core:");
+            WriteLine(output, "  run_kind=synthetic-inspection");
+            WriteLine(output, "  topology_channel_count=" + fixture.Topology.ChannelCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  topology_bundle_position_count=" + fixture.Topology.BundlePositionCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  inventory_slot_count=" + fixture.Inventory.SlotCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  inventory_occupied_count=" + fixture.Inventory.OccupiedCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  data_pack_version=" + fixture.DataPack.DataPackVersion);
+            WriteLine(output, "  simulation_time_s=" + FormatDouble(fixture.Configuration.InitialSimulationTimeSeconds));
+            WriteLine(output, "  core_state_version=" + fixture.Configuration.InitialCoreStateVersion.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  spatial_state_version=" + fixture.Configuration.InitialSpatialStateVersion.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  power_snapshot_version=" + fixture.Configuration.InitialPowerSnapshotVersion.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  paused=" + session.IsPaused.ToString().ToLowerInvariant());
         }
 
         private static CommandResult WriteChannelInspection(
@@ -237,13 +237,13 @@ namespace ReactorSim.Cli
             }
 
             ChannelTopology channel = session.Fixture.Topology.GetChannel(new ChannelId(channelId));
-            output.WriteLine("channel:");
-            output.WriteLine("  id=" + channel.ChannelId.Value.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  coordinate_x=" + channel.CoordinateX.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  coordinate_y=" + channel.CoordinateY.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  flow_direction=" + channel.FlowDirection);
-            output.WriteLine("  inlet_position=" + channel.InletPosition.Value.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  outlet_position=" + channel.OutletPosition.Value.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "channel:");
+            WriteLine(output, "  id=" + channel.ChannelId.Value.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  coordinate_x=" + channel.CoordinateX.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  coordinate_y=" + channel.CoordinateY.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  flow_direction=" + channel.FlowDirection);
+            WriteLine(output, "  inlet_position=" + channel.InletPosition.Value.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  outlet_position=" + channel.OutletPosition.Value.ToString(CultureInfo.InvariantCulture));
             return CommandResult.Success;
         }
 
@@ -277,16 +277,16 @@ namespace ReactorSim.Cli
                 return Fail(error, "CLI.Command.Bundle.Missing", "the validated location is empty.");
             }
 
-            output.WriteLine("bundle:");
-            output.WriteLine("  id=" + bundle.BundleId);
-            output.WriteLine("  channel_id=" + bundle.ChannelId.Value.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  position=" + bundle.Position.Value.ToString(CultureInfo.InvariantCulture));
-            output.WriteLine("  material_variant_id=" + bundle.MaterialVariantId.Value);
-            output.WriteLine("  initial_burnup_j_per_kg_hm=" + FormatDouble(bundle.InitialBurnupJPerKgHm));
-            output.WriteLine("  cumulative_fission_energy_j=" + FormatDouble(bundle.CumulativeFissionEnergyJ));
-            output.WriteLine("  current_burnup_j_per_kg_hm=" + FormatDouble(bundle.CurrentBurnupJPerKgHm));
-            output.WriteLine("  heavy_metal_mass_kg=" + FormatDouble(bundle.HeavyMetalMassKg));
-            output.WriteLine("  inserted_at_s=" + FormatDouble(bundle.InsertedAtSeconds));
+            WriteLine(output, "bundle:");
+            WriteLine(output, "  id=" + bundle.BundleId);
+            WriteLine(output, "  channel_id=" + bundle.ChannelId.Value.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  position=" + bundle.Position.Value.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  material_variant_id=" + bundle.MaterialVariantId.Value);
+            WriteLine(output, "  initial_burnup_j_per_kg_hm=" + FormatDouble(bundle.InitialBurnupJPerKgHm));
+            WriteLine(output, "  cumulative_fission_energy_j=" + FormatDouble(bundle.CumulativeFissionEnergyJ));
+            WriteLine(output, "  current_burnup_j_per_kg_hm=" + FormatDouble(bundle.CurrentBurnupJPerKgHm));
+            WriteLine(output, "  heavy_metal_mass_kg=" + FormatDouble(bundle.HeavyMetalMassKg));
+            WriteLine(output, "  inserted_at_s=" + FormatDouble(bundle.InsertedAtSeconds));
             return CommandResult.Success;
         }
 
@@ -297,8 +297,14 @@ namespace ReactorSim.Cli
 
         private static CommandResult Fail(TextWriter error, string code, string message)
         {
-            error.WriteLine("error[" + code + "]: " + message);
+            WriteLine(error, "error[" + code + "]: " + message);
             return CommandResult.Failure;
+        }
+
+        private static void WriteLine(TextWriter writer, string value)
+        {
+            writer.Write(value);
+            writer.Write(CanonicalNewLine);
         }
 
         private static bool TryParseIndex(string value, out uint index)
