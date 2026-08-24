@@ -98,11 +98,12 @@ decision record: it classifies all 21 public P6-T06 Core types and 34
 task-ID-named test fixtures, records that no CLI or Unity source currently
 consumes a P6-T06 type, and defines a no-break additive migration order. No
 rename, alias, public contract, persistence, or serialized-byte change was
-made. `STATUS-VISIBILITY-01` is now complete: the derived guide, PDF, private
-site, and clean-session handoff query the current scope row and display the
-latest verified evidence without changing technical authority. No named next
-task is selected until the owner decides whether to start planned Phase 7 or
-re-sequence the explicitly non-physics Phase 8 CLI slice.
+made. `STATUS-VISIBILITY-01` is complete, and the owner-authorized
+non-physics Phase 8 activation has completed `P8-T01`: the CLI now provides a
+deterministic inspection shell over the existing synthetic Core fixture. It
+does not add physics, time advancement, refuelling, RRS actions, save/load,
+replay, or gameplay scoring. The next Phase 8 task remains unselected until
+approved scenario/difficulty parameter authority exists.
 
 ## Fast routing
 
@@ -208,7 +209,13 @@ Historical context is intentionally short:
 | `P6-INTEGRATION-01` | `COMPLETE` | Core-owned RRS projection-to-queue admission preserves v1 command/queue bytes, source binding, rank 2, delays/rates, and immutable enqueue behavior; focused `10/10`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | Follow-on `P6-INTERNALS-01` is complete; `CORE-NAMING-01` is next. |
 | `P6-INTERNALS-01` | `COMPLETE` | Internal compatibility inventory preserved the distinct public RRS projection and P6-T06 transition queue; shared only the identical grouping canonical-byte body. Focused grouping `11/11`, T3 Core `158/158`, Golden `19/19`, zero failures/skips, independent review `PASS` with telemetry `UNVERIFIED`. | `CORE-NAMING-01` is next; no public rename is authorized in that discovery task. |
 | `CORE-NAMING-01` | `COMPLETE` | Discovery-only inventory found 21 public P6-T06 Core types and 34 public task-ID-named test fixtures; classified serialized vs transient roles, found no CLI/Unity typed P6-T06 consumer, and defined a no-break migration order. Focused Core build passed with 0 warnings and 0 errors. | `STATUS-VISIBILITY-01` is next; any implementation rename requires a separate risk-triggered task. |
-| `STATUS-VISIBILITY-01` | `COMPLETE` | Derived guide v2.8, generated 22-page PDF, private-site home/roadmap, and clean-session handoff now show direct Core `158/158`, Golden `19/19`, focused P6 `46/46`, and the artifact-wrapper recovery baseline Core `156/156` plus Golden `19/19`; the guide/site retain the synthetic/test-only G6 limitation and external/production deferrals. Local consistency and private-site route tests pass. | No named next task until the owner decides whether to start planned Phase 7 or re-sequence the non-physics Phase 8 CLI slice; publication remains separately authorized and optional. |
+| `STATUS-VISIBILITY-01` | `COMPLETE` | Derived guide v2.8, generated 22-page PDF, private-site home/roadmap, and clean-session handoff now show direct Core `158/158`, Golden `19/19`, focused P6 `46/46`, and the artifact-wrapper recovery baseline Core `156/156` plus Golden `19/19`; the guide/site retain the synthetic/test-only G6 limitation and external/production deferrals. Local consistency and private-site route tests pass. | Owner-authorized non-physics Phase 8 activation selected `P8-T01`. |
+
+## Phase 8 non-physics CLI sequence — 2026-08-24
+
+| Key | Status | Boundary and evidence | Next handoff |
+|---|---|---|---|
+| `P8-T01` | `COMPLETE` | The first Phase 8 CLI slice provides `help`, `new run`, `inspect core`, `inspect channel`, `inspect bundle`, `pause`, and `quit` over the explicit synthetic Core fixture. Output uses canonical LF line endings, invariant numeric formatting, separate stdout/stderr, deterministic errors, and exit code `2` for malformed commands. Focused CLI tests `5/5`, full T3 Core `158/158`, Golden `19/19`, CLI `5/5`, and release build `0` warnings/errors passed; independent review final `PASS` with telemetry `UNVERIFIED`. | No next Phase 8 task is selected until an approved scenario/difficulty parameter authority is available; the remaining Phase 8 work packages and G8 evidence are not implied by this slice. |
 
 The refactoring proposal remains a sequencing aid rather than a technical
 authority. The current user authorization selects one task at a time; it does
