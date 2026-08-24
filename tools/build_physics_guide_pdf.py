@@ -393,7 +393,7 @@ def main():
         [[
             Paragraph("SOURCE STATUS", styles["TableHeader"]),
             Paragraph(
-                "This guide records bounded G4-R6/G5 PASS and G6 CONDITIONAL PASS evidence. The latest direct pinned headless run passed Core 154/154 and Golden 19/19. It is not a direct external/full-core reactor simulator; the test-wrapper location defect and deferred RRS comparison are documented inside.",
+                "This guide records bounded G4-R6/G5 PASS and G6 CONDITIONAL PASS evidence. The latest direct pinned headless run passed Core 158/158 and Golden 19/19; the Phase 6 focused run passed 46/46. It is not a direct external/full-core reactor simulator, and no applicable RRS comparison package or production authority has been admitted.",
                 styles["TableCell"],
             ),
         ]],

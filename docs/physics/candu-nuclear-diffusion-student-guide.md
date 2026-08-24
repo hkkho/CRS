@@ -1,7 +1,7 @@
 # Nuclear Diffusion Theory in a CANDU Reactor
 
-**Guide version:** 2.7
-**Last checked:** 2026-08-21
+**Guide version:** 2.8
+**Last checked:** 2026-08-24
 **Status:** Living documentation; update when the physics specifications,
 runtime implementation, validation gates, or game rules change.
 
@@ -121,6 +121,16 @@ is closed `PASS` for the approved ReducedModel/Core scope. Phase 6/G6 is a
 the implementation is complete for that evidence boundary, but an applicable
 RRS comparison package is still required before an unconditional or external
 claim is possible.
+
+The 2026-08-24 recovery handoff also completed `TEST-INFRA-01`,
+`P6-INTEGRATION-01`, `P6-INTERNALS-01`, and `CORE-NAMING-01`. Those tasks
+refreshed test artifact portability, the RRS queue-admission seam, internal
+canonical-byte ownership, and the task-ID compatibility inventory. They did
+not change the physics model, public schema, golden authority, or G6 scope.
+`STATUS-VISIBILITY-01` is complete as the derived-documentation handoff; no
+named next task is selected until the owner decides whether to start planned
+Phase 7 or re-sequence the explicitly non-physics Phase 8 CLI slice. The
+project scope register and linked reports remain authoritative.
 
 The implemented Phase 1 work is an **offline reference pipeline**:
 
@@ -422,7 +432,7 @@ The model cards below explain what each layer means.
 | P4-T06-G4J / G4-R5 | Project-authored 48-node ReducedModel candidate with five scenarios | Candidate generation and Core comparison are deterministic | Candidate remained unapproved; G4-R5 remained blocked |
 | P4-T06-G4K / G4-R6 | Same bounded ReducedModel domain with independent dense generalized-eigen expected values | Five scenarios and six quantity profiles support `ApprovedGolden` use for `ReducedModel` | No direct DRAGON5/DONJON5, production, release, safety, or 380-channel claim |
 | P5-T10 / G5 | ReducedModel sequence plus the Phase 5 bundle/lifecycle ledger | Refuelling movement, identity, energy/burnup mapping, digests, persistence, and restart contracts pass exactly within the admitted scope | Not an independent external burnup or full-core numerical comparison |
-| Phase 6 / G6 | Synthetic/test-only RRS state, actuator, queue, and five-scenario model | P6-T01 through P6-T07 complete; G6 `CONDITIONAL PASS`; 44 focused tests and the full regression pass | No applicable RRS comparison, production, external, or golden authority |
+| Phase 6 / G6 | Synthetic/test-only RRS state, actuator, queue, and five-scenario model | P6-T01 through P6-T07 complete; G6 `CONDITIONAL PASS`; 46 focused tests and the full regression pass | No applicable RRS comparison, production, external, or golden authority |
 
 This map is the safest way to interpret the evidence: G4-R5 did not fail to
 clear a model that G4-R6 later silently relabelled. R5 rejected the candidate
@@ -949,25 +959,25 @@ reviewer context. The approved G4-R6 artifact and manifest hashes are
 unchanged. Direct production/external authority remains deferred, and the
 Phase 6/G6 result is recorded separately below.
 
-### 6.8 Current test results and test-runner limitation
+### 6.8 Current test results and evidence boundary
 
-The following checks were rerun on 2026-08-21 with the repository-pinned .NET
-SDK 10.0.302. They are implementation evidence, not a claim of production or
-external CANDU validation.
+The following checks were recorded or rerun on 2026-08-24 with the
+repository-pinned .NET SDK 10.0.302. They are implementation evidence, not a
+claim of production or external CANDU validation.
 
 | Check | Fresh result |
 | --- | --- |
-| Direct full headless solution regression | Core 154/154 PASS; Golden 19/19 PASS; zero failures and zero skips |
-| Direct Phase 6 focused regression | Core 44/44 PASS; zero failures and zero skips |
-| `Test-FullHeadlessSuite.ps1` with an artifact output path | Core 142/154 and Golden 19/19; 12 Core failures caused by test data/repository-root location lookup after the wrapper moves test binaries |
+| Direct full headless solution regression | Core 158/158 PASS; Golden 19/19 PASS; zero failures and zero skips |
+| Direct Phase 6 focused regression | Core 46/46 PASS; zero failures and zero skips |
+| `TEST-INFRA-01` artifact-output wrapper recovery | Core 156/156 and Golden 19/19 PASS; zero failures and zero skips |
 
-The direct run shows 173 passing headless tests in the normal repository
-layout. The wrapper failure is a test-infrastructure defect: Phase 6 tests
-find packages by walking from `AppContext.BaseDirectory`, but the wrapper's
-`--artifacts-path` places the test binaries outside the repository. It must be
-fixed before the wrapper can be trusted for CI or release evidence. The
-failure does not create a new reactor-physics result, and it does not change
-the G6 `CONDITIONAL PASS` boundary.
+The direct run shows 177 passing headless tests in the normal repository
+layout. `TEST-INFRA-01` closed the former artifact-output location defect for
+the recovery baseline; the later direct count includes the separately
+characterized Phase 6 integration and internal tests. All Phase 6 results
+remain synthetic/test-only contract evidence. G6 is still a `CONDITIONAL PASS`:
+no applicable RRS comparison package, production/full-core CANDU authority, or
+unconditional external claim has been admitted.
 
 ## 7. Point kinetics and xenon history
 
@@ -1327,7 +1337,8 @@ normalization, output definition, independent reproduction, and licensing.
 
 | Version | Date | Change |
 | --- | --- | --- |
-| 2.7 | 2026-08-21 | Added the G6 conditional synthetic/test-only disposition, fresh Core 154/154 and Golden 19/19 test results, the Phase 6 focused 44/44 result, and the full-suite wrapper location defect; kept external RRS authority deferred |
+| 2.8 | 2026-08-24 | Refreshed the living handoff with direct Core 158/158 and Golden 19/19, Phase 6 focused 46/46, the TEST-INFRA-01 wrapper recovery, the completed Phase 6 refactor/naming chain, and the unchanged synthetic-only G6 limitation |
+| 2.7 | 2026-08-21 | Added the G6 conditional synthetic/test-only disposition and recorded the then-current direct and artifact-wrapper validation boundary; kept external RRS authority deferred |
 | 2.6 | 2026-08-18 | Added the ReducedModel channel-plane geometry visualization; preserved authority boundaries |
 | 2.5 | 2026-08-18 | Added model cards, evidence mapping, and visualizations |
 | 2.4 | 2026-08-18 | Recorded G4-R6 approval, the final G5 PASS for the bounded ReducedModel/Core scope, P5-T10 through P5-T16 evidence, and Phase 6/G6 activation; kept direct production/full-core authority deferred |

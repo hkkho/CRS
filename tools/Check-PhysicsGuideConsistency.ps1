@@ -6,9 +6,10 @@ $pdfPath = Join-Path $repoRoot 'output/pdf/candu-nuclear-diffusion-student-guide
 $privatePdfPath = Join-Path $repoRoot 'tmp/private-physics-download-site/public/candu-nuclear-diffusion-student-guide.pdf'
 $planPath = Join-Path $repoRoot 'docs/Implementation_plan.md'
 $scopePath = Join-Path $repoRoot 'docs/PROJECT_SCOPE.md'
+$nextGoalPromptPath = Join-Path $repoRoot 'docs/NEXT_GOAL_PROMPT.md'
 $builderPath = Join-Path $repoRoot 'tools/build_physics_guide_pdf.py'
 
-foreach ($path in @($guidePath, $pdfPath, $privatePdfPath, $planPath, $scopePath, $builderPath)) {
+foreach ($path in @($guidePath, $pdfPath, $privatePdfPath, $planPath, $scopePath, $nextGoalPromptPath, $builderPath)) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Required guide artifact is missing: $path"
     }
@@ -17,6 +18,7 @@ foreach ($path in @($guidePath, $pdfPath, $privatePdfPath, $planPath, $scopePath
 $guide = Get-Content -LiteralPath $guidePath -Raw -Encoding utf8
 $plan = Get-Content -LiteralPath $planPath -Raw -Encoding utf8
 $scope = Get-Content -LiteralPath $scopePath -Raw -Encoding utf8
+$nextGoalPrompt = Get-Content -LiteralPath $nextGoalPromptPath -Raw -Encoding utf8
 
 foreach ($maintenanceTerm in @(
     'docs/physics/candu-nuclear-diffusion-student-guide.md',
@@ -28,7 +30,7 @@ foreach ($maintenanceTerm in @(
     }
 }
 
-foreach ($scopeTerm in @('P4-T05', 'P4-T06-R3', 'P4-T06-G4H', 'G4-R3', 'G4-R6', 'P5-T01', 'P5-T02', 'P5-T03', 'P5-T04', 'P5-T05', 'P5-T06', 'P5-T07', 'P5-T08', 'P5-T09', 'P5-T10', 'P5-T16', 'P6-T01', 'P6-T07', 'G4', 'G5', 'G6', 'FORCED CLOSED / WAIVED')) {
+foreach ($scopeTerm in @('P4-T05', 'P4-T06-R3', 'P4-T06-G4H', 'G4-R3', 'G4-R6', 'P5-T01', 'P5-T02', 'P5-T03', 'P5-T04', 'P5-T05', 'P5-T06', 'P5-T07', 'P5-T08', 'P5-T09', 'P5-T10', 'P5-T16', 'P6-T01', 'P6-T07', 'TEST-INFRA-01', 'P6-INTEGRATION-01', 'P6-INTERNALS-01', 'CORE-NAMING-01', 'STATUS-VISIBILITY-01', 'G4', 'G5', 'G6', 'FORCED CLOSED / WAIVED')) {
     if (-not $scope.Contains($scopeTerm)) {
         throw "Project scope is missing the required guide-status marker: $scopeTerm"
     }
@@ -36,7 +38,7 @@ foreach ($scopeTerm in @('P4-T05', 'P4-T06-R3', 'P4-T06-G4H', 'G4-R3', 'G4-R6', 
 
 $requiredGuideTerms = @(
     '# Nuclear Diffusion Theory in a CANDU Reactor',
-    '**Guide version:** 2.7',
+    '**Guide version:** 2.8',
     '**Status:** Living documentation',
     '**A bounded static-solver foundation is implemented in Core.**',
     'P4-T01:',
@@ -66,9 +68,10 @@ $requiredGuideTerms = @(
     'P6-T01 through P6-T07',
     'Phase 6/G6 is a',
     '`CONDITIONAL PASS` for the bounded synthetic/test-only Core/ReducedModel scope',
-    'Current test results and test-runner limitation',
-    'Core 154/154 PASS; Golden 19/19 PASS',
-    'Test-FullHeadlessSuite.ps1',
+    'Current test results and evidence boundary',
+    'Core 158/158 PASS; Golden 19/19 PASS',
+    'Core 46/46 PASS; zero failures and zero skips',
+    'TEST-INFRA-01',
     'G2 is FORCED CLOSED / WAIVED',
     '## 5. The static two-group model: specified and bounded implementation',
     '## 10. How this physics feeds the game',
@@ -83,6 +86,26 @@ foreach ($term in $requiredGuideTerms) {
     if (-not $guide.Contains($term)) {
         throw "Guide is missing required consistency marker: $term"
     }
+}
+
+$currentResultsMatch = [regex]::Match(
+    $guide,
+    '(?ms)^### 6\.8 Current test results and evidence boundary\s*(?<body>.*?)^## 7\.')
+if (-not $currentResultsMatch.Success) {
+    throw 'Guide current-results section is missing or has moved without updating the consistency check.'
+}
+$currentResults = $currentResultsMatch.Groups['body'].Value
+foreach ($staleTerm in @('Core 154/154', 'Core 142/154', '12 Core failures', 'Phase 6 focused 44/44')) {
+    if ($currentResults.Contains($staleTerm)) {
+        throw "Guide current-results section contains stale evidence: $staleTerm"
+    }
+}
+
+if ($nextGoalPrompt -match '(?im)^\s*Work on exactly one task:\s*P4-T06-G4H\b') {
+    throw 'Next-goal prompt hard-codes the completed P4-T06-G4H handoff.'
+}
+if ($nextGoalPrompt -notmatch '(?is)query.*PROJECT_SCOPE\.md|PROJECT_SCOPE\.md.*exact') {
+    throw 'Next-goal prompt must instruct the next session to query the exact active scope row.'
 }
 
 if ($guide -match '[\u2010-\u2015\u2212]') {
