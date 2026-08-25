@@ -6,12 +6,16 @@
   "status": "Draft/NotApproved",
   "artifact": {
     "path": "data/scenarios/p8-t02-scenario-difficulty-parameters-draft-v1.json",
-    "byte_length": 14009,
-    "sha256": "962d5088df57a1f029b0846836777c6c698b0f48ba9c6fb82ee39b62f1bd46ea"
+    "byte_length": 18187,
+    "sha256": "3efc22d22b22d47ede62fe56bdb31a33dbb43636ef359924713dd978c397305d"
   },
   "schema_version": "v1",
   "difficulty_profile_count": 3,
   "scenario_count": 5,
+  "playback_mode_count": 3,
+  "default_acceleration_factor": 10.0,
+  "maximum_acceleration_factor": 10.0,
+  "wall_control_tick_ms": 100,
   "runtime_consumer": "None; draft only",
   "owner_decision": "PENDING",
   "promotion_requirement": "Owner approval plus a separately bounded P8-T02 runtime-consumer task and validation report.",

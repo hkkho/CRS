@@ -21,6 +21,9 @@
     "approval_must_confirm": [
       "The scenario identifiers, profile identifiers, seeds, and canonical seed derivation are frozen.",
       "All timing values are gameplay seconds and all normalized fractions are unitless gameplay proxies.",
+      "The default interactive rate is 10 simulation seconds per wall second, capped at one simulation second per 100 ms presentation tick; real-time 1x remains available for inspection.",
+      "The wall control tick is presentation pacing only; existing explicit simulation and stable integration policies remain authoritative.",
+      "Player actions are acknowledged at the next wall control boundary and must not block on a long simulation solve; queue delay and commit timing are observable.",
       "The initial-state mapping to the future Phase 8 runtime fixture is explicit and does not silently cross into a production CANDU data claim.",
       "Command/event ordering, boundary inclusivity, rejected-command behavior, and loss-recording behavior are frozen.",
       "Loss records terminate the game scenario only; no shutdown, scram, trip, safety-system, or accident progression is enabled.",
@@ -44,6 +47,52 @@
     "device_available_fraction": "Unitless gameplay availability fraction in [0,1].",
     "command_budget": "Count of accepted gameplay actions; not a physical device limit."
   },
+  "time_model": {
+    "simulation_time_authority": "ExplicitDiscreteSimulationSeconds",
+    "wall_clock_role": "PresentationPacingOnly",
+    "wall_clock_must_not_drive_physics": true,
+    "default_playback_mode_id": "play-accelerated-10x",
+    "wall_control_tick_ms": 100,
+    "maximum_presentation_advance_per_wall_tick_s": 1.0,
+    "default_acceleration_factor_simulation_seconds_per_wall_second": 10.0,
+    "maximum_acceleration_factor_simulation_seconds_per_wall_second": 10.0,
+    "action_acknowledgement_target_wall_ms": 100,
+    "action_commit_target_wall_ms": 200,
+    "timing_policy": "At each wall control tick, the presentation scheduler requests factor * elapsed wall time, clamps the presentation request to at most the declared presentation slice, and advances the explicit simulation clock through its existing deterministic event and integration policies. The presentation tick is not a physics timestep.",
+    "pause_policy": "Pause stops simulation advancement at the next deterministic boundary and discards no accumulated state; wall-clock elapsed time is never replayed after unpause.",
+    "acceleration_change_policy": "Acceleration changes are accepted only at an explicit simulation boundary, are recorded in the future replay stream, and do not alter any physical equation or integration substep.",
+    "responsiveness_policy": "Player input is acknowledged immediately at the wall control boundary and is committed at the next valid simulation boundary; the future consumer must report queue delay instead of blocking the player on a long solve.",
+    "modes": [
+      {
+        "mode_id": "audit-real-time-1x",
+        "display_name": "Real time",
+        "acceleration_factor_simulation_seconds_per_wall_second": 1.0,
+        "intended_use": "Manual inspection and timing diagnostics.",
+        "player_default": false
+      },
+      {
+        "mode_id": "play-accelerated-10x",
+        "display_name": "Play",
+        "acceleration_factor_simulation_seconds_per_wall_second": 10.0,
+        "intended_use": "Default interactive play; maps 600/900/1200 simulation-second horizons to approximately 60/90/120 wall seconds.",
+        "player_default": true
+      },
+      {
+        "mode_id": "rapid-review-10x",
+        "display_name": "Rapid review",
+        "acceleration_factor_simulation_seconds_per_wall_second": 10.0,
+        "intended_use": "Same stable rate as Play, with verbose event/replay diagnostics; no faster-than-approved mode is proposed.",
+        "player_default": false
+      }
+    ],
+    "grounding": [
+      "The existing authority requires explicit discrete simulation time and prohibits Unity frame delta as physics time.",
+      "The existing synthetic RRS contracts use a 1.0 s cadence; the proposed 100 ms wall control tick and 10x playback rate expose at most one simulation second per presentation tick.",
+      "The existing P7 integration policy may subdivide a requested simulation interval into smaller stable substeps; the 1.0 s presentation slice does not replace or loosen that policy.",
+      "At 10x, the draft's 10/15/20 simulation-second decision intervals become approximately 1.0/1.5/2.0 wall seconds, avoiding long waits while preserving explicit event ordering."
+    ],
+    "status": "Proposed/RequiresApproval"
+  },
   "base_fixture": {
     "fixture_id": "synthetic-p3-t01",
     "description": "Existing two-channel/three-position synthetic inspection fixture used by P8-T01.",
@@ -57,6 +106,8 @@
       "display_name": "Practice",
       "scenario_horizon_s": 600.0,
       "decision_interval_s": 20.0,
+      "estimated_wall_duration_s_at_default_playback": 60.0,
+      "estimated_decision_interval_wall_s_at_default_playback": 2.0,
       "maximum_pending_commands": 4,
       "maximum_refuel_requests": 6,
       "operating_envelope": {
@@ -73,6 +124,8 @@
       "display_name": "Standard",
       "scenario_horizon_s": 900.0,
       "decision_interval_s": 15.0,
+      "estimated_wall_duration_s_at_default_playback": 90.0,
+      "estimated_decision_interval_wall_s_at_default_playback": 1.5,
       "maximum_pending_commands": 2,
       "maximum_refuel_requests": 4,
       "operating_envelope": {
@@ -89,6 +142,8 @@
       "display_name": "Challenge",
       "scenario_horizon_s": 1200.0,
       "decision_interval_s": 10.0,
+      "estimated_wall_duration_s_at_default_playback": 120.0,
+      "estimated_decision_interval_wall_s_at_default_playback": 1.0,
       "maximum_pending_commands": 1,
       "maximum_refuel_requests": 3,
       "operating_envelope": {
