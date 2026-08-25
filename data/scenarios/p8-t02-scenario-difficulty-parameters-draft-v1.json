@@ -1,0 +1,304 @@
+{
+  "format": "reactorsim.p8-scenario-difficulty-parameters/v1",
+  "task_id": "P8-T02-DRAFT",
+  "proposed_task_id": "P8-T02",
+  "artifact_id": "p8-t02-scenario-difficulty-parameters-draft-v1",
+  "status": "Draft/NotApproved",
+  "authority_class": "ProjectAuthoredSyntheticDraft",
+  "runtime_use": "ProhibitedUntilApproved",
+  "scope": "Approval-ready synthetic scenario and difficulty parameters for the Phase 8 text-game package. This draft does not activate a runtime consumer, alter Core state transitions, select physics equations, or establish production/reference tolerances.",
+  "source_authority": {
+    "kind": "ProjectAuthoredSynthetic",
+    "literature_applicability": "NotApplicable",
+    "coverage_reason": "The draft selects gameplay timing, normalized state bands, deterministic seeds, command budgets, and loss-recording rules only; it does not select a reactor equation, physical constant, nuclear-data value, reference case, or golden numerical tolerance.",
+    "external_source_artifacts_used": false,
+    "production_or_external_reference_claim": false
+  },
+  "owner_approval": {
+    "decision": "PENDING",
+    "required_status_for_activation": "Approved/ApprovedParameterAuthority",
+    "required_approver": "Owner decision required",
+    "approval_must_confirm": [
+      "The scenario identifiers, profile identifiers, seeds, and canonical seed derivation are frozen.",
+      "All timing values are gameplay seconds and all normalized fractions are unitless gameplay proxies.",
+      "The initial-state mapping to the future Phase 8 runtime fixture is explicit and does not silently cross into a production CANDU data claim.",
+      "Command/event ordering, boundary inclusivity, rejected-command behavior, and loss-recording behavior are frozen.",
+      "Loss records terminate the game scenario only; no shutdown, scram, trip, safety-system, or accident progression is enabled.",
+      "A separate implementation task will own the runtime consumer, save/replay contract, scoring, and G8 evidence."
+    ],
+    "promotion_rule": "Do not change Draft/NotApproved to Approved/ApprovedParameterAuthority until the owner decision, a task report, a manifest hash, and a bounded runtime-consumer task are recorded."
+  },
+  "seed_policy": {
+    "seed_type": "uint64_decimal",
+    "seed_values_are": "Scenario identity inputs, not physics or random-number evidence.",
+    "proposed_canonical_seed_input": "scenario_id|difficulty_id|seed_decimal",
+    "proposed_derivation": "SHA-256 over the UTF-8 canonical seed input; the first eight bytes in little-endian order provide the replay seed.",
+    "status": "Proposed/RequiresApproval",
+    "repeatability_requirement": "Identical parameter bytes, scenario identifier, difficulty identifier, seed, data-pack identity, and command stream must produce identical replay identity and outcome bytes."
+  },
+  "units": {
+    "time_s": "Gameplay seconds; not a solver timestep authority.",
+    "normalized_power_fraction": "Unitless gameplay proxy; nominal operating point is 1.0.",
+    "absolute_tilt_fraction": "Unitless nonnegative gameplay proxy.",
+    "control_margin_fraction": "Unitless gameplay proxy used only by the loss envelope in this draft.",
+    "device_available_fraction": "Unitless gameplay availability fraction in [0,1].",
+    "command_budget": "Count of accepted gameplay actions; not a physical device limit."
+  },
+  "base_fixture": {
+    "fixture_id": "synthetic-p3-t01",
+    "description": "Existing two-channel/three-position synthetic inspection fixture used by P8-T01.",
+    "source_path": "src/ReactorSim.Core/Domain/SyntheticFixtures.cs",
+    "status": "ExistingSyntheticInspectionFixture",
+    "runtime_crosswalk": "NotAuthorizedByThisDraft"
+  },
+  "difficulty_profiles": [
+    {
+      "difficulty_id": "practice",
+      "display_name": "Practice",
+      "scenario_horizon_s": 600.0,
+      "decision_interval_s": 20.0,
+      "maximum_pending_commands": 4,
+      "maximum_refuel_requests": 6,
+      "operating_envelope": {
+        "normalized_power_fraction": { "minimum": 0.80, "maximum": 1.20 },
+        "absolute_tilt_fraction": { "minimum": 0.00, "maximum": 0.20 },
+        "control_margin_fraction": { "minimum": -0.20, "maximum": 0.20 },
+        "device_available_fraction": { "minimum": 0.00, "maximum": 1.00 }
+      },
+      "boundary_policy": "InclusiveAtMinimumAndMaximum",
+      "loss_policy": "RecordLossOnly"
+    },
+    {
+      "difficulty_id": "standard",
+      "display_name": "Standard",
+      "scenario_horizon_s": 900.0,
+      "decision_interval_s": 15.0,
+      "maximum_pending_commands": 2,
+      "maximum_refuel_requests": 4,
+      "operating_envelope": {
+        "normalized_power_fraction": { "minimum": 0.90, "maximum": 1.10 },
+        "absolute_tilt_fraction": { "minimum": 0.00, "maximum": 0.10 },
+        "control_margin_fraction": { "minimum": -0.10, "maximum": 0.10 },
+        "device_available_fraction": { "minimum": 0.00, "maximum": 1.00 }
+      },
+      "boundary_policy": "InclusiveAtMinimumAndMaximum",
+      "loss_policy": "RecordLossOnly"
+    },
+    {
+      "difficulty_id": "challenge",
+      "display_name": "Challenge",
+      "scenario_horizon_s": 1200.0,
+      "decision_interval_s": 10.0,
+      "maximum_pending_commands": 1,
+      "maximum_refuel_requests": 3,
+      "operating_envelope": {
+        "normalized_power_fraction": { "minimum": 0.95, "maximum": 1.05 },
+        "absolute_tilt_fraction": { "minimum": 0.00, "maximum": 0.05 },
+        "control_margin_fraction": { "minimum": -0.05, "maximum": 0.05 },
+        "device_available_fraction": { "minimum": 0.00, "maximum": 1.00 }
+      },
+      "boundary_policy": "InclusiveAtMinimumAndMaximum",
+      "loss_policy": "RecordLossOnly"
+    }
+  ],
+  "loss_condition_catalog": [
+    {
+      "loss_id": "power_below_minimum",
+      "metric": "normalized_power_fraction",
+      "operator": "<",
+      "threshold_ref": "difficulty_profile.operating_envelope.normalized_power_fraction.minimum",
+      "response": "RecordLossOnly"
+    },
+    {
+      "loss_id": "power_above_maximum",
+      "metric": "normalized_power_fraction",
+      "operator": ">",
+      "threshold_ref": "difficulty_profile.operating_envelope.normalized_power_fraction.maximum",
+      "response": "RecordLossOnly"
+    },
+    {
+      "loss_id": "tilt_above_maximum",
+      "metric": "absolute_tilt_fraction",
+      "operator": ">",
+      "threshold_ref": "difficulty_profile.operating_envelope.absolute_tilt_fraction.maximum",
+      "response": "RecordLossOnly"
+    },
+    {
+      "loss_id": "control_margin_outside_envelope",
+      "metric": "control_margin_fraction",
+      "operator": "outside_inclusive_bounds",
+      "threshold_ref": "difficulty_profile.operating_envelope.control_margin_fraction",
+      "response": "RecordLossOnly"
+    },
+    {
+      "loss_id": "device_exhaustion",
+      "metric": "device_available_fraction",
+      "operator": "<=",
+      "threshold": 0.0,
+      "response": "RecordLossOnly"
+    },
+    {
+      "loss_id": "scenario_horizon_expired",
+      "metric": "elapsed_gameplay_s",
+      "operator": ">=",
+      "threshold_ref": "difficulty_profile.scenario_horizon_s",
+      "response": "ResolveScenarioWithoutSafetySystemBehavior"
+    }
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "tutorial-equilibrium",
+      "display_name": "Tutorial: Hold the Operating Point",
+      "difficulty_id": "practice",
+      "seed": 1001,
+      "purpose": "Teach inspection, waiting, a bounded target change, and one synthetic refuelling request without starting at an envelope boundary.",
+      "initial_state": {
+        "normalized_power_fraction": 1.0,
+        "absolute_tilt_fraction": 0.0,
+        "control_margin_fraction": 0.0,
+        "device_available_fraction": 1.0,
+        "refuel_requests_remaining": 6
+      },
+      "scripted_events": [
+        { "at_s": 0.0, "event": "inspect" },
+        { "at_s": 120.0, "event": "set_power_target", "target_normalized_power_fraction": 0.95 },
+        { "at_s": 240.0, "event": "refuel_request", "channel_id": 0, "bundle_position": 2 },
+        { "at_s": 360.0, "event": "set_power_target", "target_normalized_power_fraction": 1.0 }
+      ],
+      "expected_boundary_outcome": "SurviveScenarioHorizon",
+      "expected_loss_ids": []
+    },
+    {
+      "scenario_id": "centered-power-perturbation",
+      "display_name": "Centered Power Perturbation",
+      "difficulty_id": "standard",
+      "seed": 2001,
+      "purpose": "Exercise a centered power change while preserving zero initial tilt and a recoverable operating margin.",
+      "initial_state": {
+        "normalized_power_fraction": 1.02,
+        "absolute_tilt_fraction": 0.0,
+        "control_margin_fraction": 0.02,
+        "device_available_fraction": 1.0,
+        "refuel_requests_remaining": 4
+      },
+      "scripted_events": [
+        { "at_s": 0.0, "event": "inspect" },
+        { "at_s": 150.0, "event": "set_power_target", "target_normalized_power_fraction": 0.98 },
+        { "at_s": 450.0, "event": "set_power_target", "target_normalized_power_fraction": 1.0 },
+        { "at_s": 750.0, "event": "inspect" }
+      ],
+      "expected_boundary_outcome": "SurviveScenarioHorizon",
+      "expected_loss_ids": []
+    },
+    {
+      "scenario_id": "regional-tilt-recovery",
+      "display_name": "Regional Tilt Recovery",
+      "difficulty_id": "standard",
+      "seed": 2002,
+      "purpose": "Exercise a nonzero initial regional tilt, a bounded corrective action, and deterministic recovery before the horizon.",
+      "initial_state": {
+        "normalized_power_fraction": 1.0,
+        "absolute_tilt_fraction": 0.08,
+        "control_margin_fraction": 0.0,
+        "device_available_fraction": 0.85,
+        "refuel_requests_remaining": 4
+      },
+      "scripted_events": [
+        { "at_s": 0.0, "event": "inspect" },
+        { "at_s": 180.0, "event": "set_tilt_target", "target_absolute_tilt_fraction": 0.0 },
+        { "at_s": 360.0, "event": "set_power_target", "target_normalized_power_fraction": 1.0 },
+        { "at_s": 720.0, "event": "inspect" }
+      ],
+      "expected_boundary_outcome": "SurviveScenarioHorizon",
+      "expected_loss_ids": []
+    },
+    {
+      "scenario_id": "refuelling-window",
+      "display_name": "Refuelling Window",
+      "difficulty_id": "challenge",
+      "seed": 3001,
+      "purpose": "Exercise deterministic channel/bundle request ordering under a limited command budget; this draft does not implement refuelling.",
+      "initial_state": {
+        "normalized_power_fraction": 0.98,
+        "absolute_tilt_fraction": 0.03,
+        "control_margin_fraction": 0.0,
+        "device_available_fraction": 1.0,
+        "refuel_requests_remaining": 3
+      },
+      "scripted_events": [
+        { "at_s": 0.0, "event": "inspect" },
+        { "at_s": 120.0, "event": "refuel_request", "channel_id": 0, "bundle_position": 1 },
+        { "at_s": 240.0, "event": "refuel_request", "channel_id": 1, "bundle_position": 2 },
+        { "at_s": 600.0, "event": "inspect" },
+        { "at_s": 900.0, "event": "inspect" }
+      ],
+      "expected_boundary_outcome": "SurviveScenarioHorizonIfRequestsAreAcceptedInOrder",
+      "expected_loss_ids": []
+    },
+    {
+      "scenario_id": "operating-envelope-boundary",
+      "display_name": "Operating Envelope Boundary",
+      "difficulty_id": "challenge",
+      "seed": 4001,
+      "purpose": "Verify inclusive boundary handling and a recorded gameplay loss when a target pushes the normalized proxy outside the approved draft envelope.",
+      "initial_state": {
+        "normalized_power_fraction": 1.05,
+        "absolute_tilt_fraction": 0.05,
+        "control_margin_fraction": 0.05,
+        "device_available_fraction": 0.25,
+        "refuel_requests_remaining": 1
+      },
+      "scripted_events": [
+        { "at_s": 0.0, "event": "inspect" },
+        { "at_s": 10.0, "event": "set_power_target", "target_normalized_power_fraction": 1.06 },
+        { "at_s": 20.0, "event": "inspect" }
+      ],
+      "expected_boundary_outcome": "RecordLoss",
+      "expected_loss_ids": ["power_above_maximum"]
+    }
+  ],
+  "deferred_packages": {
+    "scoring": "Deferred to a separately bounded Phase 8 scoring task.",
+    "save_load_replay": "Deferred to a separately bounded Phase 8 persistence/replay task.",
+    "runtime_command_consumer": "Deferred to a separately bounded Phase 8 implementation task.",
+    "long_run_soak": "Deferred to G8 preparation and gate evidence.",
+    "unity_presentation": "Out of scope for this parameter draft."
+  },
+  "approval_validation": [
+    {
+      "check_id": "schema-and-json",
+      "requirement": "UTF-8 JSON parses and required identifiers/status fields are present.",
+      "status": "DraftCheckRequired"
+    },
+    {
+      "check_id": "canonical-seed-repeatability",
+      "requirement": "The future consumer regenerates identical replay identity from identical canonical inputs.",
+      "status": "DeferredUntilRuntimeConsumer"
+    },
+    {
+      "check_id": "envelope-boundaries",
+      "requirement": "Minimum/maximum values are inclusive; only values outside the envelope create a loss record.",
+      "status": "DraftExpectedBehavior"
+    },
+    {
+      "check_id": "boundary-loss",
+      "requirement": "The operating-envelope scenario records loss without invoking shutdown, scram, trip, safety-system, or accident behavior.",
+      "status": "DeferredUntilRuntimeConsumer"
+    },
+    {
+      "check_id": "manifest-binding",
+      "requirement": "A manifest binds exact artifact bytes, schema version, scenario/profile counts, and the owner decision before promotion.",
+      "status": "DraftManifestRequired"
+    }
+  ],
+  "boundary": {
+    "physics_equations": "NotSelected",
+    "physical_constants": "NotSelected",
+    "nuclear_data": "NotSelected",
+    "reference_or_golden_values": "NotSelected",
+    "production_candu_claim": "Forbidden",
+    "external_solver_reproduction": "Forbidden",
+    "shutdown_scram_safety_behavior": "Forbidden",
+    "runtime_consumer": "ProhibitedUntilApproved"
+  }
+}
