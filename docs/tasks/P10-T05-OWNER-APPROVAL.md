@@ -34,6 +34,11 @@ missing channel data, or advance simulation time.
   diagnostic until binding succeeds.
 - Add focused EditMode/PlayMode coverage for binding, event subscription,
   bounded history, command-result rendering, and Bootstrap availability.
+- Extend the existing test-only `BootstrapAdapter` with an opt-in normal
+  StandaloneWindows64 player marker smoke. When explicit marker arguments are
+  supplied, it may verify the built shell/Timeline surface, write a marker,
+  and quit; this is test evidence only and is not a player-facing command,
+  network behavior, runtime contract, or simulation state transition.
 - Preserve the approved UGUI package, safe-area shell, navigation, Controls,
   Dashboard, explicit wall-time pacing, and adapter sequencing behavior.
 
@@ -56,5 +61,8 @@ Because this task consumes the approved adapter snapshot/command-result
 boundary, it requires T1 static checks, T3 Core/CLI/Golden Release
 regression, T4 Unity import/compile, EditMode, PlayMode, and
 StandaloneWindows64 desktop-player smoke, plus one visible offline-demo
-graphical smoke and one bounded same-context independent code review (high).
+graphical smoke. The normal-player marker path may supplement the desktop
+smoke without Test Runner arguments; it does not waive the final clean visual
+click-through. Also require one bounded same-context independent code review
+(high).
 Literature applicability is `NotApplicable`.
