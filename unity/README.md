@@ -73,6 +73,27 @@ no-op during normal startup and activates only when both
 only after the Core token probe succeeds, then exits the player with code zero.
 It is infrastructure, not a game command or serialization contract.
 
+## Offline graphical demo
+
+Use `tools/Build-UnityDemo.ps1` to build the visible Bootstrap scene for a
+manual graphical smoke, then launch it with `tools/Start-UnityDemo.ps1`. The
+launcher first removes only confirmed Candu Unity Test Runner players under
+the temporary `candu-*` artifact roots, preventing a stale `PlayerWithTests`
+process from owning a Windows network prompt. This path uses a normal
+`StandaloneWindows64`
+`BuildPipeline` player and deliberately does not pass Unity Test Runner
+arguments (`-runTests`, `-testPlatform`, or `-testResults`). The resulting
+player is therefore an offline demo and does not open the Test Runner result
+channel that can trigger a Windows network-permission prompt. Keep the
+headless EditMode/PlayMode/desktop test commands separate from the player used
+for visual inspection. The launcher does not change Windows Firewall rules or
+any other security setting.
+
+The repository-local `.codex/config.toml` already marks this project as trusted
+for autonomous repository work. Host-level Computer Use access is controlled
+by Codex and Windows, not by Unity project files; the project does not attempt
+to weaken or bypass that platform permission boundary.
+
 ## Phase 10 runtime seam
 
 `Assets/ReactorGame.Unity/Phase8UnityRuntimeAdapter.cs` is the first bounded
