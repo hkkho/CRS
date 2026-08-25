@@ -1,0 +1,65 @@
+{
+  "format": "reactorsim.p9-performance-decision/v1",
+  "task_id": "P9-T04",
+  "status": "observation_review_only",
+  "decision_id": "p9-t04-performance-decision-v1",
+  "inputs": {
+    "p9_t01_manifest": {
+      "path": "benchmarks/P9-T01-cli-gameplay-benchmark-v1.json",
+      "sha256": "63114186fd9768a94e44ff0368001952cda2750610965b48c94cc36e5efb5281"
+    },
+    "p9_t02_profile_manifest": {
+      "path": "benchmarks/P9-T02-cli-profile-parameters-v1.json",
+      "sha256": "0c6f547691d52b48a32800a4409eefee68790f73725c215513892b78271187af"
+    },
+    "p9_t03_profile_manifest": {
+      "path": "benchmarks/P9-T03-core-solver-profile-parameters-v1.json",
+      "sha256": "174f8809837c0bf31bd2562efbd8034bbe7375661b89806f3bca464df42b947f"
+    }
+  },
+  "decision": {
+    "disposition": "HOLD",
+    "numeric_performance_target": null,
+    "allocation_target": null,
+    "plain_csharp_optimization_authorized": false,
+    "precision_change_authorized": false,
+    "burst_or_jobs_backend_authorized": false,
+    "mobile_or_thermal_claim_authorized": false,
+    "reason": "The observations are synthetic and machine-specific; no representative Android device or external profiler is available, and no approved target authority supplies a portable budget."
+  },
+  "reviewed_observations": {
+    "cli_complete_stream_mean_microseconds": {
+      "steady_survival_run_range": [
+        2778.996,
+        2797.003
+      ],
+      "controlled_response_run_range": [
+        1884.648,
+        1906.42
+      ],
+      "boundary_loss_run_range": [
+        1869.986,
+        1904.533
+      ],
+      "boundary": "public CliApplication.Run over frozen P8 command streams"
+    },
+    "core_solve_mean_microseconds": {
+      "run_range": [
+        408.622,
+        416.459
+      ],
+      "allocated_bytes_per_solve": 856,
+      "solver_iteration_count": 2,
+      "boundary": "public SpatialEigenSolve.TrySolve path over frozen P4-T08 synthetic case"
+    },
+    "deterministic_outputs": true,
+    "external_profiler_status": "NotAvailable",
+    "android_status": "Deferred/NotAvailable"
+  },
+  "next_eligibility": {
+    "optimization": "Requires a separately authorized task with an approved target and appropriate profiler/device evidence.",
+    "mobile": "Requires a separate T5 task when a representative device and adb are available.",
+    "presentation": "Phase 10 Unity presentation may proceed independently without treating this decision as a runtime-performance approval."
+  },
+  "evidence_boundary": "Decision record over project-authored synthetic, machine-specific observations only; no portable budget, physics authority, golden value, mobile result, thermal result, or release claim."
+}
