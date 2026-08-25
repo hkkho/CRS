@@ -1,0 +1,115 @@
+{
+  "format": "reactorsim.p7-t06-synthetic-definition/v1",
+  "task_id": "P7-T06",
+  "case_id": "p7-t06-synthetic-phase7a-v1",
+  "source_authority": {
+    "kind": "project_authored_synthetic",
+    "external_case_status": "not_admitted_deferred",
+    "coverage_class": "Synthetic",
+    "research_report": "docs/research/P7-T06-report-source.md",
+    "p1_t08_rows": [
+      "S1-R09",
+      "S4-R05",
+      "S4-R06",
+      "S5-R08"
+    ],
+    "license": "Project-authored synthetic values; no external data redistributed",
+    "restriction": "Not a direct CANDU physics baseline or production validation authority"
+  },
+  "state_binding": {
+    "topology_id": "synthetic-p7-t06-two-node-topology-v1",
+    "core_state_version": 7,
+    "spatial_solve_id": "76000000-0000-4000-8000-000000000001",
+    "spatial_state_version": 11,
+    "spatial_snapshot_digest": "5151515151515151515151515151515151515151515151515151515151515151",
+    "feedback_overlay_digest": "5252525252525252525252525252525252525252525252525252525252525252",
+    "data_pack_id": "synthetic-p7-t06-phase7a-data-v1",
+    "data_pack_digest": "4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a"
+  },
+  "time": {
+    "unit": "s",
+    "initial_time_seconds": 0.0,
+    "step_seconds": 0.1,
+    "step_count": 20
+  },
+  "kinetics": {
+    "data_id": "76000000-0000-4000-8000-000000000002",
+    "data_version": "synthetic-p7-t06-kinetics-v1",
+    "data_digest": "6161616161616161616161616161616161616161616161616161616161616161",
+    "prompt_generation_time_seconds": 2.0,
+    "initial_amplitude": 1.0,
+    "initial_precursor": [
+      0.25,
+      0.25
+    ],
+    "reference_power_watts": 1000.0,
+    "spatial_reactivity": 0.005,
+    "groups": [
+      {
+        "group_index": 0,
+        "beta_fraction": 0.1,
+        "decay_constant_per_second": 0.2
+      },
+      {
+        "group_index": 1,
+        "beta_fraction": 0.2,
+        "decay_constant_per_second": 0.4
+      }
+    ]
+  },
+  "nuclide": {
+    "material_variant_id": "synthetic-p7-t06-ixe-material-v1",
+    "data_id": "synthetic-p7-t06-ixe-v1",
+    "data_digest": "6262626262626262626262626262626262626262626262626262626262626262",
+    "gamma_i": 0.5,
+    "gamma_xe": 0.25,
+    "lambda_i_per_second": 0.1,
+    "lambda_xe_per_second": 0.05,
+    "sigma_xe_group1_m2": 0.01,
+    "sigma_xe_group2_m2": 0.02
+  },
+  "nodes": [
+    {
+      "node_id": "channel-0-position-0",
+      "bundle_id": "76000000-0000-4000-8000-000000000010",
+      "channel_id": 0,
+      "position": 0,
+      "volume_m3": 1.0,
+      "initial_i135_atoms": 0.0,
+      "initial_xe135_atoms": 0.0,
+      "fission_rate_density_m3_s": [
+        10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0,
+        2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0
+      ],
+      "flux_group1_m2_s": [
+        2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0,
+        0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4
+      ],
+      "flux_group2_m2_s": [
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2
+      ]
+    },
+    {
+      "node_id": "channel-0-position-1",
+      "bundle_id": "76000000-0000-4000-8000-000000000011",
+      "channel_id": 0,
+      "position": 1,
+      "volume_m3": 2.0,
+      "initial_i135_atoms": 0.0,
+      "initial_xe135_atoms": 0.0,
+      "fission_rate_density_m3_s": [
+        6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0, 6.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+      ],
+      "flux_group1_m2_s": [
+        1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5,
+        0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3
+      ],
+      "flux_group2_m2_s": [
+        0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75,
+        0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15, 0.15
+      ]
+    }
+  ]
+}

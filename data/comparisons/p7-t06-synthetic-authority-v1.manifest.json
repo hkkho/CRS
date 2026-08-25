@@ -1,0 +1,18 @@
+{
+  "format": "reactorsim.p7-t06-synthetic-authority-manifest/v1",
+  "task_id": "P7-T06",
+  "artifact_id": "p7-t06-synthetic-phase7a-v1",
+  "disposition": "candidate",
+  "definition_sha256": "7e08b48e27a9ee08b42d09ab050cb024c42b4468a310e2b7fadf0c258cf965b1",
+  "artifact_sha256": "45abbc28094d0a21f32978316bd13cb979b7cf760ad7553d113d7cec30b30b0f",
+  "artifact_byte_length": 103256,
+  "generator_id": "p7-t06-independent-synthetic-authority",
+  "generator_version": "v1",
+  "research_report": "docs/research/P7-T06-report-source.md",
+  "coverage_class": "Synthetic",
+  "independent_repeat_equal": true,
+  "independent_repeat_sha256": "2685d03af0919b80ab6b8e5252e1a2708b3dd41d2f5e9b9b13c524da25767d9a",
+  "maximum_balance_absolute": 0,
+  "minimum_nonnegative_value": 0.15000000000000002,
+  "manifest_binding": "artifact bytes and definition bytes are regenerated and compared exactly"
+}

@@ -4,10 +4,16 @@
 
 `CONDITIONAL PASS` for the approved synthetic/test-only Phase 7A Core scope.
 
+The original pre-`P7-T06` checkpoint and its findings are preserved below.
+The current `P7-T06` re-entry records an approved synthetic-only authority
+package; it does not change this gate to an external-reference or production
+pass.
+
 P7-T01 through P7-T05 are implemented and T3-validated. The gate evidence
 adds long deterministic histories, timestep-refinement comparisons, and
-finite/nonnegative inventory and concentration checks. No applicable Phase 7
-reference or golden authority is present: the existing five golden artifacts
+finite/nonnegative inventory and concentration checks. At the original
+checkpoint, no applicable Phase 7 reference or golden authority was present:
+the existing five golden artifacts
 are Phase 4 authorities and none is a kinetics/Xe case. The conditional result
 therefore does not promote synthetic traces to production, external-reference,
 or golden authority; an approved Phase 7 reference package and G7A re-entry are
@@ -202,3 +208,57 @@ inferred.
 Source: [`AGENTS.md`](../../AGENTS.md),
 [`docs/Implementation_plan.md`](../Implementation_plan.md), and
 [`docs/PROJECT_SCOPE.md`](../PROJECT_SCOPE.md).
+
+## P7-T06 re-entry — 2026-08-24
+
+`P7-T06` is `COMPLETE` for the bounded authority-admission objective. The
+deep-research route did not admit an external CANDU/PHWR case: the public
+sources supplied context or incomplete/ non-mappable cases, while complete
+official comparators were for other reactor classes or required separate
+package access. The source ledger and stopping rationale are recorded in
+[`docs/research/P7-T06-report-source.md`](../research/P7-T06-report-source.md).
+Applicable literature rows remain `S1-R09`, `S4-R05`, `S4-R06`, and `S5-R08`;
+none is promoted to an executable oracle.
+
+The authorized alternate route is now admitted as **Synthetic / test-only**:
+
+- Definition: `data/comparisons/p7-t06-synthetic-definition-v1.json`.
+- Candidate: `data/comparisons/p7-t06-synthetic-authority-v1.json`, SHA-256
+  `45abbc28094d0a21f32978316bd13cb979b7cf760ad7553d113d7cec30b30b0f`,
+  `103256` bytes, status `Deferred`/`NoGolden`.
+- Approved synthetic consumer: `data/golden/p7-t06-synthetic-authority-v1.json`,
+  SHA-256
+  `03d91f70628f09b82b28434678c60f2bc3be601fd4f2bc194e71e15e86bc643f`,
+  `103268` bytes, status `Approved`/`ApprovedGolden`.
+- The standalone generator has no `ReactorSim.Core` reference. Candidate and
+  approved manifests bind definition/artifact bytes, preserve `Synthetic`
+  coverage, and record an equal independent repeat hash.
+
+Validation evidence for the re-entry is:
+
+- T0 path/format audit: `10` required files present, no NUL bytes; `git diff
+  --check` and pinned-SDK whitespace verification passed.
+- T1/T6 standalone generation and validation: candidate and approved artifacts
+  both passed exact manifest comparison, independent repeat equality, zero
+  balance residual, nonnegative checks, and refinement ordering.
+- Focused Golden consumer: `P7T06` `3/3` passed.
+- Full T3 suite: CLI `5/5`, Core `189/189`, Golden `22/22`, zero failures and
+  zero skips.
+- Independent high review: `CONDITIONAL PASS`, no P0-P2 findings; reviewer
+  `Goodall`, attempt `1`, requested `GPT-5.6 Luna/high`, actual receipt
+  `UNVERIFIED`. The SDK pin observation was an environment note, not a source
+  defect, because the required pinned SDK executable was used for the final
+  format check.
+
+Final re-entry disposition: **`CONDITIONAL PASS` remains**. The approved
+package is authoritative only for deterministic synthetic/test-only regression
+consumption. It is not a CANDU physics baseline, external reference, or
+production tolerance source. No runtime, equation, unit, sign, convergence
+rule, tolerance, public schema, or Phase 7B temperature/purity behavior was
+changed or enabled. The external production/reference evidence gap remains
+visible and deferred.
+
+Required follow-up is an owner-authorized task with a complete, reproducible,
+licensable CANDU/PHWR case if an external or production comparison is desired.
+Phase 7B remains optional/deferred until its approved temperature/purity data
+authority exists.

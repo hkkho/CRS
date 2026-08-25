@@ -108,4 +108,22 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p7-t06-synthetic-definition-v1.json" Link="P7T06Data\synthetic-definition-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p7-t06-synthetic-authority-v1.json" Link="P7T06Data\candidate-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p7-t06-synthetic-authority-v1.manifest.json" Link="P7T06Data\candidate-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p7-t06-synthetic-authority-v1.json" Link="P7T06Data\approved-authority-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p7-t06-synthetic-authority-v1.manifest.json" Link="P7T06Data\approved-authority-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
