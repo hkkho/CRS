@@ -72,3 +72,20 @@ no-op during normal startup and activates only when both
 `-canduSerializationSmokeMarkerToken` are present. The hook writes its marker
 only after the Core token probe succeeds, then exits the player with code zero.
 It is infrastructure, not a game command or serialization contract.
+
+## Phase 10 runtime seam
+
+`Assets/ReactorGame.Unity/Phase8UnityRuntimeAdapter.cs` is the first bounded
+Phase 10 presentation/input slice. `Phase8UnityRuntimeAdapter` forwards
+sequence-numbered power, tilt, playback, pause/resume, and explicit wall-time
+commands to an injected `IPhase8RuntimePort`; the port remains the sole owner
+of the engine-neutral CLI/Core runtime and state transitions. The adapter
+publishes immutable `Phase8UnityPresentationSnapshotV1` values for UI binding
+and rejects duplicate command sequences before they reach the port.
+
+The adapter intentionally has no `Update` loop and never reads Unity frame
+time. The host supplies integer wall milliseconds explicitly, preserving the
+approved Phase 8 100 ms control tick, default 10x acceleration, and one
+simulation-second presentation cap. Parameter-pack loading, playback-mode
+validation, simulation advancement, save/replay, and mobile-device behavior
+remain outside this first seam and require their own bounded tasks.
