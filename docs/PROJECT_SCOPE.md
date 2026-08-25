@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-25 against the implementation plan, completed reports
-through `P8-T05` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+through `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -109,9 +109,11 @@ replay, scoring, bots, long-run soak, Unity presentation, or G8 evidence. The
 owner-authorized P8-T03 scoring and turn-summary slice and P8-T04 canonical
 save/load and deterministic command-log replay slice are now complete within
 the synthetic CLI boundary. The four P8-T05 policies are synthetic regression
-baselines bound to the approved P8-T02/P8-T03 artifact hashes; they are not
-player-facing automation or physical/golden authority. Long-run soak, Unity
-presentation, and G8 evidence remain separately bounded work.
+baselines bound to the approved P8-T02/P8-T03 artifact hashes; P8-T06 now runs
+each policy for 16 fresh cycles and verifies invariant coverage plus exact
+two-pass aggregate/per-cycle repeatability. These remain regression evidence,
+not player-facing automation or physical/golden authority. Unity presentation
+and the separate G8 vertical-slice review remain bounded follow-on work.
 The owner-authorized
 Phase 7A activation has completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
@@ -254,6 +256,7 @@ Historical context is intentionally short:
 | `P8-T04` | `COMPLETE` | [`docs/tasks/P8-T04.md`](tasks/P8-T04.md) records the owner-approved synthetic versioned replay archive, canonical strict JSON codec, ordered command-payload digest, approved scenario/scoring pack hash binding, atomic `load`, verify-only `replay`, and CLI `save`/`load`/`replay` commands. Malformed, duplicate, reordered, comment/trailing-data, tampered-identity, failed-load atomicity, deterministic boundary, and 4096-command-capacity tests are included. Final Release build has 0 warnings/errors; T3 Core `208/208`, CLI `30/30`, Golden `26/26`; same-context high review technical disposition is `PASS` with administrative handoff condition satisfied here; model/reasoning telemetry is `UNVERIFIED`. | P8-T05 scripted balance-regression policies/bots is next; these remain non-player-facing, while long-run soak, Unity presentation, and G8 evidence remain deferred. |
 
 | `P8-T05` | `COMPLETE` | [`docs/tasks/P8-T05.md`](tasks/P8-T05.md) records the owner-approved synthetic scripted-policy authority and strict artifact/manifest loader bound to the exact P8-T02 scenario SHA-256 `80981452f4808fae9e2c8341fc32e88640b446d386f9dbb7726c1550a2ff51a2` and P8-T03 scoring SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`. Four deterministic non-player-facing policies freeze exact outcome, simulation/wall time, score, loss, turn-summary, and replay-digest baselines. Duplicate, unknown, trailing/comment, reordered, tampered-hash, wrong-type, nonfinite, over-horizon, over-capacity, and expected-observable data is rejected before execution. Final Release build has 0 warnings/errors; focused P8-T05 `6/6`; T3 Core `208/208`, CLI `36/36`, Golden `26/26`; independent high-review technical disposition is `PASS` and the administrative condition is satisfied in the task report, with telemetry `UNVERIFIED`. | `P8-T06` long-run soak/invariant monitoring is next; Unity presentation and G8 evidence remain deferred. |
+| `P8-T06` | `COMPLETE` | [`docs/tasks/P8-T06.md`](tasks/P8-T06.md) records the owner-approved long-run soak plan bound to the exact P8-T05 policy SHA-256 `d0e6dec7199751ca0f5d5418892fe0210831e46153ff445ec13e4e84ddf49d39`, P8-T02 scenario SHA-256 `80981452f4808fae9e2c8341fc32e88640b446d386f9dbb7726c1550a2ff51a2`, and P8-T03 scoring SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`. The internal monitor executes all four P8-T05 policies for 16 fresh deterministic cycles each, checks explicit 100 ms control-tick/segment coverage, clocks, action/event/loss ordering, operating-envelope and terminal-loss consistency, score bounds, and turn summaries, then requires exact two-pass aggregate and per-cycle repeatability. Final Release build has 0 warnings/errors; focused P8-T06 `2/2`; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; same-context high review technical disposition is `PASS` with final administrative `CONDITIONAL PASS` satisfied by the report and this row; telemetry `UNVERIFIED`. | `G8` Phase 8 vertical-slice review is next; Unity presentation and release/mobile evidence remain separately bounded. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 

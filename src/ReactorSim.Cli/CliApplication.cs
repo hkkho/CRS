@@ -505,6 +505,223 @@ namespace ReactorSim.Cli
             }
         }
 
+        internal static ContractValidationResult<Phase8BaselinePolicySoakResultV1> RunBaselinePolicySoak()
+        {
+            try
+            {
+                Phase8BaselinePolicyPack policyPack = Phase8BaselinePolicyPack.LoadApproved(
+                    Phase8BaselinePolicyPack.FindDefaultPath());
+                Phase8ScenarioParameterPack scenarioPack = Phase8ScenarioParameterPack.LoadApproved(
+                    Phase8ScenarioParameterPack.FindDefaultPath());
+                Phase8ScoringParameterPack scoringPack = Phase8ScoringParameterPack.LoadApproved(
+                    Phase8ScoringParameterPack.FindDefaultPath());
+                if (!string.Equals(
+                        policyPack.ArtifactSha256,
+                        Phase8BaselinePolicyPack.ApprovedPolicyParameterSha256,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        policyPack.ScenarioParameterSha256,
+                        scenarioPack.ArtifactSha256,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        policyPack.ScoringParameterSha256,
+                        scoringPack.ArtifactSha256,
+                        StringComparison.Ordinal))
+                {
+                    return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                        "Phase8Soak.DataPack.Mismatch",
+                        "policy_pack",
+                        "The P8-T06 soak is not bound to the exact approved P8-T02/P8-T03/P8-T05 artifacts.");
+                }
+
+                string[] policyIds = Phase8SoakPlanV1.PolicyIds.ToArray();
+                if (policyPack.Policies.Count != policyIds.Length)
+                {
+                    return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                        "Phase8Soak.PolicySet.Invalid",
+                        "policies",
+                        "The approved P8-T06 soak policy set has an unexpected policy count.");
+                }
+
+                var cycleResults = new List<Phase8BaselinePolicySoakCycleResultV1>();
+                foreach (string policyId in policyIds)
+                {
+                    if (!policyPack.Policies.TryGetValue(policyId, out Phase8BaselinePolicyV1? policy))
+                    {
+                        return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                            "Phase8Soak.PolicySet.Missing",
+                            "policies." + policyId,
+                            "A required P8-T05 baseline policy is missing from the approved pack.");
+                    }
+
+                    for (int cycleIndex = 0; cycleIndex < Phase8SoakPlanV1.CyclesPerPolicy; cycleIndex++)
+                    {
+                        if (!TryCreateSession(
+                                policy.ScenarioId,
+                                policy.InitialPlaybackModeId,
+                                out CliSession? createdSession,
+                                out string failureCode,
+                                out string failureMessage))
+                        {
+                            return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                "Phase8Soak.Runtime.Invalid",
+                                policyId,
+                                failureCode + ": " + failureMessage);
+                        }
+
+                        CliSession session = createdSession!;
+                        if (!string.Equals(
+                                session.Runtime.DifficultyId,
+                                policy.DifficultyId,
+                                StringComparison.Ordinal) ||
+                            !session.Pack.DifficultyProfiles.TryGetValue(
+                                policy.DifficultyId,
+                                out Phase8DifficultyProfileV1? profile))
+                        {
+                            return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                "Phase8Soak.Difficulty.Mismatch",
+                                policyId,
+                                "The soak policy difficulty does not match the approved runtime profile.");
+                        }
+
+                        var monitor = new Phase8SoakInvariantMonitorV1(
+                            policy,
+                            session.Runtime,
+                            profile.MaximumPendingCommands,
+                            profile.OperatingEnvelope,
+                            "policy=" + policy.PolicyId +
+                            ".cycle=" + cycleIndex.ToString(CultureInfo.InvariantCulture));
+                        ulong previousWallMilliseconds = 0;
+                        int actionIndex = 0;
+                        while (previousWallMilliseconds < policy.HorizonWallMilliseconds)
+                        {
+                            if (actionIndex < policy.Actions.Count &&
+                                policy.Actions[actionIndex].AtWallMilliseconds == previousWallMilliseconds)
+                            {
+                                Phase8BaselinePolicyActionV1 action = policy.Actions[actionIndex];
+                                ContractValidationResult<Phase8ActionQueueResultV1> actionResult =
+                                    action.Kind == Phase8BaselinePolicyActionKindV1.SetPowerTarget
+                                        ? session.Runtime.TryQueuePowerTarget(action.TargetFraction)
+                                        : session.Runtime.TryQueueTiltTarget(action.TargetFraction);
+                                if (!actionResult.IsValid)
+                                {
+                                    return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                        "Phase8Soak.Action.Invalid",
+                                        policyId + ".actions[" + actionIndex.ToString(CultureInfo.InvariantCulture) + "]",
+                                        actionResult.FirstDiagnostic.ToString());
+                                }
+
+                                session.AppendReplayCommand(
+                                    action.Kind == Phase8BaselinePolicyActionKindV1.SetPowerTarget
+                                        ? Phase8ReplayCommandV1.SetPowerTarget(action.TargetFraction)
+                                        : Phase8ReplayCommandV1.SetTiltTarget(action.TargetFraction));
+                                monitor.ObserveQueuedAction();
+                                actionIndex++;
+                            }
+
+                            ulong nextWallMilliseconds = actionIndex < policy.Actions.Count
+                                ? policy.Actions[actionIndex].AtWallMilliseconds
+                                : policy.HorizonWallMilliseconds;
+                            if (nextWallMilliseconds <= previousWallMilliseconds)
+                            {
+                                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                    "Phase8Soak.Schedule.Invalid",
+                                    policyId,
+                                    "The approved policy schedule did not advance the wall-time cursor.");
+                            }
+
+                            ulong intervalWallMilliseconds = nextWallMilliseconds - previousWallMilliseconds;
+                            ContractValidationResult<Phase8ScoredAdvanceResultV1> advanceResult =
+                                session.Runtime.TryAdvanceWallMilliseconds(intervalWallMilliseconds);
+                            if (!advanceResult.IsValid)
+                            {
+                                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                    "Phase8Soak.Advance.Invalid",
+                                    policyId,
+                                    advanceResult.FirstDiagnostic.ToString());
+                            }
+
+                            monitor.ObserveAdvance(
+                                advanceResult.Value,
+                                intervalWallMilliseconds);
+                            session.AppendReplayCommand(
+                                Phase8ReplayCommandV1.Advance(intervalWallMilliseconds));
+                            previousWallMilliseconds = nextWallMilliseconds;
+
+                            if (session.Runtime.Outcome != Phase8ScenarioOutcomeV1.Running)
+                            {
+                                if (actionIndex < policy.Actions.Count)
+                                {
+                                    return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                        "Phase8Soak.Schedule.AfterOutcome",
+                                        policyId,
+                                        "The policy contains an action after the scenario resolved.");
+                                }
+
+                                break;
+                            }
+                        }
+
+                        if (actionIndex != policy.Actions.Count)
+                        {
+                            return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                                "Phase8Soak.Schedule.Incomplete",
+                                policyId,
+                                "The soak did not apply every approved policy action.");
+                        }
+
+                        Phase8BaselinePolicyRunResultV1 runResult =
+                            new Phase8BaselinePolicyRunResultV1(
+                                policy.PolicyId,
+                                session.Runtime.ScenarioId,
+                                session.Runtime.DifficultyId,
+                                session.Runtime.Outcome,
+                                session.Runtime.SimulationTimeSeconds,
+                                session.Runtime.WallElapsedSeconds,
+                                session.Runtime.Score.TotalPoints,
+                                (uint)session.Runtime.Runtime.LossRecords.Count,
+                                session.Runtime.TurnSummaries.Count,
+                                session.ComputeReplayDigest());
+                        monitor.Complete(runResult);
+                        cycleResults.Add(
+                            new Phase8BaselinePolicySoakCycleResultV1(
+                                policy.PolicyId,
+                                cycleIndex,
+                                session.Runtime.ReplaySeed,
+                                runResult,
+                                monitor.SampleCount));
+                    }
+                }
+
+                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Valid(
+                    new Phase8BaselinePolicySoakResultV1(
+                        Phase8SoakPlanV1.PlanId,
+                        Phase8SoakPlanV1.CyclesPerPolicy,
+                        cycleResults));
+            }
+            catch (Phase8SoakInvariantFailure exception)
+            {
+                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                    "Phase8Soak.Invariant.Invalid",
+                    exception.Path,
+                    exception.Message);
+            }
+            catch (Phase8BaselinePolicyFailure exception)
+            {
+                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                    "Phase8Soak.Pack.Invalid",
+                    exception.Path,
+                    exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return ContractValidationResult<Phase8BaselinePolicySoakResultV1>.Invalid(
+                    "Phase8Soak.Invalid",
+                    "soak",
+                    exception.Message);
+            }
+        }
+
         private static void WriteRunCreated(TextWriter output, CliSession session)
         {
             WriteLine(output, "run: created");
