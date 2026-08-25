@@ -1,0 +1,21 @@
+{
+  "format": "reactorsim.p7-t08-literature-calibrated-synthetic-manifest/v1",
+  "task_id": "P7-T08",
+  "artifact_id": "p7-t08-literature-calibrated-synthetic-v1",
+  "disposition": "candidate_deferred",
+  "artifact_status": "Candidate/Deferred/NoGolden",
+  "definition_sha256": "d93a8ddf8f34e184584f8a7718921503294bffacfa153b440191bd6beaefeb17",
+  "artifact_sha256": "3defaf718cfac2de9b557712e3c62a6b0dba6fd97273106cd1d255286cbeb36a",
+  "artifact_byte_length": 211456,
+  "generator_id": "p7-t08-independent-literature-calibration",
+  "generator_version": "v1",
+  "research_report": "docs/research/P7-T08-literature-calibration.md",
+  "coverage_class": "SyntheticLiteratureCalibrated",
+  "source_manifest_sha256": "df9b06987dc831b61c2f75daf368628d697b5ab1b0605466134ee0c73bbd25a1",
+  "case_count": 4,
+  "independent_repeat_equal": true,
+  "independent_repeat_sha256": "3defaf718cfac2de9b557712e3c62a6b0dba6fd97273106cd1d255286cbeb36a",
+  "maximum_schedule_balance_absolute": 0,
+  "minimum_nonnegative_value": 0,
+  "manifest_binding": "definition bytes, generated artifact bytes, and independent repeat are compared exactly"
+}

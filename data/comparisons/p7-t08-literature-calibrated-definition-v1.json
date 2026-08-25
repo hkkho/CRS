@@ -1,0 +1,148 @@
+{
+  "format": "reactorsim.p7-t08-literature-calibrated-definition/v1",
+  "task_id": "P7-T08",
+  "definition_id": "p7-t08-literature-calibrated-synthetic-v1",
+  "status": "FrozenCandidateDefinition",
+  "source_manifest": "reference/manifests/candu-literature-sources-v1.json",
+  "source_manifest_sha256": "df9b06987dc831b61c2f75daf368628d697b5ab1b0605466134ee0c73bbd25a1",
+  "coverage_class": "SyntheticLiteratureCalibrated",
+  "authority_boundary": {
+    "golden_outputs": "ProjectAuthoredSynthetic",
+    "source_values": "ReportedTargetOrComputedTheoryOnly",
+    "direct_external_reproduction": "NotAdmitted",
+    "runtime_use": "GoldenDataAuditOnly;CoreMappingProhibited",
+    "production_or_candu_baseline": "Prohibited",
+    "physical_tolerance_selection": "NotPerformed"
+  },
+  "licensing_decision": {
+    "decision": "FactsOnlyAttributionForSmallPublishedValues",
+    "source_artifacts_redistributed": false,
+    "full_source_outputs_or_figures_redistributed": false,
+    "derived_source_run_claimed": false,
+    "approved_artifact_representation": "Project-authored synthetic values and concise attributed facts only; S1/S4/S5 source bytes, full tables, figures, input decks, nuclear data, and source-result payloads remain external.",
+    "permission_required_for": "Any source-figure digitization, full table redistribution, raw input/output bundle, or external solver reproduction package."
+  },
+  "calibration_policy": {
+    "objective": "Make a deterministic synthetic fixture close to reported aggregate values without claiming that an external DRAGON5/DONJON5 run was reproduced.",
+    "k_effective_method": "Minimax midpoint of the two printed S4 lattice values; the printed pair is preserved and no new acceptance tolerance is selected.",
+    "burnup_method": "Independent SI/unit conversion from the reported constant power and duration; compare against the reported rounded exit burnup.",
+    "full_core_summary_method": "Project-authored replay of small published aggregate targets and a deterministic schedule; it is a data-contract fixture, not a solver result.",
+    "iteration_rule": "Recompute all cases from the frozen definition, inspect absolute and relative differences, and retain only bounded deterministic changes. Do not tune equations, runtime constants, or tolerances."
+  },
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "CANDU-6 operation simulations using accident tolerant cladding candidates",
+      "official_url": "https://doi.org/10.1016/j.anucene.2018.10.026",
+      "artifact_url": "https://publications.polymtl.ca/5048/11/2019_Naceur_Candu-6_operation_simulations_using_accident.pdf",
+      "license_status": "CC BY-NC-ND 4.0; source artifact remains external",
+      "use_boundary": "Small reported summary quantities only; no derived source output or input deck is redistributed."
+    },
+    {
+      "source_id": "S4",
+      "title": "Automated Refueling Simulations of a CANDU for the Exploitation of Thorium Fuels",
+      "official_url": "https://publications.polymtl.ca/1307/",
+      "artifact_url": "https://publications.polymtl.ca/1307/1/2013_BradfordHolmes.pdf",
+      "license_status": "Open access repository copy; copyright retained by author",
+      "use_boundary": "Small reported table aggregates only; no source script, database, or full output table is redistributed."
+    },
+    {
+      "source_id": "S5",
+      "title": "Neutronic analysis for accident tolerant cladding candidates in CANDU-6 reactors",
+      "official_url": "https://doi.org/10.1016/j.anucene.2017.11.016",
+      "artifact_url": "https://publications.polymtl.ca/5047/11/2018_Naceur_Neutronic_analysis_accident_tolerant_cladding.pdf",
+      "license_status": "CC BY 4.0; source artifact remains external",
+      "use_boundary": "Reported cycle inputs and headline exit-burnup value only; exact external run is not admitted."
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "p7-t08-s4-lattice-37-bundle-kcross-v1",
+      "title": "S4 37-element lattice DRAGON/SERPENT k-effective cross-check",
+      "case_kind": "lattice_k_effective",
+      "source_rows": ["S4-R02", "S4-R06", "S4-R07"],
+      "source_locators": ["Holmes thesis printed pp. 17-18, Table 3.1", "Holmes thesis Annex 2 printed pp. 47-55"],
+      "source_evidence_class": "PrimarySourceReportedNumeric",
+      "inputs": {
+        "fuel_bundle": "37-element CANDU bundle",
+        "boundary": "Reflective",
+        "serpent_neutrons_per_cycle": 20000,
+        "serpent_total_cycles": 500,
+        "serpent_inactive_cycles": 10,
+        "reported_dragon_k_effective": 1.72972,
+        "reported_serpent_k_effective": 1.73509,
+        "reported_serpent_statistical_sigma": 0.00042,
+        "reported_error_percent": 0.2
+      }
+    },
+    {
+      "case_id": "p7-t08-s5-lattice-depletion-300d-v1",
+      "title": "S5 constant-power lattice depletion and burnup handoff",
+      "case_kind": "lattice_depletion",
+      "source_rows": ["S5-R03", "S5-R04", "S5-R05", "S5-R06", "S5-R08", "S5-R09"],
+      "source_locators": ["Naceur/Marleau article printed p. 150, §2.4 and Table 5", "Naceur/Marleau article printed pp. 151-154"],
+      "source_evidence_class": "PrimarySourceReportedNumeric",
+      "inputs": {
+        "duration_days": 300,
+        "constant_power_density_kw_per_kg": 31.9713,
+        "reported_exit_burnup_gwd_per_t": 9.6,
+        "hours_per_day": 24,
+        "kwh_per_kg_per_gwd_per_t": 24000,
+        "reported_k_difference_upper_bound_mk": 2,
+        "reported_initial_k_difference_mk": [0.507, 1.679, 0.541, 0.819, 0.342, 0.9],
+        "reported_depletion_outputs": ["two-group coefficients", "reaction rates", "135Xe", "reactivity", "absorption", "fission rate"]
+      }
+    },
+    {
+      "case_id": "p7-t08-s1-fullcore-atf-summary-v1",
+      "title": "S1 CANDU-6 full-core schedule and alternate-cladding summary",
+      "case_kind": "full_core_schedule_and_summary",
+      "source_rows": ["S1-R02", "S1-R04", "S1-R06", "S1-R07", "S1-R09", "S1-R10", "S1-R11"],
+      "source_locators": ["Naceur/Marleau article printed p. 473, abstract and introduction", "Naceur/Marleau article printed pp. 476-477", "Naceur/Marleau article abstract"],
+      "source_evidence_class": "PrimarySourceReportedNumeric",
+      "inputs": {
+        "channel_count": 380,
+        "bundles_per_channel": 12,
+        "coolant_flow_direction": "alternating_by_channel",
+        "refueling_shift_bundles": 8,
+        "refueling_rate_channels_per_day": 4,
+        "duration_full_power_days": 300,
+        "reported_sic_reactivity_delta_mk": 3.4,
+        "reported_enriched_boron_delta_min_ppm": 1.1,
+        "reported_enriched_boron_delta_max_ppm": 1.4,
+        "reported_enriched_channel_power_reduction_kw": 246
+      }
+    },
+    {
+      "case_id": "p7-t08-s4-fullcore-refueling-summary-v1",
+      "title": "S4 full-core refueling aggregate comparison",
+      "case_kind": "full_core_refueling_summary",
+      "source_rows": ["S4-R03", "S4-R04", "S4-R06", "S4-R07"],
+      "source_locators": ["Holmes thesis printed p. 33, Table 5.2", "Holmes thesis Annex 2 printed pp. 47-55"],
+      "source_evidence_class": "PrimarySourceReportedNumeric",
+      "inputs": {
+        "duration_days": 100,
+        "thorium_enrichment_percent": 1,
+        "bundle_shift": 8,
+        "aggregate_reference": {
+          "maximum_channel_power_kw": 7244,
+          "maximum_bundle_power_kw": 905,
+          "rippled_channel_power_over_reference": 1.0,
+          "average_zone_level": 0.5,
+          "refueling_rate_channels_per_day": 2.27,
+          "exit_burnup_zone_1_mwd_per_t": 6700,
+          "exit_burnup_zone_2_mwd_per_t": 5360
+        },
+        "aggregate_reported_simulation": {
+          "maximum_channel_power_kw": 7296,
+          "maximum_bundle_power_kw": 926,
+          "rippled_channel_power_over_reference": 1.07,
+          "average_zone_level": 0.482,
+          "refueling_rate_channels_per_day": 4.08,
+          "exit_burnup_zone_1_mwd_per_t": 5565,
+          "exit_burnup_zone_2_mwd_per_t": 4095
+        }
+      }
+    }
+  ]
+}

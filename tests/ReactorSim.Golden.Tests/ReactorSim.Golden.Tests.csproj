@@ -132,4 +132,22 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\comparisons\p7-t08-literature-calibrated-definition-v1.json" Link="P7T08Data\definition-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p7-t08-literature-calibrated-synthetic-v1.json" Link="P7T08Data\candidate-synthetic-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\comparisons\p7-t08-literature-calibrated-synthetic-v1.manifest.json" Link="P7T08Data\candidate-synthetic-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p7-t08-literature-calibrated-synthetic-v1.json" Link="P7T08Data\approved-synthetic-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\data\golden\p7-t08-literature-calibrated-synthetic-v1.manifest.json" Link="P7T08Data\approved-synthetic-v1.manifest.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

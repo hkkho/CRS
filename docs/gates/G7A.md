@@ -262,3 +262,63 @@ Required follow-up is an owner-authorized task with a complete, reproducible,
 licensable CANDU/PHWR case if an external or production comparison is desired.
 Phase 7B remains optional/deferred until its approved temperature/purity data
 authority exists.
+
+## P7-T08 re-entry — 2026-08-25
+
+`P7-T08` is complete for the separately authorized literature-calibrated
+synthetic comparison objective. The task reviewed the earlier S1/S4/S5 paper
+records and deliberately preserved the P7-T07 admission gap: the public
+records do not provide a complete executable input/output package with exact
+tool builds, nuclear-data identities/checksums, geometry/history manifests,
+output schemas, and reproduction rights. The approved package therefore uses
+only project-authored synthetic values and concise attributed published facts;
+source bytes, full tables/figures, input decks, nuclear data, and source-result
+payloads are not redistributed.
+
+The four approved cases are:
+
+- S4 lattice k-effective: a minimax midpoint between the printed DRAGON and
+  SERPENT values.
+- S5 300-day lattice depletion: an independently computed energy/burnup
+  identity retaining the paper's reported input and rounded exit value.
+- S1 full-core schedule: a complete 380-channel/12-bundle, 300-FPD synthetic
+  schedule with the paper's reported summary deltas kept as attributed facts.
+- S4 full-core refuelling: a deterministic aggregate schedule reproducing the
+  reported time-average/simulation summary values as a synthetic fixture.
+
+The approved artifact is
+`data/golden/p7-t08-literature-calibrated-synthetic-v1.json`, SHA-256
+`b4d46cf2535c3616622c4c0a15ab1fcc6979662d3f1e02c25f4de0e1c61228ca`,
+`211470` bytes, with status `Approved`/`ApprovedGolden`. Its definition binds
+the actual source-manifest hash, and the standalone generator computes and
+validates schedule-balance and nonnegative-value metrics rather than storing
+hardcoded invariant results. The candidate remains separately preserved under
+`data/comparisons/` with status `Candidate`/`Deferred`/`NoGolden`.
+
+Evidence for this re-entry is:
+
+- T0/T1 standalone generator build, candidate/approved generation, independent
+  repeat equality, and both manifest validations passed.
+- Focused P7-T08 Golden tests passed `2/2`.
+- Full T3 passed CLI `5/5`, Core `189/189`, Golden `26/26`, with zero
+  failures/skips.
+- The seven-page comparison PDF passed `pdfinfo`, `pypdf`, `pdfplumber`, hash
+  verification, and visual inspection; its SHA-256 is
+  `14b210408cfcfa081ae4273a8557de61bce3b721ab054c720fd9289e7977aee8`.
+- The first bounded independent high review identified a pcm-to-mk unit
+  correction, a licensing-boundary clarification, weak manifest/invariant
+  checks, and missing re-entry evidence. Those findings were corrected in the
+  definition, generator, tests, PDF, task report, and this re-entry record;
+  the same reviewer/context returned a final `CONDITIONAL PASS` with no P0/P1
+  findings. The only final P2 finding was this stale intermediate PDF hash; it
+  is now corrected to the deterministic hash above. The intermediate
+  timestamped snapshot hash `94935a5c4ea9ad1cba7a1639195c3b76a7208d87bb98a0b0fb12eac737297dd7`
+  is superseded and is retained only as historical correction evidence in the
+  task report.
+
+Final re-entry disposition remains **`CONDITIONAL PASS`** for the
+`SyntheticLiteratureCalibrated` / `GoldenDataAuditOnly;CoreMappingProhibited`
+scope. This package does not promote an external solver reproduction, a CANDU
+physics or production baseline, a physical tolerance, or a Core runtime
+mapping. Direct/reference admission remains deferred until the complete
+source package and authority boundary described above become available.
