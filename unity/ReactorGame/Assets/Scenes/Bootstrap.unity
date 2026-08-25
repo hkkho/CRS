@@ -136,6 +136,8 @@ GameObject:
   - component: {fileID: 1000000003}
   - component: {fileID: 1000000004}
   - component: {fileID: 1000000005}
+  - component: {fileID: 1000000006}
+  - component: {fileID: 1000000007}
   m_Layer: 5
   m_Name: Phase10Shell
   m_TagString: Untagged
@@ -238,3 +240,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c8737bbd9c6a4e0c98bfe98d99a0e3d2, type: 3}
   m_Name:
   m_EditorClassIdentifier: ReactorGame.Unity::ReactorGame.Unity.Phase10ShellView
+--- !u!114 &1000000006
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  serializedVersion: 3
+  m_Script: {fileID: 11500000, guid: 70c2830f38bd4fd69a17db575ca9c193, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ReactorGame.Unity::ReactorGame.Unity.Phase8UnityRuntimeAdapter
+--- !u!114 &1000000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  serializedVersion: 3
+  m_Script: {fileID: 11500000, guid: b7a4b3dc8f7946c992723f5b81d704e1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ReactorGame.Unity::ReactorGame.Unity.Phase10DashboardView

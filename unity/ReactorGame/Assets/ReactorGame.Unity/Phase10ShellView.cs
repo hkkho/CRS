@@ -208,6 +208,21 @@ namespace ReactorGame.Unity
             return _navigationButtons.TryGetValue(page, out button);
         }
 
+        public bool TryGetPageRoot(
+            Phase10ShellPageV1 page,
+            out RectTransform pageRoot)
+        {
+            GameObject pageObject;
+            if (_pages.TryGetValue(page, out pageObject))
+            {
+                pageRoot = pageObject.GetComponent<RectTransform>();
+                return pageRoot != null;
+            }
+
+            pageRoot = null;
+            return false;
+        }
+
         private void CreatePage(
             Phase10ShellPageV1 page,
             string title,
