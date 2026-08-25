@@ -6,9 +6,9 @@ using ReactorSim.Core;
 namespace ReactorSim.Cli
 {
     /// <summary>
-    /// The first bounded text-client surface for the existing engine-neutral
-    /// contracts. This slice exposes inspection and session-control commands;
-    /// it does not execute physics or mutate Core state.
+    /// The bounded text client over the engine-neutral synthetic Phase 8
+    /// scenario runtime. Wall durations are explicit command inputs; the
+    /// process clock and Unity frame timing are never sampled.
     /// </summary>
     public static class CliApplication
     {
@@ -96,19 +96,16 @@ namespace ReactorSim.Cli
                     return CommandResult.Success;
 
                 case "new":
-                    if (tokens.Length != 2 || !string.Equals(tokens[1], "run", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return Fail(error, "CLI.Command.Usage", "usage: new run");
-                    }
-
-                    session = new CliSession(SyntheticFixtures.CreateTwoChannelThreePosition());
-                    WriteLine(output, "run: created");
-                    WriteLine(output, "run_kind=synthetic-inspection");
-                    WriteLine(output, "data_pack_version=synthetic-p3-t01");
-                    return CommandResult.Success;
+                    return ExecuteNewRun(tokens, ref session, output, error);
 
                 case "inspect":
                     return ExecuteInspect(tokens, session, output, error);
+
+                case "advance":
+                    return ExecuteAdvance(tokens, session, output, error);
+
+                case "set":
+                    return ExecuteSet(tokens, session, output, error);
 
                 case "pause":
                     if (tokens.Length != 1)
@@ -123,6 +120,21 @@ namespace ReactorSim.Cli
 
                     session.Pause();
                     WriteLine(output, "paused=true");
+                    return CommandResult.Success;
+
+                case "resume":
+                    if (tokens.Length != 1)
+                    {
+                        return Fail(error, "CLI.Command.Usage", "usage: resume");
+                    }
+
+                    if (session == null)
+                    {
+                        return MissingRun(error);
+                    }
+
+                    session.Resume();
+                    WriteLine(output, "paused=false");
                     return CommandResult.Success;
 
                 case "quit":
@@ -158,7 +170,7 @@ namespace ReactorSim.Cli
                 return Fail(
                     error,
                     "CLI.Command.Usage",
-                    "usage: inspect core | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
+                    "usage: inspect core | inspect scenario | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
             }
 
             switch (tokens[1].ToLowerInvariant())
@@ -172,6 +184,15 @@ namespace ReactorSim.Cli
                     WriteCoreInspection(session, output);
                     return CommandResult.Success;
 
+                case "scenario":
+                    if (tokens.Length != 2)
+                    {
+                        return Fail(error, "CLI.Command.Usage", "usage: inspect scenario");
+                    }
+
+                    WriteScenarioInspection(session, output);
+                    return CommandResult.Success;
+
                 case "channel":
                     return WriteChannelInspection(tokens, session, output, error);
 
@@ -182,19 +203,221 @@ namespace ReactorSim.Cli
                     return Fail(
                         error,
                         "CLI.Command.Usage",
-                        "usage: inspect core | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
+                        "usage: inspect core | inspect scenario | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
             }
+        }
+
+        private static CommandResult ExecuteNewRun(
+            string[] tokens,
+            ref CliSession? session,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (tokens.Length < 2 || tokens.Length > 4 ||
+                !string.Equals(tokens[1], "run", StringComparison.OrdinalIgnoreCase))
+            {
+                return Fail(error, "CLI.Command.Usage", "usage: new run [scenario_id] [playback_mode_id]");
+            }
+
+            try
+            {
+                Phase8ScenarioParameterPack pack = Phase8ScenarioParameterPack.LoadApproved(
+                    Phase8ScenarioParameterPack.FindDefaultPath());
+                string scenarioId = tokens.Length >= 3 ? tokens[2] : "tutorial-equilibrium";
+                string modeId = tokens.Length == 4 ? tokens[3] : pack.DefaultPlaybackModeId;
+                if (!pack.Scenarios.TryGetValue(scenarioId, out Phase8ScenarioDefinitionV1? scenario))
+                {
+                    return Fail(error, "CLI.Scenario.NotFound", "the approved scenario identifier is not present in the parameter pack.");
+                }
+
+                if (!pack.DifficultyProfiles.TryGetValue(scenario.DifficultyId, out Phase8DifficultyProfileV1? profile))
+                {
+                    return Fail(error, "CLI.Difficulty.NotFound", "the scenario difficulty profile is not present in the parameter pack.");
+                }
+
+                if (!pack.PlaybackModes.TryGetValue(modeId, out Phase8PlaybackModeV1? playbackMode))
+                {
+                    return Fail(error, "CLI.PlaybackMode.NotFound", "the approved playback mode identifier is not present in the parameter pack.");
+                }
+
+                ContractValidationResult<Phase8ScenarioRuntimeV1> runtimeResult =
+                    Phase8ScenarioRuntimeV1.TryCreate(scenario, profile, pack.TimeModel, playbackMode);
+                if (!runtimeResult.IsValid)
+                {
+                    return Fail(error, "CLI.ScenarioRuntime.Invalid", runtimeResult.FirstDiagnostic.ToString());
+                }
+
+                session = new CliSession(
+                    SyntheticFixtures.CreateTwoChannelThreePosition(),
+                    pack,
+                    runtimeResult.Value);
+                WriteLine(output, "run: created");
+                WriteLine(output, "run_kind=synthetic-scenario");
+                WriteLine(output, "scenario_id=" + runtimeResult.Value.ScenarioId);
+                WriteLine(output, "difficulty_id=" + runtimeResult.Value.DifficultyId);
+                WriteLine(output, "playback_mode_id=" + runtimeResult.Value.PlaybackModeId);
+                WriteLine(output, "acceleration_factor=" + FormatDouble(runtimeResult.Value.AccelerationFactor));
+                WriteLine(output, "replay_seed=" + runtimeResult.Value.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+                WriteLine(output, "data_pack_version=" + session.Fixture.DataPack.DataPackVersion);
+                WriteLine(output, "simulation_time_s=" + FormatDouble(runtimeResult.Value.SimulationTimeSeconds));
+                WriteLine(output, "paused=" + runtimeResult.Value.IsPaused.ToString().ToLowerInvariant());
+                return CommandResult.Success;
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Fail(error, "CLI.ScenarioPack.Invalid", Phase8ScenarioParameterPack.FormatFailure(exception));
+            }
+        }
+
+        private static CommandResult ExecuteAdvance(
+            string[] tokens,
+            CliSession? session,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (session == null)
+            {
+                return MissingRun(error);
+            }
+
+            if (tokens.Length != 3 || !string.Equals(tokens[1], "wall", StringComparison.OrdinalIgnoreCase) ||
+                !ulong.TryParse(tokens[2], NumberStyles.None, CultureInfo.InvariantCulture, out ulong wallMilliseconds))
+            {
+                return Fail(error, "CLI.Command.Usage", "usage: advance wall <milliseconds>");
+            }
+
+            ContractValidationResult<Phase8ScenarioAdvanceResultV1> result =
+                session.Runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
+            if (!result.IsValid)
+            {
+                return Fail(error, "CLI.Advance.Invalid", result.FirstDiagnostic.ToString());
+            }
+
+            WriteLine(output, "advance:");
+            WriteLine(output, "  wall_ms_requested=" + wallMilliseconds.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  control_ticks_processed=" + result.Value.ControlTicksProcessed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  simulation_time_s=" + FormatDouble(result.Value.SimulationTimeSeconds));
+            WriteLine(output, "  wall_elapsed_s=" + FormatDouble(result.Value.WallElapsedSeconds));
+            WriteLine(output, "  outcome=" + result.Value.Outcome);
+            WriteLine(output, "  paused=" + result.Value.IsPaused.ToString().ToLowerInvariant());
+            foreach (Phase8ActionTransitionV1 action in result.Value.ActionTransitions)
+            {
+                WriteLine(output, "  action_id=" + action.ActionId.ToString(CultureInfo.InvariantCulture));
+                WriteLine(output, "  action_kind=" + action.Kind);
+                WriteLine(output, "  action_queue_delay_wall_s=" + FormatDouble(action.QueueDelayWallTimeSeconds));
+            }
+
+            foreach (Phase8EventRecordV1 record in result.Value.EventRecords)
+            {
+                WriteLine(output, "  event_id=" + record.EventId);
+                WriteLine(output, "  event_kind=" + record.Kind);
+                WriteLine(output, "  event_time_s=" + FormatDouble(record.SimulationTimeSeconds));
+            }
+
+            foreach (Phase8LossRecordV1 loss in result.Value.LossRecords)
+            {
+                WriteLine(output, "  loss_id=" + loss.LossId);
+                WriteLine(output, "  loss_metric=" + loss.Metric);
+                WriteLine(output, "  loss_time_s=" + FormatDouble(loss.SimulationTimeSeconds));
+            }
+
+            return CommandResult.Success;
+        }
+
+        private static CommandResult ExecuteSet(
+            string[] tokens,
+            CliSession? session,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (session == null)
+            {
+                return MissingRun(error);
+            }
+
+            if (tokens.Length == 4 &&
+                string.Equals(tokens[1], "power", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(tokens[2], "target", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!TryParseFiniteDouble(tokens[3], out double powerTarget))
+                {
+                    return Fail(error, "CLI.Command.Argument.Invalid", "power target must be a finite invariant-culture number.");
+                }
+
+                ContractValidationResult<Phase8ActionQueueResultV1> result =
+                    session.Runtime.TryQueuePowerTarget(powerTarget);
+                return WriteQueuedAction(result, output, error);
+            }
+
+            if (tokens.Length == 4 &&
+                string.Equals(tokens[1], "tilt", StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(tokens[2], "target", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!TryParseFiniteDouble(tokens[3], out double tiltTarget))
+                {
+                    return Fail(error, "CLI.Command.Argument.Invalid", "tilt target must be a finite invariant-culture number.");
+                }
+
+                ContractValidationResult<Phase8ActionQueueResultV1> result =
+                    session.Runtime.TryQueueTiltTarget(tiltTarget);
+                return WriteQueuedAction(result, output, error);
+            }
+
+            if (tokens.Length == 3 && string.Equals(tokens[1], "playback", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!session.Pack.PlaybackModes.TryGetValue(tokens[2], out Phase8PlaybackModeV1? playbackMode))
+                {
+                    return Fail(error, "CLI.PlaybackMode.NotFound", "the approved playback mode identifier is not present in the parameter pack.");
+                }
+
+                ContractValidationResult<bool> result = session.Runtime.TrySetPlaybackMode(playbackMode);
+                if (!result.IsValid)
+                {
+                    return Fail(error, "CLI.PlaybackMode.Invalid", result.FirstDiagnostic.ToString());
+                }
+
+                WriteLine(output, "playback_mode_id=" + playbackMode.ModeId);
+                WriteLine(output, "acceleration_factor=" + FormatDouble(playbackMode.AccelerationFactor));
+                return CommandResult.Success;
+            }
+
+            return Fail(
+                error,
+                "CLI.Command.Usage",
+                "usage: set power target <fraction> | set tilt target <fraction> | set playback <mode_id>");
+        }
+
+        private static CommandResult WriteQueuedAction(
+            ContractValidationResult<Phase8ActionQueueResultV1> result,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (!result.IsValid)
+            {
+                return Fail(error, "CLI.Action.Invalid", result.FirstDiagnostic.ToString());
+            }
+
+            WriteLine(output, "action: queued");
+            WriteLine(output, "action_id=" + result.Value.ActionId.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "pending_actions=" + result.Value.PendingActionCount.ToString(CultureInfo.InvariantCulture));
+            return CommandResult.Success;
         }
 
         private static void WriteHelp(TextWriter output)
         {
             WriteLine(output, "commands:");
             WriteLine(output, "  help");
-            WriteLine(output, "  new run");
+            WriteLine(output, "  new run [scenario_id] [playback_mode_id]");
             WriteLine(output, "  inspect core");
+            WriteLine(output, "  inspect scenario");
             WriteLine(output, "  inspect channel <channel_id>");
             WriteLine(output, "  inspect bundle <channel_id> <position>");
+            WriteLine(output, "  advance wall <milliseconds>");
+            WriteLine(output, "  set power target <fraction>");
+            WriteLine(output, "  set tilt target <fraction>");
+            WriteLine(output, "  set playback <mode_id>");
             WriteLine(output, "  pause");
+            WriteLine(output, "  resume");
             WriteLine(output, "  quit");
         }
 
@@ -202,17 +425,48 @@ namespace ReactorSim.Cli
         {
             SyntheticCoreFixture fixture = session.Fixture;
             WriteLine(output, "core:");
-            WriteLine(output, "  run_kind=synthetic-inspection");
+            WriteLine(output, "  run_kind=synthetic-scenario");
             WriteLine(output, "  topology_channel_count=" + fixture.Topology.ChannelCount.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  topology_bundle_position_count=" + fixture.Topology.BundlePositionCount.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  inventory_slot_count=" + fixture.Inventory.SlotCount.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  inventory_occupied_count=" + fixture.Inventory.OccupiedCount.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  data_pack_version=" + fixture.DataPack.DataPackVersion);
-            WriteLine(output, "  simulation_time_s=" + FormatDouble(fixture.Configuration.InitialSimulationTimeSeconds));
+            WriteLine(output, "  scenario_id=" + session.Runtime.ScenarioId);
+            WriteLine(output, "  difficulty_id=" + session.Runtime.DifficultyId);
+            WriteLine(output, "  playback_mode_id=" + session.Runtime.PlaybackModeId);
+            WriteLine(output, "  acceleration_factor=" + FormatDouble(session.Runtime.AccelerationFactor));
+            WriteLine(output, "  replay_seed=" + session.Runtime.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  simulation_time_s=" + FormatDouble(session.Runtime.SimulationTimeSeconds));
+            WriteLine(output, "  simulation_step_index=" + session.Runtime.SimulationStepIndex.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  wall_elapsed_s=" + FormatDouble(session.Runtime.WallElapsedSeconds));
             WriteLine(output, "  core_state_version=" + fixture.Configuration.InitialCoreStateVersion.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  spatial_state_version=" + fixture.Configuration.InitialSpatialStateVersion.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  power_snapshot_version=" + fixture.Configuration.InitialPowerSnapshotVersion.ToString(CultureInfo.InvariantCulture));
-            WriteLine(output, "  paused=" + session.IsPaused.ToString().ToLowerInvariant());
+            WriteLine(output, "  normalized_power_fraction=" + FormatDouble(session.Runtime.NormalizedPowerFraction));
+            WriteLine(output, "  absolute_tilt_fraction=" + FormatDouble(session.Runtime.AbsoluteTiltFraction));
+            WriteLine(output, "  control_margin_fraction=" + FormatDouble(session.Runtime.ControlMarginFraction));
+            WriteLine(output, "  device_available_fraction=" + FormatDouble(session.Runtime.DeviceAvailableFraction));
+            WriteLine(output, "  refuel_requests_remaining=" + session.Runtime.RefuelRequestsRemaining.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  pending_actions=" + session.Runtime.PendingActionCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  scripted_events_processed=" + session.Runtime.ProcessedScriptedEventCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  outcome=" + session.Runtime.Outcome);
+            WriteLine(output, "  paused=" + session.Runtime.IsPaused.ToString().ToLowerInvariant());
+        }
+
+        private static void WriteScenarioInspection(CliSession session, TextWriter output)
+        {
+            Phase8DifficultyProfileV1 profile =
+                session.Pack.DifficultyProfiles[session.Runtime.DifficultyId];
+            WriteLine(output, "scenario:");
+            WriteLine(output, "  scenario_id=" + session.Runtime.ScenarioId);
+            WriteLine(output, "  difficulty_id=" + session.Runtime.DifficultyId);
+            WriteLine(output, "  seed=" + session.Runtime.Seed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  replay_seed=" + session.Runtime.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  playback_mode_id=" + session.Runtime.PlaybackModeId);
+            WriteLine(output, "  acceleration_factor=" + FormatDouble(session.Runtime.AccelerationFactor));
+            WriteLine(output, "  horizon_s=" + FormatDouble(profile.ScenarioHorizonSeconds));
+            WriteLine(output, "  decision_interval_s=" + FormatDouble(profile.DecisionIntervalSeconds));
+            WriteLine(output, "  approved_parameter_sha256=" + session.Pack.ArtifactSha256);
         }
 
         private static CommandResult WriteChannelInspection(
@@ -292,7 +546,7 @@ namespace ReactorSim.Cli
 
         private static CommandResult MissingRun(TextWriter error)
         {
-            return Fail(error, "CLI.Run.Missing", "start a run with 'new run' before inspecting or pausing.");
+            return Fail(error, "CLI.Run.Missing", "start a run with 'new run' before inspecting, advancing, or issuing actions.");
         }
 
         private static CommandResult Fail(TextWriter error, string code, string message)
@@ -321,20 +575,43 @@ namespace ReactorSim.Cli
             return value.ToString("R", CultureInfo.InvariantCulture);
         }
 
+        private static bool TryParseFiniteDouble(string value, out double parsed)
+        {
+            return double.TryParse(
+                       value,
+                       NumberStyles.Float,
+                       CultureInfo.InvariantCulture,
+                       out parsed) &&
+                   !double.IsNaN(parsed) &&
+                   !double.IsInfinity(parsed);
+        }
+
         private sealed class CliSession
         {
-            public CliSession(SyntheticCoreFixture fixture)
+            public CliSession(
+                SyntheticCoreFixture fixture,
+                Phase8ScenarioParameterPack pack,
+                Phase8ScenarioRuntimeV1 runtime)
             {
                 Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
+                Pack = pack ?? throw new ArgumentNullException(nameof(pack));
+                Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             }
 
             public SyntheticCoreFixture Fixture { get; }
 
-            public bool IsPaused { get; private set; }
+            public Phase8ScenarioParameterPack Pack { get; }
+
+            public Phase8ScenarioRuntimeV1 Runtime { get; }
 
             public void Pause()
             {
-                IsPaused = true;
+                Runtime.TryPause();
+            }
+
+            public void Resume()
+            {
+                Runtime.TryResume();
             }
         }
 

@@ -23,6 +23,9 @@ public sealed class CliApplicationTests
         Assert.DoesNotContain("\r", first.output);
         Assert.DoesNotContain("\r", first.error);
         Assert.Contains("run: created", first.output);
+        Assert.Contains("run_kind=synthetic-scenario", first.output);
+        Assert.Contains("scenario_id=tutorial-equilibrium", first.output);
+        Assert.Contains("acceleration_factor=10", first.output);
         Assert.Contains("topology_channel_count=2", first.output);
         Assert.Contains("flow_direction=EndBtoEndA", first.output);
         Assert.Contains("material_variant_id=synthetic-fuel", first.output);
@@ -82,6 +85,36 @@ public sealed class CliApplicationTests
         Assert.Equal(string.Empty, result.error);
         Assert.Contains("bye", result.output);
         Assert.DoesNotContain("run: created", result.output);
+    }
+
+    [Fact]
+    public void ApprovedScenarioAdvancesAtTenTimesAndCommitsActionsAtTheNextTick()
+    {
+        (int exitCode, string output, string error) result = Run(
+            "new run tutorial-equilibrium\nadvance wall 50\nset power target 0.95\nadvance wall 50\ninspect core\nquit\n");
+
+        Assert.Equal(0, result.exitCode);
+        Assert.Equal(string.Empty, result.error);
+        Assert.Contains("control_ticks_processed=0", result.output);
+        Assert.Contains("control_ticks_processed=1", result.output);
+        Assert.Contains("simulation_time_s=1", result.output);
+        Assert.Contains("action_queue_delay_wall_s=", result.output);
+        Assert.Contains("normalized_power_fraction=0.95", result.output);
+    }
+
+    [Fact]
+    public void BoundaryScenarioRecordsLossWithoutSafetySystemBehavior()
+    {
+        (int exitCode, string output, string error) result = Run(
+            "new run operating-envelope-boundary\nadvance wall 1000\nquit\n");
+
+        Assert.Equal(0, result.exitCode);
+        Assert.Equal(string.Empty, result.error);
+        Assert.Contains("outcome=RecordLoss", result.output);
+        Assert.Contains("loss_id=power_above_maximum", result.output);
+        Assert.Contains("loss_time_s=10", result.output);
+        Assert.DoesNotContain("scram", result.output, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("shutdown", result.output, StringComparison.OrdinalIgnoreCase);
     }
 
     private static (int exitCode, string output, string error) Run(string commands)

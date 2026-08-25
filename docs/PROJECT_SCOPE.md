@@ -100,10 +100,14 @@ consumes a P6-T06 type, and defines a no-break additive migration order. No
 rename, alias, public contract, persistence, or serialized-byte change was
 made. `STATUS-VISIBILITY-01` is complete, and the owner-authorized
 non-physics Phase 8 activation has completed `P8-T01`: the CLI now provides a
-deterministic inspection shell over the existing synthetic Core fixture. It
-does not add physics, time advancement, refuelling, RRS actions, save/load,
-replay, or gameplay scoring. The next Phase 8 task remains unselected until
-approved scenario/difficulty parameter authority exists. The owner-authorized
+deterministic inspection shell over the existing synthetic Core fixture. The
+owner-approved `P8-T02` parameter authority and bounded runtime consumer now
+add deterministic synthetic scenarios, difficulty profiles, explicit wall-time
+pacing, action responsiveness, pause/resume, scripted proxy events, and
+record-only loss envelopes. P8-T02 does not add physics, save/load, full
+replay, scoring, bots, long-run soak, Unity presentation, or G8 evidence. The
+next Phase 8 task remains unselected until a separately bounded task is
+specified. The owner-authorized
 Phase 7A activation has completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
 synthetic scenario histories, authenticated dynamic-Xe absorption overlay,
@@ -237,6 +241,8 @@ Historical context is intentionally short:
 | Key | Status | Boundary and evidence | Next handoff |
 |---|---|---|---|
 | `P8-T01` | `COMPLETE` | The first Phase 8 CLI slice provides `help`, `new run`, `inspect core`, `inspect channel`, `inspect bundle`, `pause`, and `quit` over the explicit synthetic Core fixture. Output uses canonical LF line endings, invariant numeric formatting, separate stdout/stderr, deterministic errors, and exit code `2` for malformed commands. Focused CLI tests `5/5`, full T3 Core `158/158`, Golden `19/19`, CLI `5/5`, and release build `0` warnings/errors passed; independent review final `PASS` with telemetry `UNVERIFIED`. | No next Phase 8 task is selected until an approved scenario/difficulty parameter authority is available; the remaining Phase 8 work packages and G8 evidence are not implied by this slice. |
+
+| `P8-T02` | `COMPLETE` | [`docs/tasks/P8-T02.md`](tasks/P8-T02.md) records the owner-approved synthetic parameter authority, exact artifact/manifest binding, bounded Core/CLI scenario runtime, explicit 10x/100 ms pacing, pause/resume, action acknowledgement/commit, deterministic event/loss ordering, and fail-closed malformed-pack checks. Focused CLI `12/12`, Core `202/202`, full T3 Golden `26/26`, and release build `0` warnings/errors passed; same-context independent high review has no remaining technical P0/P1 findings, with model/reasoning telemetry `UNVERIFIED`. | No next Phase 8 task is selected; save/load, replay, scoring, bots, long-run soak, Unity presentation, and G8 evidence remain separately bounded. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 
