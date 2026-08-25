@@ -21,3 +21,24 @@ The JSON result is machine-specific and should be retained outside the
 repository. The runner checks converged-state usability and exact repeated
 determinism, and reports elapsed time and allocations. No performance target,
 optimization, tolerance approval, or reference/golden comparison is implied.
+
+## Phase 9 CLI gameplay observation
+
+P9-T01 adds the observation-only CLI benchmark manifest
+[`P9-T01-cli-gameplay-benchmark-v1.json`](P9-T01-cli-gameplay-benchmark-v1.json)
+and the dependency-free `ReactorSim.Phase9.Benchmarks` project. Run it from the
+repository root after a Release build:
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' `
+  'benchmarks\ReactorSim.Phase9.Benchmarks\bin\Release\net10.0\ReactorSim.Phase9.Benchmarks.dll' `
+  --warmup 10 --measure 200
+```
+
+It runs three frozen Phase 8 command streams through the public CLI boundary,
+checks exact repeated output determinism, and reports host-specific elapsed
+time and current-thread allocations. The manifest binds the approved P8-T02,
+P8-T03, and P8-T05 artifact hashes and deliberately selects no performance
+target. Android evidence is explicitly deferred until a representative device
+and toolchain are available; no mobile result may be inferred from the desktop
+observation.

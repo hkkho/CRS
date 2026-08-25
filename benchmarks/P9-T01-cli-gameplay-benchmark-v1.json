@@ -1,0 +1,65 @@
+{
+  "format": "reactorsim.p9-cli-gameplay-benchmark/v1",
+  "task_id": "P9-T01",
+  "status": "synthetic_observation_only",
+  "benchmark_id": "p9-t01-cli-gameplay-v1",
+  "scenario_parameter_sha256": "80981452f4808fae9e2c8341fc32e88640b446d386f9dbb7726c1550a2ff51a2",
+  "scoring_parameter_sha256": "4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c",
+  "policy_parameter_sha256": "d0e6dec7199751ca0f5d5418892fe0210831e46153ff445ec13e4e84ddf49d39",
+  "measurement": {
+    "warmup_iterations": 10,
+    "measured_iterations": 200,
+    "clock": "System.Diagnostics.Stopwatch",
+    "allocation_counter": "GC.GetAllocatedBytesForCurrentThread",
+    "performance_target": null,
+    "result_boundary": "machine_specific_observation_only"
+  },
+  "platforms": {
+    "desktop": {
+      "status": "required_observation",
+      "runtime": "Release",
+      "architecture": "current_host"
+    },
+    "android": {
+      "status": "Deferred/NotAvailable",
+      "reason": "No adb command or representative Android device is available in the execution environment.",
+      "owner_gate": "G9"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "steady-survival-10x",
+      "purpose": "Complete the approved tutorial survival horizon without player actions.",
+      "command_stream": [
+        "new run tutorial-equilibrium play-accelerated-10x",
+        "advance wall 60000",
+        "inspect score",
+        "quit"
+      ]
+    },
+    {
+      "case_id": "controlled-response-10x",
+      "purpose": "Queue power and tilt targets and observe scored response before the horizon.",
+      "command_stream": [
+        "new run centered-power-perturbation play-accelerated-10x",
+        "set power target 0.95",
+        "advance wall 100",
+        "set tilt target 0.1",
+        "advance wall 100",
+        "inspect score",
+        "quit"
+      ]
+    },
+    {
+      "case_id": "boundary-loss-10x",
+      "purpose": "Reach the approved operating-envelope loss and expose its explanation.",
+      "command_stream": [
+        "new run operating-envelope-boundary play-accelerated-10x",
+        "advance wall 1000",
+        "inspect score",
+        "quit"
+      ]
+    }
+  ],
+  "evidence_boundary": "Project-authored synthetic gameplay command streams and machine-specific desktop observations only; no performance target, numerical tolerance, golden value, mobile result, or release budget."
+}

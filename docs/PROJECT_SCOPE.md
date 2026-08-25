@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-25 against the implementation plan, completed reports
-through `G8` review and `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+through `P9-T01` implementation, `G8` review, `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -116,6 +116,12 @@ not player-facing automation or physical/golden authority. Unity presentation
 and the separate G8 vertical-slice review is now `PASS` for this synthetic CLI
 boundary. Unity presentation, device performance, and release evidence remain
 bounded follow-on work.
+The owner-authorized P9-T01 benchmark observation is now complete for three
+versioned synthetic CLI command streams. It binds the exact P8-T02/P8-T03/P8-T05
+artifacts, checks exact repeated CLI output determinism, and records only
+machine-specific desktop timing/allocation observations. No performance target,
+optimization, mobile result, or release budget was selected; Android remains
+explicitly deferred because no representative device or `adb` is available.
 The owner-authorized
 Phase 7A activation has completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
@@ -259,6 +265,12 @@ Historical context is intentionally short:
 
 | `P8-T05` | `COMPLETE` | [`docs/tasks/P8-T05.md`](tasks/P8-T05.md) records the owner-approved synthetic scripted-policy authority and strict artifact/manifest loader bound to the exact P8-T02 scenario SHA-256 `80981452f4808fae9e2c8341fc32e88640b446d386f9dbb7726c1550a2ff51a2` and P8-T03 scoring SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`. Four deterministic non-player-facing policies freeze exact outcome, simulation/wall time, score, loss, turn-summary, and replay-digest baselines. Duplicate, unknown, trailing/comment, reordered, tampered-hash, wrong-type, nonfinite, over-horizon, over-capacity, and expected-observable data is rejected before execution. Final Release build has 0 warnings/errors; focused P8-T05 `6/6`; T3 Core `208/208`, CLI `36/36`, Golden `26/26`; independent high-review technical disposition is `PASS` and the administrative condition is satisfied in the task report, with telemetry `UNVERIFIED`. | `P8-T06` long-run soak/invariant monitoring is next; Unity presentation and G8 evidence remain deferred. |
 | `P8-T06` | `COMPLETE` | [`docs/tasks/P8-T06.md`](tasks/P8-T06.md) records the owner-approved long-run soak plan bound to the exact P8-T05 policy SHA-256 `d0e6dec7199751ca0f5d5418892fe0210831e46153ff445ec13e4e84ddf49d39`, P8-T02 scenario SHA-256 `80981452f4808fae9e2c8341fc32e88640b446d386f9dbb7726c1550a2ff51a2`, and P8-T03 scoring SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`. The internal monitor executes all four P8-T05 policies for 16 fresh deterministic cycles each, checks explicit 100 ms control-tick/segment coverage, clocks, action/event/loss ordering, operating-envelope and terminal-loss consistency, score bounds, and turn summaries, then requires exact two-pass aggregate and per-cycle repeatability. Final Release build has 0 warnings/errors; focused P8-T06 `2/2`; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; same-context high review technical disposition is `PASS` with final administrative `CONDITIONAL PASS` satisfied by the report and this row; telemetry `UNVERIFIED`. [`G8`](../gates/G8.md) is `PASS` for the approved synthetic CLI boundary; Phase 9 benchmark/performance work is next, while Unity presentation and release/mobile evidence remain separately bounded. |
+
+## Phase 9 performance observation sequence — 2026-08-25
+
+| Key | Status | Boundary and evidence | Next handoff |
+|---|---|---|---|
+| `P9-T01` | `COMPLETE` | [`docs/tasks/P9-T01.md`](tasks/P9-T01.md) records the owner-approved observation-only benchmark manifest [`P9-T01-cli-gameplay-benchmark-v1.json`](../benchmarks/P9-T01-cli-gameplay-benchmark-v1.json), exact P8-T02/P8-T03/P8-T05 hash binding, three representative CLI command streams, exact repeated output determinism, strict exact-case validation with mutation rejection, and two 10-warmup/200-measure desktop observations. Release build and benchmark passed; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; no performance target or optimization was selected; Android is `Deferred/NotAvailable` without `adb`/device evidence; independent high review final disposition is `PASS` with telemetry `UNVERIFIED`. | `P9-T02` desktop profiling/hotspot characterization is next; Android/device baseline remains a separate T5 task. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 
