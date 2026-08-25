@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-25 against the implementation plan, completed reports
-through `P8-T03` candidate implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+through `P8-T04` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -106,8 +106,11 @@ add deterministic synthetic scenarios, difficulty profiles, explicit wall-time
 pacing, action responsiveness, pause/resume, scripted proxy events, and
 record-only loss envelopes. P8-T02 does not add physics, save/load, full
 replay, scoring, bots, long-run soak, Unity presentation, or G8 evidence. The
-next Phase 8 task remains unselected until a separately bounded task is
-specified. The owner-authorized
+owner-authorized P8-T03 scoring and turn-summary slice and P8-T04 canonical
+save/load and deterministic command-log replay slice are now complete within
+the synthetic CLI boundary. Scripted balance-regression policies, long-run
+soak, Unity presentation, and G8 evidence remain separately bounded work.
+The owner-authorized
 Phase 7A activation has completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
 synthetic scenario histories, authenticated dynamic-Xe absorption overlay,
@@ -244,7 +247,9 @@ Historical context is intentionally short:
 
 | `P8-T02` | `COMPLETE` | [`docs/tasks/P8-T02.md`](tasks/P8-T02.md) records the owner-approved synthetic parameter authority, exact artifact/manifest binding, bounded Core/CLI scenario runtime, explicit 10x/100 ms pacing, pause/resume, action acknowledgement/commit, deterministic event/loss ordering, and fail-closed malformed-pack checks. Focused CLI `12/12`, Core `202/202`, full T3 Golden `26/26`, and release build `0` warnings/errors passed; same-context independent high review has no remaining technical P0/P1 findings, with model/reasoning telemetry `UNVERIFIED`. | `P8-T03` is the separately bounded scoring/turn-summary follow-on; save/load, replay, bots, long-run soak, Unity presentation, and G8 evidence remain deferred. |
 
-| `P8-T03` | `COMPLETE` | [`docs/tasks/P8-T03.md`](tasks/P8-T03.md) records the owner-approved synthetic scoring authority `p8-t03-scoring-parameters-v1` with SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`, exact manifest and summary-schema binding, state-segment score integration, deterministic turn cause/effect summaries, transactional summary-cap enforcement, CLI `inspect score`, and malformed-pack coverage. Full T3 Core `208/208`, CLI `23/23`, Golden `26/26`, Release build 0 warnings/errors, and CLI smoke pass; same-context independent high review final `PASS` with model/reasoning telemetry `UNVERIFIED`. | Separately bound P8-T04 save/load and deterministic command-log replay is next; scripted bots, long-run soak, Unity presentation, and G8 evidence remain deferred. |
+| `P8-T03` | `COMPLETE` | [`docs/tasks/P8-T03.md`](tasks/P8-T03.md) records the owner-approved synthetic scoring authority `p8-t03-scoring-parameters-v1` with SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`, exact manifest and summary-schema binding, state-segment score integration, deterministic turn cause/effect summaries, transactional summary-cap enforcement, CLI `inspect score`, and malformed-pack coverage. Full T3 Core `208/208`, CLI `23/23`, Golden `26/26`, Release build 0 warnings/errors, and CLI smoke pass; same-context independent high review final `PASS` with model/reasoning telemetry `UNVERIFIED`. | P8-T04 is complete; the next bounded handoff is P8-T05 scripted balance-regression policies, with long-run soak, Unity presentation, and G8 evidence deferred. |
+
+| `P8-T04` | `COMPLETE` | [`docs/tasks/P8-T04.md`](tasks/P8-T04.md) records the owner-approved synthetic versioned replay archive, canonical strict JSON codec, ordered command-payload digest, approved scenario/scoring pack hash binding, atomic `load`, verify-only `replay`, and CLI `save`/`load`/`replay` commands. Malformed, duplicate, reordered, comment/trailing-data, tampered-identity, failed-load atomicity, deterministic boundary, and 4096-command-capacity tests are included. Final Release build has 0 warnings/errors; T3 Core `208/208`, CLI `30/30`, Golden `26/26`; same-context high review technical disposition is `PASS` with administrative handoff condition satisfied here; model/reasoning telemetry is `UNVERIFIED`. | P8-T05 scripted balance-regression policies/bots is next; these remain non-player-facing, while long-run soak, Unity presentation, and G8 evidence remain deferred. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 

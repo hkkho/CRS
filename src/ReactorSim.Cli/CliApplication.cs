@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using ReactorSim.Core;
@@ -107,6 +108,15 @@ namespace ReactorSim.Cli
                 case "set":
                     return ExecuteSet(tokens, session, output, error);
 
+                case "save":
+                    return ExecuteSave(tokens, session, output, error);
+
+                case "load":
+                    return ExecuteLoad(tokens, ref session, output, error);
+
+                case "replay":
+                    return ExecuteReplay(tokens, output, error);
+
                 case "pause":
                     if (tokens.Length != 1)
                     {
@@ -118,7 +128,13 @@ namespace ReactorSim.Cli
                         return MissingRun(error);
                     }
 
+                    if (!session.CanAppendReplayCommand)
+                    {
+                        return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
+                    }
+
                     session.Pause();
+                    session.AppendReplayCommand(Phase8ReplayCommandV1.Pause());
                     WriteLine(output, "paused=true");
                     return CommandResult.Success;
 
@@ -133,7 +149,13 @@ namespace ReactorSim.Cli
                         return MissingRun(error);
                     }
 
+                    if (!session.CanAppendReplayCommand)
+                    {
+                        return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
+                    }
+
                     session.Resume();
+                    session.AppendReplayCommand(Phase8ReplayCommandV1.Resume());
                     WriteLine(output, "paused=false");
                     return CommandResult.Success;
 
@@ -228,34 +250,81 @@ namespace ReactorSim.Cli
                 return Fail(error, "CLI.Command.Usage", "usage: new run [scenario_id] [playback_mode_id]");
             }
 
+            string scenarioId = tokens.Length >= 3 ? tokens[2] : "tutorial-equilibrium";
+            string modeId = tokens.Length == 4 ? tokens[3] : string.Empty;
+            if (string.IsNullOrEmpty(modeId))
+            {
+                try
+                {
+                    Phase8ScenarioParameterPack pack = Phase8ScenarioParameterPack.LoadApproved(
+                        Phase8ScenarioParameterPack.FindDefaultPath());
+                    modeId = pack.DefaultPlaybackModeId;
+                }
+                catch (InvalidOperationException exception)
+                {
+                    return Fail(error, "CLI.ScenarioPack.Invalid", Phase8ScenarioParameterPack.FormatFailure(exception));
+                }
+            }
+
+            if (!TryCreateSession(
+                    scenarioId,
+                    modeId,
+                    out CliSession? createdSession,
+                    out string failureCode,
+                    out string failureMessage))
+            {
+                return Fail(error, failureCode, failureMessage);
+            }
+
+            session = createdSession;
+            WriteRunCreated(output, createdSession!);
+            return CommandResult.Success;
+        }
+
+        private static bool TryCreateSession(
+            string scenarioId,
+            string playbackModeId,
+            out CliSession? session,
+            out string failureCode,
+            out string failureMessage)
+        {
+            session = null;
+            failureCode = string.Empty;
+            failureMessage = string.Empty;
             try
             {
                 Phase8ScenarioParameterPack pack = Phase8ScenarioParameterPack.LoadApproved(
                     Phase8ScenarioParameterPack.FindDefaultPath());
                 Phase8ScoringParameterPack scoringPack = Phase8ScoringParameterPack.LoadApproved(
                     Phase8ScoringParameterPack.FindDefaultPath());
-                string scenarioId = tokens.Length >= 3 ? tokens[2] : "tutorial-equilibrium";
-                string modeId = tokens.Length == 4 ? tokens[3] : pack.DefaultPlaybackModeId;
                 if (!pack.Scenarios.TryGetValue(scenarioId, out Phase8ScenarioDefinitionV1? scenario))
                 {
-                    return Fail(error, "CLI.Scenario.NotFound", "the approved scenario identifier is not present in the parameter pack.");
+                    failureCode = "CLI.Scenario.NotFound";
+                    failureMessage = "the approved scenario identifier is not present in the parameter pack.";
+                    return false;
                 }
 
                 if (!pack.DifficultyProfiles.TryGetValue(scenario.DifficultyId, out Phase8DifficultyProfileV1? profile))
                 {
-                    return Fail(error, "CLI.Difficulty.NotFound", "the scenario difficulty profile is not present in the parameter pack.");
+                    failureCode = "CLI.Difficulty.NotFound";
+                    failureMessage = "the scenario difficulty profile is not present in the parameter pack.";
+                    return false;
                 }
 
-                if (!pack.PlaybackModes.TryGetValue(modeId, out Phase8PlaybackModeV1? playbackMode))
+                if (!pack.PlaybackModes.TryGetValue(playbackModeId, out Phase8PlaybackModeV1? playbackMode))
                 {
-                    return Fail(error, "CLI.PlaybackMode.NotFound", "the approved playback mode identifier is not present in the parameter pack.");
+                    failureCode = "CLI.PlaybackMode.NotFound";
+                    failureMessage = "the approved playback mode identifier is not present in the parameter pack.";
+                    return false;
                 }
 
                 ContractValidationResult<Phase8ScenarioRuntimeV1> runtimeResult =
                     Phase8ScenarioRuntimeV1.TryCreate(scenario, profile, pack.TimeModel, playbackMode);
                 if (!runtimeResult.IsValid)
                 {
-                    return Fail(error, "CLI.ScenarioRuntime.Invalid", runtimeResult.FirstDiagnostic.ToString());
+                    failureCode = "CLI.ScenarioRuntime.Invalid";
+                    failureMessage = runtimeResult.FirstDiagnostic.ToString();
+                    return false;
                 }
 
                 ContractValidationResult<Phase8ScoredScenarioRuntimeV1> scoredRuntimeResult =
@@ -264,7 +333,9 @@ namespace ReactorSim.Cli
                         scoringPack.Parameters);
                 if (!scoredRuntimeResult.IsValid)
                 {
-                    return Fail(error, "CLI.ScoringRuntime.Invalid", scoredRuntimeResult.FirstDiagnostic.ToString());
+                    failureCode = "CLI.ScoringRuntime.Invalid";
+                    failureMessage = scoredRuntimeResult.FirstDiagnostic.ToString();
+                    return false;
                 }
 
                 session = new CliSession(
@@ -272,23 +343,29 @@ namespace ReactorSim.Cli
                     pack,
                     scoringPack,
                     scoredRuntimeResult.Value);
-                WriteLine(output, "run: created");
-                WriteLine(output, "run_kind=synthetic-scenario");
-                WriteLine(output, "scenario_id=" + runtimeResult.Value.ScenarioId);
-                WriteLine(output, "difficulty_id=" + runtimeResult.Value.DifficultyId);
-                WriteLine(output, "playback_mode_id=" + runtimeResult.Value.PlaybackModeId);
-                WriteLine(output, "acceleration_factor=" + FormatDouble(runtimeResult.Value.AccelerationFactor));
-                WriteLine(output, "replay_seed=" + runtimeResult.Value.ReplaySeed.ToString(CultureInfo.InvariantCulture));
-                WriteLine(output, "approved_scoring_parameter_sha256=" + scoringPack.ArtifactSha256);
-                WriteLine(output, "data_pack_version=" + session.Fixture.DataPack.DataPackVersion);
-                WriteLine(output, "simulation_time_s=" + FormatDouble(runtimeResult.Value.SimulationTimeSeconds));
-                WriteLine(output, "paused=" + runtimeResult.Value.IsPaused.ToString().ToLowerInvariant());
-                return CommandResult.Success;
+                return true;
             }
             catch (InvalidOperationException exception)
             {
-                return Fail(error, "CLI.ScenarioPack.Invalid", Phase8ScenarioParameterPack.FormatFailure(exception));
+                failureCode = "CLI.ScenarioPack.Invalid";
+                failureMessage = Phase8ScenarioParameterPack.FormatFailure(exception);
+                return false;
             }
+        }
+
+        private static void WriteRunCreated(TextWriter output, CliSession session)
+        {
+            WriteLine(output, "run: created");
+            WriteLine(output, "run_kind=synthetic-scenario");
+            WriteLine(output, "scenario_id=" + session.Runtime.ScenarioId);
+            WriteLine(output, "difficulty_id=" + session.Runtime.DifficultyId);
+            WriteLine(output, "playback_mode_id=" + session.Runtime.PlaybackModeId);
+            WriteLine(output, "acceleration_factor=" + FormatDouble(session.Runtime.AccelerationFactor));
+            WriteLine(output, "replay_seed=" + session.Runtime.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "approved_scoring_parameter_sha256=" + session.ScoringPack.ArtifactSha256);
+            WriteLine(output, "data_pack_version=" + session.Fixture.DataPack.DataPackVersion);
+            WriteLine(output, "simulation_time_s=" + FormatDouble(session.Runtime.SimulationTimeSeconds));
+            WriteLine(output, "paused=" + session.Runtime.IsPaused.ToString().ToLowerInvariant());
         }
 
         private static CommandResult ExecuteAdvance(
@@ -306,6 +383,11 @@ namespace ReactorSim.Cli
                 !ulong.TryParse(tokens[2], NumberStyles.None, CultureInfo.InvariantCulture, out ulong wallMilliseconds))
             {
                 return Fail(error, "CLI.Command.Usage", "usage: advance wall <milliseconds>");
+            }
+
+            if (!session.CanAppendReplayCommand)
+            {
+                return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
             }
 
             ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
@@ -353,6 +435,7 @@ namespace ReactorSim.Cli
                 WriteLine(output, "  loss_time_s=" + FormatDouble(loss.SimulationTimeSeconds));
             }
 
+            session.AppendReplayCommand(Phase8ReplayCommandV1.Advance(wallMilliseconds));
             return CommandResult.Success;
         }
 
@@ -376,9 +459,20 @@ namespace ReactorSim.Cli
                     return Fail(error, "CLI.Command.Argument.Invalid", "power target must be a finite invariant-culture number.");
                 }
 
+                if (!session.CanAppendReplayCommand)
+                {
+                    return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
+                }
+
                 ContractValidationResult<Phase8ActionQueueResultV1> result =
                     session.Runtime.TryQueuePowerTarget(powerTarget);
-                return WriteQueuedAction(result, output, error);
+                CommandResult commandResult = WriteQueuedAction(result, output, error);
+                if (commandResult.Succeeded)
+                {
+                    session.AppendReplayCommand(Phase8ReplayCommandV1.SetPowerTarget(powerTarget));
+                }
+
+                return commandResult;
             }
 
             if (tokens.Length == 4 &&
@@ -390,9 +484,20 @@ namespace ReactorSim.Cli
                     return Fail(error, "CLI.Command.Argument.Invalid", "tilt target must be a finite invariant-culture number.");
                 }
 
+                if (!session.CanAppendReplayCommand)
+                {
+                    return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
+                }
+
                 ContractValidationResult<Phase8ActionQueueResultV1> result =
                     session.Runtime.TryQueueTiltTarget(tiltTarget);
-                return WriteQueuedAction(result, output, error);
+                CommandResult commandResult = WriteQueuedAction(result, output, error);
+                if (commandResult.Succeeded)
+                {
+                    session.AppendReplayCommand(Phase8ReplayCommandV1.SetTiltTarget(tiltTarget));
+                }
+
+                return commandResult;
             }
 
             if (tokens.Length == 3 && string.Equals(tokens[1], "playback", StringComparison.OrdinalIgnoreCase))
@@ -400,6 +505,11 @@ namespace ReactorSim.Cli
                 if (!session.Pack.PlaybackModes.TryGetValue(tokens[2], out Phase8PlaybackModeV1? playbackMode))
                 {
                     return Fail(error, "CLI.PlaybackMode.NotFound", "the approved playback mode identifier is not present in the parameter pack.");
+                }
+
+                if (!session.CanAppendReplayCommand)
+                {
+                    return Fail(error, "CLI.Replay.Capacity", "the approved replay command capacity has been reached.");
                 }
 
                 ContractValidationResult<bool> result = session.Runtime.TrySetPlaybackMode(playbackMode);
@@ -410,6 +520,7 @@ namespace ReactorSim.Cli
 
                 WriteLine(output, "playback_mode_id=" + playbackMode.ModeId);
                 WriteLine(output, "acceleration_factor=" + FormatDouble(playbackMode.AccelerationFactor));
+                session.AppendReplayCommand(Phase8ReplayCommandV1.SetPlaybackMode(playbackMode.ModeId));
                 return CommandResult.Success;
             }
 
@@ -417,6 +528,258 @@ namespace ReactorSim.Cli
                 error,
                 "CLI.Command.Usage",
                 "usage: set power target <fraction> | set tilt target <fraction> | set playback <mode_id>");
+        }
+
+        private static CommandResult ExecuteSave(
+            string[] tokens,
+            CliSession? session,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (session == null)
+            {
+                return MissingRun(error);
+            }
+
+            if (tokens.Length != 2)
+            {
+                return Fail(error, "CLI.Command.Usage", "usage: save <path>");
+            }
+
+            try
+            {
+                Phase8ReplayArchiveV1 archive = session.CreateReplayArchive();
+                Phase8ReplayArchiveCodecV1.Save(tokens[1], archive);
+                WriteLine(output, "save: written");
+                WriteLine(output, "command_count=" + archive.Commands.Count.ToString(CultureInfo.InvariantCulture));
+                WriteLine(output, "final_state_digest=" + archive.ExpectedFinalStateDigest);
+                return CommandResult.Success;
+            }
+            catch (Phase8ReplayArchiveFailure exception)
+            {
+                return Fail(error, "CLI.Save.Invalid", Phase8ReplayArchiveCodecV1.FormatFailure(exception));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return Fail(error, "CLI.Save.Invalid", exception.Message);
+            }
+        }
+
+        private static CommandResult ExecuteLoad(
+            string[] tokens,
+            ref CliSession? session,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (tokens.Length != 2)
+            {
+                return Fail(error, "CLI.Command.Usage", "usage: load <path>");
+            }
+
+            if (!TryLoadAndReplayArchive(tokens[1], out CliSession? candidate, out string failureMessage))
+            {
+                return Fail(error, "CLI.Load.Invalid", failureMessage);
+            }
+
+            session = candidate;
+            WriteLine(output, "load: restored");
+            WriteLine(output, "command_count=" + candidate!.ReplayCommandCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "final_state_digest=" + candidate.ComputeReplayDigest());
+            return CommandResult.Success;
+        }
+
+        private static CommandResult ExecuteReplay(
+            string[] tokens,
+            TextWriter output,
+            TextWriter error)
+        {
+            if (tokens.Length != 2)
+            {
+                return Fail(error, "CLI.Command.Usage", "usage: replay <path>");
+            }
+
+            if (!TryLoadAndReplayArchive(tokens[1], out CliSession? candidate, out string failureMessage))
+            {
+                return Fail(error, "CLI.Replay.Invalid", failureMessage);
+            }
+
+            WriteLine(output, "replay: verified");
+            WriteLine(output, "command_count=" + candidate!.ReplayCommandCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "final_state_digest=" + candidate.ComputeReplayDigest());
+            return CommandResult.Success;
+        }
+
+        private static bool TryLoadAndReplayArchive(
+            string path,
+            out CliSession? candidate,
+            out string failureMessage)
+        {
+            candidate = null;
+            failureMessage = string.Empty;
+            Phase8ReplayArchiveV1 archive;
+            try
+            {
+                archive = Phase8ReplayArchiveCodecV1.Load(path);
+            }
+            catch (Phase8ReplayArchiveFailure exception)
+            {
+                failureMessage = Phase8ReplayArchiveCodecV1.FormatFailure(exception);
+                return false;
+            }
+            catch (InvalidOperationException exception)
+            {
+                failureMessage = exception.Message;
+                return false;
+            }
+
+            if (!TryCreateSession(
+                    archive.ScenarioId,
+                    archive.InitialPlaybackModeId,
+                    out CliSession? freshSession,
+                    out string failureCode,
+                    out string createFailureMessage))
+            {
+                failureMessage = failureCode + ": " + createFailureMessage;
+                return false;
+            }
+
+            if (!string.Equals(freshSession!.Runtime.ScenarioId, archive.ScenarioId, StringComparison.Ordinal) ||
+                !string.Equals(freshSession.Runtime.DifficultyId, archive.DifficultyId, StringComparison.Ordinal) ||
+                freshSession.Runtime.Seed != archive.Seed)
+            {
+                failureMessage = "The replay archive identity does not match the approved scenario definition.";
+                return false;
+            }
+
+            if (!string.Equals(
+                    freshSession.Pack.ArtifactSha256,
+                    archive.ScenarioParameterSha256,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    freshSession.ScoringPack.ArtifactSha256,
+                    archive.ScoringParameterSha256,
+                    StringComparison.Ordinal))
+            {
+                failureMessage = "The replay archive data-pack digests do not match the approved local artifacts.";
+                return false;
+            }
+
+            for (int index = 0; index < archive.Commands.Count; index++)
+            {
+                Phase8ReplayCommandV1 command = archive.Commands[index];
+                if (!TryApplyReplayCommand(freshSession, command, out string commandFailureMessage))
+                {
+                    failureMessage =
+                        "commands[" + index.ToString(CultureInfo.InvariantCulture) + "]: " +
+                        commandFailureMessage;
+                    return false;
+                }
+
+                freshSession.AppendReplayCommand(command);
+            }
+
+            string actualDigest = freshSession.ComputeReplayDigest();
+            if (!string.Equals(actualDigest, archive.ExpectedFinalStateDigest, StringComparison.Ordinal))
+            {
+                failureMessage =
+                    "The replay final-state digest does not match the archive (expected " +
+                    archive.ExpectedFinalStateDigest + ", actual " + actualDigest + ").";
+                return false;
+            }
+
+            candidate = freshSession;
+            return true;
+        }
+
+        private static bool TryApplyReplayCommand(
+            CliSession session,
+            Phase8ReplayCommandV1 command,
+            out string failureMessage)
+        {
+            switch (command.Kind)
+            {
+                case Phase8ReplayCommandKindV1.AdvanceWall:
+                    ContractValidationResult<Phase8ScoredAdvanceResultV1> advanceResult =
+                        session.Runtime.TryAdvanceWallMilliseconds(command.WallMilliseconds);
+                    if (!advanceResult.IsValid)
+                    {
+                        failureMessage = advanceResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                case Phase8ReplayCommandKindV1.SetPowerTarget:
+                    ContractValidationResult<Phase8ActionQueueResultV1> powerResult =
+                        session.Runtime.TryQueuePowerTarget(command.TargetFraction);
+                    if (!powerResult.IsValid)
+                    {
+                        failureMessage = powerResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                case Phase8ReplayCommandKindV1.SetTiltTarget:
+                    ContractValidationResult<Phase8ActionQueueResultV1> tiltResult =
+                        session.Runtime.TryQueueTiltTarget(command.TargetFraction);
+                    if (!tiltResult.IsValid)
+                    {
+                        failureMessage = tiltResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                case Phase8ReplayCommandKindV1.SetPlaybackMode:
+                    if (!session.Pack.PlaybackModes.TryGetValue(
+                            command.PlaybackModeId,
+                            out Phase8PlaybackModeV1? playbackMode))
+                    {
+                        failureMessage = "the approved playback mode identifier is not present in the parameter pack.";
+                        return false;
+                    }
+
+                    ContractValidationResult<bool> playbackResult =
+                        session.Runtime.TrySetPlaybackMode(playbackMode);
+                    if (!playbackResult.IsValid)
+                    {
+                        failureMessage = playbackResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                case Phase8ReplayCommandKindV1.Pause:
+                    ContractValidationResult<bool> pauseResult = session.Runtime.TryPause();
+                    if (!pauseResult.IsValid)
+                    {
+                        failureMessage = pauseResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                case Phase8ReplayCommandKindV1.Resume:
+                    ContractValidationResult<bool> resumeResult = session.Runtime.TryResume();
+                    if (!resumeResult.IsValid)
+                    {
+                        failureMessage = resumeResult.FirstDiagnostic.ToString();
+                        return false;
+                    }
+
+                    failureMessage = string.Empty;
+                    return true;
+
+                default:
+                    failureMessage = "the replay command kind is not supported.";
+                    return false;
+            }
         }
 
         private static CommandResult WriteQueuedAction(
@@ -451,6 +814,9 @@ namespace ReactorSim.Cli
             WriteLine(output, "  set playback <mode_id>");
             WriteLine(output, "  pause");
             WriteLine(output, "  resume");
+            WriteLine(output, "  save <path>");
+            WriteLine(output, "  load <path>");
+            WriteLine(output, "  replay <path>");
             WriteLine(output, "  quit");
         }
 
@@ -645,6 +1011,9 @@ namespace ReactorSim.Cli
 
         private sealed class CliSession
         {
+            private readonly List<Phase8ReplayCommandV1> _replayCommands =
+                new List<Phase8ReplayCommandV1>();
+
             public CliSession(
                 SyntheticCoreFixture fixture,
                 Phase8ScenarioParameterPack pack,
@@ -655,6 +1024,7 @@ namespace ReactorSim.Cli
                 Pack = pack ?? throw new ArgumentNullException(nameof(pack));
                 ScoringPack = scoringPack ?? throw new ArgumentNullException(nameof(scoringPack));
                 Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+                InitialPlaybackModeId = runtime.PlaybackModeId;
             }
 
             public SyntheticCoreFixture Fixture { get; }
@@ -665,6 +1035,28 @@ namespace ReactorSim.Cli
 
             public Phase8ScoredScenarioRuntimeV1 Runtime { get; }
 
+            public string InitialPlaybackModeId { get; }
+
+            public int ReplayCommandCount
+            {
+                get { return _replayCommands.Count; }
+            }
+
+            public bool CanAppendReplayCommand
+            {
+                get { return _replayCommands.Count < Phase8ReplayArchiveV1.MaximumCommandCount; }
+            }
+
+            public string ComputeReplayDigest()
+            {
+                return Phase8ReplayStateDigest.Compute(
+                    Runtime,
+                    Pack.ArtifactSha256,
+                    ScoringPack.ArtifactSha256,
+                    InitialPlaybackModeId,
+                    _replayCommands);
+            }
+
             public void Pause()
             {
                 Runtime.TryPause();
@@ -673,6 +1065,33 @@ namespace ReactorSim.Cli
             public void Resume()
             {
                 Runtime.TryResume();
+            }
+
+            public void AppendReplayCommand(Phase8ReplayCommandV1 command)
+            {
+                ArgumentNullException.ThrowIfNull(command);
+
+                if (_replayCommands.Count >= Phase8ReplayArchiveV1.MaximumCommandCount)
+                {
+                    throw new InvalidOperationException(
+                        "The replay command collection exceeded the approved maximum.");
+                }
+
+                _replayCommands.Add(command);
+            }
+
+            public Phase8ReplayArchiveV1 CreateReplayArchive()
+            {
+                string digest = ComputeReplayDigest();
+                return new Phase8ReplayArchiveV1(
+                    Runtime.ScenarioId,
+                    Runtime.DifficultyId,
+                    Runtime.Seed,
+                    InitialPlaybackModeId,
+                    Pack.ArtifactSha256,
+                    ScoringPack.ArtifactSha256,
+                    _replayCommands,
+                    digest);
             }
         }
 
