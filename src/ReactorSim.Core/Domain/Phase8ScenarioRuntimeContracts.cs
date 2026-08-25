@@ -683,6 +683,39 @@ namespace ReactorSim.Core
         public double Value { get; }
     }
 
+    /// <summary>
+    /// A constant-state simulation interval observed while processing one
+    /// explicit control tick. Scripted events split intervals at their exact
+    /// simulation time so deterministic consumers do not have to infer a
+    /// transition from only the advance endpoints.
+    /// </summary>
+    public sealed class Phase8ScenarioAdvanceSegmentV1
+    {
+        internal Phase8ScenarioAdvanceSegmentV1(
+            double simulationTimeStartSeconds,
+            double simulationTimeEndSeconds,
+            double normalizedPowerFraction,
+            double absoluteTiltFraction,
+            double controlMarginFraction)
+        {
+            SimulationTimeStartSeconds = simulationTimeStartSeconds;
+            SimulationTimeEndSeconds = simulationTimeEndSeconds;
+            NormalizedPowerFraction = normalizedPowerFraction;
+            AbsoluteTiltFraction = absoluteTiltFraction;
+            ControlMarginFraction = controlMarginFraction;
+        }
+
+        public double SimulationTimeStartSeconds { get; }
+
+        public double SimulationTimeEndSeconds { get; }
+
+        public double NormalizedPowerFraction { get; }
+
+        public double AbsoluteTiltFraction { get; }
+
+        public double ControlMarginFraction { get; }
+    }
+
     public sealed class Phase8ScenarioAdvanceResultV1
     {
         internal Phase8ScenarioAdvanceResultV1(
@@ -694,7 +727,8 @@ namespace ReactorSim.Core
             bool paused,
             IReadOnlyList<Phase8ActionTransitionV1> actionTransitions,
             IReadOnlyList<Phase8EventRecordV1> eventRecords,
-            IReadOnlyList<Phase8LossRecordV1> lossRecords)
+            IReadOnlyList<Phase8LossRecordV1> lossRecords,
+            IReadOnlyList<Phase8ScenarioAdvanceSegmentV1> stateSegments)
         {
             WallMillisecondsRequested = wallMillisecondsRequested;
             ControlTicksProcessed = controlTicksProcessed;
@@ -705,6 +739,7 @@ namespace ReactorSim.Core
             ActionTransitions = new ReadOnlyCollection<Phase8ActionTransitionV1>(actionTransitions.ToArray());
             EventRecords = new ReadOnlyCollection<Phase8EventRecordV1>(eventRecords.ToArray());
             LossRecords = new ReadOnlyCollection<Phase8LossRecordV1>(lossRecords.ToArray());
+            StateSegments = new ReadOnlyCollection<Phase8ScenarioAdvanceSegmentV1>(stateSegments.ToArray());
         }
 
         public ulong WallMillisecondsRequested { get; }
@@ -724,6 +759,106 @@ namespace ReactorSim.Core
         public IReadOnlyList<Phase8EventRecordV1> EventRecords { get; }
 
         public IReadOnlyList<Phase8LossRecordV1> LossRecords { get; }
+
+        public IReadOnlyList<Phase8ScenarioAdvanceSegmentV1> StateSegments { get; }
+    }
+
+    internal sealed class Phase8PendingActionSnapshotV1
+    {
+        internal Phase8PendingActionSnapshotV1(
+            ulong actionId,
+            Phase8ActionKindV1 kind,
+            double value,
+            double enqueueWallTimeSeconds)
+        {
+            ActionId = actionId;
+            Kind = kind;
+            Value = value;
+            EnqueueWallTimeSeconds = enqueueWallTimeSeconds;
+        }
+
+        internal ulong ActionId { get; }
+
+        internal Phase8ActionKindV1 Kind { get; }
+
+        internal double Value { get; }
+
+        internal double EnqueueWallTimeSeconds { get; }
+    }
+
+    internal sealed class Phase8ScenarioRuntimeSnapshotV1
+    {
+        internal Phase8ScenarioRuntimeSnapshotV1(
+            SimulationClockV1 clock,
+            Phase8PlaybackModeV1 playbackMode,
+            ulong wallElapsedMilliseconds,
+            ulong wallAccumulatorMilliseconds,
+            double normalizedPowerFraction,
+            double absoluteTiltFraction,
+            double controlMarginFraction,
+            double deviceAvailableFraction,
+            uint refuelRequestsRemaining,
+            uint nextScriptedEventIndex,
+            ulong nextActionId,
+            Phase8ScenarioOutcomeV1 outcome,
+            bool isPaused,
+            IReadOnlyList<Phase8PendingActionSnapshotV1> pendingActions,
+            IReadOnlyList<Phase8ActionTransitionV1> actionTransitions,
+            IReadOnlyList<Phase8EventRecordV1> eventRecords,
+            IReadOnlyList<Phase8LossRecordV1> lossRecords)
+        {
+            Clock = clock;
+            PlaybackMode = playbackMode;
+            WallElapsedMilliseconds = wallElapsedMilliseconds;
+            WallAccumulatorMilliseconds = wallAccumulatorMilliseconds;
+            NormalizedPowerFraction = normalizedPowerFraction;
+            AbsoluteTiltFraction = absoluteTiltFraction;
+            ControlMarginFraction = controlMarginFraction;
+            DeviceAvailableFraction = deviceAvailableFraction;
+            RefuelRequestsRemaining = refuelRequestsRemaining;
+            NextScriptedEventIndex = nextScriptedEventIndex;
+            NextActionId = nextActionId;
+            Outcome = outcome;
+            IsPaused = isPaused;
+            PendingActions = pendingActions.ToArray();
+            ActionTransitions = actionTransitions.ToArray();
+            EventRecords = eventRecords.ToArray();
+            LossRecords = lossRecords.ToArray();
+        }
+
+        internal SimulationClockV1 Clock { get; }
+
+        internal Phase8PlaybackModeV1 PlaybackMode { get; }
+
+        internal ulong WallElapsedMilliseconds { get; }
+
+        internal ulong WallAccumulatorMilliseconds { get; }
+
+        internal double NormalizedPowerFraction { get; }
+
+        internal double AbsoluteTiltFraction { get; }
+
+        internal double ControlMarginFraction { get; }
+
+        internal double DeviceAvailableFraction { get; }
+
+        internal uint RefuelRequestsRemaining { get; }
+
+        internal uint NextScriptedEventIndex { get; }
+
+        internal ulong NextActionId { get; }
+
+        internal Phase8ScenarioOutcomeV1 Outcome { get; }
+
+        internal bool IsPaused { get; }
+
+        internal IReadOnlyList<Phase8PendingActionSnapshotV1> PendingActions { get; }
+
+        internal IReadOnlyList<Phase8ActionTransitionV1> ActionTransitions { get; }
+
+        internal IReadOnlyList<Phase8EventRecordV1> EventRecords { get; }
+
+        internal IReadOnlyList<Phase8LossRecordV1> LossRecords { get; }
     }
 
     /// <summary>
@@ -832,6 +967,11 @@ namespace ReactorSim.Core
             get { return _clock.CurrentSimulationTimeSeconds; }
         }
 
+        public double ScenarioHorizonSeconds
+        {
+            get { return _profile.ScenarioHorizonSeconds; }
+        }
+
         public ulong SimulationStepIndex
         {
             get { return _clock.StepIndex; }
@@ -840,6 +980,11 @@ namespace ReactorSim.Core
         public double WallElapsedSeconds
         {
             get { return _wallElapsedMilliseconds / 1000.0; }
+        }
+
+        public uint WallControlTickMilliseconds
+        {
+            get { return _timeModel.WallControlTickMilliseconds; }
         }
 
         public double NormalizedPowerFraction
@@ -890,6 +1035,68 @@ namespace ReactorSim.Core
         public bool IsPaused
         {
             get { return _isPaused; }
+        }
+
+        internal Phase8ScenarioRuntimeSnapshotV1 CaptureSnapshot()
+        {
+            return new Phase8ScenarioRuntimeSnapshotV1(
+                _clock,
+                _playbackMode,
+                _wallElapsedMilliseconds,
+                _wallAccumulatorMilliseconds,
+                _normalizedPowerFraction,
+                _absoluteTiltFraction,
+                _controlMarginFraction,
+                _deviceAvailableFraction,
+                _refuelRequestsRemaining,
+                _nextScriptedEventIndex,
+                _nextActionId,
+                _outcome,
+                _isPaused,
+                _pendingActions.Select(
+                    action => new Phase8PendingActionSnapshotV1(
+                        action.ActionId,
+                        action.Kind,
+                        action.Value,
+                        action.EnqueueWallTimeSeconds)).ToArray(),
+                _actionTransitions,
+                _eventRecords,
+                _lossRecords);
+        }
+
+        internal void RestoreSnapshot(Phase8ScenarioRuntimeSnapshotV1 snapshot)
+        {
+            _clock = snapshot.Clock;
+            _playbackMode = snapshot.PlaybackMode;
+            _wallElapsedMilliseconds = snapshot.WallElapsedMilliseconds;
+            _wallAccumulatorMilliseconds = snapshot.WallAccumulatorMilliseconds;
+            _normalizedPowerFraction = snapshot.NormalizedPowerFraction;
+            _absoluteTiltFraction = snapshot.AbsoluteTiltFraction;
+            _controlMarginFraction = snapshot.ControlMarginFraction;
+            _deviceAvailableFraction = snapshot.DeviceAvailableFraction;
+            _refuelRequestsRemaining = snapshot.RefuelRequestsRemaining;
+            _nextScriptedEventIndex = snapshot.NextScriptedEventIndex;
+            _nextActionId = snapshot.NextActionId;
+            _outcome = snapshot.Outcome;
+            _isPaused = snapshot.IsPaused;
+
+            _pendingActions.Clear();
+            foreach (Phase8PendingActionSnapshotV1 action in snapshot.PendingActions)
+            {
+                _pendingActions.Add(
+                    new PendingAction(
+                        action.ActionId,
+                        action.Kind,
+                        action.Value,
+                        action.EnqueueWallTimeSeconds));
+            }
+
+            _actionTransitions.Clear();
+            _actionTransitions.AddRange(snapshot.ActionTransitions);
+            _eventRecords.Clear();
+            _eventRecords.AddRange(snapshot.EventRecords);
+            _lossRecords.Clear();
+            _lossRecords.AddRange(snapshot.LossRecords);
         }
 
         public static ContractValidationResult<Phase8ScenarioRuntimeV1> TryCreate(
@@ -950,7 +1157,9 @@ namespace ReactorSim.Core
                 timeModel,
                 playbackMode,
                 clockResult.Value);
-            ContractValidationResult<bool> initialEvents = runtime.ProcessUntil(0.0);
+            ContractValidationResult<bool> initialEvents = runtime.ProcessUntil(
+                0.0,
+                new List<Phase8ScenarioAdvanceSegmentV1>());
             if (!initialEvents.IsValid)
             {
                 return ContractValidationResult<Phase8ScenarioRuntimeV1>.Invalid(
@@ -1050,6 +1259,7 @@ namespace ReactorSim.Core
             int actionStart = _actionTransitions.Count;
             int eventStart = _eventRecords.Count;
             int lossStart = _lossRecords.Count;
+            var stateSegments = new List<Phase8ScenarioAdvanceSegmentV1>();
             uint ticksProcessed = 0;
 
             if (_isPaused || _outcome != Phase8ScenarioOutcomeV1.Running)
@@ -1060,7 +1270,8 @@ namespace ReactorSim.Core
                         ticksProcessed,
                         actionStart,
                         eventStart,
-                        lossStart));
+                        lossStart,
+                        stateSegments));
             }
 
             if (_wallElapsedMilliseconds > ulong.MaxValue - wallMilliseconds ||
@@ -1111,7 +1322,7 @@ namespace ReactorSim.Core
                     double targetTime = Math.Min(
                         _profile.ScenarioHorizonSeconds,
                         _clock.CurrentSimulationTimeSeconds + requestedSimulationAdvance);
-                    ContractValidationResult<bool> processResult = ProcessUntil(targetTime);
+                    ContractValidationResult<bool> processResult = ProcessUntil(targetTime, stateSegments);
                     if (!processResult.IsValid)
                     {
                         return ContractValidationResult<Phase8ScenarioAdvanceResultV1>.Invalid(
@@ -1134,7 +1345,8 @@ namespace ReactorSim.Core
                     ticksProcessed,
                     actionStart,
                     eventStart,
-                    lossStart));
+                    lossStart,
+                    stateSegments));
         }
 
         private ContractValidationResult<Phase8ActionQueueResultV1> TryQueueAction(
@@ -1237,7 +1449,9 @@ namespace ReactorSim.Core
             return ContractValidationResult<bool>.Valid(true);
         }
 
-        private ContractValidationResult<bool> ProcessUntil(double targetTime)
+        private ContractValidationResult<bool> ProcessUntil(
+            double targetTime,
+            List<Phase8ScenarioAdvanceSegmentV1> stateSegments)
         {
             if (!ContractValidation.IsFinite(targetTime) ||
                 targetTime < _clock.CurrentSimulationTimeSeconds ||
@@ -1258,10 +1472,20 @@ namespace ReactorSim.Core
                     break;
                 }
 
+                double segmentStartSeconds = _clock.CurrentSimulationTimeSeconds;
                 ContractValidationResult<bool> clockResult = TryAdvanceClockTo(scriptedEvent.AtSeconds);
                 if (!clockResult.IsValid)
                 {
                     return clockResult;
+                }
+
+                ContractValidationResult<bool> segmentResult = TryAppendStateSegment(
+                    stateSegments,
+                    segmentStartSeconds,
+                    scriptedEvent.AtSeconds);
+                if (!segmentResult.IsValid)
+                {
+                    return segmentResult;
                 }
 
                 ApplyScriptedEvent(scriptedEvent, _nextScriptedEventIndex);
@@ -1274,15 +1498,55 @@ namespace ReactorSim.Core
 
             if (_outcome == Phase8ScenarioOutcomeV1.Running)
             {
+                double segmentStartSeconds = _clock.CurrentSimulationTimeSeconds;
                 ContractValidationResult<bool> clockResult = TryAdvanceClockTo(targetTime);
                 if (!clockResult.IsValid)
                 {
                     return clockResult;
                 }
 
+                ContractValidationResult<bool> segmentResult = TryAppendStateSegment(
+                    stateSegments,
+                    segmentStartSeconds,
+                    targetTime);
+                if (!segmentResult.IsValid)
+                {
+                    return segmentResult;
+                }
+
                 EvaluateLoss();
             }
 
+            return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private ContractValidationResult<bool> TryAppendStateSegment(
+            List<Phase8ScenarioAdvanceSegmentV1> stateSegments,
+            double simulationTimeStartSeconds,
+            double simulationTimeEndSeconds)
+        {
+            if (!ContractValidation.IsFinite(simulationTimeStartSeconds) ||
+                !ContractValidation.IsFinite(simulationTimeEndSeconds) ||
+                simulationTimeEndSeconds < simulationTimeStartSeconds)
+            {
+                return ContractValidationResult<bool>.Invalid(
+                    "Phase8Runtime.StateSegment.Time.Invalid",
+                    "state_segments",
+                    "An observed state segment must have finite, monotone simulation bounds.");
+            }
+
+            if (simulationTimeEndSeconds == simulationTimeStartSeconds)
+            {
+                return ContractValidationResult<bool>.Valid(true);
+            }
+
+            stateSegments.Add(
+                new Phase8ScenarioAdvanceSegmentV1(
+                    simulationTimeStartSeconds,
+                    simulationTimeEndSeconds,
+                    _normalizedPowerFraction,
+                    _absoluteTiltFraction,
+                    _controlMarginFraction));
             return ContractValidationResult<bool>.Valid(true);
         }
 
@@ -1384,7 +1648,8 @@ namespace ReactorSim.Core
             uint controlTicksProcessed,
             int actionStart,
             int eventStart,
-            int lossStart)
+            int lossStart,
+            IReadOnlyList<Phase8ScenarioAdvanceSegmentV1> stateSegments)
         {
             return new Phase8ScenarioAdvanceResultV1(
                 wallMillisecondsRequested,
@@ -1395,7 +1660,8 @@ namespace ReactorSim.Core
                 IsPaused,
                 _actionTransitions.Skip(actionStart).ToArray(),
                 _eventRecords.Skip(eventStart).ToArray(),
-                _lossRecords.Skip(lossStart).ToArray());
+                _lossRecords.Skip(lossStart).ToArray(),
+                stateSegments);
         }
     }
 }

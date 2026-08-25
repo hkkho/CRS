@@ -26,6 +26,7 @@ public sealed class CliApplicationTests
         Assert.Contains("run_kind=synthetic-scenario", first.output);
         Assert.Contains("scenario_id=tutorial-equilibrium", first.output);
         Assert.Contains("acceleration_factor=10", first.output);
+        Assert.Contains("approved_scoring_parameter_sha256=", first.output);
         Assert.Contains("topology_channel_count=2", first.output);
         Assert.Contains("flow_direction=EndBtoEndA", first.output);
         Assert.Contains("material_variant_id=synthetic-fuel", first.output);
@@ -115,6 +116,25 @@ public sealed class CliApplicationTests
         Assert.Contains("loss_time_s=10", result.output);
         Assert.DoesNotContain("scram", result.output, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("shutdown", result.output, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AdvanceAndScoreInspectionExposeCauseEffectAndComponentScores()
+    {
+        (int exitCode, string output, string error) result = Run(
+            "new run tutorial-equilibrium\nadvance wall 100\ninspect score\nquit\n");
+
+        Assert.Equal(0, result.exitCode);
+        Assert.Equal(string.Empty, result.error);
+        Assert.Contains("turn_id=1", result.output);
+        Assert.Contains("turn_cause=elapsed_play", result.output);
+        Assert.Contains("score_total=", result.output);
+        Assert.Contains("energy_quality=", result.output);
+        Assert.Contains("stability_quality=", result.output);
+        Assert.Contains("fuelling_efficiency=", result.output);
+        Assert.Contains("score:", result.output);
+        Assert.Contains("approved_scoring_parameter_sha256=", result.output);
+        Assert.DoesNotContain("neutron", result.output, StringComparison.OrdinalIgnoreCase);
     }
 
     private static (int exitCode, string output, string error) Run(string commands)

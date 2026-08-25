@@ -170,7 +170,7 @@ namespace ReactorSim.Cli
                 return Fail(
                     error,
                     "CLI.Command.Usage",
-                    "usage: inspect core | inspect scenario | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
+                    "usage: inspect core | inspect scenario | inspect score | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
             }
 
             switch (tokens[1].ToLowerInvariant())
@@ -193,6 +193,15 @@ namespace ReactorSim.Cli
                     WriteScenarioInspection(session, output);
                     return CommandResult.Success;
 
+                case "score":
+                    if (tokens.Length != 2)
+                    {
+                        return Fail(error, "CLI.Command.Usage", "usage: inspect score");
+                    }
+
+                    WriteScoreInspection(session, output);
+                    return CommandResult.Success;
+
                 case "channel":
                     return WriteChannelInspection(tokens, session, output, error);
 
@@ -203,7 +212,7 @@ namespace ReactorSim.Cli
                     return Fail(
                         error,
                         "CLI.Command.Usage",
-                        "usage: inspect core | inspect scenario | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
+                        "usage: inspect core | inspect scenario | inspect score | inspect channel <channel_id> | inspect bundle <channel_id> <position>");
             }
         }
 
@@ -223,6 +232,8 @@ namespace ReactorSim.Cli
             {
                 Phase8ScenarioParameterPack pack = Phase8ScenarioParameterPack.LoadApproved(
                     Phase8ScenarioParameterPack.FindDefaultPath());
+                Phase8ScoringParameterPack scoringPack = Phase8ScoringParameterPack.LoadApproved(
+                    Phase8ScoringParameterPack.FindDefaultPath());
                 string scenarioId = tokens.Length >= 3 ? tokens[2] : "tutorial-equilibrium";
                 string modeId = tokens.Length == 4 ? tokens[3] : pack.DefaultPlaybackModeId;
                 if (!pack.Scenarios.TryGetValue(scenarioId, out Phase8ScenarioDefinitionV1? scenario))
@@ -247,10 +258,20 @@ namespace ReactorSim.Cli
                     return Fail(error, "CLI.ScenarioRuntime.Invalid", runtimeResult.FirstDiagnostic.ToString());
                 }
 
+                ContractValidationResult<Phase8ScoredScenarioRuntimeV1> scoredRuntimeResult =
+                    Phase8ScoredScenarioRuntimeV1.TryCreate(
+                        runtimeResult.Value,
+                        scoringPack.Parameters);
+                if (!scoredRuntimeResult.IsValid)
+                {
+                    return Fail(error, "CLI.ScoringRuntime.Invalid", scoredRuntimeResult.FirstDiagnostic.ToString());
+                }
+
                 session = new CliSession(
                     SyntheticFixtures.CreateTwoChannelThreePosition(),
                     pack,
-                    runtimeResult.Value);
+                    scoringPack,
+                    scoredRuntimeResult.Value);
                 WriteLine(output, "run: created");
                 WriteLine(output, "run_kind=synthetic-scenario");
                 WriteLine(output, "scenario_id=" + runtimeResult.Value.ScenarioId);
@@ -258,6 +279,7 @@ namespace ReactorSim.Cli
                 WriteLine(output, "playback_mode_id=" + runtimeResult.Value.PlaybackModeId);
                 WriteLine(output, "acceleration_factor=" + FormatDouble(runtimeResult.Value.AccelerationFactor));
                 WriteLine(output, "replay_seed=" + runtimeResult.Value.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+                WriteLine(output, "approved_scoring_parameter_sha256=" + scoringPack.ArtifactSha256);
                 WriteLine(output, "data_pack_version=" + session.Fixture.DataPack.DataPackVersion);
                 WriteLine(output, "simulation_time_s=" + FormatDouble(runtimeResult.Value.SimulationTimeSeconds));
                 WriteLine(output, "paused=" + runtimeResult.Value.IsPaused.ToString().ToLowerInvariant());
@@ -286,7 +308,7 @@ namespace ReactorSim.Cli
                 return Fail(error, "CLI.Command.Usage", "usage: advance wall <milliseconds>");
             }
 
-            ContractValidationResult<Phase8ScenarioAdvanceResultV1> result =
+            ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
                 session.Runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
             if (!result.IsValid)
             {
@@ -295,26 +317,36 @@ namespace ReactorSim.Cli
 
             WriteLine(output, "advance:");
             WriteLine(output, "  wall_ms_requested=" + wallMilliseconds.ToString(CultureInfo.InvariantCulture));
-            WriteLine(output, "  control_ticks_processed=" + result.Value.ControlTicksProcessed.ToString(CultureInfo.InvariantCulture));
-            WriteLine(output, "  simulation_time_s=" + FormatDouble(result.Value.SimulationTimeSeconds));
-            WriteLine(output, "  wall_elapsed_s=" + FormatDouble(result.Value.WallElapsedSeconds));
-            WriteLine(output, "  outcome=" + result.Value.Outcome);
-            WriteLine(output, "  paused=" + result.Value.IsPaused.ToString().ToLowerInvariant());
-            foreach (Phase8ActionTransitionV1 action in result.Value.ActionTransitions)
+            Phase8ScenarioAdvanceResultV1 advance = result.Value.Advance;
+            Phase8TurnSummaryV1 summary = result.Value.TurnSummary;
+            Phase8ScoreSnapshotV1 score = result.Value.Score;
+            WriteLine(output, "  control_ticks_processed=" + advance.ControlTicksProcessed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  simulation_time_s=" + FormatDouble(advance.SimulationTimeSeconds));
+            WriteLine(output, "  wall_elapsed_s=" + FormatDouble(advance.WallElapsedSeconds));
+            WriteLine(output, "  outcome=" + advance.Outcome);
+            WriteLine(output, "  paused=" + advance.IsPaused.ToString().ToLowerInvariant());
+            WriteLine(output, "  turn_id=" + summary.TurnId.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  turn_cause=" + summary.Cause);
+            WriteLine(output, "  turn_effect=" + summary.Effect);
+            WriteLine(output, "  score_total=" + FormatDouble(score.TotalPoints));
+            WriteLine(output, "  energy_quality=" + FormatDouble(score.EnergyQuality));
+            WriteLine(output, "  stability_quality=" + FormatDouble(score.StabilityQuality));
+            WriteLine(output, "  fuelling_efficiency=" + FormatDouble(score.FuellingEfficiency));
+            foreach (Phase8ActionTransitionV1 action in advance.ActionTransitions)
             {
                 WriteLine(output, "  action_id=" + action.ActionId.ToString(CultureInfo.InvariantCulture));
                 WriteLine(output, "  action_kind=" + action.Kind);
                 WriteLine(output, "  action_queue_delay_wall_s=" + FormatDouble(action.QueueDelayWallTimeSeconds));
             }
 
-            foreach (Phase8EventRecordV1 record in result.Value.EventRecords)
+            foreach (Phase8EventRecordV1 record in advance.EventRecords)
             {
                 WriteLine(output, "  event_id=" + record.EventId);
                 WriteLine(output, "  event_kind=" + record.Kind);
                 WriteLine(output, "  event_time_s=" + FormatDouble(record.SimulationTimeSeconds));
             }
 
-            foreach (Phase8LossRecordV1 loss in result.Value.LossRecords)
+            foreach (Phase8LossRecordV1 loss in advance.LossRecords)
             {
                 WriteLine(output, "  loss_id=" + loss.LossId);
                 WriteLine(output, "  loss_metric=" + loss.Metric);
@@ -410,6 +442,7 @@ namespace ReactorSim.Cli
             WriteLine(output, "  new run [scenario_id] [playback_mode_id]");
             WriteLine(output, "  inspect core");
             WriteLine(output, "  inspect scenario");
+            WriteLine(output, "  inspect score");
             WriteLine(output, "  inspect channel <channel_id>");
             WriteLine(output, "  inspect bundle <channel_id> <position>");
             WriteLine(output, "  advance wall <milliseconds>");
@@ -436,6 +469,7 @@ namespace ReactorSim.Cli
             WriteLine(output, "  playback_mode_id=" + session.Runtime.PlaybackModeId);
             WriteLine(output, "  acceleration_factor=" + FormatDouble(session.Runtime.AccelerationFactor));
             WriteLine(output, "  replay_seed=" + session.Runtime.ReplaySeed.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  approved_scoring_parameter_sha256=" + session.ScoringPack.ArtifactSha256);
             WriteLine(output, "  simulation_time_s=" + FormatDouble(session.Runtime.SimulationTimeSeconds));
             WriteLine(output, "  simulation_step_index=" + session.Runtime.SimulationStepIndex.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  wall_elapsed_s=" + FormatDouble(session.Runtime.WallElapsedSeconds));
@@ -449,6 +483,8 @@ namespace ReactorSim.Cli
             WriteLine(output, "  refuel_requests_remaining=" + session.Runtime.RefuelRequestsRemaining.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  pending_actions=" + session.Runtime.PendingActionCount.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  scripted_events_processed=" + session.Runtime.ProcessedScriptedEventCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  score_total=" + FormatDouble(session.Runtime.Score.TotalPoints));
+            WriteLine(output, "  turn_summary_count=" + session.Runtime.TurnSummaries.Count.ToString(CultureInfo.InvariantCulture));
             WriteLine(output, "  outcome=" + session.Runtime.Outcome);
             WriteLine(output, "  paused=" + session.Runtime.IsPaused.ToString().ToLowerInvariant());
         }
@@ -467,6 +503,27 @@ namespace ReactorSim.Cli
             WriteLine(output, "  horizon_s=" + FormatDouble(profile.ScenarioHorizonSeconds));
             WriteLine(output, "  decision_interval_s=" + FormatDouble(profile.DecisionIntervalSeconds));
             WriteLine(output, "  approved_parameter_sha256=" + session.Pack.ArtifactSha256);
+            WriteLine(output, "  approved_scoring_parameter_sha256=" + session.ScoringPack.ArtifactSha256);
+        }
+
+        private static void WriteScoreInspection(CliSession session, TextWriter output)
+        {
+            Phase8ScoreSnapshotV1 score = session.Runtime.Score;
+            WriteLine(output, "score:");
+            WriteLine(output, "  total_points=" + FormatDouble(score.TotalPoints));
+            WriteLine(output, "  survival_points=" + FormatDouble(score.SurvivalPoints));
+            WriteLine(output, "  energy_quality=" + FormatDouble(score.EnergyQuality));
+            WriteLine(output, "  energy_points=" + FormatDouble(score.EnergyPoints));
+            WriteLine(output, "  stability_quality=" + FormatDouble(score.StabilityQuality));
+            WriteLine(output, "  stability_points=" + FormatDouble(score.StabilityPoints));
+            WriteLine(output, "  fuelling_efficiency=" + FormatDouble(score.FuellingEfficiency));
+            WriteLine(output, "  fuelling_efficiency_points=" + FormatDouble(score.FuellingEfficiencyPoints));
+            WriteLine(output, "  control_penalty_points=" + FormatDouble(score.ControlPenaltyPoints));
+            WriteLine(output, "  loss_penalty_points=" + FormatDouble(score.LossPenaltyPoints));
+            WriteLine(output, "  committed_action_count=" + score.CommittedActionCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  recorded_loss_count=" + score.RecordedLossCount.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  turn_summary_count=" + session.Runtime.TurnSummaries.Count.ToString(CultureInfo.InvariantCulture));
+            WriteLine(output, "  approved_scoring_parameter_sha256=" + session.ScoringPack.ArtifactSha256);
         }
 
         private static CommandResult WriteChannelInspection(
@@ -591,10 +648,12 @@ namespace ReactorSim.Cli
             public CliSession(
                 SyntheticCoreFixture fixture,
                 Phase8ScenarioParameterPack pack,
-                Phase8ScenarioRuntimeV1 runtime)
+                Phase8ScoringParameterPack scoringPack,
+                Phase8ScoredScenarioRuntimeV1 runtime)
             {
                 Fixture = fixture ?? throw new ArgumentNullException(nameof(fixture));
                 Pack = pack ?? throw new ArgumentNullException(nameof(pack));
+                ScoringPack = scoringPack ?? throw new ArgumentNullException(nameof(scoringPack));
                 Runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             }
 
@@ -602,7 +661,9 @@ namespace ReactorSim.Cli
 
             public Phase8ScenarioParameterPack Pack { get; }
 
-            public Phase8ScenarioRuntimeV1 Runtime { get; }
+            public Phase8ScoringParameterPack ScoringPack { get; }
+
+            public Phase8ScoredScenarioRuntimeV1 Runtime { get; }
 
             public void Pause()
             {

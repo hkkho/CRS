@@ -12,8 +12,8 @@ gate reports preserve evidence. Templates and derived guides explain or
 structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
-**Reconciled:** 2026-08-24 against the implementation plan, completed reports
-through `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+**Reconciled:** 2026-08-25 against the implementation plan, completed reports
+through `P8-T03` candidate implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -242,7 +242,9 @@ Historical context is intentionally short:
 |---|---|---|---|
 | `P8-T01` | `COMPLETE` | The first Phase 8 CLI slice provides `help`, `new run`, `inspect core`, `inspect channel`, `inspect bundle`, `pause`, and `quit` over the explicit synthetic Core fixture. Output uses canonical LF line endings, invariant numeric formatting, separate stdout/stderr, deterministic errors, and exit code `2` for malformed commands. Focused CLI tests `5/5`, full T3 Core `158/158`, Golden `19/19`, CLI `5/5`, and release build `0` warnings/errors passed; independent review final `PASS` with telemetry `UNVERIFIED`. | No next Phase 8 task is selected until an approved scenario/difficulty parameter authority is available; the remaining Phase 8 work packages and G8 evidence are not implied by this slice. |
 
-| `P8-T02` | `COMPLETE` | [`docs/tasks/P8-T02.md`](tasks/P8-T02.md) records the owner-approved synthetic parameter authority, exact artifact/manifest binding, bounded Core/CLI scenario runtime, explicit 10x/100 ms pacing, pause/resume, action acknowledgement/commit, deterministic event/loss ordering, and fail-closed malformed-pack checks. Focused CLI `12/12`, Core `202/202`, full T3 Golden `26/26`, and release build `0` warnings/errors passed; same-context independent high review has no remaining technical P0/P1 findings, with model/reasoning telemetry `UNVERIFIED`. | No next Phase 8 task is selected; save/load, replay, scoring, bots, long-run soak, Unity presentation, and G8 evidence remain separately bounded. |
+| `P8-T02` | `COMPLETE` | [`docs/tasks/P8-T02.md`](tasks/P8-T02.md) records the owner-approved synthetic parameter authority, exact artifact/manifest binding, bounded Core/CLI scenario runtime, explicit 10x/100 ms pacing, pause/resume, action acknowledgement/commit, deterministic event/loss ordering, and fail-closed malformed-pack checks. Focused CLI `12/12`, Core `202/202`, full T3 Golden `26/26`, and release build `0` warnings/errors passed; same-context independent high review has no remaining technical P0/P1 findings, with model/reasoning telemetry `UNVERIFIED`. | `P8-T03` is the separately bounded scoring/turn-summary follow-on; save/load, replay, bots, long-run soak, Unity presentation, and G8 evidence remain deferred. |
+
+| `P8-T03` | `COMPLETE` | [`docs/tasks/P8-T03.md`](tasks/P8-T03.md) records the owner-approved synthetic scoring authority `p8-t03-scoring-parameters-v1` with SHA-256 `4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c`, exact manifest and summary-schema binding, state-segment score integration, deterministic turn cause/effect summaries, transactional summary-cap enforcement, CLI `inspect score`, and malformed-pack coverage. Full T3 Core `208/208`, CLI `23/23`, Golden `26/26`, Release build 0 warnings/errors, and CLI smoke pass; same-context independent high review final `PASS` with model/reasoning telemetry `UNVERIFIED`. | Separately bound P8-T04 save/load and deterministic command-log replay is next; scripted bots, long-run soak, Unity presentation, and G8 evidence remain deferred. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 

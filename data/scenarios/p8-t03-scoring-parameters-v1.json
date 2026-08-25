@@ -1,0 +1,91 @@
+{
+  "format": "reactorsim.p8-scoring-parameters/v1",
+  "task_id": "P8-T03",
+  "source_draft_task_id": "NotApplicable",
+  "artifact_id": "p8-t03-scoring-parameters-v1",
+  "status": "Approved/ApprovedParameterAuthority",
+  "authority_class": "ProjectAuthoredSyntheticApprovedParameterAuthority",
+  "runtime_use": "ApprovedPhase8ScoringSummaryRuntimeOnly",
+  "scope": "Synthetic gameplay score and turn-summary parameters for the Phase 8 text-game package. This authority does not select physics equations, alter solver contracts, or establish production/reference tolerances.",
+  "source_authority": {
+    "kind": "ProjectAuthoredSynthetic",
+    "literature_applicability": "NotApplicable",
+    "coverage_reason": "The task selects only player-facing score weights, normalized proxy quality measures, deterministic rounding, and cause/effect summary wording. It does not select a reactor equation, physical constant, nuclear-data value, reference case, or golden numerical tolerance.",
+    "external_source_artifacts_used": false,
+    "production_or_external_reference_claim": false
+  },
+  "owner_approval": {
+    "decision": "APPROVED",
+    "required_status_for_activation": "Approved/ApprovedParameterAuthority",
+    "required_approver": "Project owner",
+    "approval_record": "docs/tasks/P8-T03-OWNER-APPROVAL.md",
+    "approval_date": "2026-08-25",
+    "approval_must_confirm": [
+      "The scoring values are synthetic gameplay weights and are not physical measurements or reference tolerances.",
+      "All score inputs are derived from the approved P8-T02 normalized proxy state, explicit simulation time, committed action records, and scripted event/loss records.",
+      "Energy and stability quality use the deterministic trapezoid over each explicit advance window; no solver equation is changed.",
+      "Fuelling efficiency is a request-budget conservation proxy until a separately approved refuelling-command task exists.",
+      "Score totals are clamped to [0,1000] and rounded to three decimal places for stable display and comparison.",
+      "Turn summaries expose cause/effect and bounded state deltas without exposing raw solver internals.",
+      "Save/load, replay, scripted bots, long-run soak, Unity presentation, and G8 evidence remain separate tasks."
+    ]
+  },
+  "units": {
+    "score_points": "Synthetic gameplay points; unitless.",
+    "normalized_power_fraction": "Unitless P8-T02 gameplay proxy.",
+    "absolute_tilt_fraction": "Unitless P8-T02 gameplay proxy.",
+    "control_margin_fraction": "Unitless P8-T02 gameplay proxy.",
+    "simulation_time_s": "Explicit gameplay seconds from P8-T02; not a solver timestep authority."
+  },
+  "score_model": {
+    "score_minimum": 0.0,
+    "score_maximum": 1000.0,
+    "survival_points": 500.0,
+    "energy_quality_points": 250.0,
+    "stability_quality_points": 150.0,
+    "fuelling_efficiency_points": 50.0,
+    "control_action_penalty_points": 10.0,
+    "record_loss_penalty_points": 250.0,
+    "nominal_power_fraction": 1.0,
+    "integration_method": "ExplicitStateSegmentIntegralPerControlTick",
+    "energy_quality_formula": "clamp(sum(state_segment_normalized_power_fraction * segment_duration_s) / scenario_horizon_s / nominal_power_fraction, 0, 1)",
+    "stability_quality_formula": "clamp(sum(state_segment_stability_quality * segment_duration_s) / scenario_horizon_s, 0, 1); state_segment_stability_quality = clamp(1 - abs(state_segment_normalized_power_fraction - nominal_power_fraction) - state_segment_absolute_tilt_fraction - abs(state_segment_control_margin_fraction), 0, 1)",
+    "fuelling_efficiency_formula": "clamp(refuel_requests_remaining / initial_refuel_requests_remaining, 0, 1); if the initial budget is zero, use 1",
+    "survival_formula": "1 when the scenario reaches its approved horizon; otherwise 0",
+    "control_penalty_formula": "committed_action_count * control_action_penalty_points",
+    "loss_penalty_formula": "record_loss_count * record_loss_penalty_points",
+    "rounding_decimal_places": 3
+  },
+  "summary_model": {
+    "summary_schema_version": "p8-turn-summary/v1",
+    "cause_effect_fields": [
+      "turn_id",
+      "simulation_time_start_s",
+      "simulation_time_end_s",
+      "committed_action_count",
+      "scripted_event_count",
+      "loss_count",
+      "normalized_power_before_fraction",
+      "normalized_power_after_fraction",
+      "absolute_tilt_before_fraction",
+      "absolute_tilt_after_fraction",
+      "outcome",
+      "cause",
+      "effect",
+      "score_total"
+    ],
+    "cause_policy": "Prefer loss identifiers, then scripted event kinds, then committed player action kinds, otherwise report elapsed play.",
+    "effect_policy": "Describe only approved proxy deltas, score movement, or scenario outcome; never claim a physical plant response.",
+    "max_summary_events_per_turn": 16
+  },
+  "boundary": {
+    "physics_equations": "NotSelected",
+    "physical_constants": "NotSelected",
+    "nuclear_data": "NotSelected",
+    "reference_or_golden_values": "NotSelected",
+    "production_candu_claim": "Forbidden",
+    "external_solver_reproduction": "Forbidden",
+    "shutdown_scram_safety_behavior": "Forbidden",
+    "runtime_consumer": "ApprovedForP8T03"
+  }
+}
