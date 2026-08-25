@@ -1,0 +1,243 @@
+{
+  "format": "reactorsim.p7-t07-literature-candidate-cases/v1",
+  "task_id": "P7-T07",
+  "digest_id": "candu-literature-digest-v1",
+  "source_manifest": "reference/manifests/candu-literature-sources-v1.json",
+  "source_manifest_sha256": "df9b06987dc831b61c2f75daf368628d697b5ab1b0605466134ee0c73bbd25a1",
+  "artifact_status": "Candidate/Deferred/NoGolden",
+  "coverage_class": "LiteratureCandidate",
+  "evidence_approval": "Candidate",
+  "comparison_status": "Deferred",
+  "golden_status": "NoGolden",
+  "runtime_use": "Prohibited until a separately authorized admission task proves exact source identity, mapping, and reproducibility",
+  "source_artifacts": "External/private paper artifacts are not copied, redistributed, or required by committed tests",
+  "cases": [
+    {
+      "case_id": "p7-t07-s5-lattice-37-bundle-crosscheck-v1",
+      "title": "S5 37-element CANDU bundle lattice and independent cross-check",
+      "case_kind": "lattice_static_crosscheck",
+      "case_status": "CandidateCaseDesign",
+      "source": {
+        "source_id": "S5",
+        "row_ids": ["S5-R02", "S5-R03", "S5-R04", "S5-R06", "S5-R09"],
+        "official_url": "https://doi.org/10.1016/j.anucene.2017.11.016",
+        "artifact_url": "https://publications.polymtl.ca/5047/11/2018_Naceur_Neutronic_analysis_accident_tolerant_cladding.pdf",
+        "artifact_sha256": "ddece7b372064f294c7891f1a0dbc3c20d72ea4e6c8026b31b8399a12895b1e8",
+        "license_status": "CC BY 4.0; source PDF remains external",
+        "artifact_committed": false
+      },
+      "model": {
+        "primary_tool": {
+          "program": "DRAGON5",
+          "version": "NotReported",
+          "role": "two-dimensional lattice transport and depletion"
+        },
+        "independent_cross_check": {
+          "program": "SERPENT",
+          "version": "NotReported",
+          "role": "independent lattice comparison"
+        },
+        "nuclear_data": {
+          "description": "172-group WIMSD4-format library based on JEFF-3.1",
+          "status": "CandidateNumericEvidence",
+          "checksum": "NotProven"
+        },
+        "geometry": {
+          "fuel_bundle": "37-element CANDU bundle",
+          "regions": ["fuel", "cladding", "coolant", "pressure_tube", "helium_gap", "calandria_tube", "moderator"],
+          "mesh": "two-dimensional Cartesian",
+          "boundary": "reflective",
+          "tracking": "NXT",
+          "self_shielding": "generalized Stamm'ler",
+          "transport_leakage": "none in the reported transport solve"
+        }
+      },
+      "candidate_inputs": {
+        "neutrons_per_cycle": {"value": 10000, "unit": "1", "provenance": "S5-R06", "status": "CandidateNumericEvidence"},
+        "active_batches": {"value": 2000, "unit": "1", "provenance": "S5-R06", "status": "CandidateNumericEvidence"},
+        "inactive_batches": {"value": 200, "unit": "1", "provenance": "S5-R06", "status": "CandidateNumericEvidence"},
+        "exact_state_and_seed": "NotReported",
+        "exact_material_composition": "NotProven",
+        "exact_library_asset": "NotProven"
+      },
+      "reported_claims": [
+        {
+          "claim_id": "S5-R06-C1",
+          "claim": "The source reports an initial k-effective comparison with differences below 2 mk under its stated SERPENT settings.",
+          "evidence_class": "CandidateNumericEvidence",
+          "not_a_tolerance": true,
+          "not_a_runtime_value": true
+        },
+        {
+          "claim_id": "S5-R04-C1",
+          "claim": "The lattice workflow produces two-group burnup-dependent reaction rates, diffusion coefficients, and homogenized macroscopic cross sections for later core calculations.",
+          "evidence_class": "PrimarySourceMethod",
+          "not_a_runtime_value": true
+        }
+      ],
+      "comparison_observables": [
+        {"candidate_quantity": "candidate.lattice.k_effective", "project_quantity": "spatial.k", "unit": "1", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.lattice.two_group_coefficients", "project_quantity": "spatial.coefficient_identity", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.lattice.fission_rate", "project_quantity": "spatial.fission_source", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"}
+      ],
+      "execution_status": "BlockedUntilAdmissionProof",
+      "admission_gaps": {
+        "tool_version_build": "NotProven",
+        "nuclear_data_checksum": "NotProven",
+        "exact_geometry_and_composition": "NotProven",
+        "state_history_and_seed": "NotProven",
+        "units_and_normalization": "NotProven",
+        "output_schema_and_order": "NotProven",
+        "independent_reproduction": "NotRun",
+        "redistribution_of_inputs_outputs": "NotAuthorized"
+      }
+    },
+    {
+      "case_id": "p7-t07-s5-lattice-depletion-300d-v1",
+      "title": "S5 constant-power lattice depletion and two-group handoff",
+      "case_kind": "lattice_depletion_to_core_data",
+      "case_status": "CandidateCaseDesign",
+      "source": {
+        "source_id": "S5",
+        "row_ids": ["S5-R03", "S5-R04", "S5-R05", "S5-R07", "S5-R08", "S5-R09"],
+        "official_url": "https://doi.org/10.1016/j.anucene.2017.11.016",
+        "artifact_url": "https://publications.polymtl.ca/5047/11/2018_Naceur_Neutronic_analysis_accident_tolerant_cladding.pdf",
+        "artifact_sha256": "ddece7b372064f294c7891f1a0dbc3c20d72ea4e6c8026b31b8399a12895b1e8",
+        "license_status": "CC BY 4.0; source PDF remains external",
+        "artifact_committed": false
+      },
+      "model": {
+        "primary_tool": {"program": "DRAGON5", "version": "NotReported", "role": "lattice depletion and condensation"},
+        "core_handoff": {"program": "NotReported", "version": "NotReported", "role": "full-core use of condensed quantities"},
+        "nuclear_data": {"description": "172-group WIMSD4-format library based on JEFF-3.1", "status": "CandidateNumericEvidence", "checksum": "NotProven"},
+        "output_family": ["two-group burnup-dependent reaction rates", "diffusion coefficients", "homogenized macroscopic cross sections", "depletion/isotope observables"]
+      },
+      "candidate_inputs": {
+        "cycle_duration": {"value": 300, "unit": "day", "provenance": "S5-R05", "status": "CandidateNumericEvidence"},
+        "constant_power_density": {"value": 31.9713, "unit": "kW/kg", "provenance": "S5-R05", "status": "CandidateNumericEvidence"},
+        "reported_exit_burnup": {"value": 9.6, "unit": "GWd/t", "provenance": "S5-R05", "status": "CandidateNumericEvidence"},
+        "depletion_step_schedule": "NotReported",
+        "fuel_composition_and_enrichment": "NotProven",
+        "exact_burnup_normalization": "NotProven"
+      },
+      "reported_claims": [
+        {
+          "claim_id": "S5-R05-C1",
+          "claim": "The source reports a 300-day constant-power burnup cycle at 31.9713 kW/kg and an exit burnup of 9.6 GWd/t.",
+          "evidence_class": "CandidateNumericEvidence",
+          "not_a_tolerance": true,
+          "not_a_runtime_value": true
+        },
+        {
+          "claim_id": "S5-R08-C1",
+          "claim": "The study observes depletion behavior including 135Xe and reports reactivity, absorption, spectral, and fission-rate comparisons.",
+          "evidence_class": "CandidateCaseDesign",
+          "not_a_runtime_value": true
+        }
+      ],
+      "comparison_observables": [
+        {"candidate_quantity": "candidate.depletion.burnup", "project_quantity": "burnup.current", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.depletion.reactivity", "project_quantity": "spatial.k", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.depletion.Xe135", "project_quantity": "xenon.Xe135_inventory", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.depletion.fission_rate", "project_quantity": "kinetics.fission_rate_density", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"}
+      ],
+      "execution_status": "BlockedUntilAdmissionProof",
+      "admission_gaps": {
+        "tool_version_build": "NotProven",
+        "nuclear_data_checksum": "NotProven",
+        "exact_geometry_and_composition": "NotProven",
+        "depletion_state_and_step_history": "NotProven",
+        "units_and_burnup_normalization": "NotProven",
+        "output_schema_and_order": "NotProven",
+        "independent_reproduction": "NotRun",
+        "redistribution_of_inputs_outputs": "NotAuthorized"
+      }
+    },
+    {
+      "case_id": "p7-t07-s1-fullcore-380-channel-300fpd-v1",
+      "title": "S1 CANDU-6 full-core refuelling and xenon history",
+      "case_kind": "full_core_refuelling_history",
+      "case_status": "CandidateCaseDesign",
+      "source": {
+        "source_id": "S1",
+        "row_ids": ["S1-R02", "S1-R03", "S1-R04", "S1-R05", "S1-R06", "S1-R07", "S1-R09", "S1-R11"],
+        "official_url": "https://doi.org/10.1016/j.anucene.2018.10.026",
+        "artifact_url": "https://publications.polymtl.ca/5048/11/2019_Naceur_Candu-6_operation_simulations_using_accident.pdf",
+        "artifact_sha256": "513ffc1f9c6fe7b794c7514f46391567265fdfeff32cc27fca341096be858d59",
+        "license_status": "CC BY-NC-ND 4.0; source PDF remains external and no derived redistribution is authorized",
+        "artifact_committed": false
+      },
+      "model": {
+        "lattice_tool": {"program": "DRAGON5", "version": "NotReported", "role": "CANDU-6 supercell and condensed data"},
+        "core_tool": {"program": "DONJON5", "version": "NotReported", "role": "three-dimensional full-core follow-up"},
+        "nuclear_data": {"description": "172-group JEFF-3.1 WIMSD-4 library", "status": "CandidateNumericEvidence", "checksum": "NotProven"},
+        "condensation": {"groups": 2, "method": "source-reported condensation/homogenization", "status": "CandidateCaseDesign"},
+        "leakage": {"model": "B1 homogeneous leakage", "status": "CandidateNumericEvidence"}
+      },
+      "candidate_inputs": {
+        "channel_count": {"value": 380, "unit": "channel", "provenance": "S1-R06", "status": "CandidateCaseDesign"},
+        "bundles_per_channel": {"value": 12, "unit": "bundle/channel", "provenance": "S1-R06", "status": "CandidateCaseDesign"},
+        "coolant_flow_direction": {"value": "alternating by channel", "provenance": "S1-R06", "status": "CandidateCaseDesign"},
+        "refuelling_direction": "NotReported",
+        "refuelling_shift": {"value": 8, "unit": "bundle/event", "provenance": "S1-R07", "status": "CandidateNumericEvidence"},
+        "refuelling_rate": {"value": 4, "unit": "channel/day", "provenance": "S1-R07", "status": "CandidateNumericEvidence"},
+        "history_duration": {"value": 300, "unit": "full-power-day", "provenance": "S1-R07", "status": "CandidateNumericEvidence"},
+        "constant_power_density": {"value": 31.9713, "unit": "kW/kg", "provenance": "S1-R04", "status": "CandidateNumericEvidence"},
+        "exact_channel_map_and_initial_state": "NotProven"
+      },
+      "reported_claims": [
+        {
+          "claim_id": "S1-R06-C1",
+          "claim": "The source reports a CANDU-6 model with 380 channels, 12 bundles per channel, and alternating coolant directions; the exact refuelling direction is NotReported.",
+          "evidence_class": "CandidateCaseDesign",
+          "not_a_runtime_topology": true
+        },
+        {
+          "claim_id": "S1-R07-C1",
+          "claim": "The source reports an 8-bundle shift and a 4-channel-per-day history over a 300 full-power-day cycle.",
+          "evidence_class": "CandidateNumericEvidence",
+          "not_a_runtime_rule": true
+        },
+        {
+          "claim_id": "S1-R09-C1",
+          "claim": "The depletion study follows 135Xe production and behavior.",
+          "evidence_class": "PrimarySourceMethod",
+          "not_a_runtime_equation": true
+        }
+      ],
+      "comparison_observables": [
+        {"candidate_quantity": "candidate.core.channel_power", "project_quantity": "spatial.power", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.core.bundle_power", "project_quantity": "spatial.power", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.core.reactivity", "project_quantity": "spatial.k", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.core.Xe135", "project_quantity": "xenon.Xe135_inventory", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"},
+        {"candidate_quantity": "candidate.core.burnup", "project_quantity": "burnup.current", "unit": "source-defined", "mapping_status": "NotProven", "comparison_status": "Deferred"}
+      ],
+      "execution_status": "BlockedUntilAdmissionProof",
+      "admission_gaps": {
+        "tool_version_build": "NotProven",
+        "nuclear_data_checksum": "NotProven",
+        "exact_supercell_and_core_geometry": "NotProven",
+        "initial_inventory_and_refuelling_state": "NotProven",
+        "event_order_and_channel_map": "NotProven",
+        "units_and_power_burnup_normalization": "NotProven",
+        "output_schema_and_order": "NotProven",
+        "independent_reproduction": "NotRun",
+        "redistribution_of_inputs_outputs": "NotAuthorized"
+      }
+    }
+  ],
+  "excluded_source_notes": [
+    {"source_id": "S2", "row_ids": ["S2-R02", "S2-R03", "S2-R05", "S2-R07"], "reason": "Reflector/optimization context lacks exact mapping and redistribution authority; no case emitted."},
+    {"source_id": "S3", "row_ids": ["S3-R01", "S3-R02", "S3-R08"], "reason": "SCWR/CATHENA safety and full thermal-hydraulics scope is out of project scope; no case emitted."},
+    {"source_id": "S4", "row_ids": ["S4-R02", "S4-R03", "S4-R04", "S4-R06", "S4-R07"], "reason": "Legacy DRAGON4/DONJON4 and thorium/advanced-cycle case is out of runtime scope and has no redistribution permission; no case emitted."},
+    {"source_id": "S6", "row_ids": ["S6-R02", "S6-R03", "S6-R05", "S6-R08"], "reason": "RRS/advanced-cycle device methodology is context for a separate bounded task, not a lattice/full-core comparison case here."}
+  ],
+  "global_admission_gaps": [
+    "Exact source program versions, builds, and coupling identities",
+    "Exact nuclear-data files, processing, and checksums",
+    "Complete geometry/topology and source-to-project mapping",
+    "Initial state, depletion/refuelling history, event ordering, and normalization",
+    "Machine-readable outputs, field ordering, and independently reproduced values",
+    "Lawful redistribution authority for every required input/output artifact"
+  ]
+}

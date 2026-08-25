@@ -1,0 +1,16 @@
+{
+  "format": "reactorsim.p7-t07-literature-candidate-manifest/v1",
+  "task_id": "P7-T07",
+  "artifact_path": "data/comparisons/p7-t07-literature-cases-v1.json",
+  "artifact_sha256": "94f3d87cbbebf4dc09074c19e2f4fc3359b8fe47930bf70e00b2e8ab4ce63ede",
+  "artifact_byte_length": 15080,
+  "case_count": 3,
+  "source_manifest": "reference/manifests/candu-literature-sources-v1.json",
+  "source_manifest_sha256": "df9b06987dc831b61c2f75daf368628d697b5ab1b0605466134ee0c73bbd25a1",
+  "artifact_status": "Candidate/Deferred/NoGolden",
+  "coverage_class": "LiteratureCandidate",
+  "evidence_approval": "Candidate",
+  "comparison_status": "Deferred",
+  "golden_status": "NoGolden",
+  "runtime_use": "Prohibited until separate authority admission"
+}
