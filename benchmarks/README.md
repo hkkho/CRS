@@ -42,3 +42,24 @@ P8-T03, and P8-T05 artifact hashes and deliberately selects no performance
 target. Android evidence is explicitly deferred until a representative device
 and toolchain are available; no mobile result may be inferred from the desktop
 observation.
+
+## Phase 9 CLI profile observation
+
+P9-T02 adds the bound profiling manifest
+[`P9-T02-cli-profile-parameters-v1.json`](P9-T02-cli-profile-parameters-v1.json)
+and an explicit profile mode over the same frozen P9-T01 streams:
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' `
+  'benchmarks\ReactorSim.Phase9.Benchmarks\bin\Release\net10.0\ReactorSim.Phase9.Benchmarks.dll' `
+  --profile
+```
+
+The profile reports per-case timing and current-thread-allocation
+min/mean/p50/p95/max observations plus command counts and UTF-8 input/output
+size descriptors. The measurement boundary is one complete public
+`CliApplication.Run` with null output sinks. The frozen synthetic P8 CLI cases
+do not invoke the Core spatial solver, so the profile does not claim solver
+hotspots or spatial solve latency; those require a separately bounded Core
+benchmark. No performance target, optimization, mobile result, thermal claim,
+or release budget is implied.

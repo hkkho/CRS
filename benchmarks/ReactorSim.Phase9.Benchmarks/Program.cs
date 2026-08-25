@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ReactorSim.Cli;
 
@@ -14,6 +15,8 @@ internal static class Program
 {
     private const string ManifestRelativePath =
         "benchmarks/P9-T01-cli-gameplay-benchmark-v1.json";
+    private const string ProfileManifestRelativePath =
+        "benchmarks/P9-T02-cli-profile-parameters-v1.json";
     private const string ExpectedFormat = "reactorsim.p9-cli-gameplay-benchmark/v1";
     private const string ExpectedTaskId = "P9-T01";
     private const string ExpectedStatus = "synthetic_observation_only";
@@ -24,6 +27,25 @@ internal static class Program
         "4b0f6d0aa3336b0560ca763bfdbf5012151289bbe9122cb1126c13f86086b91c";
     private const string ExpectedPolicyParameterSha256 =
         "d0e6dec7199751ca0f5d5418892fe0210831e46153ff445ec13e4e84ddf49d39";
+    private const string ExpectedProfileFormat = "reactorsim.p9-cli-profile-parameters/v1";
+    private const string ExpectedProfileTaskId = "P9-T02";
+    private const string ExpectedProfileStatus = "desktop_observation_only";
+    private const string ExpectedProfileId = "p9-t02-cli-profile-v1";
+    private const string ExpectedBenchmarkManifestSha256 =
+        "63114186fd9768a94e44ff0368001952cda2750610965b48c94cc36e5efb5281";
+    private const string ExpectedSolverHotspotStatus =
+        "NotApplicable: the frozen P8 synthetic CLI cases do not invoke the Core spatial solver.";
+    private const string ExpectedSolveLatencyStatus =
+        "NotMeasured: no spatial solve is invoked by the frozen P8 CLI cases.";
+    private const string ExpectedDataMovementStatus =
+        "Observed descriptors only: command/input/output sizes; no profiler allocation attribution.";
+    private const string ExpectedProfileEvidenceBoundary =
+        "Project-authored synthetic CLI command streams and machine-specific profile observations only; no performance target, numerical tolerance, solver-hotspot claim, mobile result, or release budget.";
+    private const string ExpectedProfileMeasurementBoundary =
+        "one complete public CliApplication.Run per frozen command stream with TextWriter.Null sinks";
+    private const int ExpectedProfileWarmupIterations = 10;
+    private const int ExpectedProfileSampleIterations = 100;
+    private const int MaximumProfileSampleIterations = 1000;
     private const int MaximumCaseCount = 8;
     private const int MaximumCommandCountPerCase = 32;
 
@@ -81,61 +103,146 @@ internal static class Program
         {
             BenchmarkSettings commandLine = BenchmarkSettings.Parse(args);
             BenchmarkManifest manifest = LoadManifest(commandLine.ManifestPath);
+            if (commandLine.ProfileMode)
+            {
+                if (commandLine.WarmupIterations != 0 ||
+                    commandLine.MeasurementIterations != 0)
+                {
+                    throw new ArgumentException(
+                        "The P9-T02 profile uses sampling counts from its versioned profile manifest; do not combine --profile with --warmup or --measure.");
+                }
+
+                ProfileDefinition profile = LoadProfileDefinition(
+                    commandLine.ProfileManifestPath,
+                    commandLine.ManifestPath);
+                return RunProfile(manifest, profile);
+            }
+
             BenchmarkSettings settings = commandLine.WithManifestDefaults(
                 manifest.WarmupIterations,
                 manifest.MeasurementIterations);
-            var cases = new List<BenchmarkCaseResult>();
-
-            foreach (BenchmarkCase benchmarkCase in manifest.Cases)
-            {
-                AssertDeterministic(benchmarkCase);
-            }
-
-            for (int warmupIndex = 0; warmupIndex < settings.WarmupIterations; warmupIndex++)
-            {
-                foreach (BenchmarkCase benchmarkCase in manifest.Cases)
-                {
-                    ExecuteWithoutCapture(benchmarkCase);
-                }
-            }
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
-            foreach (BenchmarkCase benchmarkCase in manifest.Cases)
-            {
-                cases.Add(Measure(benchmarkCase, settings.MeasurementIterations));
-            }
-
-            var report = new BenchmarkReport
-            {
-                Format = "reactorsim.p9-cli-gameplay-benchmark-result/v1",
-                TaskId = ExpectedTaskId,
-                BenchmarkId = manifest.BenchmarkId,
-                Status = "PASS",
-                WarmupIterations = settings.WarmupIterations,
-                MeasurementIterations = settings.MeasurementIterations,
-                DeterministicRepeat = true,
-                ScenarioParameterSha256 = manifest.ScenarioParameterSha256,
-                ScoringParameterSha256 = manifest.ScoringParameterSha256,
-                PolicyParameterSha256 = manifest.PolicyParameterSha256,
-                Cases = cases,
-                StopwatchFrequency = Stopwatch.Frequency,
-                Framework = RuntimeInformation.FrameworkDescription,
-                ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
-                OperatingSystem = RuntimeInformation.OSDescription,
-                AndroidBaselineStatus = manifest.AndroidBaselineStatus
-            };
-
-            Console.WriteLine(JsonSerializer.Serialize(report, JsonOptions));
-            return 0;
+            return RunBenchmark(manifest, settings);
         }
         catch (Exception exception)
         {
-            Console.Error.WriteLine("P9-T01 benchmark failed: " + exception.Message);
+            Console.Error.WriteLine("P9 benchmark failed: " + exception.Message);
             return 1;
         }
+    }
+
+    private static int RunBenchmark(
+        BenchmarkManifest manifest,
+        BenchmarkSettings settings)
+    {
+        var cases = new List<BenchmarkCaseResult>();
+
+        foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+        {
+            AssertDeterministic(benchmarkCase);
+        }
+
+        for (int warmupIndex = 0; warmupIndex < settings.WarmupIterations; warmupIndex++)
+        {
+            foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+            {
+                ExecuteWithoutCapture(benchmarkCase);
+            }
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+        {
+            cases.Add(Measure(benchmarkCase, settings.MeasurementIterations));
+        }
+
+        var report = new BenchmarkReport
+        {
+            Format = "reactorsim.p9-cli-gameplay-benchmark-result/v1",
+            TaskId = ExpectedTaskId,
+            BenchmarkId = manifest.BenchmarkId,
+            Status = "PASS",
+            WarmupIterations = settings.WarmupIterations,
+            MeasurementIterations = settings.MeasurementIterations,
+            DeterministicRepeat = true,
+            ScenarioParameterSha256 = manifest.ScenarioParameterSha256,
+            ScoringParameterSha256 = manifest.ScoringParameterSha256,
+            PolicyParameterSha256 = manifest.PolicyParameterSha256,
+            Cases = cases,
+            StopwatchFrequency = Stopwatch.Frequency,
+            Framework = RuntimeInformation.FrameworkDescription,
+            ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            OperatingSystem = RuntimeInformation.OSDescription,
+            AndroidBaselineStatus = manifest.AndroidBaselineStatus
+        };
+
+        Console.WriteLine(JsonSerializer.Serialize(report, JsonOptions));
+        return 0;
+    }
+
+    private static int RunProfile(
+        BenchmarkManifest manifest,
+        ProfileDefinition profile)
+    {
+        if (manifest.Cases.Count != ExpectedCaseIds.Length)
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile requires the exact P9-T01 case set.");
+        }
+
+        var profiles = new List<ProfileCaseResult>();
+        foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+        {
+            AssertDeterministic(benchmarkCase);
+        }
+
+        for (int warmupIndex = 0;
+             warmupIndex < profile.WarmupIterations;
+             warmupIndex++)
+        {
+            foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+            {
+                ExecuteWithoutCapture(benchmarkCase);
+            }
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        foreach (BenchmarkCase benchmarkCase in manifest.Cases)
+        {
+            profiles.Add(Profile(benchmarkCase, profile.SampleIterations));
+        }
+
+        var report = new ProfileReport
+        {
+            Format = "reactorsim.p9-cli-profile-result/v1",
+            TaskId = ExpectedProfileTaskId,
+            ProfileId = profile.ProfileId,
+            Status = "PASS",
+            WarmupIterations = profile.WarmupIterations,
+            SampleIterations = profile.SampleIterations,
+            DeterministicRepeat = true,
+            BenchmarkManifestSha256 = profile.BenchmarkManifestSha256,
+            ProfileManifestSha256 = profile.ProfileManifestSha256,
+            SolverHotspotStatus = profile.SolverHotspotStatus,
+            SolveLatencyStatus = profile.SolveLatencyStatus,
+            DataMovementStatus = profile.DataMovementStatus,
+            MeasurementBoundary = profile.MeasurementBoundary,
+            EvidenceBoundary = profile.EvidenceBoundary,
+            Cases = profiles,
+            StopwatchFrequency = Stopwatch.Frequency,
+            Framework = RuntimeInformation.FrameworkDescription,
+            ProcessArchitecture = RuntimeInformation.ProcessArchitecture.ToString(),
+            OperatingSystem = RuntimeInformation.OSDescription,
+            AndroidBaselineStatus = manifest.AndroidBaselineStatus
+        };
+
+        Console.WriteLine(JsonSerializer.Serialize(report, JsonOptions));
+        return 0;
     }
 
     private static BenchmarkManifest LoadManifest(string manifestPath)
@@ -333,6 +440,139 @@ internal static class Program
         }
     }
 
+    private static ProfileDefinition LoadProfileDefinition(
+        string profilePath,
+        string benchmarkManifestPath)
+    {
+        if (!File.Exists(profilePath))
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile must run with " +
+                ProfileManifestRelativePath + ".");
+        }
+
+        string expectedBenchmarkManifestPath = Path.GetFullPath(
+            Path.Combine(
+                Directory.GetCurrentDirectory(),
+                ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar)));
+        if (!string.Equals(
+                Path.GetFullPath(benchmarkManifestPath),
+                expectedBenchmarkManifestPath,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile must execute the repository P9-T01 manifest at its approved path.");
+        }
+
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(profilePath));
+        JsonElement root = document.RootElement;
+        RequireString(root, "format", ExpectedProfileFormat);
+        RequireString(root, "task_id", ExpectedProfileTaskId);
+        RequireString(root, "status", ExpectedProfileStatus);
+        RequireString(root, "profile_id", ExpectedProfileId);
+
+        JsonElement benchmarkManifest = RequireObject(root, "benchmark_manifest");
+        RequireString(benchmarkManifest, "path", ManifestRelativePath);
+        string benchmarkManifestSha256 = ReadNonEmptyString(
+            benchmarkManifest,
+            "sha256");
+        RequireStringValue(
+            benchmarkManifestSha256,
+            ExpectedBenchmarkManifestSha256,
+            "benchmark_manifest.sha256");
+        RequireFileHashAtPath(benchmarkManifestPath, benchmarkManifestSha256);
+
+        JsonElement sampling = RequireObject(root, "sampling");
+        int warmupIterations = ReadPositiveInt(sampling, "warmup_iterations");
+        int sampleIterations = ReadPositiveInt(sampling, "sample_iterations");
+        if (warmupIterations != ExpectedProfileWarmupIterations ||
+            sampleIterations != ExpectedProfileSampleIterations ||
+            sampleIterations > MaximumProfileSampleIterations)
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile sampling counts are not the approved values.");
+        }
+
+        RequireString(sampling, "clock", "System.Diagnostics.Stopwatch");
+        RequireString(
+            sampling,
+            "allocation_counter",
+            "GC.GetAllocatedBytesForCurrentThread");
+        JsonElement percentiles = sampling.GetProperty("percentiles");
+        if (percentiles.ValueKind != JsonValueKind.Array ||
+            percentiles.GetArrayLength() != 2 ||
+            !string.Equals(
+                percentiles[0].GetString(),
+                "p50",
+                StringComparison.Ordinal) ||
+            !string.Equals(
+                percentiles[1].GetString(),
+                "p95",
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile must request the approved p50/p95 percentiles.");
+        }
+
+        RequireString(sampling, "percentile_rule", "nearest_rank");
+        RequireString(
+            sampling,
+            "measurement_boundary",
+            ExpectedProfileMeasurementBoundary);
+
+        JsonElement classification = RequireObject(root, "classification");
+        RequireString(
+            classification,
+            "solver_hotspot_status",
+            ExpectedSolverHotspotStatus);
+        RequireString(
+            classification,
+            "solve_latency_status",
+            ExpectedSolveLatencyStatus);
+        RequireString(
+            classification,
+            "data_movement_status",
+            ExpectedDataMovementStatus);
+        if (classification.GetProperty("performance_target").ValueKind != JsonValueKind.Null)
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile must not select a performance target.");
+        }
+
+        RequireString(root, "evidence_boundary", ExpectedProfileEvidenceBoundary);
+
+        JsonElement platforms = RequireObject(root, "platforms");
+        JsonElement desktop = RequireObject(platforms, "desktop");
+        RequireString(desktop, "status", "required_observation");
+        RequireString(desktop, "runtime", "Release");
+        RequireString(desktop, "architecture", "current_host");
+        JsonElement android = RequireObject(platforms, "android");
+        string androidStatus = ReadNonEmptyString(android, "status");
+        if (!string.Equals(androidStatus, "Deferred/NotAvailable", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The P9-T02 profile may not claim an Android baseline without device evidence.");
+        }
+
+        RequireString(
+            android,
+            "reason",
+            "No adb command or representative Android device is available in the execution environment.");
+        RequireString(android, "owner_gate", "G9");
+
+        return new ProfileDefinition(
+            ExpectedProfileId,
+            benchmarkManifestSha256,
+            ComputeFileSha256(profilePath),
+            warmupIterations,
+            sampleIterations,
+            ExpectedSolverHotspotStatus,
+            ExpectedSolveLatencyStatus,
+            ExpectedDataMovementStatus,
+            ExpectedProfileMeasurementBoundary,
+            ExpectedProfileEvidenceBoundary);
+    }
+
     private static void AssertDeterministic(BenchmarkCase benchmarkCase)
     {
         CapturedRun first = ExecuteWithCapture(benchmarkCase);
@@ -380,6 +620,104 @@ internal static class Program
         };
     }
 
+    private static ProfileCaseResult Profile(
+        BenchmarkCase benchmarkCase,
+        int sampleIterations)
+    {
+        CapturedRun captured = ExecuteWithCapture(benchmarkCase);
+        if (captured.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                "The profile preflight returned exit code " +
+                captured.ExitCode.ToString(CultureInfo.InvariantCulture) + ": " +
+                benchmarkCase.CaseId + ".");
+        }
+
+        var elapsedTicks = new long[sampleIterations];
+        var allocatedBytes = new long[sampleIterations];
+        double elapsedMicrosecondsTotal = 0.0;
+        double allocatedBytesTotal = 0.0;
+
+        for (int sampleIndex = 0; sampleIndex < sampleIterations; sampleIndex++)
+        {
+            long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            long timestampBefore = Stopwatch.GetTimestamp();
+            ExecuteWithoutCapture(benchmarkCase);
+            elapsedTicks[sampleIndex] = Stopwatch.GetTimestamp() - timestampBefore;
+            allocatedBytes[sampleIndex] =
+                GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+            elapsedMicrosecondsTotal += TicksToMicroseconds(elapsedTicks[sampleIndex]);
+            allocatedBytesTotal += allocatedBytes[sampleIndex];
+        }
+
+        Array.Sort(elapsedTicks);
+        Array.Sort(allocatedBytes);
+        long p50ElapsedTicks = NearestRank(elapsedTicks, 0.50);
+        long p95ElapsedTicks = NearestRank(elapsedTicks, 0.95);
+        long p50AllocatedBytes = NearestRank(allocatedBytes, 0.50);
+        long p95AllocatedBytes = NearestRank(allocatedBytes, 0.95);
+
+        return new ProfileCaseResult
+        {
+            CaseId = benchmarkCase.CaseId,
+            Purpose = benchmarkCase.Purpose,
+            CommandCount = benchmarkCase.Commands.Count,
+            AdvanceCommandCount = CountCommand(benchmarkCase, "advance"),
+            ActionCommandCount = CountCommand(benchmarkCase, "set"),
+            InspectionCommandCount = CountCommand(benchmarkCase, "inspect"),
+            InputUtf8Bytes = Encoding.UTF8.GetByteCount(BuildCommandText(benchmarkCase)),
+            CapturedStdoutUtf8Bytes = Encoding.UTF8.GetByteCount(captured.Output),
+            SampleIterations = sampleIterations,
+            DeterministicRepeat = true,
+            MeanMicrosecondsPerExecution =
+                elapsedMicrosecondsTotal / sampleIterations,
+            MinimumMicrosecondsPerExecution =
+                TicksToMicroseconds(elapsedTicks[0]),
+            MedianMicrosecondsPerExecution =
+                TicksToMicroseconds(p50ElapsedTicks),
+            P95MicrosecondsPerExecution =
+                TicksToMicroseconds(p95ElapsedTicks),
+            MaximumMicrosecondsPerExecution =
+                TicksToMicroseconds(elapsedTicks[elapsedTicks.Length - 1]),
+            MeanAllocatedBytesPerExecution =
+                allocatedBytesTotal / sampleIterations,
+            MinimumAllocatedBytesPerExecution = allocatedBytes[0],
+            MedianAllocatedBytesPerExecution = p50AllocatedBytes,
+            P95AllocatedBytesPerExecution = p95AllocatedBytes,
+            MaximumAllocatedBytesPerExecution =
+                allocatedBytes[allocatedBytes.Length - 1]
+        };
+    }
+
+    private static double TicksToMicroseconds(long ticks)
+    {
+        return ticks * 1_000_000.0 / Stopwatch.Frequency;
+    }
+
+    private static long NearestRank(long[] sortedValues, double percentile)
+    {
+        int index = (int)Math.Ceiling(sortedValues.Length * percentile) - 1;
+        index = Math.Max(0, Math.Min(index, sortedValues.Length - 1));
+        return sortedValues[index];
+    }
+
+    private static int CountCommand(BenchmarkCase benchmarkCase, string command)
+    {
+        int count = 0;
+        foreach (string entry in benchmarkCase.Commands)
+        {
+            if (string.Equals(
+                    entry.Split(' ')[0],
+                    command,
+                    StringComparison.Ordinal))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
     private static void ExecuteWithoutCapture(BenchmarkCase benchmarkCase)
     {
         CapturedRun run = Execute(
@@ -407,7 +745,7 @@ internal static class Program
         TextWriter output,
         TextWriter error)
     {
-        string commandText = string.Join("\n", benchmarkCase.Commands) + "\n";
+        string commandText = BuildCommandText(benchmarkCase);
         int exitCode = CliApplication.Run(
             new StringReader(commandText),
             output,
@@ -415,6 +753,11 @@ internal static class Program
         return new CapturedRun(exitCode, output is StringWriter stringWriter
             ? stringWriter.ToString()
             : string.Empty);
+    }
+
+    private static string BuildCommandText(BenchmarkCase benchmarkCase)
+    {
+        return string.Join("\n", benchmarkCase.Commands) + "\n";
     }
 
     private static JsonElement RequireObject(JsonElement parent, string propertyName)
@@ -482,20 +825,30 @@ internal static class Program
         string path = Path.Combine(
             Directory.GetCurrentDirectory(),
             relativePath.Replace('/', Path.DirectorySeparatorChar));
+        RequireFileHashAtPath(path, expectedHash);
+    }
+
+    private static void RequireFileHashAtPath(string path, string expectedHash)
+    {
         if (!File.Exists(path))
         {
             throw new InvalidOperationException(
-                "The P9-T01 bound artifact is missing: " + relativePath + ".");
+                "The P9-T01 bound artifact is missing: " + path + ".");
         }
 
-        string actualHash = Convert.ToHexString(
-                SHA256.HashData(File.ReadAllBytes(path)))
-            .ToLowerInvariant();
+        string actualHash = ComputeFileSha256(path);
         if (!string.Equals(actualHash, expectedHash, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
-                "The P9-T01 bound artifact hash does not match: " + relativePath + ".");
+                "The P9-T01 bound artifact hash does not match: " + path + ".");
         }
+    }
+
+    private static string ComputeFileSha256(string path)
+    {
+        return Convert.ToHexString(
+                SHA256.HashData(File.ReadAllBytes(path)))
+            .ToLowerInvariant();
     }
 
     private sealed class BenchmarkManifest
@@ -537,6 +890,53 @@ internal static class Program
         public int MeasurementIterations { get; }
     }
 
+    private sealed class ProfileDefinition
+    {
+        public ProfileDefinition(
+            string profileId,
+            string benchmarkManifestSha256,
+            string profileManifestSha256,
+            int warmupIterations,
+            int sampleIterations,
+            string solverHotspotStatus,
+            string solveLatencyStatus,
+            string dataMovementStatus,
+            string measurementBoundary,
+            string evidenceBoundary)
+        {
+            ProfileId = profileId;
+            BenchmarkManifestSha256 = benchmarkManifestSha256;
+            ProfileManifestSha256 = profileManifestSha256;
+            WarmupIterations = warmupIterations;
+            SampleIterations = sampleIterations;
+            SolverHotspotStatus = solverHotspotStatus;
+            SolveLatencyStatus = solveLatencyStatus;
+            DataMovementStatus = dataMovementStatus;
+            MeasurementBoundary = measurementBoundary;
+            EvidenceBoundary = evidenceBoundary;
+        }
+
+        public string ProfileId { get; }
+
+        public string BenchmarkManifestSha256 { get; }
+
+        public string ProfileManifestSha256 { get; }
+
+        public int WarmupIterations { get; }
+
+        public int SampleIterations { get; }
+
+        public string SolverHotspotStatus { get; }
+
+        public string SolveLatencyStatus { get; }
+
+        public string DataMovementStatus { get; }
+
+        public string MeasurementBoundary { get; }
+
+        public string EvidenceBoundary { get; }
+    }
+
     private sealed class BenchmarkCase
     {
         public BenchmarkCase(string caseId, string purpose, IReadOnlyList<string> commands)
@@ -571,11 +971,15 @@ internal static class Program
         public BenchmarkSettings(
             string manifestPath,
             int warmupIterations,
-            int measurementIterations)
+            int measurementIterations,
+            bool profileMode,
+            string profileManifestPath)
         {
             ManifestPath = manifestPath;
             WarmupIterations = warmupIterations;
             MeasurementIterations = measurementIterations;
+            ProfileMode = profileMode;
+            ProfileManifestPath = profileManifestPath;
         }
 
         public string ManifestPath { get; }
@@ -584,18 +988,35 @@ internal static class Program
 
         public int MeasurementIterations { get; }
 
+        public bool ProfileMode { get; }
+
+        public string ProfileManifestPath { get; }
+
         public static BenchmarkSettings Parse(
             string[] args)
         {
             string manifestPath = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 ManifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
+            string profileManifestPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                ProfileManifestRelativePath.Replace('/', Path.DirectorySeparatorChar));
             int? warmupIterations = null;
             int? measurementIterations = null;
+            bool profileMode = false;
             for (int index = 0; index < args.Length; index++)
             {
                 string option = args[index];
-                if (option != "--manifest" && option != "--warmup" && option != "--measure")
+                if (option == "--profile")
+                {
+                    profileMode = true;
+                    continue;
+                }
+
+                if (option != "--manifest" &&
+                    option != "--profile-manifest" &&
+                    option != "--warmup" &&
+                    option != "--measure")
                 {
                     throw new ArgumentException("Unknown benchmark option: " + option);
                 }
@@ -610,6 +1031,10 @@ internal static class Program
                 if (option == "--manifest")
                 {
                     manifestPath = Path.GetFullPath(value);
+                }
+                else if (option == "--profile-manifest")
+                {
+                    profileManifestPath = Path.GetFullPath(value);
                 }
                 else if (!int.TryParse(
                              value,
@@ -633,7 +1058,9 @@ internal static class Program
             return new BenchmarkSettings(
                 manifestPath,
                 warmupIterations ?? 0,
-                measurementIterations ?? 0);
+                measurementIterations ?? 0,
+                profileMode,
+                profileManifestPath);
         }
 
         public BenchmarkSettings WithManifestDefaults(
@@ -643,7 +1070,9 @@ internal static class Program
             return new BenchmarkSettings(
                 ManifestPath,
                 WarmupIterations == 0 ? defaultWarmupIterations : WarmupIterations,
-                MeasurementIterations == 0 ? defaultMeasurementIterations : MeasurementIterations);
+                MeasurementIterations == 0 ? defaultMeasurementIterations : MeasurementIterations,
+                ProfileMode,
+                ProfileManifestPath);
         }
     }
 
@@ -666,6 +1095,49 @@ internal static class Program
         public long AllocatedBytesTotal { get; set; }
 
         public double AllocatedBytesPerExecution { get; set; }
+    }
+
+    private sealed class ProfileCaseResult
+    {
+        public string CaseId { get; set; } = string.Empty;
+
+        public string Purpose { get; set; } = string.Empty;
+
+        public int CommandCount { get; set; }
+
+        public int AdvanceCommandCount { get; set; }
+
+        public int ActionCommandCount { get; set; }
+
+        public int InspectionCommandCount { get; set; }
+
+        public int InputUtf8Bytes { get; set; }
+
+        public int CapturedStdoutUtf8Bytes { get; set; }
+
+        public int SampleIterations { get; set; }
+
+        public bool DeterministicRepeat { get; set; }
+
+        public double MeanMicrosecondsPerExecution { get; set; }
+
+        public double MinimumMicrosecondsPerExecution { get; set; }
+
+        public double MedianMicrosecondsPerExecution { get; set; }
+
+        public double P95MicrosecondsPerExecution { get; set; }
+
+        public double MaximumMicrosecondsPerExecution { get; set; }
+
+        public double MeanAllocatedBytesPerExecution { get; set; }
+
+        public long MinimumAllocatedBytesPerExecution { get; set; }
+
+        public long MedianAllocatedBytesPerExecution { get; set; }
+
+        public long P95AllocatedBytesPerExecution { get; set; }
+
+        public long MaximumAllocatedBytesPerExecution { get; set; }
     }
 
     private sealed class BenchmarkReport
@@ -691,6 +1163,49 @@ internal static class Program
         public string PolicyParameterSha256 { get; set; } = string.Empty;
 
         public List<BenchmarkCaseResult> Cases { get; set; } = new List<BenchmarkCaseResult>();
+
+        public long StopwatchFrequency { get; set; }
+
+        public string Framework { get; set; } = string.Empty;
+
+        public string ProcessArchitecture { get; set; } = string.Empty;
+
+        public string OperatingSystem { get; set; } = string.Empty;
+
+        public string AndroidBaselineStatus { get; set; } = string.Empty;
+    }
+
+    private sealed class ProfileReport
+    {
+        public string Format { get; set; } = string.Empty;
+
+        public string TaskId { get; set; } = string.Empty;
+
+        public string ProfileId { get; set; } = string.Empty;
+
+        public string Status { get; set; } = string.Empty;
+
+        public int WarmupIterations { get; set; }
+
+        public int SampleIterations { get; set; }
+
+        public bool DeterministicRepeat { get; set; }
+
+        public string BenchmarkManifestSha256 { get; set; } = string.Empty;
+
+        public string ProfileManifestSha256 { get; set; } = string.Empty;
+
+        public string SolverHotspotStatus { get; set; } = string.Empty;
+
+        public string SolveLatencyStatus { get; set; } = string.Empty;
+
+        public string DataMovementStatus { get; set; } = string.Empty;
+
+        public string MeasurementBoundary { get; set; } = string.Empty;
+
+        public string EvidenceBoundary { get; set; } = string.Empty;
+
+        public List<ProfileCaseResult> Cases { get; set; } = new List<ProfileCaseResult>();
 
         public long StopwatchFrequency { get; set; }
 

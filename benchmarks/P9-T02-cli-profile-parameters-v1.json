@@ -1,0 +1,41 @@
+{
+  "format": "reactorsim.p9-cli-profile-parameters/v1",
+  "task_id": "P9-T02",
+  "status": "desktop_observation_only",
+  "profile_id": "p9-t02-cli-profile-v1",
+  "benchmark_manifest": {
+    "path": "benchmarks/P9-T01-cli-gameplay-benchmark-v1.json",
+    "sha256": "63114186fd9768a94e44ff0368001952cda2750610965b48c94cc36e5efb5281"
+  },
+  "sampling": {
+    "warmup_iterations": 10,
+    "sample_iterations": 100,
+    "clock": "System.Diagnostics.Stopwatch",
+    "allocation_counter": "GC.GetAllocatedBytesForCurrentThread",
+    "percentiles": [
+      "p50",
+      "p95"
+    ],
+    "percentile_rule": "nearest_rank",
+    "measurement_boundary": "one complete public CliApplication.Run per frozen command stream with TextWriter.Null sinks"
+  },
+  "classification": {
+    "solver_hotspot_status": "NotApplicable: the frozen P8 synthetic CLI cases do not invoke the Core spatial solver.",
+    "solve_latency_status": "NotMeasured: no spatial solve is invoked by the frozen P8 CLI cases.",
+    "data_movement_status": "Observed descriptors only: command/input/output sizes; no profiler allocation attribution.",
+    "performance_target": null
+  },
+  "platforms": {
+    "desktop": {
+      "status": "required_observation",
+      "runtime": "Release",
+      "architecture": "current_host"
+    },
+    "android": {
+      "status": "Deferred/NotAvailable",
+      "reason": "No adb command or representative Android device is available in the execution environment.",
+      "owner_gate": "G9"
+    }
+  },
+  "evidence_boundary": "Project-authored synthetic CLI command streams and machine-specific profile observations only; no performance target, numerical tolerance, solver-hotspot claim, mobile result, or release budget."
+}
