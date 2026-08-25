@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-25 against the implementation plan, completed reports
-through `P9-T02` implementation, `G8` review, `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
+through `P9-T03` implementation, `G8` review, `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
 (conditional synthetic-only), `G4-R6`, and `G2-R4`, the
@@ -130,6 +130,13 @@ sampling overrides. The synthetic CLI cases do not invoke the Core spatial
 solver, so solver hotspots and spatial solve latency remain explicitly
 unmeasured rather than inferred. No performance target, optimization, mobile
 result, or release budget was selected; Android remains deferred.
+The owner-authorized P9-T03 Core solver profile observation is now complete over
+the exact P4-T08 synthetic three-node case. It binds the P4-T08 manifest,
+records per-solve p50/p95 timing and allocation distributions, exact converged
+output repeatability, and topology/flux-state descriptors, while explicitly
+leaving internal hotspot attribution `NotMeasured` because no external profiler
+is installed. No performance target, optimization, mobile result, or release
+budget was selected; Android remains deferred.
 The owner-authorized
 Phase 7A activation has completed `P7-T01` through `P7-T05`: the approved
 point-kinetics and I/Xe transitions, caller-supplied stable timestep policy,
@@ -280,6 +287,7 @@ Historical context is intentionally short:
 |---|---|---|---|
 | `P9-T01` | `COMPLETE` | [`docs/tasks/P9-T01.md`](tasks/P9-T01.md) records the owner-approved observation-only benchmark manifest [`P9-T01-cli-gameplay-benchmark-v1.json`](../benchmarks/P9-T01-cli-gameplay-benchmark-v1.json), exact P8-T02/P8-T03/P8-T05 hash binding, three representative CLI command streams, exact repeated output determinism, strict exact-case validation with mutation rejection, and two 10-warmup/200-measure desktop observations. Release build and benchmark passed; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; no performance target or optimization was selected; Android is `Deferred/NotAvailable` without `adb`/device evidence; independent high review final disposition is `PASS` with telemetry `UNVERIFIED`. | `P9-T02` desktop profiling/hotspot characterization is next; Android/device baseline remains a separate T5 task. |
 | `P9-T02` | `COMPLETE` | [`docs/tasks/P9-T02.md`](tasks/P9-T02.md) records the owner-approved profile manifest [`P9-T02-cli-profile-parameters-v1.json`](../benchmarks/P9-T02-cli-profile-parameters-v1.json), exact P9-T01 path/hash binding, corrected UTF-8 stdout sizing, nearest-rank p50/p95 timing/allocation observations, strict alternate-manifest and sampling-override rejection, and two 10-warmup/100-sample desktop runs. Final Release build has 0 warnings/errors; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; no performance target or optimization was selected; solver hotspot/solve-latency claims are explicitly `NotApplicable`/`NotMeasured` for the synthetic CLI boundary; Android is `Deferred/NotAvailable`; independent high review final technical disposition is `PASS` after the report/scope administrative condition, with telemetry `UNVERIFIED`. | `P9-T03` bounded Core spatial-solver profiling/data-movement observation is next; optimization and Android/device evidence remain separately bounded. |
+| `P9-T03` | `COMPLETE` | [`docs/tasks/P9-T03.md`](tasks/P9-T03.md) records the owner-approved Core solver profile manifest [`P9-T03-core-solver-profile-parameters-v1.json`](../benchmarks/P9-T03-core-solver-profile-parameters-v1.json), exact P4-T08 path/hash binding, one-public-`SpatialEigenSolve.TrySolve` sampling boundary, exact two-iteration converged output repeatability, nearest-rank timing/allocation observations, 48-byte flux-state and topology descriptors, and strict alternate-profile/sampling-override rejection. Final Release build has 0 warnings/errors; T3 Core `208/208`, CLI `38/38`, Golden `26/26`; no performance target or optimization was selected; internal loop hotspots are `NotMeasured` without an external profiler; Android is `Deferred/NotAvailable`; independent high review final technical disposition is `PASS` after the report/scope administrative condition, with telemetry `UNVERIFIED`. | `P9-T04` bounded performance-target/optimization decision record is next; code optimization and Android/device evidence remain separately bounded. |
 
 ## Phase 7A kinetics sequence — 2026-08-24
 

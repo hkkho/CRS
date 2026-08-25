@@ -1,0 +1,48 @@
+{
+  "format": "reactorsim.p9-core-solver-profile-parameters/v1",
+  "task_id": "P9-T03",
+  "status": "core_solver_observation_only",
+  "profile_id": "p9-t03-core-solver-profile-v1",
+  "benchmark_manifest": {
+    "path": "benchmarks/P4-T08-static-solver-benchmark.json",
+    "sha256": "8a53f7519a3b6597d3382c9e91df356474d7d1e72e8ce5d0055e30ef635a1045"
+  },
+  "sampling": {
+    "warmup_iterations": 10,
+    "sample_iterations": 100,
+    "clock": "System.Diagnostics.Stopwatch",
+    "allocation_counter": "GC.GetAllocatedBytesForCurrentThread",
+    "percentiles": [
+      "p50",
+      "p95"
+    ],
+    "percentile_rule": "nearest_rank",
+    "measurement_boundary": "one complete public SpatialEigenSolve.TrySolve per sample after solver construction"
+  },
+  "workload_descriptors": {
+    "node_count": 3,
+    "group_count": 2,
+    "interior_edge_count": 2,
+    "boundary_face_count": 14,
+    "flux_state_bytes": 48,
+    "flux_state_definition": "one double array per group over three nodes"
+  },
+  "classification": {
+    "hotspot_status": "NotMeasured: no external profiler is installed; end-to-end timing does not identify loop-level hotspots.",
+    "data_movement_status": "Observed descriptors only: topology counts and flux-state bytes; no allocation attribution by solver phase.",
+    "performance_target": null
+  },
+  "platforms": {
+    "desktop": {
+      "status": "required_observation",
+      "runtime": "Release",
+      "architecture": "current_host"
+    },
+    "android": {
+      "status": "Deferred/NotAvailable",
+      "reason": "No adb command or representative Android device is available in the execution environment.",
+      "owner_gate": "G9"
+    }
+  },
+  "evidence_boundary": "Project-authored synthetic P4-T08 Core solve and machine-specific profile observations only; no performance target, numerical tolerance, solver-hotspot claim, mobile result, or release budget."
+}

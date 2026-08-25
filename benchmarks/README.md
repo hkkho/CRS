@@ -63,3 +63,26 @@ do not invoke the Core spatial solver, so the profile does not claim solver
 hotspots or spatial solve latency; those require a separately bounded Core
 benchmark. No performance target, optimization, mobile result, thermal claim,
 or release budget is implied.
+
+## Phase 9 Core solver profile observation
+
+P9-T03 adds the bound profile manifest
+[`P9-T03-core-solver-profile-parameters-v1.json`](P9-T03-core-solver-profile-parameters-v1.json)
+and an explicit profile mode to the existing dependency-free Core solver
+benchmark:
+
+```powershell
+& 'C:\Program Files\dotnet\dotnet.exe' `
+  'benchmarks\ReactorSim.Benchmarks\bin\Release\net10.0\ReactorSim.Benchmarks.dll' `
+  --profile
+```
+
+The profile constructs the solver outside the timed region, then measures one
+complete public `SpatialEigenSolve.TrySolve` per sample over the frozen P4-T08
+three-node case. It reports nearest-rank p50/p95 timing and allocation
+observations, exact repeated solver outputs, and topology/flux-state size
+descriptors. No external profiler is installed, so internal loop hotspots and
+phase-level allocation attribution remain explicitly `NotMeasured`; the
+end-to-end solve observation must not be read as a hotspot claim. No
+performance target, optimization, mobile result, thermal claim, or release
+budget is implied.
