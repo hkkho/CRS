@@ -353,6 +353,158 @@ namespace ReactorSim.Cli
             }
         }
 
+        internal static ContractValidationResult<Phase8BaselinePolicyRunResultV1> RunBaselinePolicy(
+            string policyId)
+        {
+            try
+            {
+                Phase8BaselinePolicyPack policyPack = Phase8BaselinePolicyPack.LoadApproved(
+                    Phase8BaselinePolicyPack.FindDefaultPath());
+                Phase8ScenarioParameterPack scenarioPack = Phase8ScenarioParameterPack.LoadApproved(
+                    Phase8ScenarioParameterPack.FindDefaultPath());
+                Phase8ScoringParameterPack scoringPack = Phase8ScoringParameterPack.LoadApproved(
+                    Phase8ScoringParameterPack.FindDefaultPath());
+                if (!policyPack.Policies.TryGetValue(policyId, out Phase8BaselinePolicyV1? policy))
+                {
+                    return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                        "Phase8BaselinePolicy.NotFound",
+                        "policy_id",
+                        "The requested baseline policy is not present in the approved policy pack.");
+                }
+
+                if (!string.Equals(
+                        policyPack.ScenarioParameterSha256,
+                        scenarioPack.ArtifactSha256,
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        policyPack.ScoringParameterSha256,
+                        scoringPack.ArtifactSha256,
+                        StringComparison.Ordinal))
+                {
+                    return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                        "Phase8BaselinePolicy.DataPack.Mismatch",
+                        "policy_pack",
+                        "The baseline policy pack is not bound to the exact approved scenario and scoring artifacts.");
+                }
+
+                if (!TryCreateSession(
+                        policy.ScenarioId,
+                        policy.InitialPlaybackModeId,
+                        out CliSession? createdSession,
+                        out string failureCode,
+                        out string failureMessage))
+                {
+                    return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                        "Phase8BaselinePolicy.Runtime.Invalid",
+                        "runtime",
+                        failureCode + ": " + failureMessage);
+                }
+
+                CliSession session = createdSession!;
+                if (!string.Equals(session.Runtime.DifficultyId, policy.DifficultyId, StringComparison.Ordinal))
+                {
+                    return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                        "Phase8BaselinePolicy.Difficulty.Mismatch",
+                        "difficulty_id",
+                        "The policy difficulty does not match the approved scenario definition.");
+                }
+
+                ulong previousWallMilliseconds = 0;
+                foreach (Phase8BaselinePolicyActionV1 action in policy.Actions)
+                {
+                    ulong elapsedWallMilliseconds = action.AtWallMilliseconds - previousWallMilliseconds;
+                    if (elapsedWallMilliseconds > 0)
+                    {
+                        ContractValidationResult<Phase8ScoredAdvanceResultV1> advanceResult =
+                            session.Runtime.TryAdvanceWallMilliseconds(elapsedWallMilliseconds);
+                        if (!advanceResult.IsValid)
+                        {
+                            return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                                "Phase8BaselinePolicy.Advance.Invalid",
+                                "actions",
+                                advanceResult.FirstDiagnostic.ToString());
+                        }
+
+                        session.AppendReplayCommand(Phase8ReplayCommandV1.Advance(elapsedWallMilliseconds));
+                    }
+
+                    ContractValidationResult<Phase8ActionQueueResultV1> actionResult;
+                    switch (action.Kind)
+                    {
+                        case Phase8BaselinePolicyActionKindV1.SetPowerTarget:
+                            actionResult = session.Runtime.TryQueuePowerTarget(action.TargetFraction);
+                            break;
+
+                        case Phase8BaselinePolicyActionKindV1.SetTiltTarget:
+                            actionResult = session.Runtime.TryQueueTiltTarget(action.TargetFraction);
+                            break;
+
+                        default:
+                            return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                                "Phase8BaselinePolicy.Action.Unsupported",
+                                "actions",
+                                "The baseline policy action kind is not supported.");
+                    }
+
+                    if (!actionResult.IsValid)
+                    {
+                        return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                            "Phase8BaselinePolicy.Action.Invalid",
+                            "actions",
+                            actionResult.FirstDiagnostic.ToString());
+                    }
+
+                    session.AppendReplayCommand(action.Kind == Phase8BaselinePolicyActionKindV1.SetPowerTarget
+                        ? Phase8ReplayCommandV1.SetPowerTarget(action.TargetFraction)
+                        : Phase8ReplayCommandV1.SetTiltTarget(action.TargetFraction));
+                    previousWallMilliseconds = action.AtWallMilliseconds;
+                }
+
+                ulong finalElapsedWallMilliseconds = policy.HorizonWallMilliseconds - previousWallMilliseconds;
+                if (finalElapsedWallMilliseconds > 0)
+                {
+                    ContractValidationResult<Phase8ScoredAdvanceResultV1> finalAdvanceResult =
+                        session.Runtime.TryAdvanceWallMilliseconds(finalElapsedWallMilliseconds);
+                    if (!finalAdvanceResult.IsValid)
+                    {
+                        return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                            "Phase8BaselinePolicy.Advance.Invalid",
+                            "horizon_wall_ms",
+                            finalAdvanceResult.FirstDiagnostic.ToString());
+                    }
+
+                    session.AppendReplayCommand(Phase8ReplayCommandV1.Advance(finalElapsedWallMilliseconds));
+                }
+
+                return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Valid(
+                    new Phase8BaselinePolicyRunResultV1(
+                        policy.PolicyId,
+                        session.Runtime.ScenarioId,
+                        session.Runtime.DifficultyId,
+                        session.Runtime.Outcome,
+                        session.Runtime.SimulationTimeSeconds,
+                        session.Runtime.WallElapsedSeconds,
+                        session.Runtime.Score.TotalPoints,
+                        (uint)session.Runtime.Runtime.LossRecords.Count,
+                        session.Runtime.TurnSummaries.Count,
+                        session.ComputeReplayDigest()));
+            }
+            catch (Phase8BaselinePolicyFailure exception)
+            {
+                return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                    "Phase8BaselinePolicy.Pack.Invalid",
+                    exception.Path,
+                    exception.Message);
+            }
+            catch (InvalidOperationException exception)
+            {
+                return ContractValidationResult<Phase8BaselinePolicyRunResultV1>.Invalid(
+                    "Phase8BaselinePolicy.Invalid",
+                    "policy",
+                    exception.Message);
+            }
+        }
+
         private static void WriteRunCreated(TextWriter output, CliSession session)
         {
             WriteLine(output, "run: created");
