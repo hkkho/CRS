@@ -1,0 +1,65 @@
+{
+  "$schema": "xsec-sph-01-runner-probes-v1",
+  "status": "blocked",
+  "purpose": "Path-free provenance for external-only source-runner probes; not a source result, semantic export, runtime pack, or golden artifact.",
+  "documentation": {
+    "identity": "DRAGON5 IGE-335 extracted text, section 3.11",
+    "sha256": "1b89fa2d8c30ba3d1ece03c96ccf6ae384ee4a11a384c3ca395ddfb616acc5d",
+    "finding": "SPH accepts an existing edition on the RHS and creates a new SPH-corrected edition on the LHS."
+  },
+  "tool": {
+    "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "executable": "/dragon/5.1/Dragon/bin/Linux_x86_64/Dragon",
+    "network": "none",
+    "filesystem": "read-only root with tmpfs /tmp and /run",
+    "platform": "linux/amd64"
+  },
+  "fixture": {
+    "candidate": "TCWUX11",
+    "tcwux11Sha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "tcwu05LibSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+    "assertSSha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+    "wlup172Sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e"
+  },
+  "probes": [
+    {
+      "id": "full-official-entrypoint",
+      "inputIdentity": "tjeff31gx.x2m",
+      "inputSha256": "c8ea2f97fe3ccbe833df40f3a7859792144c0082a5af29bbb92cc7a47e422dc1",
+      "exitCode": 1,
+      "stdoutSha256": "1cf6d4bca55bf3a4563980b3a3366c8ca93fe9a405199e7d7ef3a5f8826568c4",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "failureLocation": "pre-TCWUX11 regression content",
+      "failure": "FLU: INCONSISTENT FLUX OBJECT TRACK-TYPE AT RHS (SYBIL). EXCELL EXPECTED.",
+      "conclusion": "Does not establish a TCWUX11 result or a TCWUX11 defect."
+    },
+    {
+      "id": "targeted-official-procedure-entrypoint",
+      "inputIdentity": "project-authored targeted procedure list invoking only TCWUX11",
+      "inputSha256": "556956d7b3bf70e1d18a7671c59f890e633bb63388039470bd502b64f4250cbb",
+      "exitCode": 1,
+      "stdoutSha256": "8611b64ce4d66cb7ad9297661dcc0a8f94791c0ccaed3b1488921df9a5d33512",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "failureLocation": "CLE-2000 main-procedure compilation",
+      "failure": "late procedure errors",
+      "conclusion": "Does not execute TCWUX11 and cannot prove procedure-loader equivalence."
+    },
+    {
+      "id": "minimal-procedure-driver",
+      "inputIdentity": "project-authored minimal TCWU05Lib/assertS/TCWUX11 procedure driver",
+      "inputSha256": "593f586754a58a8c173fd2405388374773cf5120f91f2a9d520bac990f7737d9",
+      "exitCode": 1,
+      "stdoutSha256": "8d72f429d0b7e7e858f2d5fd321d4614417808bf41b57b958d9bfc38f9c2ed09",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "failureLocation": "CLE-2000 main-procedure compilation",
+      "failure": "late procedure errors",
+      "conclusion": "Does not execute TCWUX11 and cannot prove procedure-loader equivalence."
+    }
+  ],
+  "admission": {
+    "rawInputsAndLogs": "external-only",
+    "runtimeUse": "prohibited",
+    "goldenOrReferenceUse": "prohibited",
+    "nextRequiredEvidence": "A clean source run proving a pre-SPH snapshot/capture while retaining subsequent SPH state and all four original assertions."
+  }
+}
