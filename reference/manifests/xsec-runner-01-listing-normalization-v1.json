@@ -1,0 +1,24 @@
+{
+  "$schema": "xsec-runner-01-listing-normalization-v1",
+  "purpose": "Compare DRAGON source listings while excluding only volatile timing and memory diagnostics; not a transformation of source numerical content.",
+  "tool": {
+    "implementation": "PowerShell Get-Content -Raw, .NET System.Security.Cryptography.SHA256, ASCII encoding",
+    "powershellVersion": "7.6.4"
+  },
+  "algorithm": "SHA-256 of the ASCII bytes of the normalized complete listing, preserving all nonmatching bytes and line endings.",
+  "rules": [
+    {
+      "pattern": "TIME SPENT=\\s*[0-9.]+ MEMORY USAGE=\\s*[0-9.E+\\-]+",
+      "replacement": "TIME SPENT=<volatile> MEMORY USAGE=<volatile>"
+    },
+    {
+      "pattern": "time spent=\\s*[0-9.]+ memory usage=\\s*[0-9.E+\\-]+",
+      "replacement": "time spent=<volatile> memory usage=<volatile>"
+    },
+    {
+      "pattern": "cle2000_c: cpu time=\\s*[0-9.]+ second",
+      "replacement": "cle2000_c: cpu time=<volatile> second"
+    }
+  ],
+  "ruleDefinitionSha256": "798aaf709dc2d1b1484d500beae021bf4f633a259efdcd63b2b72f92df32eb84"
+}

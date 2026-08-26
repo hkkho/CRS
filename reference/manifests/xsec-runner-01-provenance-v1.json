@@ -1,0 +1,138 @@
+{
+  "$schema": "xsec-runner-01-provenance-v1",
+  "status": "complete",
+  "purpose": "Path-free external-only DRAGON5 TCWUX11 runner reproduction. This is not a runtime pack, semantic export, source-data redistribution, or golden/reference admission.",
+  "tool": {
+    "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "platform": "Linux x86_64",
+    "dragonVersion": "5.1.0",
+    "dragonExecutable": "/dragon/5.1/Dragon/bin/Linux_x86_64/Dragon",
+    "dragonExecutableSha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+    "launcher": "/dragon/5.1/Dragon/rdragon",
+    "launcherSha256": "ae1c40131d8882da2a131acb3299d202aa5629b2937ed09aaa47c2493f8388af"
+  },
+  "launcherContract": {
+    "supportedInputLocation": "/dragon/5.1/Dragon/data",
+    "procedureDirectoryRule": "<input-basename>_proc",
+    "accessHookRule": "<input-basename>.access",
+    "requiredAccessHookAction": "Copy externally staged WLUP172 into the launcher's temporary run directory without transforming it.",
+    "temporaryFilesystem": "/tmp must be executable because rdragon copies and executes Dragon there.",
+    "containerControls": ["network=none", "read-only root", "tmpfs /tmp:exec", "tmpfs /run", "OMP_NUM_THREADS=1 set by rdragon"],
+    "resultLocation": "/dragon/5.1/Dragon/Linux_x86_64",
+    "effectiveEnvironment": {
+      "DRAGON_HOME": "/dragon",
+      "DRAGON_CODE_DIR": "/dragon/5.1",
+      "NO_STOP_MESSAGE": "1 (set by rdragon)",
+      "OMP_NUM_THREADS": "1 (set by rdragon)",
+      "workingDirectory": "/dragon/5.1/Dragon"
+    },
+    "mountTopology": {
+      "externalDataRoot": "/dragon/5.1/Dragon/data:ro",
+      "externalResultRoot": "/dragon/5.1/Dragon/Linux_x86_64",
+      "temporaryRunnerDirectory": "/tmp/rundirN (created and removed by rdragon)"
+    },
+    "pathFreeCommand": "docker run --rm --network none --read-only --tmpfs /tmp:exec --tmpfs /run --entrypoint sh -v <external-data-root>:/dragon/5.1/Dragon/data:ro -v <external-result-root>:/dragon/5.1/Dragon/Linux_x86_64 -w /dragon/5.1/Dragon <pinned-image> -c './rdragon -q tcwux11target.x2m'"
+  },
+  "sourceFixture": {
+    "case": "official Version5 JEFF TCWUX11",
+    "tcwux11Sha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "tcwu05LibSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+    "assertSSha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+    "wlup172Sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e",
+    "originalEntrypointSha256": "c8ea2f97fe3ccbe833df40f3a7859792144c0082a5af29bbb92cc7a47e422dc1"
+  },
+  "targetedDriver": {
+    "identity": "Original tjeff31gx procedure declaration lines retained verbatim; only the invocation list is reduced to TCWUX11 followed by QUIT.",
+    "sha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+    "accessHookSha256": "24358015169b8cd315ee801e765cb84ba3f71b9f0b835ed7d126b4a6bcf417ca",
+    "sourceProcedureChanges": "none",
+    "allowedDelta": {
+      "originalProcedureDeclarationCanonicalLfSha256": "9665d98f49ff24ab376c6a5541df7421dbfddb133fa21a00db8cd73bbfac4e28",
+      "targetProcedureDeclarationCanonicalLfSha256": "9665d98f49ff24ab376c6a5541df7421dbfddb133fa21a00db8cd73bbfac4e28",
+      "removedMainInvocations": ["TCWUX01", "TCWUX02", "TCWUX03", "TCWUX04", "TCWUX05", "TCWUX06", "TCWUX07", "TCWUX08", "TCWUX09", "TCWUX10", "TCWUX12", "TCWUX31", "TCWUX41"],
+      "retainedMainInvocation": "TCWUX11",
+      "retainedQuit": "QUIT LIST",
+      "definitionSha256": "1cb3a67c3ff308fb97998bd5685e21369c7ac5782f99f04ccc45b705aebaa7be"
+    }
+  },
+  "attempts": [
+    {
+      "id": "full-official-entrypoint-with-supported-launcher",
+      "exitCode": 1,
+      "resultSha256": "cc23db698f784b28e53e7031b68fbef8f6eb99ae701c119765840b6aa569cc44",
+      "logIdentity": "result listing only; launcher terminal stderr was not retained",
+      "outcome": "Stopped before TCWUX11 in TCWUX01 with FLU track-type mismatch (SYBIL RHS, EXCELL expected). This does not characterize TCWUX11."
+    },
+    {
+      "id": "single-name-procedure-driver",
+      "exitCode": 1,
+      "resultSha256": "078bb1815b90d57ac89dda73106ba57f6075b76f62d764fe28f6aa6c6b1f0b34",
+      "logIdentity": "result listing only; launcher terminal stderr was not retained",
+      "outcome": "CLE-2000 rejected the incomplete single-name procedure declaration with late procedure errors."
+    },
+    {
+      "id": "targeted-tcwux11-clean-run-d",
+      "exitCode": 0,
+      "resultSha256": "e41ee368989533355fbaf10546bbcb781860303196dd9a82eee9b4862c6e3456",
+      "normalizedResultSha256": "546b6db39ba5bfa2a6872f651d1279076a61c471dcaf800d742763f09015f42d",
+      "normalizationRule": "xsec-runner-01-listing-normalization-v1.json",
+      "assertions": [
+        {"reference": 1.118478, "relativeDelta": 0.000002131634},
+        {"reference": 0.9420414, "relativeDelta": 0.0000009490768},
+        {"reference": 1.118481, "relativeDelta": 0.000009059420},
+        {"reference": 1.073615, "relativeDelta": 0.000007328338}
+      ],
+      "normalEnd": true,
+      "caseCompletionMarker": "test TCWU11 completed"
+    },
+    {
+      "id": "targeted-tcwux11-clean-run-e",
+      "exitCode": 0,
+      "resultSha256": "ecb743cea5806fb0b58721674ff7208321c1faf395268da5136828efda1aa213",
+      "normalizedResultSha256": "546b6db39ba5bfa2a6872f651d1279076a61c471dcaf800d742763f09015f42d",
+      "normalizationRule": "xsec-runner-01-listing-normalization-v1.json",
+      "assertions": [
+        {"reference": 1.118478, "relativeDelta": 0.000002131634},
+        {"reference": 0.9420414, "relativeDelta": 0.0000009490768},
+        {"reference": 1.118481, "relativeDelta": 0.000009059420},
+        {"reference": 1.073615, "relativeDelta": 0.000007328338}
+      ],
+      "normalEnd": true,
+      "comparison": "Raw result hashes differ only in volatile module timing/memory and CLE CPU-time lines; normalized output and all four assertion deltas match run-d."
+    },
+    {
+      "id": "targeted-tcwux11-clean-run-f-access-audit",
+      "exitCode": 0,
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "accessHookSha256": "cf4604f27a95b431b2cafb8039cfaff0286bd82f8ca343e218d822e00cc37248",
+      "accessHookOperation": "cp \"$1/data/WLUP172\" . then sha256sum WLUP172 to the external result root",
+      "accessHookAllowedDelta": {
+        "baselineAccessHookSha256": "24358015169b8cd315ee801e765cb84ba3f71b9f0b835ed7d126b4a6bcf417ca",
+        "auditAccessHookSha256": "cf4604f27a95b431b2cafb8039cfaff0286bd82f8ca343e218d822e00cc37248",
+        "retainedLines": ["#!/bin/sh", "set -eu", "cp \"$1/data/WLUP172\" ."],
+        "allowedAddedLine": "sha256sum WLUP172 > \"$1/Linux_x86_64/xsec-wlup172.sha256\"",
+        "definitionSha256": "7b03bb7ed639863c71fe0c76d918a4f9f84c5b986c65443b202642d87520d1b6"
+      },
+      "recordedCopiedWlup172Sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e",
+      "accessAuditLogSha256": "5d9760e5235e3bb0a976354ab35d74cce93802339258b46924911030c97bf167",
+      "resultSha256": "4031bf07fc9a36b8575cf25b28ed4a07a5a27b45bf18c0c6b107cb3970df7011",
+      "normalizedResultSha256": "546b6db39ba5bfa2a6872f651d1279076a61c471dcaf800d742763f09015f42d",
+      "normalizationRule": "xsec-runner-01-listing-normalization-v1.json",
+      "assertions": [
+        {"reference": 1.118478, "relativeDelta": 0.000002131634},
+        {"reference": 0.9420414, "relativeDelta": 0.0000009490768},
+        {"reference": 1.118481, "relativeDelta": 0.000009059420},
+        {"reference": 1.073615, "relativeDelta": 0.000007328338}
+      ],
+      "normalEnd": true,
+      "comparison": "Audit-only WLUP copy proof; all source assertions and normalized listing match the two clean baseline runs."
+    }
+  ],
+  "admission": {
+    "rawSourceDataAndLogs": "external-only",
+    "crossSectionExport": "not admitted",
+    "runtimePack": "not admitted",
+    "goldenOrReferenceUse": "not admitted",
+    "nextTask": "XSEC-SPH-02"
+  }
+}
