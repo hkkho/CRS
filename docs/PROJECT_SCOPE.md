@@ -13,7 +13,7 @@ structure work but do not authorize it. Preserve historical evidence and stop
 on a conflict between current authorities.
 
 **Reconciled:** 2026-08-25 against the implementation plan, completed reports
-through `P10-T04` implementation plus the `P10-T05` implementation/evidence
+through `XSEC-PLAN-01`, `P10-T04` implementation plus the `P10-T05` implementation/evidence
 attempt, `P9-T04` implementation, `G8` review, `P8-T06` implementation, `P7-T07` candidate-case design, `P4-T06-G4J`, and `P4-T06-G4K`, the recovery
 tasks `TEST-INFRA-01`, `P6-INTEGRATION-01`, `P6-INTERNALS-01`,
 `CORE-NAMING-01`, and `STATUS-VISIBILITY-01`, gates through `G5`, `G6`
@@ -167,6 +167,17 @@ deterministic histories/summaries, exact regeneration manifests, Golden audit
 tests, and a seven-page comparison PDF. The package is approved only as
 `SyntheticLiteratureCalibrated`/test-only data; it does not admit an external
 solver reproduction, a CANDU physics baseline, or a Core mapping.
+
+## Licensed cross-section data workstream - 2026-08-25
+
+| Task | State and evidence | Next routing |
+|---|---|---|
+| `XSEC-PLAN-01` | `COMPLETE` — [`XSEC-PLAN-01.md`](tasks/XSEC-PLAN-01.md), the [`owner approval`](tasks/XSEC-PLAN-01-OWNER-APPROVAL.md), and the [`authorized task chain`](tasks/ROUND-2026-08-25-XSEC-DATA-CHAIN.md) define the sequential legal, specification, DRAGON5, DONJON5, pack, Core/CLI, Unity, PDF, and gate work. `P1-T09` is absent from the implementation plan and was not invented. This routing task admits no source, license, physics decision, numerical value, schema, runtime data, or golden authority. | `XSEC-01` is the next eligible task: official-primary-source licensing and technical admission inventory. The missing exact DRAGON reaction mapping, numerical energy boundary/order, collapse/homogenization method, and complete source-to-runtime coefficient mapping remain reserved for `XSEC-02`; implementation cannot precede them. |
+
+The independent `P10-T05` host Unity-license and stale-player Windows Security
+prompt remain unresolved T4 evidence. They do not block offline XSEC legal,
+specification, or reference work, but a later XSEC Unity-ready claim must resolve
+or carry the blocker explicitly.
 
 ## Fast routing
 
