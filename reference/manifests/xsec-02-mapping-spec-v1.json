@@ -1,0 +1,78 @@
+{
+  "format": "candu.xsec-source-runtime-mapping/v1",
+  "taskId": "XSEC-02",
+  "specification": "docs/spec/xsec-source-runtime-mapping-v1.md",
+  "candidateCaseId": "xsec-c6-37-nu-jeff31-4ev-v1",
+  "evidenceClass": "candidate_external",
+  "runtimeStatus": "not-a-runtime-pack",
+  "goldenStatus": "not-golden",
+  "source": {
+    "procedure": "DRAGON5 IGE-335 TCWU11 project-authored JEFF-3.1 variation",
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "sourceFiles": [
+      {
+        "role": "lattice_depletion_procedure",
+        "relativePath": "Dragon/data/twlup_proc/TCWU11.c2m",
+        "gitBlobSha1": "ed0ea195e16a9ab6fac6ee86084c16ef115d0774",
+        "canonicalLfSha256": "c9b6e04867eaf2d3ba17e6b6af37b39a7d14042a914f89127bca749e3c22190d"
+      },
+      {
+        "role": "jeff31_library_procedure",
+        "relativePath": "Dragon/data/tjeff31gx_proc/TCWU05Lib.c2m",
+        "gitBlobSha1": "f9d9ee57046d2fef808264497b7d1643ca4cee3c",
+        "canonicalLfSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040"
+      }
+    ],
+    "allowedProjectDeckDeltas": [
+      "Resolve the TCWU05Lib import to the pinned JEFF-3.1 procedure.",
+      "Omit exactly the two 'EDITION := SPH: EDITION VOLMATF INTLINF ;' source lines.",
+      "Add only a non-mutating external ASCII serialization/export stage for the post-EDI, pre-SPH EDITION object."
+    ],
+    "solverControls": {
+      "selfShielding": "source lexeme only: SHI: ... NOLJ",
+      "flux": "source lexeme only: FLU: ... TYPE K",
+      "projectSpecifiedControls": false
+    },
+    "exportObjectStage": "post-EDI_pre-SPH",
+    "library": "JEFF-3.1/XMAS-172 WIMSD4 binary through the XSEC-01 WLUP/WILLIE route",
+    "coarseGroupBoundaryEV": 4.0,
+    "groupOrder": ["fast", "thermal"],
+    "rawArtifacts": "external-only"
+  },
+  "burnup": {
+    "elapsedDays": [0, 1, 5, 10, 50, 150, 300],
+    "specificPowerKWPerKgHM": 31.9713,
+    "targetUnit": "J/kg_HM"
+  },
+  "requiredSourceFields": [
+    "ENERGY",
+    "NTOT0",
+    "SIGS00",
+    "SCAT00",
+    "IJJS00",
+    "NJJS00",
+    "IPOS00",
+    "NFTOT",
+    "NUSIGF",
+    "CHI",
+    "EFIS",
+    "FLUX-INTG",
+    "DIFF"
+  ],
+  "runtimeExclusions": [
+    "DIFF",
+    "node volumes",
+    "conductances",
+    "topology",
+    "normalization",
+    "convergence policy",
+    "tolerances",
+    "raw source data"
+  ],
+  "preconditionsForXsec03": [
+    "Exact source-deck lexical, artifact, and tool identities must be recorded externally and hash-bound.",
+    "All required source fields and units must be explicitly exported and validated.",
+    "Any nonzero group-2-to-group-1 scattering, missing source field, source ambiguity, nonconvergence, or invalid mapped row fails closed."
+  ],
+  "nextRequiredTaskBeforeXsec04": "XSEC-CORE-01"
+}
