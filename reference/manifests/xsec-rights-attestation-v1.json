@@ -1,0 +1,30 @@
+{
+  "format": "candu.xsec-owner-rights-attestation/v1",
+  "recordedOn": "2026-08-25",
+  "taskId": "XSEC-RIGHTS-01",
+  "authority": {
+    "kind": "repository-owner-explicit-authorization",
+    "evidence": "Owner direction recorded in the Codex task conversation",
+    "statement": "Project permission to download and use JEF/JEFF data offline with DRAGON5 and DONJON5 to generate derived golden-case candidates."
+  },
+  "scope": {
+    "sourceRoute": "JEFF-3.1/WLUP route identified in xsec-01-source-admission-v1",
+    "allowedUse": "offline reference-case generation and evaluation",
+    "rawDataRepositoryRetention": "external-only",
+    "rawDataGameRedistribution": "prohibited",
+    "rawDataRuntimeUse": "prohibited",
+    "derivedPackStatus": "internal candidate pending XSEC-02 through XSEC-08 and G4-R7; redistribution, publication, release, and store delivery are not authorized"
+  },
+  "requiredControls": [
+    "Preserve source identity, hash, provenance, notices, and attribution in path-free manifests.",
+    "Do not represent this attestation as third-party endorsement or general public redistribution permission.",
+    "Keep DRAGON5 and DONJON5 offline-only and outside the runtime dependency graph.",
+    "Fail closed if a later required artifact, use, retention, or distribution condition conflicts with this attestation."
+  ],
+  "notAuthorized": [
+    "Raw JEF/JEFF/WLUP data or converted source-library binary redistribution.",
+    "Physics, mapping, unit, normalization, tolerance, convergence, schema, or golden-baseline selection.",
+    "Publication, signing, store submission, OpenMC, or a runtime native reference dependency."
+  ],
+  "historicalEffect": "Records the owner-scoped internal-use/derivation condition for XSEC-01 without modifying its historical report; this is not an external legal determination."
+}
