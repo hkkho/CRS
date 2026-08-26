@@ -1,0 +1,253 @@
+{
+  "format": "candu.xsec-source-admission/v1",
+  "recorded_on": "2026-08-25",
+  "task": "XSEC-01",
+  "status": "technical-evaluation-candidate-rights-unresolved",
+  "scope": {
+    "purpose": "Record the exact external technical-evaluation candidate and offline toolchain while artifact-specific derivative and redistribution rights remain unresolved.",
+    "does_not_admit": [
+      "a source-to-runtime reaction mapping, group collapse, homogenization method, coefficient schema, numerical tolerance, or golden baseline",
+      "any runtime-pack derivation, redistribution, licensing, production, Unity-ready, authoritative, or golden claim based on the candidate data",
+      "raw DRAGON5/DONJON5 source, executables, container images, WLUP archives, formatted libraries, binary libraries, upstream decks, or upstream outputs into this repository",
+      "P1-T02/P1-T03 assets or outputs as production, licensed, Unity-consumable, authoritative, or golden data",
+      "any runtime dependency on DRAGON5, DONJON5, OpenMC, WILLIE, or a native reference tool"
+    ],
+    "retention_policy": "All raw downloads, conversion products, tool builds, upstream decks, and run listings remain external to the repository. A later task may retain only an approved runtime pack after its own schema, provenance, licensing, numerical, review, and gate evidence passes."
+  },
+  "literature_digest_rows": [
+    "S1-R02",
+    "S1-R03",
+    "S1-R04",
+    "S1-R05",
+    "S1-R06",
+    "S1-R07",
+    "S1-R11",
+    "S5-R02",
+    "S5-R03",
+    "S5-R04",
+    "S5-R05",
+    "S5-R09",
+    "S6-R03",
+    "S6-R08"
+  ],
+  "official_sources": [
+    {
+      "id": "SRC-VERSION5",
+      "publisher": "Ecole Polytechnique de Montreal",
+      "url": "https://merlin.polymtl.ca/version5.htm",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "Version5.1 production source is hosted at the OECD NEA GitLab.",
+        "DRAGON5 remains compatible with WLUP WIMS-D4 libraries.",
+        "WLUP libraries are distributed as ASCII and require the official WILLIE utility from for.src to convert them to binary.",
+        "Version5 distribution is released under the LGPL."
+      ]
+    },
+    {
+      "id": "SRC-VERSION5-FAQ",
+      "publisher": "Ecole Polytechnique de Montreal",
+      "url": "https://merlin.polymtl.ca/faq5.htm",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "Most available libraries are proprietary; open-source WIMS-D4 and Draglib libraries are separately identified.",
+        "User-written CLE-2000 procedures are not covered by the Version5 LGPL statement."
+      ]
+    },
+    {
+      "id": "SRC-WLUP-DOWNLOADS",
+      "publisher": "International Atomic Energy Agency Nuclear Data Services",
+      "url": "https://www-nds.iaea.org/wimsd/downloads.htm",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "The WLUP page publishes WIMSD-formatted libraries, benchmark inputs/results, processing inputs, and the FORTRAN-77 auxiliary-program source for for.src."
+      ]
+    },
+    {
+      "id": "SRC-WLUP-HOME",
+      "publisher": "International Atomic Energy Agency Nuclear Data Services",
+      "url": "https://www-nds.iaea.org/wimsd/",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "The WLUP product set includes a 172-group library, benchmark data, and auxiliary programs; it describes the products as freely available for WIMS-D users."
+      ]
+    },
+    {
+      "id": "SRC-WLUP-JEFF31-CATALOGUE",
+      "publisher": "International Atomic Energy Agency Nuclear Data Services",
+      "url": "https://www-nds.iaea.org/wimsd/downloads2.htm",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "The catalogue identifies jeff31gx.lib as a 172-group WIMSD-formatted library based on JEFF-3.1."
+      ],
+      "rights_status": "The catalogue describes provenance and format but supplies no artifact-specific ownership, derivative, or redistribution grant."
+    },
+    {
+      "id": "SRC-IAEA-TERMS",
+      "publisher": "International Atomic Energy Agency",
+      "url": "https://nucleus.iaea.org/Pages/Others/Terms-Of-Use.aspx",
+      "accessed_on": "2026-08-25",
+      "claims_used": [
+        "IAEA content and data may be adapted, copied, downloaded, reproduced, disseminated, and used in commercial and non-commercial products and services with attribution and no implied endorsement, subject to the stated terms and third-party-content caveat."
+      ],
+      "obligations": [
+        "Attribute the IAEA source.",
+        "Do not imply IAEA endorsement.",
+        "Preserve the source URL, access date, and applicable caveat for third-party content.",
+        "Do not redistribute an upstream raw file from this repository under this admission."
+      ]
+    }
+  ],
+  "toolchain": {
+    "version5_source": {
+      "repository": "https://git.oecd-nea.org/dragon/5.1.git",
+      "repository_web_url": "https://git.oecd-nea.org/dragon/5.1",
+      "release_ref": "v5.1.0",
+      "commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+      "tree": "0d3e8f721c84b3c3b2d03e9898a8a0a9c29287d8",
+      "admission": "EXTERNAL_OFFLINE_EXECUTION_ONLY",
+      "license_evidence": "Official Version5 distribution statement and representative source notice: LGPL-2.1-or-later; this record does not redistribute Version5 or resolve every third-party notice in an upstream image."
+    },
+    "official_container": {
+      "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+      "manifest_digest": "sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+      "created_utc": "2025-09-15T09:41:14.646815353Z",
+      "size_bytes": 394464605,
+      "platform": "linux/amd64",
+      "oci_version_label": "24.04",
+      "compiler": "GNU Fortran 13.3.0",
+      "execution_constraints": [
+        "network disabled",
+        "read-only container root filesystem",
+        "OMP_NUM_THREADS=1",
+        "all inputs staged explicitly",
+        "all raw inputs and outputs retained outside the repository"
+      ]
+    },
+    "executables": [
+      {
+        "name": "Dragon",
+        "path_inside_container": "/dragon/5.1/Dragon/bin/Linux_x86_64/Dragon",
+        "sha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0"
+      },
+      {
+        "name": "Donjon",
+        "path_inside_container": "/dragon/5.1/Donjon/bin/Linux_x86_64/Donjon",
+        "sha256": "e125c8bc095d9a1a7e088847b1c21b1bc37043681b6104713fa29ee1507f1a76"
+      }
+    ]
+  },
+  "nuclear_data": {
+    "candidate_id": "IAEA-WLUP-JEFF31-XMAS172",
+    "admission": "EXTERNAL_TECHNICAL_EVALUATION_ONLY_RIGHTS_UNRESOLVED",
+    "source_archive": {
+      "url": "https://www-nds.iaea.org/wimsd/download/jeff31gx.zip",
+      "accessed_on": "2026-08-25",
+      "file_name": "jeff31gx.zip",
+      "size_bytes": 11361507,
+      "sha256": "7972ecffed02984aa4208ccd20c631d6d1272af51fb6db85b351daaf5c25962a"
+    },
+    "formatted_library": {
+      "file_name": "jeff31gx.lib",
+      "format": "WIMSD formatted card-image ASCII",
+      "size_bytes": 31291162,
+      "sha256": "9509b50f2df5329df10ae3c52c5d2ba2ce3df2447d7bbe4f9df06466ecf499c5",
+      "declared_material_count": 173,
+      "declared_energy_group_count": 172,
+      "evaluated_data_identity": "JEFF-3.1",
+      "raw_redistribution": "NOT_PLANNED; external-only project policy"
+    },
+    "official_converter": {
+      "source_url": "https://www-nds.iaea.org/wimsd/download/for.src",
+      "source_file_name": "for.src",
+      "source_size_bytes": 792505,
+      "source_sha256": "5b613a5e84ffc367ed1dd85a0e14e06b4b1fa3c1810fdcf2ac59eb21ad45a7e3",
+      "splitter_source_url": "https://www-nds.iaea.org/wimsd/download/dckspl.for",
+      "splitter_source_size_bytes": 4028,
+      "splitter_source_sha256": "971ab56d5091037b08aa9b8a6ddb21c993d8f4e8ded1ce3da4e333fe1b3aa393",
+      "source_lexeme": "FOBI\njeff31gx.lib\njeff31gx.bin\n\nEND\n",
+      "build": {
+        "compiler": "GNU Fortran 13.3.0",
+        "flags": "-std=legacy -ffixed-line-length-none -fallow-argument-mismatch -O2",
+        "dckspl_extracted_for_sha256": "0356057ed6b06ec27eb4fd1982a614113b1ac9503c54e662096e4a494062fdec",
+        "dckspl_sha256": "ff5425556fd887cc410dadf208cc907cbbf592f3800cb057f93ca2e6c7580f75",
+        "willie_for_sha256": "e3cd9c6eff920c4b9ca1e11d74ab0185303cff4fcf3d5cbe82b0ff25ed1e1d64",
+        "willie_sha256": "5c634c2e3183ce68a6c9cad0623bae6217cddd3e5102eeab6fbfab2d14811fb8"
+      },
+      "output": {
+        "file_name": "jeff31gx.bin",
+        "format": "WIMSD4 unformatted sequential binary, linux little-endian / GNU Fortran record convention",
+        "size_bytes": 8157872,
+        "sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e",
+        "retention": "external-only; input to offline DRAGON5 reference work only"
+      }
+    },
+    "permission_basis": {
+      "identifier": "LicenseRef-IAEA-Website-Terms-of-Use-2026-08-25",
+      "classification": "terms-of-use based; not legal advice",
+      "technically_permitted_actions": [
+        "download and retain external raw source for reproducibility",
+        "offline execution and format conversion",
+        "recording path-free hashes, source locators, and numerical evidence in this repository"
+      ],
+      "rights_limit": "The IAEA terms allow reuse of IAEA content but expressly require separate rights for third-party content. The WLUP JEFF-3.1 catalogue and JEFF source provenance do not establish an artifact-specific derivative or redistribution permission. This record is therefore not a legal admission for a runtime-pack derivative.",
+      "blocked_actions_pending_explicit_rights": [
+        "vendoring or mirroring raw WLUP archives or binary libraries in this repository",
+        "deriving, redistributing, or licensing a runtime pack from jeff31gx.lib",
+        "claiming IAEA endorsement, licensed status, authoritative runtime status, or golden status",
+        "using the source before XSEC-02 fixes the physics/data mapping contract"
+      ]
+    }
+  },
+  "rejected_or_limited_inputs": [
+    {
+      "id": "NEA-VERSION5-LIBRARIES",
+      "repository": "https://git.oecd-nea.org/dragon/libraries.git",
+      "commit": "d4456d42fdcdeb8147ce6e79d3a8ba0e775d403f",
+      "tree": "ed92fc1c60c373f07276516142a0aa28ba4c2433",
+      "disposition": "NOT_ADMITTED_FOR_RAW_OR_DERIVED_RUNTIME_DATA",
+      "reason": "Pinned repository and project metadata contain no explicit LICENSE/COPYING/NOTICE or asset-level redistribution grant. Public availability and a general open-source description are insufficient for asset-specific runtime-pack redistribution."
+    },
+    {
+      "id": "P1-T02-DRAGON-LUMPSS",
+      "disposition": "EXTERNAL_PRIVATE_PROVENANCE_SMOKE_ONLY",
+      "reason": "Uses a JEFF3.1.1 SHEM295 Draglib input under the prior report's external-private/non-redistributable constraint and exports only compact evidence, not an approved runtime cross-section pack."
+    },
+    {
+      "id": "P1-T03-DONJON-AFA",
+      "disposition": "EXTERNAL_PRIVATE_PROVENANCE_SMOKE_ONLY",
+      "reason": "Uses external/private prepared data with CEA/AREVA metadata and is not a DRAGON-to-DONJON runtime-pack chain."
+    },
+    {
+      "id": "UPSTREAM-CFC-CELL",
+      "disposition": "NOT_ADMITTED_AS_PRODUCTION_INPUT",
+      "reason": "It is a useful CANDU depletion/feedback context case but depends on a WIMS-AECL E6MLIB input whose exact reuse and redistribution terms were not established."
+    },
+    {
+      "id": "UPSTREAM-CANDU6-PREPARED-CPOS",
+      "disposition": "CONTEXT_OR_EXTERNAL_SMOKE_ONLY",
+      "reason": "The upstream DONJON CANDU6 case provides topology context but its prepared constants do not establish an exact admitted DRAGON progenitor."
+    }
+  ],
+  "technical_compatibility_evidence": {
+    "focused_case": "Unmodified upstream tjeff31gx / TCWUX01 procedure, run against the exact IAEA formatted library after official WILLIE FOBI conversion.",
+    "result": {
+      "reader": "DRAGON5 WIMSD4 reader loaded the converted 172-group library and reported the expected seven requested isotope/material records.",
+      "first_assertion": {
+        "observable": "K-EFFECTIVE",
+        "expected": 0.8227208,
+        "observed": 0.82272,
+        "absolute_difference": 0.0000008,
+        "relative_difference": 0.0000009723830062671246
+      },
+      "second_assertion": {
+        "observable": "K-EFFECTIVE",
+        "expected": 0.8228317,
+        "observed": 0.8228318,
+        "absolute_difference": 0.0000001,
+        "relative_difference": 0.0000001215318726307789
+      },
+      "unresolved_fixture_execution_failure": "The unmodified upstream TCWUX01 procedure later stops at its EXCELL transition with 'FLU: INCONSISTENT FLUX OBJECT TRACK-TYPE AT RHS (SYBIL). EXCELL EXPECTED.' The present evidence demonstrates conversion, reader loading, and two calculations only. It does not establish the cause as an upstream defect, does not pass the full fixture, and does not provide a numerical admission baseline."
+    }
+  },
+  "next_required_authority": "A new bounded owner-approval/task-definition record must first obtain explicit artifact-specific rights for JEFF-3.1/WLUP data and WILLIE sources, including use, derivation, retention, and redistribution of any generated runtime pack. XSEC-02 is not eligible until that evidence passes independent review, the XSEC-01 report is complete, and the XSEC-01 checkpoint is committed."
+}

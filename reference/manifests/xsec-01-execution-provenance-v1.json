@@ -1,0 +1,139 @@
+{
+  "format": "candu.xsec-execution-provenance/v1",
+  "task": "XSEC-01",
+  "recorded_on": "2026-08-25",
+  "status": "PARTIAL_TECHNICAL_EVALUATION_ONLY",
+  "repository_retention": "No raw input, generated binary, fixture, listing, stderr log, or permission snapshot is stored in this repository. External evidence is identified below by URL, retrieval time, size, and SHA-256.",
+  "toolchain": {
+    "container": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "platform": "linux/amd64",
+    "environment": {
+      "network": "none",
+      "root_filesystem": "read-only",
+      "temporary_work": "tmpfs",
+      "omp_num_threads": "1"
+    },
+    "dragon_sha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+    "compiler": "GNU Fortran 13.3.0"
+  },
+  "permission_evidence": [
+    {
+      "evidence_id": "IAEA-TERMS-2026-08-25",
+      "url": "https://nucleus.iaea.org/Pages/Others/Terms-Of-Use.aspx",
+      "retrieved_utc": "2026-08-26T01:08:35Z",
+      "content_type": "text/html",
+      "size_bytes": 82251,
+      "sha256": "ed1cfb9578efff740383144be72501a16b0536af1773fbc37f2f1aee66234daa",
+      "interpretation": "The snapshot is a retained terms locator only. Its third-party-content clause leaves the exact JEFF-3.1/WLUP derivative and redistribution rights unresolved."
+    },
+    {
+      "evidence_id": "IAEA-WLUP-DOWNLOADS-2026-08-25",
+      "url": "https://www-nds.iaea.org/wimsd/downloads.htm",
+      "retrieved_utc": "2026-08-26T01:08:35Z",
+      "content_type": "text/html",
+      "size_bytes": 22618,
+      "sha256": "496c9b0dbe5a91793a550f1112fabc3c4f449b8c154a5146d8fcb7ed030e3373"
+    },
+    {
+      "evidence_id": "IAEA-WLUP-JEFF31-CATALOGUE-2026-08-25",
+      "url": "https://www-nds.iaea.org/wimsd/downloads2.htm",
+      "retrieved_utc": "2026-08-26T01:08:36Z",
+      "content_type": "text/html",
+      "size_bytes": 17798,
+      "sha256": "84c9df4be6fbbcb2c980cbc2c55c0c3c87fd75c30720cef4a33c3973b7c2d665",
+      "interpretation": "Identifies jeff31gx.lib as a 172-group WIMSD-formatted library based on JEFF-3.1; it contains no artifact-specific derivative or redistribution grant."
+    },
+    {
+      "evidence_id": "VERSION5-PAGE-2026-08-25",
+      "url": "https://merlin.polymtl.ca/version5.htm",
+      "retrieved_utc": "2026-08-26T01:08:36Z",
+      "content_type": "text/html",
+      "size_bytes": 14666,
+      "sha256": "f0444710ea8c796becd43f8081f0a821b2547619b228724761cb8d72f257a9a0"
+    }
+  ],
+  "fixture_source": {
+    "repository": "https://git.oecd-nea.org/dragon/5.1.git",
+    "commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "files": [
+      {"source_path": "Dragon/data/tjeff31gx.x2m", "git_blob_sha1": "dcef8edae8e3f514b2a16b7502fada05722463c3", "canonical_lf_size_bytes": 423, "canonical_lf_sha256": "c8ea2f97fe3ccbe833df40f3a7859792144c0082a5af29bbb92cc7a47e422dc1"},
+      {"source_path": "Dragon/data/assertS.c2m", "git_blob_sha1": "1b9c714fa7f45a1171e1ba80a682ee89b3cc0709", "canonical_lf_size_bytes": 902, "canonical_lf_sha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWU05Lib.c2m", "git_blob_sha1": "f9d9ee57046d2fef808264497b7d1643ca4cee3c", "canonical_lf_size_bytes": 2089, "canonical_lf_sha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX01.c2m", "git_blob_sha1": "e20d9c8a6e8bb34cc2a924ce54fb2a682c73a833", "canonical_lf_size_bytes": 3501, "canonical_lf_sha256": "0c81bc3cd184ea15527696cc9c4ec2de5a196568207566fadcd86c0d8918e99c"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX02.c2m", "git_blob_sha1": "a09e62a456917b6dde6f296450868c532bc88797", "canonical_lf_size_bytes": 5619, "canonical_lf_sha256": "20826cdcfb990c781c10fbb0b447e85a77a98995a869a199968e5f9263934507"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX03.c2m", "git_blob_sha1": "b5228e4a137374aa6e9e3770de8af7eb7b57bf3c", "canonical_lf_size_bytes": 5580, "canonical_lf_sha256": "898cd3e7108095d87a9684ac3e4c5b2b4eba8b658df1afed786eeaa170bd4041"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX04.c2m", "git_blob_sha1": "e9fed178912b7c35e6e755ace3e0802791c737a8", "canonical_lf_size_bytes": 4320, "canonical_lf_sha256": "a68970b7f4e835035b5b69c3d9529771d0b12ae781629bce6de40d7624a94a16"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX05.c2m", "git_blob_sha1": "9ab94cc77670d5ca246a71a2ec899fa58f9cf849", "canonical_lf_size_bytes": 5791, "canonical_lf_sha256": "2fd87ba65db1f5f709394543bc43a343a056766182d7204bae9db298b915e262"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX06.c2m", "git_blob_sha1": "2553c6c3e6f9cfe735457e7ac8c515f46e00ff97", "canonical_lf_size_bytes": 5003, "canonical_lf_sha256": "a5953364b42d9c26ccb42044717deadd58d10e79963b4d5d05eb4c4124059390"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX07.c2m", "git_blob_sha1": "0029477f3dca77a79cfe7fc9727faaa089024135", "canonical_lf_size_bytes": 4864, "canonical_lf_sha256": "a3f598200ece35f5d027de9f448781ab372bad617983f689e604aa61e685b42b"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX08.c2m", "git_blob_sha1": "588d8e50eda962d0d5057c12712779acdde907d5", "canonical_lf_size_bytes": 3310, "canonical_lf_sha256": "33e73cc35c223c16be6ca3243322a14428cc82007b424f724c271873d48e0103"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX09.c2m", "git_blob_sha1": "f46a451bf152625ef107d5ab2e5cc0071a879e91", "canonical_lf_size_bytes": 2021, "canonical_lf_sha256": "c2809c68584711dfd8015dcbacfb317b2512c8ad3887a59082d533eab7adaf2d"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX10.c2m", "git_blob_sha1": "00723e9242451868e3fa3720f5e49b8cd88e79d1", "canonical_lf_size_bytes": 2671, "canonical_lf_sha256": "5569cdcbad9706378d18ee16a6fcdf6f318d0341db46e68563b08b7fcbf3183d"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX11.c2m", "git_blob_sha1": "497c03361ad4ecbd29eaaaf1dd6da1f16068cae5", "canonical_lf_size_bytes": 5341, "canonical_lf_sha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX12.c2m", "git_blob_sha1": "6eb0f8f46e1480d698ab8ac892b6bd122ccaaee3", "canonical_lf_size_bytes": 3014, "canonical_lf_sha256": "2260107e2604519687ae1453511357118dac7a638a7dae93aeddd1f38f5fcc23"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX31.c2m", "git_blob_sha1": "5bb2d85210f834e13410f7d214b5a224e454ed3c", "canonical_lf_size_bytes": 5400, "canonical_lf_sha256": "2c49bad4d1483b4a577799cae898fc02f5457b11b25d56b9d221645dbf21d991"},
+      {"source_path": "Dragon/data/tjeff31gx_proc/TCWUX41.c2m", "git_blob_sha1": "a7cd76ee5488d40de7eec22dcc324aca7e988b64", "canonical_lf_size_bytes": 5912, "canonical_lf_sha256": "bec841db71936a775a25420343ba0286589d49bf338d9adad254078d785b34c9"}
+    ]
+  },
+  "commands": {
+    "willie_build_and_convert": [
+      "gfortran -std=legacy -ffixed-line-length-none -O2 -o dckspl dckspl.for",
+      "printf 'for.src\\nfor\\n' | ./dckspl",
+      "gfortran -std=legacy -ffixed-line-length-none -fallow-argument-mismatch -O2 -o willie willie.for",
+      "./willie < willie_fobi.inp"
+    ],
+    "willie_fobi_source_lexeme": "FOBI\njeff31gx.lib\njeff31gx.bin\n\nEND\n",
+    "dragon_fixture": [
+      "cp /input/tjeff31gx.x2m /input/*.c2m /input/WLUP172 /work/",
+      "cd /work",
+      "sha256sum WLUP172 > /output/WLUP172.sha256",
+      "/dragon/5.1/Dragon/bin/Linux_x86_64/Dragon < tjeff31gx.x2m > /output/tjeff31gx.result 2> /output/tjeff31gx.stderr"
+    ]
+  },
+  "runs": [
+    {
+      "run_id": "WILLIE-FOBI-2026-08-26T005725Z",
+      "started_utc": "2026-08-26T00:57:25.7488492Z",
+      "ended_utc": "2026-08-26T00:57:27.0028064Z",
+      "elapsed_seconds": 1.2539572,
+      "exit_code": 0,
+      "artifacts": [
+        {"name": "dckspl.result", "size_bytes": 4616, "sha256": "57204dedef6c2a581eeefe41e126736def8113c74c46a81d0f43278bcf10b3bf"},
+        {"name": "dckspl.stderr", "size_bytes": 22, "sha256": "2c3a8bf647a480691b38dd4845816c352dd711ec09c1f61e4f345880fdc1821d"},
+        {"name": "willie.build.stderr", "size_bytes": 786, "sha256": "c7af4f4c57819de2ec60de0c5021775bf5549276385a529594fb70c416292343"},
+        {"name": "willie_fobi.result", "size_bytes": 1573, "sha256": "b3ba0989145bd0f4c66347b6dbc75daaca25469c6171ed9fd6f0f6482ce1571a"},
+        {"name": "willie_fobi.stderr", "size_bytes": 22, "sha256": "86a6ae750f46307844452331ccb814f143bc8e61ea40d971f3868115ff40a3e3"},
+        {"name": "jeff31gx.bin", "size_bytes": 8157872, "sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e"}
+      ]
+    },
+    {
+      "run_id": "DRAGON-ASCII-DIRECT-2026-08-26T010821Z",
+      "started_utc": "2026-08-26T01:08:21.6052403Z",
+      "ended_utc": "2026-08-26T01:08:22.2019731Z",
+      "elapsed_seconds": 0.5967328,
+      "exit_code": 2,
+      "result": "EXPECTED_FORMAT_MISMATCH; the WIMSD4 reader reached the input and terminated on the formatted ASCII file.",
+      "artifacts": [
+        {"name": "tjeff31gx.result", "size_bytes": 5864, "sha256": "27ee27fe279178ac8740379de772039595f09c25378b7b77e4d2d59a08c6b42a"},
+        {"name": "tjeff31gx.stderr", "size_bytes": 1037, "sha256": "caa74cbc494bbf260a34d2f451e70ea200d8f614d971705bbe725ec01d6dea6b"}
+      ]
+    },
+    {
+      "run_id": "DRAGON-CONVERTED-2026-08-26T005746Z",
+      "started_utc": "2026-08-26T00:57:46.1957619Z",
+      "ended_utc": "2026-08-26T00:57:46.7609252Z",
+      "elapsed_seconds": 0.5651633,
+      "exit_code": 1,
+      "result": "PARTIAL; library loaded and the first two assertions completed, then the unmodified fixture ended at its EXCELL transition. Cause unresolved.",
+      "numeric_source_lexemes": [
+        {"observable": "K-EFFECTIVE", "expected_lexeme": "0.8227208", "observed_lexeme": "8.227200E-01"},
+        {"observable": "K-EFFECTIVE", "expected_lexeme": "0.8228317", "observed_lexeme": "8.228318E-01"}
+      ],
+      "artifacts": [
+        {"name": "tjeff31gx.result", "size_bytes": 52285, "sha256": "46a18891b5009337598b24bc145704db95752d3b66e180ecec32a507996d6717"},
+        {"name": "tjeff31gx.stderr", "size_bytes": 0, "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        {"name": "WLUP172.sha256", "size_bytes": 74, "sha256": "5d9760e5235e3bb0a976354ab35d74cce93802339258b46924911030c97bf167"}
+      ]
+    }
+  ]
+}
