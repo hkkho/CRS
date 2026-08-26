@@ -1,0 +1,37 @@
+{
+  "format": "candu.xsec-deck-admission/v2",
+  "taskId": "XSEC-DECK-01",
+  "candidateCaseId": "xsec-c6-37-nu-jeff31-4ev-v2",
+  "status": "candidate_offline_only",
+  "supersedesDeckBasisOf": "xsec-c6-37-nu-jeff31-4ev-v1",
+  "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+  "sourceFiles": [
+    {
+      "role": "official_jeff_lattice_depletion_procedure",
+      "relativePath": "Dragon/data/tjeff31gx_proc/TCWUX11.c2m",
+      "gitBlobSha1": "497c03361ad4ecbd29eaaaf1dd6da1f16068cae5",
+      "canonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813"
+    },
+    {
+      "role": "official_jeff_wimsd4_library_procedure",
+      "relativePath": "Dragon/data/tjeff31gx_proc/TCWU05Lib.c2m",
+      "gitBlobSha1": "f9d9ee57046d2fef808264497b7d1643ca4cee3c",
+      "canonicalLfSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040"
+    },
+    {
+      "role": "shared_regression_assertion_procedure",
+      "relativePath": "Dragon/data/assertS.c2m",
+      "gitBlobSha1": "1b9c714fa7f45a1171e1ba80a682ee89b3cc0709",
+      "canonicalLfSha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c"
+    }
+  ],
+  "sourceRegressionAssertions": ["1.118478", "0.9420414", "1.118481", "1.073615"],
+  "allowedProjectDeckDeltas": [
+    "Omit exactly the two source SPH calls.",
+    "Use a minimal external procedure driver and read-only decoder of the source-created res ASCII serialization."
+  ],
+  "sourceObjectStage": "post-EDI_pre-SPH",
+  "runtimeStatus": "not-a-runtime-pack",
+  "goldenStatus": "not-golden",
+  "rawArtifacts": "external-only"
+}
