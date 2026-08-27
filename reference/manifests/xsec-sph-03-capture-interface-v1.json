@@ -1,0 +1,100 @@
+{
+  "$schema": "reactorsim.xsec-sph-03.capture-interface.v1",
+  "taskId": "XSEC-SPH-03",
+  "disposition": "COMPLETE",
+  "storage": "External-only. This manifest contains no raw library bytes, modified procedure text, LCM dump, listing, or runtime data.",
+  "officialEvidence": {
+    "version5Faq": {
+      "url": "https://merlin.polymtl.ca/faq5.htm",
+      "findings": [
+        "A file that must remain after a DRAGON run is declared with the FILE attribute.",
+        "A data.save hook is used to recover the FILE-backed output.",
+        "Any DRAGON5 LCM object can be serialized into ASCII with the equality operator."
+      ]
+    },
+    "pinnedSourceExample": {
+      "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+      "relativePath": "Dragon/data/twlup.x2m",
+      "canonicalLfSha256": "daa5ce8813d4f537b8269e7e2b2e320522107e8f3e7540d513f70205411e5c56",
+      "pattern": "PROCEDURE declaration precedes SEQ_ASCII <result> :: FILE <path>; and <result> := <procedure>;"
+    },
+    "manual": {
+      "document": "IGE-335",
+      "externalCopySha256": "1b89fa2d8c30ba3d1ece03c96ccf6ae384ee4a11a384c3ca395ddfb616acc5d",
+      "sections": ["3.11", "generalized-driver declarations, pages 356-357"],
+      "finding": "SPH creates a corrected edition from its RHS; FILE-backed sequential objects are retained across normal END when recovered by the launcher save hook."
+    }
+  },
+  "runner": {
+    "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "platform": "Linux x86_64",
+    "dragonVersion": "5.1.0",
+    "dragonExecutableSha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+    "launcherSha256": "ae1c40131d8882da2a131acb3299d202aa5629b2937ed09aaa47c2493f8388af",
+    "controls": ["network=none", "read-only root", "tmpfs /tmp:exec", "tmpfs /run", "OMP_NUM_THREADS=1"]
+  },
+  "fixture": {
+    "originalSource": {
+      "TCWUX11.c2m": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "TCWU05Lib.c2m": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+      "assertS.c2m": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+      "WLUP172": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e"
+    },
+    "baselineTask": "XSEC-RUNNER-01",
+    "assertionDeltas": ["2.131634e-06", "9.490768e-07", "9.059420e-06", "7.328338e-06"],
+    "listingNormalizationRule": "reference/manifests/xsec-runner-01-listing-normalization-v1.json",
+    "listingNormalizationRuleSha256": "798aaf709dc2d1b1484d500beae021bf4f633a259efdcd63b2b72f92df32eb84"
+  },
+  "captureInterface": {
+    "caller": "Official-order PROCEDURE block, then SEQ_ASCII res_11 :: FILE './res_11', then res_11 := TCWUX11.",
+    "callee": "PARAMETER res :: ::: SEQ_ASCII res; source serializes the selected object through res := <preSphObject> after the fourth unchanged assertion.",
+    "persistence": "rdragon invokes the save hook after normal source completion; the hook copies the FILE-backed res_11 object and records its SHA-256.",
+    "sourceSphInvariant": "Both source statements remain exactly EDITION := SPH: EDITION VOLMATF INTLINF ;. The capture copy is never used as an SPH operand."
+  },
+  "states": [
+    {
+      "state": "PRE0",
+      "timing": "PRE0 := EDITION immediately after the first source EDI and before the immediately following unchanged SPH.",
+      "sourceSha256": "dfffe57b36537c7859e36fce70d5a7f28895b245d0452e451fa50c3cd3496b22",
+      "driverSha256": "1aac9e42acd373305982e1a4a1ebfc3688f961a3c268fbf2748959ca224d6ba3",
+      "runs": [
+        {"id": "pre0-a", "saveHookSha256": "6cd230ebaf6c1feb814122c38da6b986b7f928162ada814ce0a134520963333b", "resultSha256": "d802638688eec23b5cdb8d0a975275216b22d9fb512f9b625566d2fba128ce89", "normalizedResultSha256": "9c704290fac4efc64dc8f1ba28c27d4987d199294673548f97e250f1f333e6d9", "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572", "captureBytes": 1746213},
+        {"id": "pre0-b", "saveHookSha256": "acc3544f537e94c55debc25bedad274900e6f84950c2d7350b3bd74fe9c1381d", "resultSha256": "4eb94ecf08bee2569daf086fb81c50d7ea0cc3b8ac8b6ffa56b62e08e40d71e1", "normalizedResultSha256": "9c704290fac4efc64dc8f1ba28c27d4987d199294673548f97e250f1f333e6d9", "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572", "captureBytes": 1746213}
+      ]
+    },
+    {
+      "state": "PRE172",
+      "timing": "PRE172 := EDITION immediately after the second source EDI and before the immediately following unchanged SPH.",
+      "sourceSha256": "7918f2fd12f54034c91111fb3a1d540ce16ee894d5a0e1f91b56a0e7066d495d",
+      "driverSha256": "1aac9e42acd373305982e1a4a1ebfc3688f961a3c268fbf2748959ca224d6ba3",
+      "runs": [
+        {"id": "pre172-a", "saveHookSha256": "acc3544f537e94c55debc25bedad274900e6f84950c2d7350b3bd74fe9c1381d", "resultSha256": "c27641dd217a85b1a5312f014027413d267dcaec12c126f2da1e3e62bf525565", "normalizedResultSha256": "c6a10be098cc1200b73aac89d576d3d80a8cf94dbee5229fe4450bd4c797b044", "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3", "captureBytes": 3857772},
+        {"id": "pre172-b", "saveHookSha256": "acc3544f537e94c55debc25bedad274900e6f84950c2d7350b3bd74fe9c1381d", "resultSha256": "b26140eaa83a3d3f4710530d9ad9261a6dd641db8eab695c2e8d05b935f5f21d", "normalizedResultSha256": "c6a10be098cc1200b73aac89d576d3d80a8cf94dbee5229fe4450bd4c797b044", "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3", "captureBytes": 3857772}
+      ]
+    }
+  ],
+  "validation": {
+    "allFourAssertionsMatchBaseline": true,
+    "allRunsNormal": true,
+    "noCompileDiagnostics": true,
+    "pairedCaptureByteIdentity": {"PRE0": true, "PRE172": true},
+    "stateCapturesDistinct": true,
+    "finiteValueCheck": "No NaN or non-finite numeric token was found. K-INFINITY is a finite-valued LCM record name, not an infinity value."
+  },
+  "review": {
+    "requested": "code review (high)",
+    "reviewer": "01a03b98-9b86-7f22-9068-76bb1ce6b01e",
+    "attempts": 2,
+    "initialDisposition": "BLOCKED because the report/manifest/scope evidence did not yet exist",
+    "finalDisposition": "PASS",
+    "finalFinding": "PASS after the completed evidence was supplied.",
+    "telemetry": "UNVERIFIED"
+  },
+  "admission": {
+    "captureInterfaceProven": true,
+    "dataDecodeOrMapping": "not performed",
+    "runtimePack": "not admitted",
+    "goldenOrReferenceUse": "not admitted",
+    "nextEligibleTaskAfterReview": "XSEC-03-R2"
+  }
+}
