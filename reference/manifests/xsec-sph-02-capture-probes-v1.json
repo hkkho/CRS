@@ -1,0 +1,144 @@
+{
+  "manifestSchema": "reactorsim.xsec-sph-02.capture-probes.v1",
+  "taskId": "XSEC-SPH-02",
+  "disposition": "BLOCKED",
+  "storage": "external-only; no raw source, nuclear data, modified deck, or output is retained in the repository",
+  "fixture": {
+    "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "dragonVersion": "5.1.0",
+    "launcher": "rdragon",
+    "network": "none",
+    "sourceHashes": {
+      "TCWUX11.c2m": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "TCWU05Lib.c2m": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+      "assertS.c2m": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+      "WLUP172": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e"
+    }
+  },
+  "manualEvidence": {
+    "document": "IGE-335",
+    "sha256": "1b89fa2d8c30ba3d1ece03c96ccf6ae384ee4a11a384c3ca395ddfb616acc5d",
+    "sections": ["3.11", "generalized-driver object declarations, pages 356-357"],
+    "finding": "SPH creates a new corrected edition from an existing RHS edition; FILE-backed sequential objects are intended to survive normal end of execution."
+  },
+  "baselines": {
+    "reference": "XSEC-RUNNER-01 clean target runs D/E",
+    "assertionDeltas": ["2.131634e-06", "9.490768e-07", "9.059420e-06", "7.328338e-06"]
+  },
+  "probes": [
+    {
+      "id": "C",
+      "objectNames": ["PRE0", "PRE172", "EDITION"],
+      "sourceTiming": "PRE0/PRE172 replace the original EDI LHS; each is then used as the SPH RHS before the final assertions.",
+      "serializationTarget": "pre0, pre172, res after the fourth assertion; rdragon save hook copies xsec-sph-02-pre0/pre172/res.",
+      "sourceSha256": "1bcf2de7f7171cae30c08e7e848d0ddcee3249276cd35da1db6ccef13e9ac666",
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "saveHookSha256": "8c1f9ca3432989badb1bead719b3afbbce476274203f820c95d4537e679773fc",
+      "listingSha256": "daacaa1c9b5504c4b5c70101446abd11c8747c9403fb663783d8226e90fd7a81",
+      "assertions": "first two passed; later source state failed",
+      "result": "rejected",
+      "evidence": "Later EDI failed with NO REFERENCE TRACKING AVAILABLE; changing the SPH operand identity is not non-mutating."
+    },
+    {
+      "id": "D",
+      "objectNames": ["PRE0", "PRE172", "EDITION"],
+      "sourceTiming": "copy EDITION to PRE0 after first EDI and PRE172 after second EDI; retain both original EDITION := SPH: EDITION calls; serialize after fourth assertion.",
+      "serializationTarget": "pre0, pre172, res after the fourth assertion; save hook copies xsec-sph-02-pre0/pre172/res.",
+      "sourceSha256": "e922c01efb7e843465ba51e4207bfc8d7d031284e23746ef0ecb4c65021d76c1",
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "saveHookSha256": "8c1f9ca3432989badb1bead719b3afbbce476274203f820c95d4537e679773fc",
+      "listingSha256": "d291424960aef951e54350b63255e1de289599ac40f9027ff2bdb2ba56c779ea",
+      "assertions": "all four matched the baseline deltas",
+      "result": "rejected",
+      "evidence": "The modified DELETE LHS was not matched on its RHS, so CLE stopped before normal completion; its retained files are not admissible."
+    },
+    {
+      "id": "F",
+      "objectNames": ["PRE0", "PRE172", "EDITION"],
+      "sourceTiming": "same post-EDI copies as D; original SPH RHS/LHS and original cleanup are retained; serializations occur only after the fourth assertion.",
+      "serializationTarget": "pre0, pre172, res after fourth assertion, then rdragon save hook xsec-sph-02-pre0/pre172/res.",
+      "sourceSha256": "c57cb865f2a9f7238db482359d10711795c0eef20f63ee3c7829159005404bac",
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "saveHookSha256": "8c1f9ca3432989badb1bead719b3afbbce476274203f820c95d4537e679773fc",
+      "listingSha256": "ec9ae990b0961ea01a244980f056951aa07ae952092e3b2d42957f8df71381b8",
+      "assertions": "all four passed: 2.131634e-06, 9.490768e-07, 9.059420e-06, 7.328338e-06",
+      "result": "normal source completion but no retained capture",
+      "evidence": "END removed the sequential files before rdragon invoked the post-run hook."
+    },
+    {
+      "id": "H",
+      "objectNames": ["PRE0", "PRE172", "EDITION"],
+      "sourceTiming": "same post-EDI copies; source declares FILE-backed serializations after fourth assertion.",
+      "serializationTarget": "/capture/presph0, /capture/presph172, /capture/res.",
+      "sourceSha256": "166009cbb2af69a297020f273213258a42a2f624a2515152cedae6e549e9d59a",
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "saveHookSha256": "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb",
+      "listingSha256": "3f4cda422705bea35b79d3ac5484bfa37e8fd31df5abf4d71228e84e6a8104e4",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation",
+      "evidence": "Direct FILE declaration in called procedure did not compile."
+    },
+    {
+      "id": "I",
+      "objectNames": ["PRE0", "PRE172", "EDITION"],
+      "sourceTiming": "same post-EDI copies; source declares named FILE-backed serializations after fourth assertion.",
+      "serializationTarget": "capture-presph0, capture-presph172, capture-res.",
+      "sourceSha256": "4440aa38a58bbd14f1150b1143bf80571b0e3211cccca7bfb45b184f91282cae",
+      "driverSha256": "b49a17d53d279c15bcba102b4225da690f96f2cac4750f685948abb35457715e",
+      "saveHookSha256": "a245043b9d0c370f1916b942d3d30164af0fbc8d55febf165148b6c2dc6c6b45",
+      "listingSha256": "3f4cda422705bea35b79d3ac5484bfa37e8fd31df5abf4d71228e84e6a8104e4",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation",
+      "evidence": "Relative named FILE declaration in called procedure also did not compile."
+    },
+    {
+      "id": "J",
+      "objectNames": ["PRE0", "PRE172", "presph0", "presph172", "res"],
+      "sourceTiming": "copies after each EDI; caller declares persistent files; source serializes only after fourth assertion.",
+      "serializationTarget": "caller capture-presph0, capture-presph172, capture-res.",
+      "sourceSha256": "c06d0afb10673670d50d542d1e7972b1f17444bb51fc579601248c612b9283e2",
+      "driverSha256": "7e17f193038661ecd8db50521123699dc6f9aaffdea577121dbcb9b8e7b0b5fe",
+      "saveHookSha256": "a245043b9d0c370f1916b942d3d30164af0fbc8d55febf165148b6c2dc6c6b45",
+      "listingSha256": "bc32e4d8d77212da0256d9370eb1b1e5e8233e8be088b5ce55896a1d10aa17ee",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation"
+    },
+    {
+      "id": "K",
+      "objectNames": ["PRE0", "PRE172", "presph0", "presph172", "res"],
+      "sourceTiming": "three-output PARAMETER attempt; copies/serializations remain after fourth assertion.",
+      "serializationTarget": "caller capture-presph0, capture-presph172, capture-res.",
+      "sourceSha256": "e61d7d83791fda991e25ac1eed605c8b7562b634a9dfd79aab0fddf1bba1f070",
+      "driverSha256": "0027642430fe4edaffe17d503b84719de28d293becf98707ef99f02bc8d03305",
+      "saveHookSha256": "a245043b9d0c370f1916b942d3d30164af0fbc8d55febf165148b6c2dc6c6b45",
+      "listingSha256": "c278530bc0c3ab608ebfe709a398e658a40ea5299df31df4018eef62b496b818",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation"
+    },
+    {
+      "id": "L",
+      "objectNames": ["PRE0", "PRE172", "presph0", "presph172", "res"],
+      "sourceTiming": "three separate PARAMETER declarations; copies/serializations remain after fourth assertion.",
+      "serializationTarget": "caller capture-presph0, capture-presph172, capture-res.",
+      "sourceSha256": "c81d9ba32a35bceac3f0992ec4487062b169263a65c1e4acff4860f8bf0cf201",
+      "driverSha256": "0027642430fe4edaffe17d503b84719de28d293becf98707ef99f02bc8d03305",
+      "saveHookSha256": "a245043b9d0c370f1916b942d3d30164af0fbc8d55febf165148b6c2dc6c6b45",
+      "listingSha256": "9dfa9af9490beef682bbb395bb39ae1a2a10e68ac95eeba99fa769dad102c028",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation"
+    },
+    {
+      "id": "M",
+      "objectNames": ["PRE0", "res"],
+      "sourceTiming": "single official-pattern PARAMETER output; PRE0 is copied after first EDI, original SPH calls remain, and res := PRE0 occurs only after fourth assertion.",
+      "serializationTarget": "caller capture-pre0.",
+      "sourceSha256": "9560f6dfc97ddb4d85b8673da8603700e28548f4e132c038fee234cab1ef7036",
+      "driverSha256": "741a1079612e9d292c5efaece28a2db54e6fd12b85b66330585a49fb973c5be6",
+      "saveHookSha256": "6a013b1245be7dd51660c8dc00c85d93d7175899b7becb7918620005f4547184",
+      "listingSha256": "33e3107a6903895d1f059f397cf4f1c847ec0e0030565c0b39cd6dc0f9b991f5",
+      "assertions": "none; compilation failed",
+      "result": "rejected at CLE compilation"
+    }
+  ],
+  "conclusion": "No source-supported persistent pre-SPH capture artifact was proven. No mapping/deck revision, data export, runtime pack, or golden/reference admission is authorized."
+}
