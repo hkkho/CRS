@@ -1,0 +1,57 @@
+{
+  "$schema": "reactorsim.xsec-map-r2.specification.v1",
+  "taskId": "XSEC-MAP-R2",
+  "disposition": "candidate-offline-only",
+  "specifications": [
+    "docs/spec/xsec-source-runtime-mapping-v2.md",
+    "docs/spec/xsec-jeff-lattice-deck-v3.md"
+  ],
+  "supersedes": {
+    "mappingV1CombinedSourceRoute": "The two-SPH-omission and seven-knot source-selection route is invalidated for the official JEFF case.",
+    "deckV2ProjectDelta": "The two-SPH-omission delta is replaced; all unchanged source identities and source lexemes remain inherited."
+  },
+  "candidateCaseId": "xsec-c6-37-nu-jeff31-4ev-v3-sph-preserved-2k",
+  "source": {
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "latticeProcedureCanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "libraryProcedureCanonicalLfSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+    "assertionProcedureCanonicalLfSha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+    "bothSourceSphCalls": "preserved",
+    "captureInterfaceManifest": "reference/manifests/xsec-sph-03-capture-interface-v1.json",
+    "rawArtifacts": "external-only"
+  },
+  "selection": [
+    {
+      "elapsedDays": 0,
+      "captureObject": "PRE0",
+      "selector": "REF-CASE0001/MACROLIB"
+    },
+    {
+      "elapsedDays": 300,
+      "captureObject": "PRE172",
+      "selector": "REF-CASE0002/MACROLIB",
+      "requiredTimestampElapsedDays": 300
+    }
+  ],
+  "selectedPayloadRequirements": {
+    "energyGroups": 2,
+    "coarseGroupBoundaryEV": 4.0,
+    "groupOrder": ["fast", "thermal"],
+    "forbiddenDirectSubtrees": ["SPH", "SPH-EPSILON", "ADF"],
+    "mustBeUnambiguous": true
+  },
+  "burnup": {
+    "specificPowerKWPerKgHM": 31.9713,
+    "targetUnit": "J/kg_HM",
+    "conversion": "31.9713 * 1000 * elapsed_days * 86400",
+    "intermediateKnotPolicy": "prohibited"
+  },
+  "fieldMapping": "Inherited unchanged from xsec-source-runtime-mapping-v1.md.",
+  "admission": {
+    "runtimePack": "not admitted",
+    "goldenOrReferenceUse": "not admitted",
+    "nextEligibleTask": "XSEC-03-R2",
+    "requiredNextValidation": ["T6", "semantic decode", "fresh-run determinism", "mapping validation"]
+  }
+}
+
