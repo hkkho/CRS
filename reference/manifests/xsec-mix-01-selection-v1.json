@@ -1,0 +1,76 @@
+{
+  "$schema": "reactorsim.xsec-mix-01.selection.v1",
+  "taskId": "XSEC-MIX-01",
+  "disposition": "BLOCKED",
+  "purpose": "Path-free, non-numerical source-mixture selection evidence. No field value, runtime pack, or golden/reference admission is retained.",
+  "applicableLiteratureRows": [
+    "S1-R04",
+    "S1-R05",
+    "S5-R02",
+    "S5-R03",
+    "S5-R04",
+    "S5-R09",
+    "S6-R03"
+  ],
+  "officialSource": {
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "tcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "firstEdi": {
+      "lineStart": 96,
+      "lineEnd": 102,
+      "mergeAssignmentCount": 31,
+      "distinctMixtureIds": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      "distinctMixtureCount": 10,
+      "createsOneWholeCellMixture": false
+    }
+  },
+  "officialDataStructureEvidence": {
+    "editionGuide": {
+      "file": "IGE-351/SectDedition.tex",
+      "sha256": "4f1738a149befcceeead88dc13207f43afbb76bf2a403c13fee3774dc6b19c08",
+      "locators": ["27-33", "152-158"],
+      "meaning": "Defines homogeneous-mixture count and REF:MATCOD region-to-mixture identity."
+    },
+    "macrolibGuide": {
+      "file": "IGE-351/SectDmacrolib.tex",
+      "sha256": "7003338d47986bcbbea5a4fead19c97a13a62543cc715439e8e3a022a84723d2",
+      "locators": ["3-10", "32-37", "166-167"],
+      "meaning": "Defines MACROLIB as a set of mixtures and VOLUME as per-mixture volume."
+    }
+  },
+  "captureStructure": [
+    {
+      "state": "PRE0",
+      "selector": "REF-CASE0001/MACROLIB",
+      "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "macrolibSignature": "L_MACROLIB",
+      "groupCount": 2,
+      "mixtureCount": 10,
+      "scatteringOrder": 2,
+      "fissileComponentCount": 1,
+      "volumeRecordLength": 10,
+      "directMixtureNameRecordPresent": false
+    },
+    {
+      "state": "PRE172",
+      "selector": "REF-CASE0002/MACROLIB",
+      "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+      "macrolibSignature": "L_MACROLIB",
+      "groupCount": 2,
+      "mixtureCount": 10,
+      "scatteringOrder": 2,
+      "fissileComponentCount": 1,
+      "volumeRecordLength": 10,
+      "directMixtureNameRecordPresent": false
+    }
+  ],
+  "selection": {
+    "selectedMixtureLocator": null,
+    "selectionAllowed": false,
+    "reason": "The approved capture boundary exposes ten separately homogenized mixtures but no source-named whole-cell mixture. Selecting an ordinal or deriving a mixture would invent numerical source authority.",
+    "fieldValuesDecoded": false,
+    "runtimePackAdmitted": false,
+    "goldenOrReferenceAdmitted": false
+  },
+  "requiredFollowUp": "A separate owner-approved source/deck and mapping task must explicitly create and name a whole-cell homogenized output before any XSEC-03-R2 rerun or field decode."
+}
