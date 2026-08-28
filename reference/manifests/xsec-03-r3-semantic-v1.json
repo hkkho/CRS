@@ -1,0 +1,110 @@
+{
+  "$schema": "reactorsim.xsec-03-r3.semantic.v1",
+  "taskId": "XSEC-03-R3",
+  "disposition": "BLOCKED_REQUIRED_SOURCE_FIELDS_ABSENT",
+  "candidateId": "xsec-c6-37-nu-jeff31-4ev-v4-sph-preserved-wholecell-2k",
+  "retention": {
+    "pathFree": true,
+    "rawSourceProceduresExternalOnly": true,
+    "rawCapturesExternalOnly": true,
+    "rawListingsExternalOnly": true,
+    "decodedFieldValuesRetained": false,
+    "runtimeOrGoldenAdmission": false
+  },
+  "source": {
+    "officialProcedure": "TCWUX11.c2m",
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "canonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "containerImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "platform": "linux/amd64",
+    "execution": {
+      "network": "none",
+      "rootFilesystem": "read-only",
+      "tmpfs": ["/tmp:exec", "/run"],
+      "ompNumThreads": 1,
+      "command": "rdragon -q tcwux11sphcap.x2m"
+    },
+    "artifactSha256": {
+      "dragonExecutable": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+      "rdragonExecutable": "ae1c40131d8882da2a131acb3299d202aa5629b2937ed09aaa47c2493f8388af",
+      "TCWU05Lib.c2m": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+      "assertS.c2m": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+      "WLUP172": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e",
+      "captureDriver": "1aac9e42acd373305982e1a4a1ebfc3688f961a3c268fbf2748959ca224d6ba3",
+      "captureAccessHook": "24358015169b8cd315ee801e765cb84ba3f71b9f0b835ed7d126b4a6bcf417ca",
+      "captureSaveHook": "acc3544f537e94c55debc25bedad274900e6f84950c2d7350b3bd74fe9c1381d"
+    }
+  },
+  "baselineBinding": {
+    "xsec03R2ManifestSha256": "82814ca2ed8edd2182972ba8529a66363367122ce62a8a5c9e0f9f225392389a",
+    "xsec03R2CanonicalAssertionFingerprintSha256": "09795368216953eca0e85aeaade57c7ef2e00568583b568d0276fa4295f209db",
+    "homRawAssertionLinesSha256": "c34d717324a23a67dc8745b333b5017502e925cd8cad939def79994ca36e1f3b",
+    "terminalConvergenceLinesSha256": "061f12f53e65194db8682b78d7161ae398df154b31b7013f773d782158f7fcd9",
+    "equivalenceRule": "Every run has the canonical source identity, four successful assertion markers, the raw assertion-line projection, normal completion, and the state-specific original capture equal to XSEC-03-R2.",
+    "perRunMatchesXsec03R2AssertionBaseline": {
+      "pre0-original-a": true,
+      "pre0-original-b": true,
+      "pre0-wholecell-a": true,
+      "pre0-wholecell-b": true,
+      "pre172-original-a": true,
+      "pre172-original-b": true,
+      "pre172-wholecell-a": true,
+      "pre172-wholecell-b": true
+    }
+  },
+  "runs": [
+    {"id":"pre0-original-a","state":"PRE0","mode":"original","procedureSha256":"26a544e009f29dde3b2076666e36f52bdbf3793446f9b5537e96b9013228026f","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","listingSha256":"59809a818f7f6317e1ee3421a7dfcdad3146b009a045ac28164dfd92689f845c","normalizedListingSha256":"8d3104c82fc9d8d87b3426cd32c62d2a2f99e209fb4348896899919177e31754","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0,"matchesXsec03R2Baseline":true},
+    {"id":"pre0-original-b","state":"PRE0","mode":"original","procedureSha256":"26a544e009f29dde3b2076666e36f52bdbf3793446f9b5537e96b9013228026f","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","listingSha256":"cb7fcb75a4c34917b316a26fd600b4c0c86fb4d2630ec361814135b7eae69e23","normalizedListingSha256":"8d3104c82fc9d8d87b3426cd32c62d2a2f99e209fb4348896899919177e31754","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0,"matchesXsec03R2Baseline":true},
+    {"id":"pre0-wholecell-a","state":"PRE0","mode":"wholecell","procedureSha256":"2b85ae8a7f12b3077617a00a14be1ee7cbfc36a487ab443411945a4b4477dfb1","captureSha256":"ea2e66771bfe0ecc5e15ab7270653248b7e30ecf84bd9fdd1ef7c0ee99007506","listingSha256":"48d08b06d5b44c31324c0d70a8929f98785a1079418e3403989da7c66ee30168","normalizedListingSha256":"5abcb84cf1b7f1a8094dfe463728eea9951118ad45cdec9ccaa9c2253ca6ef52","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0},
+    {"id":"pre0-wholecell-b","state":"PRE0","mode":"wholecell","procedureSha256":"2b85ae8a7f12b3077617a00a14be1ee7cbfc36a487ab443411945a4b4477dfb1","captureSha256":"ea2e66771bfe0ecc5e15ab7270653248b7e30ecf84bd9fdd1ef7c0ee99007506","listingSha256":"1bf2f589c89b8f52429de3efdbbc9b4df67e1047c9a8ea8bb22b363aa891e3c8","normalizedListingSha256":"5abcb84cf1b7f1a8094dfe463728eea9951118ad45cdec9ccaa9c2253ca6ef52","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0},
+    {"id":"pre172-original-a","state":"PRE172","mode":"original","procedureSha256":"d985847153f0fb928d72ad2ebf2b7d38d650296d481a9939923f6f70d34cf879","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","listingSha256":"0c61cd19379559573d39ab6227f6291a7127c7caba0d5368b77d3e819b14288c","normalizedListingSha256":"6865d5cd49f1fba102d5112e30e308be1d43c358148d8473065320d4cfd1eb49","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0,"matchesXsec03R2Baseline":true},
+    {"id":"pre172-original-b","state":"PRE172","mode":"original","procedureSha256":"d985847153f0fb928d72ad2ebf2b7d38d650296d481a9939923f6f70d34cf879","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","listingSha256":"ca87d1822b0df125c88753fb599a37e2bb47a65653743aa811927ec25185e4a3","normalizedListingSha256":"6865d5cd49f1fba102d5112e30e308be1d43c358148d8473065320d4cfd1eb49","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0,"matchesXsec03R2Baseline":true},
+    {"id":"pre172-wholecell-a","state":"PRE172","mode":"wholecell","procedureSha256":"6b8b680bb6a1151fd803ce7d7bbb55950a695525f1c156898f34034a846a709c","captureSha256":"1f2c14f2afdd15051a231b8988e4c5d3bde97655e9f961da0b8c42a3147c646f","listingSha256":"ee166468a8a3320eea08e5900f614b66f390845e321bba0756028bd73a46f2b3","normalizedListingSha256":"f87539758260844271ae0fcafe8d75d040274f3715a370f387315e7e873fa7a1","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0},
+    {"id":"pre172-wholecell-b","state":"PRE172","mode":"wholecell","procedureSha256":"6b8b680bb6a1151fd803ce7d7bbb55950a695525f1c156898f34034a846a709c","captureSha256":"1f2c14f2afdd15051a231b8988e4c5d3bde97655e9f961da0b8c42a3147c646f","listingSha256":"3e7162858fd4b999784ac4fbc46b1ac1380fa7508840ba410149576eec87b39b","normalizedListingSha256":"f87539758260844271ae0fcafe8d75d040274f3715a370f387315e7e873fa7a1","assertionCount":4,"terminalConvergenceCount":10,"normalCompletion":true,"abnormalDiagnosticCount":0}
+  ],
+  "semanticPreselection": {
+    "PRE0": {
+      "selector": "WHOLECELL0/REF-CASE0001/MACROLIB",
+      "selectedMacrolibOccurrence": 1,
+      "payloadSha256": "e5d330251f7ff372078e476ba3686a75d2dd8816b09da71ded012989706bc257",
+      "fieldPresence": {"EFIS": false, "DIFF": false, "H-FACTOR": true},
+      "decoderStoppedBeforeNumericArrayRead": true
+    },
+    "PRE172": {
+      "selector": "WHOLECELL0/REF-CASE0002/MACROLIB",
+      "selectedMacrolibOccurrence": 2,
+      "payloadSha256": "19ee8a5d7961536c0a4115f70cda068e3f4fb6412745067fec895033651ac20c",
+      "fieldPresence": {"EFIS": false, "DIFF": false, "H-FACTOR": true},
+      "decoderStoppedBeforeNumericArrayRead": true
+    },
+    "sameStatePayloadByteIdentical": true,
+    "payloadsDistinctAcrossStates": true,
+    "macrolibSignaturePresent": true,
+    "energyRecordCount": 1,
+    "volumeRecordCount": 1,
+    "directCorrectionSubtreePresent": false,
+    "fieldPresence": {
+      "ENERGY": true,
+      "NTOT0": true,
+      "SIGS00": true,
+      "SCAT00": true,
+      "IJJS00": true,
+      "NJJS00": true,
+      "IPOS00": true,
+      "NFTOT": true,
+      "NUSIGF": true,
+      "CHI": true,
+      "EFIS": false,
+      "FLUX-INTG": true,
+      "DIFF": false
+    },
+    "decoderStoppedBeforeNumericArrayRead": true
+  },
+  "blocker": {
+    "kind": "required-source-field-absent",
+    "requiredFields": ["EFIS", "DIFF"],
+    "substitutionProhibited": ["H-FACTOR"],
+    "reason": "Mapping v1 requires EFIS for the fission-energy ratio and DIFF for offline reference evidence. Deck v4/v3 does not authorize adding or substituting an export field."
+  },
+  "nextRequiredWork": "A new separately owner-approved source/deck and mapping task must define and prove a source-preserving export of the required fields, or explicitly revise the approved mapping with unit and physical-meaning authority."
+}
