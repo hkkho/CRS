@@ -1,0 +1,115 @@
+{
+  "$schema": "reactorsim.xsec-03-r2.run-semantic.v1",
+  "taskId": "XSEC-03-R2",
+  "disposition": "BLOCKED",
+  "purpose": "Path-free, external-only fresh DRAGON5 reproduction and semantic preselection evidence. No decoded cross-section value, runtime pack, reference/golden admission, or raw artifact is retained.",
+  "candidateCaseId": "xsec-c6-37-nu-jeff31-4ev-v3-sph-preserved-2k",
+  "tool": {
+    "image": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "platform": "Linux x86_64",
+    "dragonVersion": "5.1.0",
+    "dragonExecutableSha256": "3121023a186cab6d0a56fd363bb979794fcd904f860f49439567bff4b1510cd0",
+    "launcherSha256": "ae1c40131d8882da2a131acb3299d202aa5629b2937ed09aaa47c2493f8388af",
+    "controls": ["network=none", "read-only root", "tmpfs /tmp:exec", "tmpfs /run", "OMP_NUM_THREADS=1"]
+  },
+  "source": {
+    "officialTcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "libraryProcedureSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040",
+    "assertionProcedureSha256": "c6291cd7a2496f48ab012c294e2d823170401549cc5df3e366c9924f0a34040c",
+    "wlup172Sha256": "c7fc05d6b7cb2085d999c568854aeaacc9c79477dec4c702e6b7d3fe15ba5c5e",
+    "driverSha256": "1aac9e42acd373305982e1a4a1ebfc3688f961a3c268fbf2748959ca224d6ba3",
+    "accessHookSha256": "24358015169b8cd315ee801e765cb84ba3f71b9f0b835ed7d126b4a6bcf417ca",
+    "saveHookSha256": "acc3544f537e94c55debc25bedad274900e6f84950c2d7350b3bd74fe9c1381d",
+    "captureProcedures": {
+      "PRE0": "dfffe57b36537c7859e36fce70d5a7f28895b245d0452e451fa50c3cd3496b22",
+      "PRE172": "7918f2fd12f54034c91111fb3a1d540ce16ee894d5a0e1f91b56a0e7066d495d"
+    },
+    "sourceSphCalls": "preserved",
+    "sourceAssertions": "four unchanged assertions required and passed in every run"
+  },
+  "listingDetection": {
+    "assertionRule": "exactly four lines containing TEST SUCCESSFUL",
+    "completionRule": "one line containing test TCWU11 completed and one line containing normal end of execution for dragon 5 Version 5.1.0",
+    "convergenceRule": "extract all lines matching EXTERNAL CONVERGENCE REACHED AFTER or POWER CONVERGENCE IN; reject any line matching CLE-2000.*ERROR, ERROR DETECTED, ABNORMAL END, NON[- ]?CONVERGENCE, or FAILED TO CONVERGE",
+    "listingNormalizationManifest": "reference/manifests/xsec-runner-01-listing-normalization-v1.json",
+    "listingNormalizationRuleSha256": "798aaf709dc2d1b1484d500beae021bf4f633a259efdcd63b2b72f92df32eb84"
+  },
+  "runs": [
+    {
+      "id": "pre0-a",
+      "captureState": "PRE0",
+      "officialTcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "resultSha256": "4135bf3d4384a6a82f5831bcf5e90161c5a07a693a790a40a9ba82178376ae92",
+      "normalizedResultSha256": "9c704290fac4efc64dc8f1ba28c27d4987d199294673548f97e250f1f333e6d9",
+      "assertionFingerprintSha256": "09795368216953eca0e85aeaade57c7ef2e00568583b568d0276fa4295f209db",
+      "assertionCount": 4,
+      "convergenceFingerprintSha256": "810d345f3c133d63bf243d85210135a571dfb8dee037360c36fe0a1b04577726",
+      "convergenceMarkerCount": 10,
+      "normalCompletionFingerprintSha256": "de56a5d7590bca4b2df73223179c80c9ea8db868036a10817cbc9947f7b43ae2",
+      "normalCompletion": true
+    },
+    {
+      "id": "pre0-b",
+      "captureState": "PRE0",
+      "officialTcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "resultSha256": "35fee23f6ad096e8b71ffd90d380919fb761d8b9ac341782bc76f0c48d1ef1e7",
+      "normalizedResultSha256": "9c704290fac4efc64dc8f1ba28c27d4987d199294673548f97e250f1f333e6d9",
+      "assertionFingerprintSha256": "09795368216953eca0e85aeaade57c7ef2e00568583b568d0276fa4295f209db",
+      "assertionCount": 4,
+      "convergenceFingerprintSha256": "810d345f3c133d63bf243d85210135a571dfb8dee037360c36fe0a1b04577726",
+      "convergenceMarkerCount": 10,
+      "normalCompletionFingerprintSha256": "de56a5d7590bca4b2df73223179c80c9ea8db868036a10817cbc9947f7b43ae2",
+      "normalCompletion": true
+    },
+    {
+      "id": "pre172-a",
+      "captureState": "PRE172",
+      "officialTcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+      "resultSha256": "15e0f6374fdc966e065ecd1763e98a695b6923ebb675fef926cbb633407d8cdd",
+      "normalizedResultSha256": "c6a10be098cc1200b73aac89d576d3d80a8cf94dbee5229fe4450bd4c797b044",
+      "assertionFingerprintSha256": "09795368216953eca0e85aeaade57c7ef2e00568583b568d0276fa4295f209db",
+      "assertionCount": 4,
+      "convergenceFingerprintSha256": "810d345f3c133d63bf243d85210135a571dfb8dee037360c36fe0a1b04577726",
+      "convergenceMarkerCount": 10,
+      "normalCompletionFingerprintSha256": "de56a5d7590bca4b2df73223179c80c9ea8db868036a10817cbc9947f7b43ae2",
+      "normalCompletion": true
+    },
+    {
+      "id": "pre172-b",
+      "captureState": "PRE172",
+      "officialTcwux11CanonicalLfSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+      "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+      "resultSha256": "f34e24df2f5101665e49b903cea4ee62a330bc094aacc73919b2559c154a38c1",
+      "normalizedResultSha256": "c6a10be098cc1200b73aac89d576d3d80a8cf94dbee5229fe4450bd4c797b044",
+      "assertionFingerprintSha256": "09795368216953eca0e85aeaade57c7ef2e00568583b568d0276fa4295f209db",
+      "assertionCount": 4,
+      "convergenceFingerprintSha256": "810d345f3c133d63bf243d85210135a571dfb8dee037360c36fe0a1b04577726",
+      "convergenceMarkerCount": 10,
+      "normalCompletionFingerprintSha256": "de56a5d7590bca4b2df73223179c80c9ea8db868036a10817cbc9947f7b43ae2",
+      "normalCompletion": true
+    }
+  ],
+  "determinism": {
+    "pre0CaptureByteIdentical": true,
+    "pre172CaptureByteIdentical": true,
+    "capturesDistinctAcrossStates": true,
+    "pre0NormalizedListingsIdentical": true,
+    "pre172NormalizedListingsIdentical": true,
+    "sourceAssertionFingerprintsIdentical": true,
+    "sourceConvergenceFingerprintsIdentical": true
+  },
+  "semanticPreselection": {
+    "PRE0": "REF-CASE0001/MACROLIB exists, has the approved two-group ENERGY identity, and has no direct SPH, SPH-EPSILON, or ADF subtree.",
+    "PRE172": "REF-CASE0002/MACROLIB exists, has the approved two-group ENERGY identity, day-300 timestamp, and no direct SPH, SPH-EPSILON, or ADF subtree.",
+    "result": "BLOCKED before field decode: the selected MACROLIB group records carry multiple mixture elements, while mapping v1/v2 requires one explicitly named homogenized whole-cell mixture but provides no mixture identity/selection/mapping authority.",
+    "noFieldValuesDecoded": true
+  },
+  "admission": {
+    "runtimePack": "not admitted",
+    "goldenOrReferenceUse": "not admitted",
+    "nextRequirement": "A separate bounded mixture-selection specification must name and justify the exact source mixture identity, its locator, and its per-state mapping before XSEC-03-R2 can be re-executed."
+  }
+}
