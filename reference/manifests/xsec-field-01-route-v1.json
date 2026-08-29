@@ -1,0 +1,274 @@
+{
+  "schema": "xsec-field-route-v1",
+  "taskId": "XSEC-FIELD-01",
+  "disposition": "BLOCKED",
+  "purpose": "Path-free evidence that the documented EFIS extra-edit export is executable, but its DIFF label is not the approved isotropic diffusion-coefficient field.",
+  "retention": {
+    "rawProcedures": "external-only",
+    "captures": "external-only",
+    "listings": "external-only",
+    "numericArraysRead": false,
+    "numericValuesRetained": false,
+    "absolutePathsRetained": false
+  },
+  "approvedInputs": {
+    "sourceCase": "xsec-c6-37-nu-jeff31-4ev-v1",
+    "sourceTool": "DRAGON5 5.1.0",
+    "sourceCommit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "containerImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "containerPlatform": "Linux_x86_64",
+    "ompThreads": 1,
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "temporaryFilesystems": ["/tmp", "/run"],
+    "sourceProcedureSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "libraryProcedureSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040"
+  },
+  "officialEvidence": {
+    "ige335Section308": {
+      "sha256": "183a73021384fac33f0a0d6a9bd1629dd9f41ca0b1470e3e07ac3e604fc8f4e7",
+      "locators": ["descedi lines 70-74", "GOLVER lines 267-279", "REAC lines 325-330"]
+    },
+    "ige335Section322": {
+      "sha256": "16539588174dcad1633bf3c0fca68ea3a378e2e7191c59137aaf39a025341cee",
+      "locators": ["reaction table lines 298-308"],
+      "efisMeaning": "fission-only energy-production cross section",
+      "reactionDiffMeaning": "Legendre-order scattering cross section, not multiplied by 2l+1"
+    },
+    "ige351Macrolib": {
+      "sha256": "7003338d47986bcbbea5a4fead19c97a13a62543cc715439e8e3a022a84723d2",
+      "locators": ["DIFF entry lines 312-314"],
+      "diffMeaning": "isotropic diffusion coefficient",
+      "diffUnit": "cm"
+    },
+    "edipxsSource": {
+      "sha256": "0c8a4680e155d491242c409d99a9d9ccef329c25ab073731c87aa0b579ea4ad3",
+      "locators": ["extra-edit writer lines 285-297", "DIFF writer guards lines 326-343"],
+      "finding": "Requested REAC labels are written as extra edit vectors; the standard DIFF coefficient is written only for documented leakage modes or the optional Golfier-Vergain formula."
+    },
+    "edigetSource": {
+      "sha256": "ce20842394efb160135d4b75a4b8c83181e5bec3f2742682aac413026b8bfcf5",
+      "locators": ["REAC parser lines 318-327"]
+    }
+  },
+  "candidateExport": {
+    "namedObject": "WCFIELD",
+    "preservedObject": "WHOLECELL0",
+    "firstStateOperation": "separate all-one 31-region EDI merge with COND 4.0, MICR ALL, REAC 2 EFIS DIFF, SAVE, and the inherited macro geometry",
+    "day300Operation": "separate in-place EDI update of WCFIELD",
+    "captureSelectors": {
+      "PRE0": "WCFIELD/REF-CASE0001/MACROLIB",
+      "PRE172": "WCFIELD/REF-CASE0002/MACROLIB"
+    },
+    "originalEditionCallsPreserved": true,
+    "originalSphCallsPreserved": true,
+    "sourceAssertionsPreserved": true,
+    "directCorrectionSubtreePresent": false,
+    "hFactorSubstitution": false,
+    "labelsDeclared": {"EFIS": true, "DIFF": true},
+    "efisExtraEditVectorReachable": true,
+    "diffExtraEditVectorReachable": true,
+    "approvedDiffusionCoefficientRecordReachable": false,
+    "fieldMeaningCompatible": {"EFIS": true, "DIFF": false}
+  },
+  "freshRuns": {
+    "requiredCount": 8,
+    "completedCount": 8,
+    "sourceAssertionsPerRun": 4,
+    "normalCompletionPerRun": true,
+    "sourceCompletionPerRun": true,
+    "abnormalDiagnosticPerRun": false,
+    "originalCaptureBaselines": {
+      "PRE0": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "PRE172": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3"
+    },
+    "states": {
+      "PRE0": {
+        "originalCaptureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+        "originalMatchesBaseline": true,
+        "fieldCaptureSha256": "4cd44ad98a84f48809aa901f14db8bf80d3a054e16b44e6462686a63cb9a31ba",
+        "fieldRepeatByteIdentical": true,
+        "normalizedOriginalAndFieldProcedureIdentical": true
+      },
+      "PRE172": {
+        "originalCaptureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+        "originalMatchesBaseline": true,
+        "fieldCaptureSha256": "285c84dbcfccb25a31c49aa1c5e81a60f629c308818a96acb2af44f197fc6691",
+        "fieldRepeatByteIdentical": true,
+        "normalizedOriginalAndFieldProcedureIdentical": true
+      }
+    },
+    "fieldCapturesDistinctAcrossStates": true,
+    "perRunLedger": [
+      {
+        "rootId": "pre0-original-a",
+        "state": "PRE0",
+        "captureKind": "original-regression",
+        "procedureSha256": "86168a5fc2129a74fb597a0cb9f6b47207c54074d0231e6a7091b612ca90fbac",
+        "listingSha256": "a4df41c9bb884a9cc9626b68f68939e5778bf1f67e83e615a56132e9a0b7d758",
+        "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+        "selector": "PRE0/REF-CASE0001/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": true,
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": false, "DIFF": false},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre0-original-b",
+        "state": "PRE0",
+        "captureKind": "original-regression",
+        "procedureSha256": "86168a5fc2129a74fb597a0cb9f6b47207c54074d0231e6a7091b612ca90fbac",
+        "listingSha256": "dc78d55551d3b7febf5cf7e8b0f7e1926b08d327146f416ddddc18c69e1e1f50",
+        "captureSha256": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+        "selector": "PRE0/REF-CASE0001/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": true,
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": false, "DIFF": false},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre0-field-a",
+        "state": "PRE0",
+        "captureKind": "field-export",
+        "procedureSha256": "5f3518bbf9e4fd12973f734fdf640cf86dad67eeb6919e9b910edb8e03538708",
+        "listingSha256": "03e6eba73eee8f968285785d781e4e43fe5692a1461aca967235f0026f5e9968",
+        "captureSha256": "4cd44ad98a84f48809aa901f14db8bf80d3a054e16b44e6462686a63cb9a31ba",
+        "selector": "WCFIELD/REF-CASE0001/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": "not-applicable-different-approved-target",
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": true, "DIFF": true},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre0-field-b",
+        "state": "PRE0",
+        "captureKind": "field-export",
+        "procedureSha256": "5f3518bbf9e4fd12973f734fdf640cf86dad67eeb6919e9b910edb8e03538708",
+        "listingSha256": "40d93070cf6068db6df9060687dd4195fe49c7af53eaeda924fc6d7cbacfc0de",
+        "captureSha256": "4cd44ad98a84f48809aa901f14db8bf80d3a054e16b44e6462686a63cb9a31ba",
+        "selector": "WCFIELD/REF-CASE0001/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": "not-applicable-different-approved-target",
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": true, "DIFF": true},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre172-original-a",
+        "state": "PRE172",
+        "captureKind": "original-regression",
+        "procedureSha256": "ac313b1f9c05a08ec331cad15f4b2273ede0dd9cf49f7665a69eb0af1e4c4773",
+        "listingSha256": "e8a019819dce76b90f984a532c9c3f7674427992cc96ef797c2b120cf9fec278",
+        "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+        "selector": "PRE172/REF-CASE0002/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": true,
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": false, "DIFF": false},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre172-original-b",
+        "state": "PRE172",
+        "captureKind": "original-regression",
+        "procedureSha256": "ac313b1f9c05a08ec331cad15f4b2273ede0dd9cf49f7665a69eb0af1e4c4773",
+        "listingSha256": "d8e20584540fa0ff06a15af823d280a9aa8764e988f81f0b77ef090ac71f79f5",
+        "captureSha256": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3",
+        "selector": "PRE172/REF-CASE0002/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": true,
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": false, "DIFF": false},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre172-field-a",
+        "state": "PRE172",
+        "captureKind": "field-export",
+        "procedureSha256": "d510722afcd87934920ad30e7b4783d010249248583cbbffc2b3c762ffa8ef26",
+        "listingSha256": "3da842445034634c0306c49fb24508fe6e79c43f9e12b5027e66b9e6f5a8e997",
+        "captureSha256": "285c84dbcfccb25a31c49aa1c5e81a60f629c308818a96acb2af44f197fc6691",
+        "selector": "WCFIELD/REF-CASE0002/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": "not-applicable-different-approved-target",
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": true, "DIFF": true},
+        "numericArrayRead": false
+      },
+      {
+        "rootId": "pre172-field-b",
+        "state": "PRE172",
+        "captureKind": "field-export",
+        "procedureSha256": "d510722afcd87934920ad30e7b4783d010249248583cbbffc2b3c762ffa8ef26",
+        "listingSha256": "e73b194be0469aa871eea01714fdd377311176130cd80371ebfe18d26b654efd",
+        "captureSha256": "285c84dbcfccb25a31c49aa1c5e81a60f629c308818a96acb2af44f197fc6691",
+        "selector": "WCFIELD/REF-CASE0002/MACROLIB",
+        "xsec03r2AssertionBaselineBound": true,
+        "captureMatchesXsec03r2Baseline": "not-applicable-different-approved-target",
+        "sourceAssertionsPassed": 4,
+        "sourceConvergenceEvidence": "present",
+        "normalCompletion": true,
+        "sourceCompletion": true,
+        "abnormalDiagnostic": false,
+        "directCorrectionSubtreePresent": false,
+        "selectedExtraEditLabels": {"EFIS": true, "DIFF": true},
+        "numericArrayRead": false
+      }
+    ],
+    "initialSetupFailure": {
+      "occurred": true,
+      "classification": "external linked-list omission before source execution",
+      "physicsOrSourceEvidenceAffected": false,
+      "correctedBeforeFinalEightRunEvidence": true
+    }
+  },
+  "blocker": {
+    "kind": "required-diffusion-coefficient-source-record-unavailable",
+    "requiredMappingField": "DIFF[g] isotropic diffusion coefficient, cm",
+    "rejectedCandidate": "EDI REAC DIFF extra edit",
+    "rejectionReason": "Official IGE-335 defines the requested reaction DIFF as a Legendre-order scattering cross section, while IGE-351 defines the mapping-required MACROLIB DIFF as an isotropic diffusion coefficient in cm. These meanings and units are not interchangeable.",
+    "otherPotentialRoutes": ["leakage-mode DIFF", "GOLVER diffusion-coefficient formula"],
+    "whyNotSelected": "The approved case has no transport leakage and no approved specification selects a leakage model or the Golfier-Vergain formula. Selecting either would introduce a new equation or source-model choice outside this task.",
+    "prohibitedSubstitutions": ["H-FACTOR", "reaction DIFF", "invented diffusion formula"],
+    "numericDecodingStopped": true
+  },
+  "nextRequiredWork": "Create and independently review a bounded source-diffusion-coefficient specification that selects an admissible coefficient-generation model, field meaning, unit, validation, and implications before any semantic decode resumes."
+}
