@@ -1,0 +1,149 @@
+{
+  "schema": "xsec-diff-route-v1",
+  "taskId": "XSEC-DIFF-01",
+  "disposition": "COMPLETE",
+  "purpose": "Path-free evidence that the official GOLVER source route produces the mapping-required standard DIFF coefficient alongside EFIS without changing the preserved TCWUX11 source path.",
+  "retention": {
+    "rawProcedures": "external-only",
+    "captures": "external-only",
+    "listings": "external-only",
+    "numericArraysDecoded": false,
+    "numericValuesRetained": false,
+    "absolutePathsRetained": false
+  },
+  "approvedInputs": {
+    "sourceCase": "xsec-c6-37-nu-jeff31-4ev-v5-sph-preserved-wholecell-golver-2k",
+    "sourceTool": "DRAGON5 5.1.0",
+    "sourceCommit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "containerImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "containerPlatform": "linux/amd64",
+    "ompThreads": 1,
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "temporaryFilesystems": ["/tmp:exec", "/run"],
+    "sourceProcedureSha256": "9d1865089741aecdd145a167cf7ea729760b4b4f1744a7b9c045480065371813",
+    "libraryProcedureSha256": "896de7f647fc7b3050815d1006f41cd938aca276b3a85c254d34e5c7d41e0040"
+  },
+  "officialEvidence": {
+    "ige335Section308": {
+      "sha256": "183a73021384fac33f0a0d6a9bd1629dd9f41ca0b1470e3e07ac3e604fc8f4e7",
+      "locators": ["GOLVER lines 267-289"],
+      "formula": "D[i,g] = alpha[g] / (3 * Sigma_tr[i,g])",
+      "defaultContrast": "Without GOLVER, EDI condenses fine-group leakage coefficients; the approved no-leakage source case cannot use that route."
+    },
+    "ige351Edition": {
+      "sha256": "4f1738a149befcceeead88dc13207f43afbb76bf2a403c13fee3774dc6b19c08",
+      "locators": ["edition flag I_golver lines 116-123"],
+      "meaning": "GOLVER selects transport-cross-section weighting with Golfier-Vergain correction factors."
+    },
+    "ige351Macrolib": {
+      "sha256": "7003338d47986bcbbea5a4fead19c97a13a62543cc715439e8e3a022a84723d2",
+      "locators": ["DIFF entry lines 312-314"],
+      "fieldMeaning": "isotropic diffusion coefficient",
+      "unit": "cm"
+    },
+    "edipxsSource": {
+      "sha256": "0c8a4680e155d491242c409d99a9d9ccef329c25ab073731c87aa0b579ea4ad3",
+      "locators": ["Golfier-Vergain factor calculation lines 257-273", "DIFF writer branch lines 326-343"],
+      "finding": "When IGOVE equals 1, EDIPXS writes DIFF from the Golfier-Vergain formula before any leakage-mode branch."
+    },
+    "edigetSource": {
+      "sha256": "ce20842394efb160135d4b75a4b8c83181e5bec3f2742682aac413026b8bfcf5",
+      "locators": ["GOLVER parser lines 704-705"],
+      "finding": "The documented GOLVER token selects IGOVE equals 1."
+    },
+    "xsecField01SemanticRejection": {
+      "rejectedCandidate": "REAC DIFF extra edit",
+      "reason": "It is a Legendre-order scattering cross section, not the IGE-351 DIFF coefficient."
+    }
+  },
+  "candidateExport": {
+    "namedObject": "WCFIELD",
+    "preservedObject": "WHOLECELL0",
+    "firstStateOperation": "separate all-one 31-region EDI merge with COND 4.0, MICR ALL, REAC 1 EFIS, GOLVER, SAVE, and inherited macro geometry",
+    "day300Operation": "separate in-place GOLVER EDI update of WCFIELD",
+    "captureSelectors": {
+      "PRE0": "WCFIELD/REF-CASE0001/MACROLIB",
+      "PRE172": "WCFIELD/REF-CASE0002/MACROLIB"
+    },
+    "originalEditionCallsPreserved": true,
+    "originalEditionSourceLexemeCount": 3,
+    "originalSphCallsPreserved": true,
+    "sourceAssertionsPreserved": true,
+    "directCorrectionSubtreePresent": false,
+    "reactionDiffExtraEditPresent": false,
+    "hFactorSelectedOrDecoded": false,
+    "hFactorMayBeSourceEmittedButIgnored": true,
+    "leakageModelSelected": false,
+    "golverSelected": true,
+    "fieldMeaningCompatible": {
+      "EFIS": true,
+      "DIFF": true
+    },
+    "preservationFingerprints": {
+      "originalEditionEdiLexemesSha256": "23dff35615bd6a9ebc1c93c163a3bc2f6998b0c6a8c320971144167e67ccd927",
+      "originalEditionEdiLexemeCount": 3,
+      "originalSphLexemesSha256": "a292e675c4e3df370f46dfa7b1eee6baad364d463090c4ee7de4525028c3e94f",
+      "originalSphLexemeCount": 2,
+      "sourceAssertionLexemesSha256": "bd2664424eb9f8aaff2cb8e4db2cfe36f3f2efa6a58980f0d4cf4afc0441dfd2",
+      "sourceAssertionLexemeCount": 4,
+      "wholecellCreationLexemesSha256": "6ca846af178a1f048977fc829b102dc67dafd52a4d60aaf7cbca26fe4ea6d1d9",
+      "wholecellDay300UpdateLexemesSha256": "f53f3523e246ec9912be4d38929c083f2d3b9263cca388b596bbc7791dab4540",
+      "onlyCaptureTargetAssignmentVaries": true
+    }
+  },
+  "freshRuns": {
+    "requiredCount": 8,
+    "completedCount": 8,
+    "sourceAssertionsPerRun": 4,
+    "sourceCompletionPerRun": true,
+    "normalCompletionPerRun": true,
+    "golverActivatedPerRun": true,
+    "externalConvergenceMarkersPerRun": 6,
+    "abnormalDiagnosticPerRun": false,
+    "runnerReportedNonfatalIeeeUnderflowDenormalNotice": true,
+    "originalCaptureBaselines": {
+      "PRE0": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "PRE172": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3"
+    },
+    "normalizedProcedureSha256": {
+      "PRE0": "c230d8e62d4c673f44cb195fb2100d144cb4669269166464f8d953aed2998f0d",
+      "PRE172": "1b612b687f0e2ce2f7d5a82af9059b15fb68d1c863948b3ef28e8932562885f5",
+      "normalization": "replace only the final res capture-target assignment"
+    },
+    "fieldCaptures": {
+      "PRE0": "63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3",
+      "PRE172": "e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3",
+      "repeatByteIdenticalPerState": true,
+      "distinctAcrossStates": true
+    },
+    "perRunLedger": [
+      {"rootId":"pre0-original-a","state":"PRE0","captureKind":"original-regression","procedureSha256":"cb1d7a143e1c6730753502407e4790bbcd2d67ada68aff143cf1f51fb1244533","listingSha256":"5d2c2e0e84a0c5cae58a805e0cd34d60ea554a6a254476af29f7f0ce4fb6d3e6","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","selector":"PRE0/REF-CASE0001/MACROLIB","captureMatchesXsec03R2Baseline":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre0-original-b","state":"PRE0","captureKind":"original-regression","procedureSha256":"cb1d7a143e1c6730753502407e4790bbcd2d67ada68aff143cf1f51fb1244533","listingSha256":"1231f487029ae33699cb9c730ce076b1ad6ba904e38dcf3d8bc050689d72a58e","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","selector":"PRE0/REF-CASE0001/MACROLIB","captureMatchesXsec03R2Baseline":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre0-field-a","state":"PRE0","captureKind":"golver-field-export","procedureSha256":"090ed214d3982c1f8e523799e8dff7b40cf5fde05594714586d8132fe191c855","listingSha256":"06ed6ef4dd6b3871fff60dec714559a07d2e1ac08890303b7044ba2895037c21","captureSha256":"63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3","selector":"WCFIELD/REF-CASE0001/MACROLIB","efisLabelPresent":true,"diffLabelPresent":true,"directSphSubtreeAbsent":true,"directAdfSubtreeAbsent":true,"hFactorPresentButIgnored":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre0-field-b","state":"PRE0","captureKind":"golver-field-export","procedureSha256":"090ed214d3982c1f8e523799e8dff7b40cf5fde05594714586d8132fe191c855","listingSha256":"1e9f0b6317e2f40314c3180c32e16588d8b0635d18ef2a70f46a76cc2244f0af","captureSha256":"63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3","selector":"WCFIELD/REF-CASE0001/MACROLIB","efisLabelPresent":true,"diffLabelPresent":true,"directSphSubtreeAbsent":true,"directAdfSubtreeAbsent":true,"hFactorPresentButIgnored":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre172-original-a","state":"PRE172","captureKind":"original-regression","procedureSha256":"6e4d1c199d8c78e5be6edbe9497d6293efed442ba2c5ac777047978b4c7cf6f9","listingSha256":"d169c7a3d70b8b165018246de5b2d9df2d07f51dcdb3c8cbaacbca7873ff8beb","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","selector":"PRE172/REF-CASE0002/MACROLIB","captureMatchesXsec03R2Baseline":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre172-original-b","state":"PRE172","captureKind":"original-regression","procedureSha256":"6e4d1c199d8c78e5be6edbe9497d6293efed442ba2c5ac777047978b4c7cf6f9","listingSha256":"109b3233c82f78c6e126fb298a6843526f5b2f8d5a8078e03b1758477b461f8b","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","selector":"PRE172/REF-CASE0002/MACROLIB","captureMatchesXsec03R2Baseline":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre172-field-a","state":"PRE172","captureKind":"golver-field-export","procedureSha256":"c4d7ac906662cd6aee90e79dbff9c626b7f550fa511b82d9ff65a046ff1fb165","listingSha256":"40a13825e336b2abe6a7b2ea29f4b31fdbf71fd6b72655d4b692f8bc1e742bee","captureSha256":"e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3","selector":"WCFIELD/REF-CASE0002/MACROLIB","efisLabelPresent":true,"diffLabelPresent":true,"directSphSubtreeAbsent":true,"directAdfSubtreeAbsent":true,"hFactorPresentButIgnored":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false},
+      {"rootId":"pre172-field-b","state":"PRE172","captureKind":"golver-field-export","procedureSha256":"c4d7ac906662cd6aee90e79dbff9c626b7f550fa511b82d9ff65a046ff1fb165","listingSha256":"61cc308bb912ba3a82bc421ef3f28137fa8624441bdad62b77d0fd56642d4918","captureSha256":"e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3","selector":"WCFIELD/REF-CASE0002/MACROLIB","efisLabelPresent":true,"diffLabelPresent":true,"directSphSubtreeAbsent":true,"directAdfSubtreeAbsent":true,"hFactorPresentButIgnored":true,"sourceAssertionsPassed":4,"sourceConvergenceEvidence":"present","normalCompletion":true,"sourceCompletion":true,"golverActivated":true,"abnormalDiagnostic":false,"numericArrayDecoded":false}
+    ],
+    "perRunPreArrayAndBaselineChecks": {
+      "pre0-original-a":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"equal","preArrayFieldCheck":"not-applicable-regression-control","directCorrectionSubtreeCheck":"not-applicable-regression-control"},
+      "pre0-original-b":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"equal","preArrayFieldCheck":"not-applicable-regression-control","directCorrectionSubtreeCheck":"not-applicable-regression-control"},
+      "pre0-field-a":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"not-applicable-different-approved-target","preArrayFieldCheck":"passed-before-array-decode","directCorrectionSubtreeCheck":"passed"},
+      "pre0-field-b":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"not-applicable-different-approved-target","preArrayFieldCheck":"passed-before-array-decode","directCorrectionSubtreeCheck":"passed"},
+      "pre172-original-a":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"equal","preArrayFieldCheck":"not-applicable-regression-control","directCorrectionSubtreeCheck":"not-applicable-regression-control"},
+      "pre172-original-b":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"equal","preArrayFieldCheck":"not-applicable-regression-control","directCorrectionSubtreeCheck":"not-applicable-regression-control"},
+      "pre172-field-a":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"not-applicable-different-approved-target","preArrayFieldCheck":"passed-before-array-decode","directCorrectionSubtreeCheck":"passed"},
+      "pre172-field-b":{"xsec03R2AssertionBaselineBound":true,"captureBaselineComparison":"not-applicable-different-approved-target","preArrayFieldCheck":"passed-before-array-decode","directCorrectionSubtreeCheck":"passed"}
+    }
+  },
+  "admissionBoundary": {
+    "numericSourceOrDerivedValues": "not-retained",
+    "runtimePack": "not-admitted",
+    "coreCliUnity": "not-admitted",
+    "donjonFullCore": "not-admitted",
+    "goldenOrReference": "not-admitted",
+    "nextRequiredWork": "Define and execute the separately owner-approved XSEC-03-R4 semantic-decode task under deck v5 and mapping v4."
+  }
+}
