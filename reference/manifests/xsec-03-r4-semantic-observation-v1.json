@@ -1,0 +1,107 @@
+{
+  "schema": "xsec-03-r4-semantic-observation-v1",
+  "taskId": "XSEC-03-R4",
+  "disposition": "BLOCKED",
+  "purpose": "Path-free, fail-closed observation of fresh deck-v5 GOLVER selected payloads before numerical mapping.",
+  "retention": {
+    "absolutePathsRetained": false,
+    "rawProceduresRetained": false,
+    "capturesRetained": false,
+    "listingsRetained": false,
+    "numericValuesRetained": false,
+    "derivedValuesRetained": false,
+    "mappingDecodeStarted": false
+  },
+  "approvedRoute": {
+    "sourceCase": "xsec-c6-37-nu-jeff31-4ev-v5-sph-preserved-wholecell-golver-2k",
+    "sourceTool": "DRAGON5 5.1.0",
+    "sourceCommit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "containerImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "containerPlatform": "linux/amd64",
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "temporaryFilesystems": ["/tmp:exec", "/run"],
+    "ompThreads": 1,
+    "selectedObjects": {
+      "freshState": "WCFIELD/REF-CASE0001/MACROLIB",
+      "depletedState": "WCFIELD/REF-CASE0002/MACROLIB"
+    }
+  },
+  "freshReproduction": {
+    "rootCount": 8,
+    "originalCaptureBaselines": {
+      "PRE0": "d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572",
+      "PRE172": "71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3"
+    },
+    "fieldCaptureHashes": {
+      "freshState": "63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3",
+      "depletedState": "e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3",
+      "repeatByteIdenticalPerState": true,
+      "distinctAcrossStates": true
+    },
+    "sourceLexemeAndRoutePreservation": {
+      "procedureIdentitiesMatchXsecDiff01": true,
+      "originalEditionEdiLexemeCount": 3,
+      "originalSphLexemeCount": 2,
+      "sourceAssertionLexemeCount": 4,
+      "wholeCellNamedObject": "WHOLECELL0",
+      "golverActivatedEveryRun": true,
+      "reactionDiffExtraEditPresent": false,
+      "leakageModelSelected": false,
+      "runnerReportedNonfatalIeeeUnderflowDenormalNotice": true
+    },
+    "runLedger": [
+      {"rootId":"pre0-original-a","captureKind":"original-regression","procedureSha256":"cb1d7a143e1c6730753502407e4790bbcd2d67ada68aff143cf1f51fb1244533","listingSha256":"d53cd34a3b588aa0a2a5f71b0a4341a3ca438991cc1e3d9fa4b953cb3da302b6","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","captureMatchesBaseline":true,"normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre0-original-b","captureKind":"original-regression","procedureSha256":"cb1d7a143e1c6730753502407e4790bbcd2d67ada68aff143cf1f51fb1244533","listingSha256":"53401e49c2012fed3a2dfb25a88d3725cc598c1cbecbcdbf3bf17453bb83f734","captureSha256":"d40a67dba6a91e33179a2ecef8386723a78530669563efa750f90eb25344a572","captureMatchesBaseline":true,"normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre0-field-a","captureKind":"golver-field-export","procedureSha256":"090ed214d3982c1f8e523799e8dff7b40cf5fde05594714586d8132fe191c855","listingSha256":"bf3aec59fe6f9aefa82b9974243008b6f678c442559910051dd61d01cd1eb5a3","captureSha256":"63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3","normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre0-field-b","captureKind":"golver-field-export","procedureSha256":"090ed214d3982c1f8e523799e8dff7b40cf5fde05594714586d8132fe191c855","listingSha256":"9ba65c643f58f4035d4c21b1d9c8edf528f66cd4c4b461e54bfd73e30f2105e3","captureSha256":"63fb425748f7e204523633da48ab7eb416cd6f7e692500191445cee5fb25cfb3","normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre172-original-a","captureKind":"original-regression","procedureSha256":"6e4d1c199d8c78e5be6edbe9497d6293efed442ba2c5ac777047978b4c7cf6f9","listingSha256":"726e490ea15412a78b4f1b7944c5f5fbadea11d96338522a446491b94f8dd4b9","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","captureMatchesBaseline":true,"normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre172-original-b","captureKind":"original-regression","procedureSha256":"6e4d1c199d8c78e5be6edbe9497d6293efed442ba2c5ac777047978b4c7cf6f9","listingSha256":"1935f66304ffc2ebc8c7101992c72bf0aeb9715c78204b29d1f3f7b276225e93","captureSha256":"71dee765bf872a37865844a8fa006f62ce86bfa0a750f25ca6bbe822f35328f3","captureMatchesBaseline":true,"normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre172-field-a","captureKind":"golver-field-export","procedureSha256":"c4d7ac906662cd6aee90e79dbff9c626b7f550fa511b82d9ff65a046ff1fb165","listingSha256":"3ee0abcbee86a207b2f87b9bc1667a3dd86212a0cd3b88ebcda3d730d96d9b70","captureSha256":"e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3","normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true},
+      {"rootId":"pre172-field-b","captureKind":"golver-field-export","procedureSha256":"c4d7ac906662cd6aee90e79dbff9c626b7f550fa511b82d9ff65a046ff1fb165","listingSha256":"40faa2016cbca774a51630a03426ce6ada732369c5eddf68ebd7d434ec09deb8","captureSha256":"e175c0882900b958f3769813640fecf854616c49c34edd2d48147c4a0c0c58d3","normalEnd":true,"sourceCompletion":true,"abnormalDiagnostic":false,"convergenceEvidencePresent":true}
+    ]
+  },
+  "selectedPayloadObservation": {
+    "observer": "external-only documented PyLCM reader built from pinned Version5 source",
+    "observationFingerprintSha256": "414bb1a918f04df866a7ae9a6a44bd7b617687b06885a9c1f028e89f6c52fa53",
+    "repeatObservationIdenticalPerState": true,
+    "selectorPresentEveryCapture": true,
+    "exactlyTwoGroupsEveryCapture": true,
+    "oneMixtureEveryGroup": true,
+    "oneVolumeEntryEveryCapture": true,
+    "energyBoundaryDimension": 3,
+    "directSphSubtreeAbsentEveryCapture": true,
+    "directSphEpsilonSubtreeAbsentEveryCapture": true,
+    "directAdfSubtreeAbsentEveryCapture": true,
+    "requiredFieldsPresentEveryGroupExceptEfis": true,
+    "requiredEfisRecordPresentEveryGroup": false,
+    "efisEditLabelPresent": false,
+    "unapprovedProductionRecordPresentEveryGroup": true,
+    "forbiddenHFactorRecordPresentButIgnoredEveryGroup": true,
+    "fieldUnitsAndMeanings": {
+      "NTOT0":"cm^-1 total macroscopic cross section",
+      "SIGS00":"cm^-1 P0 total scattering",
+      "SCAT00":"cm^-1 compressed P0 scattering with IJJS00/NJJS00/IPOS00",
+      "NFTOT":"cm^-1 macroscopic fission",
+      "NUSIGF":"cm^-1 steady-state nu-fission",
+      "CHI":"steady-state fission spectrum",
+      "FLUX-INTG":"cm s^-1 volume-integrated flux",
+      "DIFF":"cm isotropic diffusion coefficient",
+      "EFIS":"required fission-only energy-production cross section, eV cm^-1; absent"
+    },
+    "blockedBefore": ["numericArrayDecode", "compressedScatteringDecode", "mappingTransforms", "invariantEvaluation", "candidateAdmission"]
+  },
+  "blocker": {
+    "id":"XSEC-03-R4-MISSING-EFIS",
+    "type":"required-source-field-and-meaning-mismatch",
+    "reason":"Mapping v1/v4 requires an EFIS record and forbids H-FACTOR substitution. Fresh selected payloads expose neither EFIS record nor EFIS edit label; PRODUCTION is present but has no approved EFIS identity or mapping.",
+    "requiredResolution":"A separately authorized specification task must establish an official, source-preserving EFIS export identity and its exact meaning, units, normalization, and mapping consequences, or reject this source route."
+  },
+  "admission": {
+    "offlineCandidateSemanticResult":"not-admitted",
+    "runtimePack":"not-admitted",
+    "coreCliUnity":"not-admitted",
+    "donjonFullCore":"not-admitted",
+    "goldenOrReference":"not-admitted"
+  }
+}
