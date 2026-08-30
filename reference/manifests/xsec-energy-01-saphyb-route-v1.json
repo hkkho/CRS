@@ -1,0 +1,56 @@
+{
+  "schema": "xsec-energy-01-saphyb-route-v1",
+  "taskId": "XSEC-ENERGY-01",
+  "disposition": "ROUTE_PROVEN_NOT_NUMERICALLY_ADMITTED",
+  "sourceTool": {
+    "name": "DRAGON5",
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "offlineImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79"
+  },
+  "primarySourceArtifacts": [
+    { "role": "IGE-335 SAP EFIS definition", "sha256CanonicalLf": "332ce8c69ffde581feccbb480e8d869e60433eb1b41b20b74d81a9d8a8230d41" },
+    { "role": "IGE-351 MICROLIB MEVF definition", "sha256CanonicalLf": "70b3389c226171b98bc69f846e72a97a0fea241128aded871b3fb801ad7eee34" },
+    { "role": "IGE-351 SAPHYB guide", "sha256CanonicalLf": "250be6ac2110a6794ca38187754d5442d0c26147c14eac895d7b6ea24329676e" },
+    { "role": "SAP parser/driver", "sha256CanonicalLf": "6a7438285b2a2c25aa5265689b2eed63cc8118153bca9e2576b79b1af4d72565" },
+    { "role": "SAPHYB exporter", "sha256CanonicalLf": "8072b0e2f81ca8523881135292adb21c86c35a0b74ebc8e3e4fbeb7b70f63cfa" }
+  ],
+  "fieldContract": {
+    "sourceReactionSelector": "EFIS",
+    "artifactReactionLabel": "ENERGIE F.",
+    "meaning": "fission-only energy-production cross section",
+    "sourceConstruction": "MEVF * NFTOT",
+    "captureGammaContribution": false,
+    "sourceUnit": "MeV cm^-1",
+    "mappedUnit": "eV cm^-1",
+    "exactUnitConversion": "multiply by 1000000 eV per MeV",
+    "energyFluxRecord": "FLUXS",
+    "energyFluxMeaning": "volume- and energy-integrated neutron fluxes"
+  },
+  "structuralObservations": {
+    "elementaryCalculationCount": 2,
+    "outputMixtureCountPerCalculation": 1,
+    "groupCount": 2,
+    "stateKey": "XSTA",
+    "stateParameterName": "XSEC state",
+    "reactionLabelObserved": "ENERGIE F.",
+    "saphybHasDirectCorrectionSubtree": false,
+    "numericDataRead": false,
+    "rawSourceDataRetained": false
+  },
+  "runObservations": {
+    "originalAssertionsRetained": 4,
+    "probeNormalEnd": true,
+    "sameInputCompanionCaptureDeterministic": true,
+    "untouchedControlCaptureMatchesPriorBaseline": true,
+    "baselineUnderflowDenormalDiagnosticRepeatedInUntouchedControl": true,
+    "saphybCaptureSha256": "375a2454dce337558b1031ce34b99d4e9cba672bd233909d67ba317974afdd6d"
+  },
+  "admission": {
+    "deckV6Created": true,
+    "mappingV5Created": true,
+    "numericCandidateAdmitted": false,
+    "runtimePackAdmitted": false,
+    "goldenReferenceAdmitted": false,
+    "nextTaskRequiresSeparateOwnerApproval": "XSEC-ENERGY-02"
+  }
+}
