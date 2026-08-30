@@ -1,0 +1,46 @@
+{
+  "schema": "xsec-efis-route-decision-v1",
+  "taskId": "XSEC-EFIS-01",
+  "disposition": "REJECTED_BLOCKED",
+  "sourceTool": {
+    "name": "DRAGON5",
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "offlineImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79"
+  },
+  "requiredMappingIdentity": {
+    "record": "EFIS",
+    "meaning": "fission-only energy-production cross section",
+    "unit": "eV cm^-1",
+    "mappingVersions": [
+      "xsec-source-runtime-mapping-v1",
+      "xsec-source-runtime-mapping-v4"
+    ]
+  },
+  "primarySourceArtifacts": [
+    { "role": "IGE-335 EDI REAC documentation", "sha256CanonicalLf": "03bb6e17bee307a4a161274473513d8a197715785f6332a1cea6c0e449e7ac2e" },
+    { "role": "IGE-335 SAP EFIS definition", "sha256CanonicalLf": "332ce8c69ffde581feccbb480e8d869e60433eb1b41b20b74d81a9d8a8230d41" },
+    { "role": "EDI parser", "sha256CanonicalLf": "6d7365e84e1538abb19909d0354fb75e44cf7ce100bb30bd1c77af7c9ca7fcd5" },
+    { "role": "EDI driver", "sha256CanonicalLf": "b5181061753feb9d504a0dd74fc4aebc85fbe535c33cf4ef134dd668b54db55a" },
+    { "role": "EDI microlib filter", "sha256CanonicalLf": "9e37585de972201fb84d4e263536435cf3897cfe43257c7de7de6f9e766ca96c" },
+    { "role": "EDI MACROLIB writer", "sha256CanonicalLf": "9bfe3de298f3d29e1c158343a09bfcfc34ab7c831a73429a5264bdf8f94cb4d1" },
+    { "role": "EDI rate-slot definitions", "sha256CanonicalLf": "5971c429d439baf3053fd5228042d4e0ba576362b3d2817e201532a3fed9a520" },
+    { "role": "SAP implementation", "sha256CanonicalLf": "6a7438285b2a2c25aa5265689b2eed63cc8118153bca9e2576b79b1af4d72565" }
+  ],
+  "staticFindings": {
+    "ediReacScope": "output microlib selection only",
+    "ediMacrolibEfisWriterProven": false,
+    "productionMeaning": "fixed sources / productions",
+    "productionAdmissibleAsEfis": false,
+    "hFactorAdmissibleAsEfis": false,
+    "sapEfisMeaningProven": true,
+    "sapIsProvenEdiWcfieldMacrolibRoute": false
+  },
+  "observations": {
+    "freshSourceProbeRun": false,
+    "numericDataRead": false,
+    "rawSourceDataRetained": false,
+    "deckOrMappingChanged": false,
+    "runtimeOrGoldenAdmission": false
+  },
+  "followUp": "No successor is eligible until a separately owner-approved source-to-runtime energy-field route task defines and proves a different artifact and mapping."
+}
