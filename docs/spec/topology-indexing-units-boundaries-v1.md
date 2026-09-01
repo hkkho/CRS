@@ -286,5 +286,5 @@ The following are intentionally left for later approved specifications:
 - No runtime code, schema migration, equation, tolerance, or private artifact
   is added by this task.
 
-Source: [`docs/Implementation_plan.md`](../Implementation_plan.md), Phase 2,
-P2-T01, and [`reference-output-formats-v1.md`](reference-output-formats-v1.md).
+Source: the retained P2-T01 specification and
+[`reference-output-formats-v1.md`](reference-output-formats-v1.md).

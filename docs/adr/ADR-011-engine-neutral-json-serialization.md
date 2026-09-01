@@ -2,9 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-08-07
-- Decision owner: P0-T08; historical review evidence is preserved in P0-T08,
-  G0, and G0-R1
-- Related tasks/gates: P0-T08, G0, G0-R1
+- Decision owner: project architecture
+- Related project area: Core/Unity JSON serialization
 - Supersedes: None
 - Superseded by: None
 
@@ -120,18 +119,8 @@ owner.
 - Clean-source T4 rebuilds the ignored Core plugin, resolves the official Unity
   package, imports the project, builds the player, and runs the marker path.
 
-## Follow-up
-
-- Phase 3 must define each serialization contract and its validation behavior
-  in an approved specification before implementing codecs.
-- The first approved Android/iOS build task must execute representative manual
-  codecs under IL2CPP and managed stripping as part of T5.
-- G0-R1 must inspect this ADR and rerun the corrective gate evidence.
-
 ## References
 
-- [`docs/Implementation_plan.md`](../Implementation_plan.md)
-- [`docs/gates/G0.md`](../gates/G0.md)
 - [Unity Newtonsoft Json package 3.2.2](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html)
 - [NuGet Newtonsoft.Json 13.0.2](https://www.nuget.org/packages/Newtonsoft.Json/13.0.2)
 - [NuGet exact version ranges](https://learn.microsoft.com/nuget/concepts/package-versioning)

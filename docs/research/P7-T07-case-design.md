@@ -105,11 +105,7 @@ Until then, source-reported numbers remain candidate evidence. The package must
 not be used to tune the C# solver, select a tolerance, replace the P7-T06
 synthetic artifact, or claim a CANDU production baseline.
 
-Source: [`AGENTS.md`](../../AGENTS.md),
-[`docs/Implementation_plan.md`](../Implementation_plan.md),
 [`docs/reference/candu-literature-digest-v1.md`](../reference/candu-literature-digest-v1.md),
 [`reference/manifests/candu-literature-sources-v1.json`](../../reference/manifests/candu-literature-sources-v1.json),
-[`docs/tasks/P1-T08.md`](../tasks/P1-T08.md),
-[`docs/tasks/P2-T04.md`](../tasks/P2-T04.md),
-[`docs/tasks/P2-T05.md`](../tasks/P2-T05.md), and
-[`docs/tasks/P7-T06.md`](../tasks/P7-T06.md).
+the retained technical specifications, and the external sources listed in
+this research note.

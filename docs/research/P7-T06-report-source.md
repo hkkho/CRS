@@ -31,8 +31,8 @@ forcing; node volume; xenon absorption overlay; explicit time-step and event
 ordering; state/data identity; deterministic replay; nonnegative inventories;
 balance diagnostics; and manifest byte/hash identity.
 
-The governing runtime and unit authority remains `docs/spec/kinetics-xenon-
-rrs-feedback-v1.md` plus `docs/tasks/P2-T04.md`. This report does not select
+The governing runtime and unit authority remains the retained
+`docs/spec/kinetics-xenon-rrs-feedback-v1.md` specification. This report does not select
 new equations, nuclear constants, units, tolerances, normalization rules, or
 production values. The synthetic generator will reproduce the frozen
 left-endpoint Euler contracts independently and will not call `ReactorSim.Core`
@@ -46,7 +46,7 @@ serve as the runtime or golden-data authority for this task.
 
 | ID | Source and authority class | What it establishes | Exact-case / rights audit | Disposition |
 |---|---|---|---|---|
-| `P7-R01` | [CNS, “Xenon Transients Simulation Using the Reactor Code DONJON”](https://proceedings.cns-snc.ca/index.php/pcns/article/view/2978), 1998 conference record | CANDU spatial-kinetic xenon work; local bundle I/Xe concentrations and an improved quasistatic method are described in the abstract. | The public record exposes an abstract and a PDF link, not a complete input/output package, nuclear-data identity, topology, or reproducible manifest. DONJON remains an offline reference tool under `AGENTS.md`; no runtime source is imported. | Context/candidate only; not admitted. |
+| `P7-R01` | [CNS, “Xenon Transients Simulation Using the Reactor Code DONJON”](https://proceedings.cns-snc.ca/index.php/pcns/article/view/2978), 1998 conference record | CANDU spatial-kinetic xenon work; local bundle I/Xe concentrations and an improved quasistatic method are described in the abstract. | The public record exposes an abstract and a PDF link, not a complete input/output package, nuclear-data identity, topology, or reproducible manifest. DONJON remains an offline reference tool; no runtime source is imported. | Context/candidate only; not admitted. |
 | `P7-R02` | [CNS, Javidnia and Jiang, “MATLAB/SIMULINK Model of CANDU Reactor for Control Studies”](https://proceedings.cns-snc.ca/index.php/pcns/article/download/5796/5795), 2006 university conference PDF | Gives a PHWR/CANDU-like nodal I/Xe equation structure, tabled illustrative parameters, and example power histories. | The paper states that the data are from an Indian PHWR, that the simulations do not exactly represent CANDU-core transient behavior, and that liquid-zone controllers are not modeled. It does not expose a license for redistribution of a complete case package or exact machine-readable outputs. Its parameters cannot become project golden values. | Background/method cross-check only; not admitted. |
 | `P7-R03` | [CNS, “Enhancements in FMDP Spatial-Control Algorithm and Xenon Time Search”](https://proceedings.cns-snc.ca/index.php/pcns/article/download/1372/1372/1408), 1990 conference PDF | Confirms the historical FMDP/XEMAX CANDU xenon-transient and liquid-zone-control context. | The accessible paper describes code modules but does not provide a complete public case, output manifest, nuclear-data identity, or redistribution terms for the underlying tool/data. | Context only; not admitted. |
 | `P7-R04` | [OECD/NEA PBMR coupled neutronics/thermal-hydraulics transient benchmark](https://harbor.oecd-nea.org/jcms/pl_20496/pebble-bed-modular-reactor-pbmr-coupled-neutronics/thermal-hydraulics-transients-benchmark-pbmr-400-core-design) | Official benchmark page describes common cross sections, multidimensional transient exercises, and an archive containing xenon-dependent libraries and interpolation material. | This is a PBMR/HTGR benchmark, not CANDU/PHWR. The package is distributed through NEA Databank request, so it is not an accessible in-repository exact case and has no approved mapping to the frozen CANDU topology/data contracts. | Negative comparator; not admitted. |
@@ -123,13 +123,10 @@ The follow-on package is project-authored and uses only:
   and a fixed timestep schedule authored in the task definition; and
 - independent arithmetic and manifest generation outside `src/ReactorSim.Core`.
 
-The package must be labeled `Synthetic` at every artifact and gate boundary.
+The package must be labeled `Synthetic` in every artifact and consumer.
 Exact deterministic consumption is a regression/contract check, not a physical
-validation tolerance. G7A re-entry may approve the bounded synthetic/test-only
-consumer scope after independent high review; it must not promote a CANDU
-reference claim or activate Phase 7B temperature/purity behavior.
+validation tolerance. It must not be presented as a CANDU reference case or
+used to activate temperature/purity behavior.
 
-Source: [`AGENTS.md`](../../AGENTS.md), [`docs/Implementation_plan.md`](../Implementation_plan.md),
-[`docs/tasks/P7-T06-REFERENCE-GOLDEN-AUTHORITY-CHAIN.md`](../tasks/P7-T06-REFERENCE-GOLDEN-AUTHORITY-CHAIN.md),
-[`docs/tasks/P1-T08.md`](../tasks/P1-T08.md), and
-[`docs/reference/candu-literature-digest-v1.md`](../reference/candu-literature-digest-v1.md).
+Source: the retained kinetics specification, the CANDU literature digest,
+and the external sources listed in this research note.

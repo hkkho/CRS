@@ -999,5 +999,5 @@ listing, private path, golden data, or publication/redistribution step.
 - No runtime implementation, reference baseline, or later-phase behavior is
   introduced.
 
-Source: [`docs/Implementation_plan.md`](../Implementation_plan.md), Phase 2,
-P2-T03, and the approved P2-T01/P2-T02 specifications.
+Source: the retained P2-T03 specification and the retained P2-T01/P2-T02
+specifications in this directory.

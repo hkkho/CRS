@@ -185,7 +185,7 @@ presented as accepted output.
 R3 chooses no lower or upper burnup endpoint, table density, node count,
 production topology, solve cadence, target power, or convergence tolerance.
 Those remain explicit data or caller policies owned by the existing contracts
-and later tasks/gates.
+and later implementation work.
 
 ## Provenance and evidence classes
 
@@ -248,10 +248,8 @@ unclear unit or normalization, missing provenance, non-reproducibility,
 nondeterminism, invalid numerical value, incompatible public contract, or any
 attempt to loosen a tolerance or replace a golden/reference value.
 
-## Traceability
+## Related technical documents
 
-- [P4-T06-R2D disposition](../tasks/P4-T06-R2D.md)
-- [P4-T06 follow-up chain](../tasks/ROUND-2026-08-16-P4-REFERENCE-CHAIN.md)
 - [P2-T01 topology, indexing, units, and boundaries](topology-indexing-units-boundaries-v1.md)
 - [P2-T02 two-group solver, normalization, and convergence](two-group-solver-normalization-convergence-v1.md)
 - [P2-T03 refuelling and burnup transitions](refuelling-burnup-transitions-v1.md)

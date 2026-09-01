@@ -462,5 +462,5 @@ DONJON golden comparison or regenerate reference data.
 - No runtime solver, parallel backend, golden data, or private reference
   artifact is added by this task.
 
-Source: [`docs/Implementation_plan.md`](../Implementation_plan.md), Phase 2,
-P2-T02, and [`topology-indexing-units-boundaries-v1.md`](topology-indexing-units-boundaries-v1.md).
+Source: the retained P2-T02 specification and
+[`topology-indexing-units-boundaries-v1.md`](topology-indexing-units-boundaries-v1.md).

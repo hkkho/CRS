@@ -1418,5 +1418,5 @@ covered.
 - No runtime implementation, tolerance relaxation, golden-data replacement,
   Unity dependency, private path, or reference publication is introduced.
 
-Source: [`docs/Implementation_plan.md`](../Implementation_plan.md), Phase 2,
-P2-T05, and the approved P2-T01 through P2-T04 specifications.
+Source: the retained P2-T05 specification and the retained P2-T01 through
+P2-T04 specifications in this directory.

@@ -3,7 +3,7 @@
 **Guide version:** 2.8
 **Last checked:** 2026-08-24
 **Status:** Living documentation; update when the physics specifications,
-runtime implementation, validation gates, or game rules change.
+runtime implementation, or game rules change.
 
 This guide explains the physics and numerical methods behind the CANDU
 refuelling game in plain language. It deliberately separates four things:
@@ -144,8 +144,7 @@ constants, solver targets, or golden data.
 
 ### What exists as a physics design?
 
-The completed P2-T01 through P2-T05 tasks define frozen, engine-neutral
-implementation inputs for:
+The retained engine-neutral specifications define implementation inputs for:
 
 - explicit CANDU-style topology and boundary metadata;
 - a static two-group diffusion eigenproblem;
@@ -154,26 +153,11 @@ implementation inputs for:
 - point kinetics, I-135/Xe-135, regulating control, and optional feedback;
 - observables, deterministic serialization, and validation evidence.
 
-G2 is FORCED CLOSED / WAIVED: that administrative decision permits use of the
-existing specifications where no critical blocker is introduced, but it is not
-a technical PASS and does not approve a new equation, tolerance, golden value,
-or public contract. The specifications remain the blueprint for the remaining
-implementation; their numerical acceptance thresholds and production reference
-comparisons remain owned by later gates.
-
-### What remains before the static solver is feature-complete and validated?
-
-1. G4-R6 has approved the bounded project-authored ReducedModel authority and
-   six quantity-specific profiles. The earlier G4-R3/G4-R5 blockers remain
-   historical records and do not become production approval.
-2. G5 is complete for the approved ReducedModel/engine-neutral Core scope.
-   P5-T10 through P5-T16 provide structural sequence, complete-state,
-   authentication, persistence, and restart evidence; the final validation
-   snapshot is recorded in Section 6.7 and the G5 gate report.
-3. Direct production/full-core external authority and production thresholds
-   remain deferred. G6 conditionally passes the synthetic/test-only regulating
-   system; an applicable RRS comparison package and G6 re-entry remain needed.
-   Phase 7A adds kinetics and xenon; Phase 7B remains optional feedback work.
+The specifications remain the blueprint for implementation. The current game
+uses bounded project-authored ReducedModel profiles and synthetic regulating
+system fixtures. Direct production/full-core external authority and production
+thresholds remain deferred. Kinetics and xenon are supported by the Core;
+temperature and purity feedback remain optional future work.
 
 ## 1. Why a reactor can become a game
 
@@ -1231,77 +1215,30 @@ This project does not implement or investigate as runtime behavior:
 - hidden random behavior, Unity-frame-driven physics, or nondeterministic
   parallel reductions.
 
-## 13. Living-document maintenance and consistency checks
+## 13. Living-document maintenance
 
-This guide is a derived teaching document. Repository rules govern execution;
-the implementation plan governs product/phase intent; the project scope
-register governs current status; specifications and ADRs govern technical
-decisions; code and task/gate reports provide implementation evidence. The
-P1-T08 literature digest supplies context and candidate-case evidence only.
+This guide is a derived teaching document. Specifications and ADRs record the
+technical design, executable code records current behavior, and the literature
+digest supplies context and candidate-case evidence only.
 
 Update the guide when any of the following changes:
 
 - a physics specification, unit, sign, equation, state field, or numerical
   method changes;
 - a runtime physics class or data-pack loader is implemented;
-- a gate changes the status of implementation, tolerance, or golden evidence;
 - the literature digest adds or reclassifies a relevant claim; or
 - the game loop, scoring, player decision, or out-of-scope boundary changes.
 
-Run the consistency check from the repository root:
+## 14. References
 
-```powershell
-& .\tools\Check-PhysicsGuideConsistency.ps1
-```
-
-Regenerate the PDF from this Markdown source:
-
-```powershell
-python .\tools\build_physics_guide_pdf.py
-```
-
-The check verifies required headings, local links, current Phase 3/4/5/6, G4,
-G5, and G6 evidence, specification status markers, PDF freshness, and a
-readable PDF page count. It
-is intended to fail when the documented status and Core evidence diverge. PDF
-pages should still be visually inspected after major layout changes.
-
-## 14. Traceability and references
-
-### Project documents
-
-- [Project scope and delivery register](../PROJECT_SCOPE.md)
-- [Implementation plan](../Implementation_plan.md)
-- [P2-T01 topology and units](../spec/topology-indexing-units-boundaries-v1.md)
-- [P2-T02 two-group solver](../spec/two-group-solver-normalization-convergence-v1.md)
-- [P2-T03 refuelling and burnup](../spec/refuelling-burnup-transitions-v1.md)
-- [P2-T04 kinetics, xenon, RRS, and feedback](../spec/kinetics-xenon-rrs-feedback-v1.md)
-- [P2-T05 observables and validation](../spec/observables-validation-methodology-v1.md)
-- [P1-T08 task report](../tasks/P1-T08.md)
-- [CANDU literature digest v1](../reference/candu-literature-digest-v1.md)
-- [G2 forced-closure addendum](../gates/G2-FC-01.md)
-- [G3 state-contract review](../gates/G3.md)
-- [P4-T01 stencil assembly](../tasks/P4-T01.md)
-- [P4-T02 operator binding](../tasks/P4-T02.md)
-- [P4-T03 source/eigen iteration](../tasks/P4-T03.md)
-- [P4-T06-R2D reduced/synthetic admission disposition](../tasks/P4-T06-R2D.md)
-- [P4-T06-R3 reduced-model/interpolation boundary](../tasks/P4-T06-R3.md)
-- [P4-T06-R4 candidate interpolation pack](../tasks/P4-T06-R4.md)
-- [P4-T06-R5 candidate comparison snapshots](../tasks/P4-T06-R5.md)
-- [P4-T06-G4G bounded mathematical admission](../tasks/P4-T06-G4G.md)
-- [G4-R3 blocked fresh gate](../gates/G4-R3.md)
-- [P4-T06-G4K independent reduced-model authority](../tasks/P4-T06-G4K.md)
-- [G4-R6 reduced-model G4 disposition](../gates/G4-R6.md)
-- [Reduced-model/interpolation boundary specification](../spec/reduced-model-interpolation-boundary-v1.md)
-- [P5-T06 affected coefficient and spatial-state recomputation](../tasks/P5-T06.md)
-- [P5-T07 Phase 5 identity, location, burnup, and energy invariants](../tasks/P5-T07.md)
-- [P5-T08 deterministic multistep refuelling histories](../tasks/P5-T08.md)
-- [P5-T09 complete lifecycle and I/Xe contracts](../tasks/P5-T09.md)
-- [P5-T10 approved ReducedModel sequence comparison](../tasks/P5-T10.md)
-- [P5-T11 through P5-T16 Phase 5 correction chain](../tasks/P5-T16.md)
-- [G5 Phase 5 refuelling and depletion review](../gates/G5.md)
-- [P6-T07 bounded RRS scenario evidence](../tasks/P6-T07.md)
-- [G6 Phase 6 regulating-system review](../gates/G6.md)
+- [Topology, indexing, units, and boundaries](../spec/topology-indexing-units-boundaries-v1.md)
+- [Two-group solver, normalization, and convergence](../spec/two-group-solver-normalization-convergence-v1.md)
+- [Refuelling and burnup transitions](../spec/refuelling-burnup-transitions-v1.md)
+- [Kinetics, xenon, RRS, and feedback](../spec/kinetics-xenon-rrs-feedback-v1.md)
+- [Observables and validation methodology](../spec/observables-validation-methodology-v1.md)
+- [Reduced-model interpolation boundary](../spec/reduced-model-interpolation-boundary-v1.md)
+- [CANDU literature digest](../reference/candu-literature-digest-v1.md)
+- [Engine-neutral JSON serialization](../adr/ADR-011-engine-neutral-json-serialization.md)
 
 ### Literature evidence boundary
 

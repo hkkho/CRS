@@ -1358,5 +1358,5 @@ The following remain deferred without being silently approximated here:
 - No runtime implementation, private reference data, golden tolerance, Unity
   dependency, or later-phase safety behavior is introduced.
 
-Source: [`docs/Implementation_plan.md`](../Implementation_plan.md), Phase 2,
-P2-T04, and the approved P2-T02/P2-T03 specifications.
+Source: the retained P2-T04 specification and the retained P2-T02/P2-T03
+specifications in this directory.

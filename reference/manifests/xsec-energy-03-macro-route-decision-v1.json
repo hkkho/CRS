@@ -1,0 +1,93 @@
+{
+  "schema": "xsec-energy-03-macro-route-decision-v1",
+  "taskId": "XSEC-ENERGY-03",
+  "successorOf": "XSEC-ENERGY-02",
+  "disposition": "REJECTED_BLOCKED",
+  "sourceTool": {
+    "name": "DRAGON5",
+    "version5Commit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "offlineImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79"
+  },
+  "sourceEvidence": {
+    "verifiedSourceBlobs": 6,
+    "reactionCatalogDefinesEfisLabel": true,
+    "efisSourceOccurrences": 2,
+    "saphybMacroBranchHasDirectEfisReader": false,
+    "saphybMacroBranchReadsHFactorForEnergie": true,
+    "saphybMicroscopicEfisBranchReadsMevfTimesNftot": true,
+    "edimicHomogenizedOutputIdentity": "H-FACTOR",
+    "macrolibHFactorDocumentedUnit": "eV cm^-1",
+    "microlibMevfDocumentedUnit": "MeV"
+  },
+  "literatureContext": {
+    "p1T08Status": "COMPLETE",
+    "applicableRows": [
+      "S1-R04",
+      "S1-R05",
+      "S1-R11",
+      "S5-R02",
+      "S5-R03",
+      "S5-R04",
+      "S5-R09",
+      "S6-R03"
+    ],
+    "authority": "methodology and limitation context only; not runtime, equation, numeric, mapping, or golden authority"
+  },
+  "candidateRoutes": [
+    {
+      "id": "official-macro-efis-writer",
+      "status": "REJECTED",
+      "reason": "The pinned source catalogs the ENERGIE F. reaction and reads it only for particularized microscopic isotopes; no source writer for a macro ENERGIE F. record was located."
+    },
+    {
+      "id": "official-micro-mevf-nftot-to-target-macro",
+      "status": "REJECTED",
+      "reason": "The pinned source proves MEVF times NFTOT for microscopic isotopes, while its homogenized macro output is H-FACTOR; the target-field output identity, weights, and normalization are not proven."
+    },
+    {
+      "id": "h-factor-relabel-or-input-seed",
+      "status": "REJECTED",
+      "reason": "Relabeling H-FACTOR, substituting it for ENERGIE F., or fabricating an input-MACROLIB ENERGIE F. record is explicitly prohibited by this task."
+    }
+  ],
+  "primarySourceFinding": {
+    "targetMacroEfisWriterProven": false,
+    "targetMacroHomogenizationOperatorProven": false,
+    "targetMacroWeightsProven": false,
+    "targetMacroNormalizationProven": false,
+    "microscopicOperatorAloneAdmissible": false,
+    "hFactorSubstitutionAdmissible": false,
+    "productionSubstitutionAdmissible": false,
+    "circularInputSeedAdmissible": false
+  },
+  "executionEvidence": {
+    "sourceTrace": "PASS",
+    "freshExternalRouteRuns": "NOT_RUN",
+    "freshExternalRouteRunReason": "Static primary-source proof rejected every allowed target-field route before probing.",
+    "t2ExternalCandidateObserver": "NOT_APPLICABLE",
+    "t3Headless": {
+      "status": "PASS",
+      "core": "208/208",
+      "golden": "26/26",
+      "cli": "38/38"
+    },
+    "t6ReferenceReproduction": "NOT_APPLICABLE",
+    "independentCandidateReview": "NOT_RUN_NO_CANDIDATE",
+    "actualModelAndReasoning": "UNVERIFIED"
+  },
+  "retention": {
+    "numericSourceValuesRead": false,
+    "numericDerivedValuesRetained": false,
+    "externalAbsolutePathsRetained": false,
+    "routeSpecificationCreated": false,
+    "activeDeckAndMappingUnchanged": true
+  },
+  "rightsBoundary": "XSEC-RIGHTS-01 project-owner internal-use authority only; raw source/data and converter artifacts remain external-only.",
+  "admission": {
+    "macroRouteAdmitted": false,
+    "mappingV5CandidateAdmitted": false,
+    "runtimePackAdmitted": false,
+    "goldenReferenceAdmitted": false,
+    "requiresNewAuthority": "No successor route is eligible until a separately owner-approved task supplies primary-source proof of a different target-field macro writer or operator."
+  }
+}

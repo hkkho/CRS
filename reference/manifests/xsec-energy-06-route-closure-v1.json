@@ -1,0 +1,150 @@
+{
+  "taskId": "XSEC-ENERGY-06",
+  "status": "COMPLETE",
+  "effectiveness": "SUCCESS",
+  "disposition": "FORMALLY_CLOSED_BOUNDED_ROUTE",
+  "decisionBasis": "Completed distinct source investigations do not prove a source-proven homogenized macro fission-only ENERGIE F. writer/operator compatible with deck v6 and mapping v5.",
+  "scope": {
+    "sourceRelease": "DRAGON/DONJON Version5",
+    "sourceCommit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "deck": "xsec-jeff-lattice-deck-v6",
+    "mapping": "xsec-source-runtime-mapping-v5",
+    "target": "homogenized macro fission-only (n,f) ENERGIE F./EFIS",
+    "universalAbsenceClaim": false
+  },
+  "optionDecision": {
+    "investigateDifferentPrimarySourceRoute": "NOT_SELECTED",
+    "formalClosure": "SELECTED",
+    "reason": "No new primary-source artifact/operator was identified after the SAPHYB/WCFIELD and MPO/SPHMPO branches were separately rejected; another search without a new lead would repeat blocked work or require an invented mapping."
+  },
+  "predecessorEvidence": [
+    {
+      "taskId": "XSEC-ENERGY-02",
+      "status": "BLOCKED",
+      "finding": "Paired SAPHYB/WCFIELD macro decode lacked the required RDATAX/EFIS output; no fabricated input-MACROLIB seed was admitted."
+    },
+    {
+      "taskId": "XSEC-ENERGY-03",
+      "status": "BLOCKED",
+      "finding": "Pinned source route matrix proved source-defined H-FACTOR in the macro branch and microscopic MEVF * NFTOT for the target reaction, but no macro ENERGIE F. writer/operator."
+    },
+    {
+      "taskId": "XSEC-ENERGY-04",
+      "status": "BLOCKED",
+      "finding": "Distinct source research found no qualifying macro writer/operator; completion receipt is frozen and not rerun."
+    },
+    {
+      "taskId": "XSEC-ENERGY-05",
+      "status": "BLOCKED",
+      "finding": "Distinct MPO/SPHMPO branch constructs/consumes H-FACTOR rather than a complete mapping-v5 macro ENERGIE F. record."
+    }
+  ],
+  "criticalMissingContract": [
+    "macro writer and consumer",
+    "output object and record identity",
+    "fission-only inputs and material/spatial addressing",
+    "weights and operation order",
+    "units and conversion",
+    "normalization and flux/volume correspondence",
+    "deterministic reproduction and exact source identity",
+    "rights and lawful retention boundary"
+  ],
+  "runtimeLimitation": {
+    "directMacroEnergyFieldAdmitted": false,
+    "runtimeMayClaimDirectVersion5MacroEnergyProvenance": false,
+    "existingSyntheticReducedModelScopeChanged": false,
+    "runtimeCodeOrDataChanged": false,
+    "statement": "The runtime has no admitted source-proven homogenized macro ENERGIE F./EFIS coefficient under mapping v5; no fallback energy model is created by this closure."
+  },
+  "prohibitedSubstitutions": [
+    "H-FACTOR",
+    "PRODUCTION",
+    "microscopic MEVF * NFTOT aggregation",
+    "capture or gamma energy",
+    "leakage or direct correction",
+    "label relabeling",
+    "fabricated input-MACROLIB seed"
+  ],
+  "reentryCriteria": [
+    "new owner-approved task",
+    "new pinned lawful primary-source artifact/operator",
+    "proven macro writer/consumer and output identity",
+    "proven inputs, weights, order, addressing, units, normalization, and flux/volume correspondence",
+    "deterministic source reproduction",
+    "mapping compatibility or separately approved successor mapping",
+    "rights boundary retaining raw artifacts externally"
+  ],
+  "literature": {
+    "p1T08Status": "COMPLETE",
+    "applicableRows": [
+      "S1-R04",
+      "S1-R05",
+      "S1-R11",
+      "S5-R02",
+      "S5-R03",
+      "S5-R04",
+      "S5-R09",
+      "S6-R03"
+    ],
+    "use": "methodology, provenance, or limitation context only; not an equation, value, unit, normalization, mapping, runtime, or golden authority"
+  },
+  "rights": {
+    "authority": "XSEC-RIGHTS-01",
+    "rawSourceDataRetained": false,
+    "guidePdfsCopied": false,
+    "privatePathsRetained": false,
+    "redistributionOrReleaseAuthorized": false
+  },
+  "retention": {
+    "numericSourceValuesRead": false,
+    "numericDerivedValuesRetained": false,
+    "rawSourceOrOutputRetained": false,
+    "runtimePackCreated": false,
+    "goldenDataChanged": false,
+    "predecessorEvidenceChanged": false
+  },
+  "validation": {
+    "level": "T0-T2",
+    "sourceRun": "NOT_RUN_CLOSURE_ONLY",
+    "numericalDecode": "NOT_RUN",
+    "t3": "NOT_APPLICABLE_NO_RUNTIME_OR_NUMERICAL_CHANGE",
+    "t6": "NOT_APPLICABLE_NO_REFERENCE_BASELINE_CHANGE",
+    "independentReview": {
+      "disposition": "PASS",
+      "reviewerId": "01a0542b-70e9-7f11-825e-f9a866932190",
+      "reviewType": "code review (high)",
+      "actualModelAndReasoning": "UNVERIFIED",
+      "receipt": "Unavailable",
+      "sameContextFinalDisposition": true
+    }
+  },
+  "provenance": {
+    "retrievedOn": "2026-08-30",
+    "pinnedSourcePage": "https://git.oecd-nea.org/dragon/5.1/-/commit/eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "sourceCommit": "eee582f8594d3b7d01b65660ca1e8bef00eb6b2a",
+    "offlineImage": "docker.oecd-nea.org/dragon/5.1@sha256:eb8ddff7d788f563f958ada277a2c8304d2dcf829ef59a35db62438397188d79",
+    "guideAndTheoryReferences": [
+      "https://merlin.polymtl.ca/version5.htm",
+      "https://git.oecd-nea.org/dragon/5.1",
+      "https://git.oecd-nea.org/dragon/5.1/-/blob/main/LICENSE",
+      "https://merlin.polymtl.ca/downloads/IGE335.pdf",
+      "https://merlin.polymtl.ca/downloads/IGE344.pdf",
+      "https://merlin.polymtl.ca/downloads/IGE351.pdf",
+      "https://merlin.polymtl.ca/downloads/IGE236R1.pdf",
+      "https://merlin.polymtl.ca/downloads/IGE260_NXT.pdf",
+      "https://merlin.polymtl.ca/faq5.htm"
+    ],
+    "rawArtifactsRetained": false
+  },
+  "officialReferenceSet": [
+    "https://merlin.polymtl.ca/version5.htm",
+    "https://git.oecd-nea.org/dragon/5.1",
+    "https://git.oecd-nea.org/dragon/5.1/-/blob/main/LICENSE",
+    "https://merlin.polymtl.ca/downloads/IGE335.pdf",
+    "https://merlin.polymtl.ca/downloads/IGE344.pdf",
+    "https://merlin.polymtl.ca/downloads/IGE351.pdf",
+    "https://merlin.polymtl.ca/downloads/IGE236R1.pdf",
+    "https://merlin.polymtl.ca/downloads/IGE260_NXT.pdf",
+    "https://merlin.polymtl.ca/faq5.htm"
+  ]
+}
