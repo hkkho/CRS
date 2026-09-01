@@ -54,12 +54,11 @@ The path-free structural checks and source-record locators are recorded in
 captures, LCM serializations, listings, and all numerical cross-section values
 remain external-only.
 
-## Required follow-up boundary
+## Follow-up boundary
 
 `XSEC-03-R2` must not be rerun under this specification. If a whole-cell
-candidate remains desired, a separate owner-approved task must first define and
-review a new source/deck and mapping authority that explicitly creates and
-names one whole-cell homogenized output, proves its source semantics, retains
-all required source regression evidence, and supplies a fresh capture/re-run
-plan. That later task must not reuse a mixture selected from these ten records
-or treat this BLOCKED decision as field admission.
+candidate remains desired, define a new source/deck and mapping that explicitly
+creates and names one whole-cell homogenized output, establishes its source
+semantics, retains useful source-regression evidence, and supplies a fresh
+capture/re-run plan. Do not reuse a mixture selected from these ten records or
+treat this blocked decision as field admission.

@@ -2,8 +2,6 @@
 
 [CmdletBinding()]
 param(
-    [switch] $ConfirmFullSuite,
-
     [ValidateNotNullOrEmpty()]
     [string] $ArtifactsPath = (Join-Path ([System.IO.Path]::GetTempPath()) 'candu-full-test-artifacts')
 )
@@ -121,10 +119,6 @@ function Read-TrxRuns {
     }
 
     return $runs
-}
-
-if (-not $ConfirmFullSuite) {
-    throw 'The full suite is gated. Re-run with -ConfirmFullSuite only when a task, gate, or risk trigger requires T3.'
 }
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot

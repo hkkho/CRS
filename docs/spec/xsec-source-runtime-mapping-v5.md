@@ -41,14 +41,13 @@ unit/normalization ambiguity, cross-artifact state/group/mixture mismatch, or
 failed flux correspondence. It must not transform, interpolate, smooth,
 repair, normalize, substitute, or retain a failed candidate value.
 
-## Required successor gate
+## Possible successor work
 
-`XSEC-ENERGY-02` must be separately owner-approved. It owns a fresh deck-v6
-rerun, a read-only cross-artifact semantic decoder, exact source and companion
-structure checks, value-level correspondence/invariants, and the candidate
-admission or rejection decision. It must retain no source or derived numerical
-value in the repository and must not claim runtime, golden, DONJON, or Unity
-admission.
+A future implementation should use a fresh deck-v6 rerun, a read-only
+cross-artifact semantic decoder, exact source and companion structure checks,
+and value-level correspondence/invariants. It must retain no source or derived
+numerical value in the repository and must not claim runtime, DONJON, or Unity
+integration until a compact runtime pack is actually produced.
 
 Applicable P1-T08 digest rows are `S1-R04`, `S1-R05`, `S5-R02`, `S5-R03`,
 `S5-R04`, `S5-R09`, and `S6-R03`, as methodology/applicability context only.

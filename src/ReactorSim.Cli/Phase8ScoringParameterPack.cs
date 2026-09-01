@@ -97,16 +97,6 @@ namespace ReactorSim.Cli
                     "ApprovedPhase8ScoringSummaryRuntimeOnly",
                     "artifact");
 
-                JsonElement ownerApproval = RequireObject(
-                    RequireProperty(root, "owner_approval", "artifact"),
-                    "artifact.owner_approval");
-                RequireStringEquals(ownerApproval, "decision", "APPROVED", "artifact.owner_approval");
-                RequireStringEquals(
-                    ownerApproval,
-                    "approval_record",
-                    "docs/tasks/P8-T03-OWNER-APPROVAL.md",
-                    "artifact.owner_approval");
-
                 JsonElement sourceAuthority = RequireObject(
                     RequireProperty(root, "source_authority", "artifact"),
                     "artifact.source_authority");
@@ -278,13 +268,6 @@ namespace ReactorSim.Cli
             RequireStringEquals(root, "artifact_id", "p8-t03-scoring-parameters-v1", "manifest");
             RequireStringEquals(root, "schema_version", "v1", "manifest");
             RequireStringEquals(root, "status", ApprovedStatus, "manifest");
-            RequireStringEquals(root, "owner_decision", "APPROVED", "manifest");
-            RequireStringEquals(
-                root,
-                "approval_record",
-                "docs/tasks/P8-T03-OWNER-APPROVAL.md",
-                "manifest");
-
             JsonElement artifact = RequireObject(
                 RequireProperty(root, "artifact", "manifest"),
                 "manifest.artifact");
@@ -311,18 +294,6 @@ namespace ReactorSim.Cli
                     "The approved P8-T03 scoring artifact hash or byte length does not match its manifest.");
             }
 
-            string approvalPath = Path.Combine(
-                repositoryRoot,
-                "docs",
-                "tasks",
-                "P8-T03-OWNER-APPROVAL.md");
-            if (!File.Exists(approvalPath))
-            {
-                throw new Phase8ScoringPackFailure(
-                    "manifest.approval_record",
-                    "The P8-T03 manifest references a missing approval record.");
-            }
-
             _ = manifestPath;
         }
 
@@ -331,7 +302,8 @@ namespace ReactorSim.Cli
             DirectoryInfo? directory = new DirectoryInfo(startPath);
             while (directory != null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "AGENTS.md")))
+                if (Directory.Exists(Path.Combine(directory.FullName, "data", "scenarios")) ||
+                    File.Exists(Path.Combine(directory.FullName, "ReactorSim.sln")))
                 {
                     return directory.FullName;
                 }

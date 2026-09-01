@@ -123,12 +123,10 @@ runtime or golden mapping.
 
 ## Candidate numeric admission record
 
-The following source rows contain numbers or numeric comparison settings. They are
-not executable inputs. Before any later task can cite one as candidate numeric
-evidence, it must fill every field in the admission record and obtain the named
-gate approval and any receipt-verified independent code review (high) required
-by the current task. A missing field is `NotReported` or `NotProven` and
-blocks the use.
+The following source rows contain numbers or numeric comparison settings. They
+are not executable inputs. The table records the metadata needed to understand
+whether a number is technically comparable and lawfully reusable; it does not
+create an approval or review workflow.
 
 | Candidate rows | Required admission proof | Current disposition |
 | --- | --- | --- |
@@ -164,17 +162,13 @@ blocks the use.
   conventions, and lawful redistribution status remain open for every proposed
   numeric admission.
 - No reviewed source supplies a complete, repository-compatible golden case for
-  the approved CANDU runtime. G1 compact reference artifacts remain governed by
-  their existing provenance and gate reports.
+  the CANDU runtime. Existing compact reference artifacts remain synthetic or
+  limited according to their recorded provenance.
 
-## Later-task citation and admission checklist
+## Later use
 
-Any later physics or reference task must cite this digest version and list the
-applicable row IDs. If no row applies, it must state a concrete
-`NotApplicable` reason. A task that proposes to generate or change a reference
-case must also attach the complete admission record above, preserve private/raw
-artifact boundaries, report numerical differences, and obtain the owner gate and
-independent code-review disposition required by the current execution policy.
-Literature may
-inform a case design; it cannot override an approved specification or create a
-runtime equation, tolerance, unit, normalization, or golden value by itself.
+Use the row IDs when they make a physics or data decision easier to trace.
+Preserve private/raw artifact boundaries and record enough source, unit,
+normalization, and tool identity to reproduce exported runtime data. Literature
+may inform a case design; by itself it does not define a runtime equation,
+tolerance, unit, normalization, or golden value.

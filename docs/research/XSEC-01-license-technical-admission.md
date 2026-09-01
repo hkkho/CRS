@@ -137,12 +137,10 @@ admission decision requiring XSEC-02 through XSEC-08 and G4-R7.
 
 ## Remaining authority boundary
 
-No XSEC physics or implementation task is eligible yet. A separate bounded
-owner-approval/task-definition record must first obtain explicit,
-artifact-specific permission for use, derivation, retention, and redistribution
-of the exact JEFF-3.1/WLUP and WILLIE inputs. Only after that record passes
-independent review, XSEC-01 is reported and checkpoint-committed, may XSEC-02
-define the technical authority for the exact CANDU case, reaction/source-label
-mapping, energy boundaries and order, group-collapse/homogenization method,
-exported fields, units, normalization, convergence, interpolation, tolerances,
-and runtime schema.
+Before a redistributable runtime pack is produced, confirm artifact-specific
+permission for use, derivation, retention, and redistribution of the exact
+JEFF-3.1/WLUP and WILLIE inputs. The implementation also needs an exact CANDU
+case, reaction/source-label mapping, energy boundaries and order,
+group-collapse/homogenization method, exported fields, units, normalization,
+convergence, interpolation, and runtime schema. These are technical and legal
+inputs to the offline data pipeline, not project approval or review gates.

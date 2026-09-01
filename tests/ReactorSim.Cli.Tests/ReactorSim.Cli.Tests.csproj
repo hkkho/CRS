@@ -19,10 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\AGENTS.md" Link="AGENTS.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
     <None Include="..\..\data\scenarios\p8-t02-scenario-difficulty-parameters-v1.json" Link="data\scenarios\p8-t02-scenario-difficulty-parameters-v1.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
@@ -44,18 +40,6 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>
     <None Include="..\..\data\scenarios\p8-t05-scripted-policy-parameters-v1.manifest.json" Link="data\scenarios\p8-t05-scripted-policy-parameters-v1.manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\docs\tasks\P8-T02-OWNER-APPROVAL.md" Link="docs\tasks\P8-T02-OWNER-APPROVAL.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\docs\tasks\P8-T03-OWNER-APPROVAL.md" Link="docs\tasks\P8-T03-OWNER-APPROVAL.md">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\docs\tasks\P8-T05-OWNER-APPROVAL.md" Link="docs\tasks\P8-T05-OWNER-APPROVAL.md">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>

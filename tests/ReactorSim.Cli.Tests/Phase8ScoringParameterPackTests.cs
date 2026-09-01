@@ -212,22 +212,15 @@ public sealed class Phase8ScoringParameterPackTests
         string sourceManifest = Path.Combine(
             Path.GetDirectoryName(sourceArtifact)!,
             Path.GetFileNameWithoutExtension(sourceArtifact) + ".manifest.json");
-        string repositoryRoot = FindRepositoryRoot();
         string root = Path.Combine(
             Path.GetTempPath(),
             "reactorsim-p8-t03-pack-test-" + Guid.NewGuid().ToString("N"));
         string scenarioDirectory = Path.Combine(root, "data", "scenarios");
-        string approvalDirectory = Path.Combine(root, "docs", "tasks");
         Directory.CreateDirectory(scenarioDirectory);
-        Directory.CreateDirectory(approvalDirectory);
-        File.WriteAllText(Path.Combine(root, "AGENTS.md"), "test root");
 
         string artifactPath = Path.Combine(scenarioDirectory, Path.GetFileName(sourceArtifact));
         File.Copy(sourceArtifact, artifactPath);
         File.Copy(sourceManifest, Path.Combine(scenarioDirectory, Path.GetFileName(sourceManifest)));
-        File.Copy(
-            Path.Combine(repositoryRoot, "docs", "tasks", "P8-T03-OWNER-APPROVAL.md"),
-            Path.Combine(approvalDirectory, "P8-T03-OWNER-APPROVAL.md"));
         return (root, artifactPath);
     }
 
@@ -236,7 +229,7 @@ public sealed class Phase8ScoringParameterPackTests
         DirectoryInfo? directory = new DirectoryInfo(Directory.GetCurrentDirectory());
         while (directory != null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "AGENTS.md")))
+            if (File.Exists(Path.Combine(directory.FullName, "ReactorSim.sln")))
             {
                 return directory.FullName;
             }

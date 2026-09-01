@@ -110,16 +110,6 @@ namespace ReactorSim.Cli
                 RequireStringEquals(root, "authority_class", "ProjectAuthoredSyntheticApprovedParameterAuthority", "artifact");
                 RequireStringEquals(root, "runtime_use", "ApprovedPhase8ScenarioRuntimeOnly", "artifact");
 
-                JsonElement ownerApproval = RequireObject(
-                    RequireProperty(root, "owner_approval", "artifact"),
-                    "artifact.owner_approval");
-                RequireStringEquals(ownerApproval, "decision", "APPROVED", "artifact.owner_approval");
-                RequireStringEquals(
-                    ownerApproval,
-                    "approval_record",
-                    "docs/tasks/P8-T02-OWNER-APPROVAL.md",
-                    "artifact.owner_approval");
-
                 JsonElement sourceAuthority = RequireObject(
                     RequireProperty(root, "source_authority", "artifact"),
                     "artifact.source_authority");
@@ -429,12 +419,6 @@ namespace ReactorSim.Cli
                 "reactorsim.p8-scenario-difficulty-parameters-manifest/v1",
                 "manifest");
             RequireStringEquals(root, "status", ApprovedStatus, "manifest");
-            RequireStringEquals(root, "owner_decision", "APPROVED", "manifest");
-            RequireStringEquals(
-                root,
-                "approval_record",
-                "docs/tasks/P8-T02-OWNER-APPROVAL.md",
-                "manifest");
             JsonElement artifact = RequireObject(
                 RequireProperty(root, "artifact", "manifest"),
                 "manifest.artifact");
@@ -458,13 +442,6 @@ namespace ReactorSim.Cli
                 throw new Phase8ScenarioPackFailure(
                     "manifest.artifact",
                     "The approved parameter artifact hash or byte length does not match its manifest.");
-            }
-
-            if (!File.Exists(Path.Combine(FindRepositoryRoot(Path.GetDirectoryName(artifactPath)!), "docs", "tasks", "P8-T02-OWNER-APPROVAL.md")))
-            {
-                throw new Phase8ScenarioPackFailure(
-                    "manifest.approval_record",
-                    "The approved parameter manifest references a missing approval record.");
             }
 
             _ = manifestPath;
@@ -512,7 +489,8 @@ namespace ReactorSim.Cli
             DirectoryInfo? directory = new DirectoryInfo(startPath);
             while (directory != null)
             {
-                if (File.Exists(Path.Combine(directory.FullName, "AGENTS.md")))
+                if (Directory.Exists(Path.Combine(directory.FullName, "data", "scenarios")) ||
+                    File.Exists(Path.Combine(directory.FullName, "ReactorSim.sln")))
                 {
                     return directory.FullName;
                 }

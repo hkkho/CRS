@@ -40,13 +40,12 @@ no-leakage source case. It does not claim equivalence to leakage-weighted
 coefficients or authorize comparison, substitution, calibration, tolerance, or
 golden use across coefficient-generation models.
 
-## Required successor gate
+## Possible successor work
 
-`XSEC-03-R4`, a separately owner-approved semantic-decode task, must rerun the
-exact deck-v5 route in fresh roots, repeat source regression and field-identity
-checks, then decode only mapping-v1's required fields and run its complete
-validation/review gate. It must retain no source or derived numeric value in
-the repository and must not reuse `XSEC-03-R3` or `XSEC-FIELD-01` payloads as
+A future semantic decoder should rerun the exact deck-v5 route in fresh roots,
+repeat source-regression and field-identity checks, and decode only mapping-v1's
+required fields. It must retain no source or derived numeric value in the
+repository and must not reuse `XSEC-03-R3` or `XSEC-FIELD-01` payloads as
 candidate data.
 
 Applicable P1-T08 digest rows are `S1-R04`, `S1-R05`, `S5-R02`, `S5-R03`,

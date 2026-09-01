@@ -74,12 +74,11 @@ No source-preserving candidate remains under this task's constraints:
 No deck v6 or mapping v5 is created. No numeric source observation is permitted
 from `EFIS`, `PRODUCTION`, or `H-FACTOR` on the strength of this decision.
 
-Any successor must be separately owner-approved and must first specify a
-different source-to-runtime route. It must prove, before numeric decoding, the
-exact output artifact and field identity, fission-only inclusion rule, unit,
-normalization, group and mixture mapping, source-preservation impact, and the
-applicability consequences for mapping v1/v4. It must not relabel, scale,
-reconstruct, or infer any existing EDI field.
+A different source-to-runtime route needs the exact output artifact and field
+identity, fission-only inclusion rule, unit, normalization, group and mixture
+mapping, source-preservation impact, and the applicability consequences for
+mapping v1/v4 before numeric decoding. It must not relabel, scale, reconstruct,
+or infer any existing EDI field.
 
 ## Pinned evidence identities
 
