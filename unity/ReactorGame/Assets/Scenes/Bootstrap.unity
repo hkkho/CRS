@@ -140,6 +140,7 @@ GameObject:
   - component: {fileID: 1000000007}
   - component: {fileID: 1000000008}
   - component: {fileID: 1000000009}
+  - component: {fileID: 1000000010}
   m_Layer: 5
   m_Name: Phase10Shell
   m_TagString: Untagged
@@ -292,3 +293,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4b73d6e5a2749c18c36a5e0ce91d742, type: 3}
   m_Name:
   m_EditorClassIdentifier: ReactorGame.Unity::ReactorGame.Unity.Phase10TimelineView
+--- !u!114 &1000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a6f24d33df6f4b44b02be42ae95daf48, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: ReactorGame.Unity::ReactorGame.Unity.UnityGameController

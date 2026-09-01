@@ -14,6 +14,14 @@ or tune synthetic coefficients with lawful, reproducible DRAGON5/DONJON5-derived
 data. Scram, shutdown, accident response, and full plant simulation are out of
 scope.
 
+## Implementation status
+
+The first Milestone 1 slice is implemented: `ReactorSim.Game` creates a public
+synthetic practice session, `UnityRuntimePort` connects it to the existing Unity
+adapter, and `UnityGameController` binds the Bootstrap views and advances the
+session in bounded fixed wall-time requests. The next slice is the actual player
+refuelling command, followed by channel/bundle presentation in the Core Map.
+
 ## Repository review
 
 ### What already exists

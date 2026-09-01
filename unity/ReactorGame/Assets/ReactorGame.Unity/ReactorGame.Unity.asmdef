@@ -7,7 +7,8 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
-    "ReactorSim.Core.dll"
+    "ReactorSim.Core.dll",
+    "ReactorSim.Game.dll"
   ],
   "autoReferenced": true,
   "defineConstraints": [],

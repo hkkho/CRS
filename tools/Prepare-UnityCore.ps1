@@ -11,11 +11,13 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $coreProject = Join-Path $repositoryRoot 'src/ReactorSim.Core/ReactorSim.Core.csproj'
+$gameProject = Join-Path $repositoryRoot 'src/ReactorSim.Game/ReactorSim.Game.csproj'
 $toolchainPath = Join-Path $repositoryRoot 'unity/toolchain.json'
 $unityManifestPath = Join-Path $repositoryRoot 'unity/ReactorGame/Packages/manifest.json'
 $unityPackageLockPath = Join-Path $repositoryRoot 'unity/ReactorGame/Packages/packages-lock.json'
 $pluginDirectory = Join-Path $repositoryRoot 'unity/ReactorGame/Assets/Plugins'
 $pluginPath = Join-Path $pluginDirectory 'ReactorSim.Core.dll'
+$gamePluginPath = Join-Path $pluginDirectory 'ReactorSim.Game.dll'
 $manuallyCopiedSerializerPath = Join-Path $pluginDirectory 'Newtonsoft.Json.dll'
 $resolvedArtifactsPath = [System.IO.Path]::GetFullPath($ArtifactsPath)
 
@@ -58,7 +60,7 @@ if (Test-Path -LiteralPath $manuallyCopiedSerializerPath) {
     throw "Remove $manuallyCopiedSerializerPath; the pinned Unity package owns the serializer dependency."
 }
 
-& dotnet build $coreProject `
+& dotnet build $gameProject `
     --configuration Release `
     --artifacts-path $resolvedArtifactsPath `
     --no-incremental
@@ -66,13 +68,22 @@ if ($LASTEXITCODE -ne 0) {
     throw "Core build exited with code $LASTEXITCODE."
 }
 
-$builtPluginPath = Join-Path $resolvedArtifactsPath 'bin/ReactorSim.Core/release/ReactorSim.Core.dll'
-if (-not (Test-Path -LiteralPath $builtPluginPath -PathType Leaf)) {
-    throw "Core build did not produce the expected plugin: $builtPluginPath"
+$builtCorePluginPath = Join-Path $resolvedArtifactsPath 'bin/ReactorSim.Core/release/ReactorSim.Core.dll'
+$builtGamePluginPath = Join-Path $resolvedArtifactsPath 'bin/ReactorSim.Game/release/ReactorSim.Game.dll'
+if (-not (Test-Path -LiteralPath $builtCorePluginPath -PathType Leaf)) {
+    throw "Game build did not produce the expected Core plugin: $builtCorePluginPath"
 }
 
-Copy-Item -LiteralPath $builtPluginPath -Destination $pluginPath -Force
+if (-not (Test-Path -LiteralPath $builtGamePluginPath -PathType Leaf)) {
+    throw "Game build did not produce the expected game plugin: $builtGamePluginPath"
+}
+
+Copy-Item -LiteralPath $builtCorePluginPath -Destination $pluginPath -Force
+Copy-Item -LiteralPath $builtGamePluginPath -Destination $gamePluginPath -Force
 $pluginHash = Get-FileHash -Algorithm SHA256 -LiteralPath $pluginPath
+$gamePluginHash = Get-FileHash -Algorithm SHA256 -LiteralPath $gamePluginPath
 Write-Output "Prepared $pluginPath"
 Write-Output "SHA256 $($pluginHash.Hash)"
+Write-Output "Prepared $gamePluginPath"
+Write-Output "SHA256 $($gamePluginHash.Hash)"
 Write-Output "Serializer dependency: $expectedUnityPackageId $expectedUnityPackageVersion (Unity Package Manager)"

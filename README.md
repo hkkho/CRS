@@ -14,9 +14,10 @@ ordered implementation path.
 - `src/ReactorSim.Core` contains substantial simulation, refuelling, depletion,
   spatial, xenon, control, and scenario contracts.
 - `src/ReactorSim.Cli` runs the current synthetic scenario model headlessly.
-- `unity/ReactorGame` contains a navigable UI shell and presentation adapter,
-  but it is not yet connected to a concrete game runtime and has no playable
-  channel-refuelling command.
+- `unity/ReactorGame` now starts a real synthetic practice session, binds it to
+  the dashboard/controls/timeline, and advances it continuously in fixed 100 ms
+  wall-time requests. Player-controlled channel refuelling and the Core Map are
+  the next Milestone 1 slice.
 - `data` and `reference` contain synthetic packs, literature-derived design
   context, and incomplete DRAGON5/DONJON5 integration work.
 
@@ -29,9 +30,9 @@ dotnet build ReactorSim.sln
 powershell -ExecutionPolicy Bypass -File tools/Prepare-UnityCore.ps1
 ```
 
-Open `unity/ReactorGame` in Unity and run `Assets/Scenes/Bootstrap.unity`.
-Until milestone 1 in the implementation guide is complete, expect a graphical
-shell rather than a functional game.
+Open `unity/ReactorGame` in Unity and run `Assets/Scenes/Bootstrap.unity`. The
+practice scenario begins automatically at 10x simulation speed; use the Controls
+page to pause, resume, change playback speed, or queue power and tilt targets.
 
 Automated tests are intentionally limited to focused checks for code being
 changed. The primary acceptance path is a playable build exercised through the
