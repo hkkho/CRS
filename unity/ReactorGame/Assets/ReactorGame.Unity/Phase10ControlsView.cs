@@ -19,7 +19,9 @@ namespace ReactorGame.Unity
         AuditPlayback = 4,
         AcceleratedPlayback = 5,
         ApplyPowerTarget = 6,
-        ApplyTiltTarget = 7
+        ApplyTiltTarget = 7,
+        RefuelTowardEndA = 8,
+        RefuelTowardEndB = 9
     }
 
     /// <summary>
@@ -33,6 +35,8 @@ namespace ReactorGame.Unity
         public const ulong InteractiveAdvanceMilliseconds = 1000;
         public const string AuditPlaybackModeId = "audit-real-time-1x";
         public const string AcceleratedPlaybackModeId = "play-accelerated-10x";
+        public const string TowardEndADirectionId = "toward-end-a";
+        public const string TowardEndBDirectionId = "toward-end-b";
 
         private readonly Dictionary<Phase10ControlActionV1, Button> _buttons =
             new Dictionary<Phase10ControlActionV1, Button>();
@@ -41,8 +45,12 @@ namespace ReactorGame.Unity
         private RectTransform _controlsRoot;
         private InputField _powerTargetInput;
         private InputField _tiltTargetInput;
+        private InputField _refuelChannelInput;
+        private InputField _refuelShiftInput;
+        private InputField _refuelFuelTypeInput;
         private Text _observedText;
         private Text _pacingText;
+        private Text _refuellingText;
         private Text _statusText;
         private bool _isBuilt;
 
@@ -81,6 +89,11 @@ namespace ReactorGame.Unity
         public string TiltTargetText
         {
             get { return _tiltTargetInput == null ? string.Empty : _tiltTargetInput.text; }
+        }
+
+        public string RefuellingText
+        {
+            get { return GetText(_refuellingText); }
         }
 
         private void Awake()
@@ -203,6 +216,16 @@ namespace ReactorGame.Unity
             return Dispatch(delegate { return _runtimeAdapter.QueueTiltTarget(target); });
         }
 
+        public Phase8UnityCommandResultV1 RefuelTowardEndA()
+        {
+            return Refuel(TowardEndADirectionId);
+        }
+
+        public Phase8UnityCommandResultV1 RefuelTowardEndB()
+        {
+            return Refuel(TowardEndBDirectionId);
+        }
+
         private void OnDestroy()
         {
             Unbind();
@@ -230,7 +253,10 @@ namespace ReactorGame.Unity
             {
                 SetStatus(
                     "Last command: " + result.Kind +
-                    " accepted (sequence " + sequence + ").");
+                    " accepted (sequence " + sequence + ")." +
+                    (string.IsNullOrWhiteSpace(result.Message)
+                        ? string.Empty
+                        : " " + result.Message));
                 return;
             }
 
@@ -252,6 +278,15 @@ namespace ReactorGame.Unity
                 " | Control tick " + Format(snapshot.WallControlTickMilliseconds) +
                 " ms | Simulation " + Format(snapshot.SimulationTimeSeconds) +
                 " s | Wall " + Format(snapshot.WallElapsedSeconds) + " s";
+            _refuellingText.text =
+                "Refuelling: " + Format(snapshot.FreshBundlesAvailable) +
+                " fresh bundles | " + Format(snapshot.RefuellingOperationCount) +
+                " operations" +
+                (snapshot.LastRefuelledChannel < 0
+                    ? string.Empty
+                    : " | Last channel " + snapshot.LastRefuelledChannel.ToString(CultureInfo.InvariantCulture) +
+                      " " + snapshot.LastRefuellingDirectionId +
+                      " x" + snapshot.LastRefuellingShiftCount.ToString(CultureInfo.InvariantCulture));
         }
 
         private void EnsureVisuals()
@@ -297,6 +332,7 @@ namespace ReactorGame.Unity
             AddValueLabel(_controlsRoot, "ControlsHeading", "Touch controls", 26, TextAnchor.MiddleLeft, 38);
             _observedText = AddValueLabel(_controlsRoot, "ControlsObserved", "Observed: unavailable", 20, TextAnchor.MiddleLeft, 36);
             _pacingText = AddValueLabel(_controlsRoot, "ControlsPacing", "Pacing: unavailable", 20, TextAnchor.MiddleLeft, 36);
+            _refuellingText = AddValueLabel(_controlsRoot, "ControlsRefuelling", "Refuelling: unavailable", 20, TextAnchor.MiddleLeft, 42);
             _statusText = AddValueLabel(_controlsRoot, "ControlsStatus", "Status: waiting for runtime binding", 20, TextAnchor.MiddleLeft, 50);
 
             CreateTargetRow(
@@ -313,6 +349,8 @@ namespace ReactorGame.Unity
                 Phase10ControlActionV1.ApplyTiltTarget,
                 "Apply tilt",
                 delegate { ApplyTiltTarget(); });
+
+            CreateRefuellingRows(_controlsRoot);
 
             RectTransform timeRow = CreateRow("ControlsTimeRow", _controlsRoot);
             AddActionButton(
@@ -381,11 +419,26 @@ namespace ReactorGame.Unity
 
         private InputField CreateInputField(RectTransform parent, string name)
         {
+            return CreateInputField(
+                parent,
+                name,
+                InputField.ContentType.DecimalNumber,
+                string.Empty,
+                260.0f);
+        }
+
+        private InputField CreateInputField(
+            RectTransform parent,
+            string name,
+            InputField.ContentType contentType,
+            string initialValue,
+            float preferredWidth)
+        {
             RectTransform inputRoot = CreateRect(name, parent);
             LayoutElement inputLayout = inputRoot.gameObject.AddComponent<LayoutElement>();
             inputLayout.minHeight = Phase10ShellView.MinimumTouchTargetPixels;
             inputLayout.preferredHeight = Phase10ShellView.MinimumTouchTargetPixels;
-            inputLayout.preferredWidth = 260.0f;
+            inputLayout.preferredWidth = preferredWidth;
 
             Image background = inputRoot.gameObject.AddComponent<Image>();
             background.color = new Color(0.10f, 0.16f, 0.22f, 1.0f);
@@ -393,7 +446,7 @@ namespace ReactorGame.Unity
 
             InputField input = inputRoot.gameObject.AddComponent<InputField>();
             input.targetGraphic = background;
-            input.contentType = InputField.ContentType.DecimalNumber;
+            input.contentType = contentType;
             input.lineType = InputField.LineType.SingleLine;
 
             RectTransform textRoot = CreateRect("Text", inputRoot);
@@ -408,8 +461,115 @@ namespace ReactorGame.Unity
             text.verticalOverflow = VerticalWrapMode.Truncate;
             text.raycastTarget = false;
             input.textComponent = text;
-            input.text = string.Empty;
+            input.text = initialValue;
             return input;
+        }
+
+        private void CreateRefuellingRows(RectTransform parent)
+        {
+            RectTransform inputRow = CreateRow("ControlsRefuellingInputs", parent);
+            Text label = AddValueLabel(
+                inputRow,
+                "ControlsRefuellingLabel",
+                "Refuel: channel / shift / fuel",
+                20,
+                TextAnchor.MiddleLeft,
+                88);
+            label.GetComponent<LayoutElement>().preferredWidth = 270.0f;
+            _refuelChannelInput = CreateInputField(
+                inputRow,
+                "ControlsRefuelChannel",
+                InputField.ContentType.IntegerNumber,
+                "190",
+                120.0f);
+            _refuelShiftInput = CreateInputField(
+                inputRow,
+                "ControlsRefuelShift",
+                InputField.ContentType.IntegerNumber,
+                "4",
+                100.0f);
+            _refuelFuelTypeInput = CreateInputField(
+                inputRow,
+                "ControlsRefuelFuelType",
+                InputField.ContentType.Standard,
+                "NAT-U-SYNTHETIC",
+                250.0f);
+
+            RectTransform actionRow = CreateRow("ControlsRefuellingActions", parent);
+            AddActionButton(
+                actionRow,
+                Phase10ControlActionV1.RefuelTowardEndA,
+                "Refuel toward End A",
+                delegate { RefuelTowardEndA(); });
+            AddActionButton(
+                actionRow,
+                Phase10ControlActionV1.RefuelTowardEndB,
+                "Refuel toward End B",
+                delegate { RefuelTowardEndB(); });
+        }
+
+        private Phase8UnityCommandResultV1 Refuel(string directionId)
+        {
+            if (!TryReadRefuellingInputs(
+                    out uint channelIndex,
+                    out ushort shiftCount,
+                    out string fuelTypeId))
+            {
+                return null;
+            }
+
+            return Dispatch(
+                delegate
+                {
+                    return _runtimeAdapter.RefuelChannel(
+                        channelIndex,
+                        directionId,
+                        shiftCount,
+                        fuelTypeId);
+                });
+        }
+
+        private bool TryReadRefuellingInputs(
+            out uint channelIndex,
+            out ushort shiftCount,
+            out string fuelTypeId)
+        {
+            channelIndex = 0;
+            shiftCount = 0;
+            fuelTypeId = _refuelFuelTypeInput == null
+                ? string.Empty
+                : _refuelFuelTypeInput.text.Trim();
+            if (_refuelChannelInput == null ||
+                !uint.TryParse(
+                    _refuelChannelInput.text,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out channelIndex) ||
+                channelIndex >= 380)
+            {
+                SetStatus("Input rejected: channel must be an integer from 0 through 379.");
+                return false;
+            }
+
+            if (_refuelShiftInput == null ||
+                !ushort.TryParse(
+                    _refuelShiftInput.text,
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out shiftCount) ||
+                (shiftCount != 4 && shiftCount != 8))
+            {
+                SetStatus("Input rejected: shift count must be 4 or 8.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(fuelTypeId))
+            {
+                SetStatus("Input rejected: fuel type is required.");
+                return false;
+            }
+
+            return true;
         }
 
         private Button AddActionButton(
@@ -525,6 +685,7 @@ namespace ReactorGame.Unity
 
             _observedText.text = "Observed: unavailable";
             _pacingText.text = "Pacing: unavailable";
+            _refuellingText.text = "Refuelling: unavailable";
             _statusText.text = "Status: waiting for runtime binding";
         }
 
@@ -543,6 +704,13 @@ namespace ReactorGame.Unity
             if (_tiltTargetInput != null)
             {
                 _tiltTargetInput.interactable = isAvailable;
+            }
+
+            if (_refuelChannelInput != null)
+            {
+                _refuelChannelInput.interactable = isAvailable;
+                _refuelShiftInput.interactable = isAvailable;
+                _refuelFuelTypeInput.interactable = isAvailable;
             }
         }
 

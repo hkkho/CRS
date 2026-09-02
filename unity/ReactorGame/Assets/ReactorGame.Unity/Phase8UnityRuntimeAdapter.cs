@@ -198,6 +198,47 @@ namespace ReactorGame.Unity
             return Dispatch(Phase8UnityInputCommandV1.Resume(NextCommandSequence()));
         }
 
+        public Phase8UnityCommandResultV1 RefuelChannel(
+            uint channelIndex,
+            string refuellingDirectionId,
+            ushort shiftCount,
+            string fuelTypeId)
+        {
+            return Dispatch(
+                Phase8UnityInputCommandV1.RefuelChannel(
+                    NextCommandSequence(),
+                    channelIndex,
+                    refuellingDirectionId,
+                    shiftCount,
+                    fuelTypeId));
+        }
+
+        public Phase8UnityCommandResultV1 PreviewRefuelChannel(
+            uint channelIndex,
+            string refuellingDirectionId,
+            ushort shiftCount,
+            string fuelTypeId)
+        {
+            return Dispatch(
+                Phase8UnityInputCommandV1.PreviewRefuelChannel(
+                    NextCommandSequence(),
+                    channelIndex,
+                    refuellingDirectionId,
+                    shiftCount,
+                    fuelTypeId));
+        }
+
+        public Phase8UnityCommandResultV1 Debug(
+            Phase8UnityDebugActionKindV1 debugAction,
+            uint debugValue = 0)
+        {
+            return Dispatch(
+                Phase8UnityInputCommandV1.Debug(
+                    NextCommandSequence(),
+                    debugAction,
+                    debugValue));
+        }
+
         private ulong NextCommandSequence()
         {
             if (_nextCommandSequence == ulong.MaxValue)

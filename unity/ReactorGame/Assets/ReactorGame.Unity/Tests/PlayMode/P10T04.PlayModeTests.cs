@@ -28,10 +28,15 @@ namespace ReactorGame.Unity.P10T04
             Assert.That(
                 controls.StatusText,
                 Does.Contain("Controls ready"));
-            InputField[] inputs = controls.GetComponentsInChildren<InputField>(true);
+            Assert.That(
+                shell.TryGetPageRoot(
+                    Phase10ShellPageV1.Controls,
+                    out RectTransform controlsPageRoot),
+                Is.True);
+            InputField[] inputs = controlsPageRoot.GetComponentsInChildren<InputField>(true);
             Assert.That(inputs, Has.Length.EqualTo(5));
-            Assert.That(inputs[0].text, Is.EqualTo("0.95"));
-            Assert.That(inputs[1].text, Is.EqualTo("0.1"));
+            Assert.That(inputs[0].text, Is.EqualTo("1"));
+            Assert.That(inputs[1].text, Is.EqualTo("0"));
             Assert.That(inputs[2].text, Is.EqualTo("190"));
             Assert.That(inputs[3].text, Is.EqualTo("4"));
             Assert.That(inputs[4].text, Is.EqualTo("NAT-U-SYNTHETIC"));

@@ -10,6 +10,11 @@ namespace ReactorGame.Unity
     {
         private readonly GameSession _session;
 
+        public UnityRuntimePort()
+            : this(PracticeGameSessionFactory.Create())
+        {
+        }
+
         public UnityRuntimePort(GameSession session)
         {
             _session = session ?? throw new ArgumentNullException(nameof(session));
@@ -48,6 +53,23 @@ namespace ReactorGame.Unity
                 case Phase8UnityCommandKindV1.Resume:
                     result = _session.Resume();
                     break;
+                case Phase8UnityCommandKindV1.RefuelChannel:
+                    result = _session.RefuelChannel(
+                        command.ChannelIndex,
+                        command.RefuellingDirectionId,
+                        command.ShiftCount,
+                        command.FuelTypeId);
+                    break;
+                case Phase8UnityCommandKindV1.PreviewRefuelChannel:
+                    result = _session.PreviewRefuelChannel(
+                        command.ChannelIndex,
+                        command.RefuellingDirectionId,
+                        command.ShiftCount,
+                        command.FuelTypeId);
+                    break;
+                case Phase8UnityCommandKindV1.Debug:
+                    result = ExecuteDebug(command);
+                    break;
                 default:
                     return Phase8UnityCommandResultV1.RejectedResult(
                         command,
@@ -58,12 +80,32 @@ namespace ReactorGame.Unity
 
             Phase8UnityPresentationSnapshotV1 snapshot = Project(result.Snapshot);
             return result.Accepted
-                ? Phase8UnityCommandResultV1.AcceptedResult(command, snapshot)
+                ? Phase8UnityCommandResultV1.AcceptedResult(
+                    command,
+                    snapshot,
+                    result.Message,
+                    result.PreviewCore)
                 : Phase8UnityCommandResultV1.RejectedResult(
                     command,
                     result.DiagnosticCode,
                     result.DiagnosticMessage,
                     snapshot);
+        }
+
+        private GameSessionCommandResult ExecuteDebug(Phase8UnityInputCommandV1 command)
+        {
+            switch (command.DebugAction)
+            {
+                case Phase8UnityDebugActionKindV1.GrantFreshBundles:
+                    return _session.DebugGrantFreshBundles(command.DebugValue);
+                case Phase8UnityDebugActionKindV1.ClearPendingActions:
+                    return _session.DebugClearPendingActions();
+                case Phase8UnityDebugActionKindV1.ResetSyntheticResponse:
+                    return _session.DebugResetSyntheticResponse();
+                default:
+                    throw new InvalidOperationException(
+                        "The game session does not support this debug action.");
+            }
         }
 
         private static Phase8UnityPresentationSnapshotV1 Project(GameSessionSnapshot snapshot)
@@ -92,7 +134,14 @@ namespace ReactorGame.Unity
                 snapshot.ScoreTotal,
                 snapshot.TurnSummaryCount,
                 snapshot.OutcomeId,
-                snapshot.IsPaused);
+                snapshot.IsPaused,
+                snapshot.FreshBundlesAvailable,
+                snapshot.RefuellingOperationCount,
+                snapshot.LastRefuelledChannel,
+                snapshot.LastRefuellingDirectionId,
+                snapshot.LastRefuellingShiftCount,
+                snapshot.Core,
+                snapshot.Seed);
         }
     }
 }

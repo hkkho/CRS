@@ -16,10 +16,19 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
 
 ## Execution strategy
 
-- Use GPT-5.6 Luna subagents whenever a task can be separated into simple,
-  bounded inventory, research, documentation, mechanical editing, or focused
-  test work. Keep architecture, integration, and difficult debugging with the
-  primary agent, which is responsible for checking and integrating results.
+- Use GPT-5.6 Luna subagents whenever work can be separated into bounded coding,
+  inventory, research, documentation, mechanical editing, or focused test
+  tasks. Keep architecture, cross-cutting integration, difficult debugging,
+  verification, and final commits with the primary agent, which is responsible
+  for checking and integrating Luna's results.
+- When creating an agent, delegate all coding and implementation work to
+  GPT-5.6 Luna and set its reasoning effort to `max` automatically.
+- Use GPT-5.6 Terra only when clarification is needed and set its reasoning
+  effort to `high`.
+- Use GPT-5.6 Sol only when something is critically stuck and set its reasoning
+  effort to `medium`.
+- Do not substitute Terra or Sol for ordinary coding work when Luna can handle
+  the bounded task.
 - Work autonomously within the requested scope and preserve unrelated user
   changes.
 - Keep `unity/ReactorGame` runnable after each implementation slice.

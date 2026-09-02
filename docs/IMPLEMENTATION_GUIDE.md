@@ -16,11 +16,16 @@ scope.
 
 ## Implementation status
 
-The first Milestone 1 slice is implemented: `ReactorSim.Game` creates a public
-synthetic practice session, `UnityRuntimePort` connects it to the existing Unity
+The playable synthetic vertical slice is implemented. `ReactorSim.Game` creates
+a public synthetic practice session, `UnityRuntimePort` connects it to the Unity
 adapter, and `UnityGameController` binds the Bootstrap views and advances the
-session in bounded fixed wall-time requests. The next slice is the actual player
-refuelling command, followed by channel/bundle presentation in the Core Map.
+session in bounded fixed wall-time requests. The Controls page can execute
+internally consistent four- or eight-bundle shifts toward either channel end,
+while the Core Map presents the deterministic 380-channel face, 12-bundle
+details, preview, and commit actions. Refuelling also produces a deterministic
+localized power, tilt, and score response. The owner debug menu is available
+from F1 or backquote for pause, time control, restart, inventory, pending-action,
+and synthetic-response controls.
 
 ## Repository review
 
@@ -42,22 +47,13 @@ refuelling command, followed by channel/bundle presentation in the Core Map.
   comparison fixtures. The reference tree records public literature context and
   partial DRAGON5/DONJON5 route research.
 
-### What prevents a playable game
+### What remains after the Milestone 1 game loop
 
-1. No production class implements `IPhase8RuntimePort`; only test fakes do.
-2. Nothing creates a runtime at scene startup, binds it to the Unity adapter,
-   or advances it from real frame time.
-3. The Unity command vocabulary can adjust power/tilt and playback, but cannot
-   select a channel, choose fuelling direction/shift size, or execute refuelling.
-4. The Core Map is placeholder text. It does not display 380 channels, bundle
-   burnup, local power, refuelling recommendations, or selection state.
-5. Existing Phase 8 scenarios treat refuelling as scripted requests and score
-   the remaining request budget; they do not provide the player's core gameplay
-   transaction.
-6. The current UI was built as a contract demonstration. It lacks a start flow,
-   continuous simulation driver, feedback animation/audio, contextual tooltips,
-   and a debug menu.
-7. The physics/data work is much deeper than the game integration and is not yet
+1. The current UI still needs presentation polish such as bundle movement
+   animation, feedback audio, contextual tooltips, and a fuller start flow.
+2. The debug menu intentionally exposes the first useful owner controls; save/load,
+   richer state overrides, and additional diagnostics can be added later.
+3. The physics/data work is much deeper than the game integration and is not yet
    a complete runtime-ready DRAGON5/DONJON5 data pipeline.
 
 The fastest route is to reuse the good engine-neutral code, extract reusable
@@ -126,7 +122,7 @@ API incrementally. This keeps a runnable build available throughout development.
 Done means a contributor can launch the scene from a clean checkout without
 manually copying assemblies or discovering paths.
 
-### Milestone 1: playable synthetic vertical slice
+### Milestone 1: playable synthetic vertical slice (implemented)
 
 - Extract `GameSessionFactory` and `GameSession` from the CLI runtime setup.
 - Implement `UnityRuntimePort : IPhase8RuntimePort` using a real `GameSession`.
@@ -142,7 +138,8 @@ manually copying assemblies or discovering paths.
 - Replace the Core Map placeholder with a selectable 380-channel heat map. A
   details panel should show all 12 bundles and a predicted outcome before commit.
 - Animate bundle insertion/movement/discharge and immediately update power,
-  burnup, score, trends, and event history.
+  burnup, score, trends, and event history. The current slice updates these
+  values synchronously; animation and richer trend presentation remain polish.
 
 Done means the player can run time, inspect the core, choose and execute several
 refuelling operations, see understandable consequences, and restart a run.
@@ -150,23 +147,26 @@ refuelling operations, see understandable consequences, and restart a run.
 ### Milestone 2: debug menu and owner playtesting
 
 Build this immediately after the vertical slice, before visual polish or physics
-tuning. Toggle it with backquote/F1 and include:
+tuning. The first menu slice is implemented and toggles with backquote/F1. It
+currently includes:
 
 - pause, single-step, time scale, restart, and deterministic seed;
 - add simulated days/hours and jump to an equilibrium-like state;
-- select any channel and set bundle burnup/residence-time bands;
-- force a refuelling request and execute either fuelling direction/shift size;
-- scale local power, tilt, xenon, control margin, and device availability;
-- toggle heat-map layers and display raw channel/bundle values;
-- grant fuel inventory, clear pending actions, and reset score;
-- save/load a snapshot and copy a compact bug-report state digest;
-- an on-screen event log with the last command, result, and changed quantities.
+- grant fuel inventory, clear pending actions, reset the synthetic response, and
+  copy a compact bug-report state digest;
+- display raw selected-channel/bundle values and the last command/result.
+
+Future debug additions include direct burnup/residence-time bands, explicit
+power/tilt/xenon/control-margin/device overrides, heat-map layer toggles, and
+save/load snapshots.
 
 Debug operations may bypass normal game rules but must be visibly marked and
 kept out of release scoring. This menu is the primary feature-verification tool.
 
-Done means the project owner can reach every important gameplay state in less
-than a minute without editing JSON or using a debugger.
+The first owner-playtesting menu is now present. The remaining work is to grow
+its state overrides and diagnostics as new gameplay systems are added. Done
+means the project owner can reach every important gameplay state in less than a
+minute without editing JSON or using a debugger.
 
 ### Milestone 3: make the loop fun
 
@@ -238,8 +238,8 @@ test that protects its essential state transition. The initial target is:
    expected post-refuelling snapshot;
 3. one Unity EditMode test proving the concrete runtime port maps a refuelling
    command and snapshot correctly;
-4. one Unity PlayMode smoke proving Bootstrap starts a real session and the debug
-   menu can execute a refuelling operation.
+4. one Unity PlayMode smoke proving Bootstrap starts a real session and the Core
+   Map and debug menu are bound and usable.
 
 Run the focused affected tests while implementing. The full legacy suite and
 reference comparisons are optional diagnostics for deep physics/data changes,
@@ -251,7 +251,7 @@ The practical acceptance check is an owner playtest using a development build:
 launch, run time, inspect channels, refuel in both directions, observe the
 response, exercise each debug control, save/load, and restart.
 
-## First implementation slice
+## Initial implementation slice (completed)
 
 Start with these concrete files and responsibilities:
 
@@ -267,5 +267,6 @@ Start with these concrete files and responsibilities:
 - new `DebugMenuView.cs`: state controls and compact event log;
 - update `Bootstrap.unity`: wire the controller and views.
 
-Do not start with new DRAGON5/DONJON5 runs. The next repository change should
-end with a Unity scene in which real time advances a real session.
+Do not start with new DRAGON5/DONJON5 runs. The next implementation work should
+extend the playable loop or its owner diagnostics without changing the Unity
+presentation seam.

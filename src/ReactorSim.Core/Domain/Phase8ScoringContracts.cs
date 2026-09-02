@@ -485,6 +485,11 @@ namespace ReactorSim.Core
             return _runtime.TryResume();
         }
 
+        public ContractValidationResult<uint> TryClearPendingActions()
+        {
+            return _runtime.TryClearPendingActions();
+        }
+
         public ContractValidationResult<Phase8ScoredAdvanceResultV1> TryAdvanceWallMilliseconds(
             ulong wallMilliseconds)
         {

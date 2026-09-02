@@ -10,6 +10,7 @@ namespace ReactorSim.Game
         public const string DifficultyId = "practice";
         public const string RealTimePlaybackModeId = "audit-real-time-1x";
         public const string PlayPlaybackModeId = "play-accelerated-10x";
+        public const string DebugPlaybackModeId = "debug-accelerated-60x";
         public const uint WallControlTickMilliseconds = 100;
 
         public static GameSession Create()
@@ -17,18 +18,21 @@ namespace ReactorSim.Game
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
                     WallControlTickMilliseconds,
-                    1.0,
+                    6.0,
                     10.0,
-                    10.0,
+                    60.0,
                     true));
             Phase8PlaybackModeV1 realTime = Require(
                 Phase8PlaybackModeV1.TryCreate(RealTimePlaybackModeId, 1.0, timeModel));
             Phase8PlaybackModeV1 play = Require(
                 Phase8PlaybackModeV1.TryCreate(PlayPlaybackModeId, 10.0, timeModel));
+            Phase8PlaybackModeV1 debug = Require(
+                Phase8PlaybackModeV1.TryCreate(DebugPlaybackModeId, 60.0, timeModel));
             var playbackModes = new Dictionary<string, Phase8PlaybackModeV1>(StringComparer.Ordinal)
             {
                 [realTime.ModeId] = realTime,
-                [play.ModeId] = play
+                [play.ModeId] = play,
+                [debug.ModeId] = debug
             };
 
             Phase8OperatingEnvelopeV1 envelope = Require(
@@ -106,7 +110,11 @@ namespace ReactorSim.Game
                     16));
             Phase8ScoredScenarioRuntimeV1 scoredRuntime = Require(
                 Phase8ScoredScenarioRuntimeV1.TryCreate(runtime, scoring));
-            return new GameSession(scoredRuntime, playbackModes, WallControlTickMilliseconds);
+            return new GameSession(
+                scoredRuntime,
+                playbackModes,
+                WallControlTickMilliseconds,
+                SyntheticGameCoreStateV1.CreatePractice());
         }
 
         private static T Require<T>(ContractValidationResult<T> result)

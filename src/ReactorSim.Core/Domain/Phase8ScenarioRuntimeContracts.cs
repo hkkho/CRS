@@ -1253,6 +1253,13 @@ namespace ReactorSim.Core
             return ContractValidationResult<bool>.Valid(true);
         }
 
+        public ContractValidationResult<uint> TryClearPendingActions()
+        {
+            uint clearedCount = checked((uint)_pendingActions.Count);
+            _pendingActions.Clear();
+            return ContractValidationResult<uint>.Valid(clearedCount);
+        }
+
         public ContractValidationResult<Phase8ScenarioAdvanceResultV1> TryAdvanceWallMilliseconds(
             ulong wallMilliseconds)
         {

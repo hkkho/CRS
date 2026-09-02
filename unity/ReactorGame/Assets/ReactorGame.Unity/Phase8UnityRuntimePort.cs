@@ -1,4 +1,5 @@
 using System;
+using ReactorSim.Game;
 
 namespace ReactorGame.Unity
 {
@@ -14,7 +15,17 @@ namespace ReactorGame.Unity
         QueueTiltTarget = 2,
         SetPlaybackMode = 3,
         Pause = 4,
-        Resume = 5
+        Resume = 5,
+        RefuelChannel = 6,
+        PreviewRefuelChannel = 7,
+        Debug = 8
+    }
+
+    public enum Phase8UnityDebugActionKindV1 : byte
+    {
+        GrantFreshBundles = 0,
+        ClearPendingActions = 1,
+        ResetSyntheticResponse = 2
     }
 
     /// <summary>
@@ -28,7 +39,13 @@ namespace ReactorGame.Unity
             Phase8UnityCommandKindV1 kind,
             ulong wallMilliseconds,
             double targetFraction,
-            string playbackModeId)
+            string playbackModeId,
+            uint channelIndex = 0,
+            string refuellingDirectionId = null,
+            ushort shiftCount = 0,
+            string fuelTypeId = null,
+            Phase8UnityDebugActionKindV1 debugAction = Phase8UnityDebugActionKindV1.GrantFreshBundles,
+            uint debugValue = 0)
         {
             if (sequence == 0)
             {
@@ -40,6 +57,12 @@ namespace ReactorGame.Unity
             WallMilliseconds = wallMilliseconds;
             TargetFraction = targetFraction;
             PlaybackModeId = playbackModeId;
+            ChannelIndex = channelIndex;
+            RefuellingDirectionId = refuellingDirectionId;
+            ShiftCount = shiftCount;
+            FuelTypeId = fuelTypeId;
+            DebugAction = debugAction;
+            DebugValue = debugValue;
         }
 
         public ulong Sequence { get; }
@@ -51,6 +74,18 @@ namespace ReactorGame.Unity
         public double TargetFraction { get; }
 
         public string PlaybackModeId { get; }
+
+        public uint ChannelIndex { get; }
+
+        public string RefuellingDirectionId { get; }
+
+        public ushort ShiftCount { get; }
+
+        public string FuelTypeId { get; }
+
+        public Phase8UnityDebugActionKindV1 DebugAction { get; }
+
+        public uint DebugValue { get; }
 
         public static Phase8UnityInputCommandV1 AdvanceWallMilliseconds(
             ulong sequence,
@@ -127,6 +162,95 @@ namespace ReactorGame.Unity
                 null);
         }
 
+        public static Phase8UnityInputCommandV1 RefuelChannel(
+            ulong sequence,
+            uint channelIndex,
+            string refuellingDirectionId,
+            ushort shiftCount,
+            string fuelTypeId)
+        {
+            RequireRefuellingFields(refuellingDirectionId, shiftCount, fuelTypeId);
+
+            return new Phase8UnityInputCommandV1(
+                sequence,
+                Phase8UnityCommandKindV1.RefuelChannel,
+                0,
+                0.0,
+                null,
+                channelIndex,
+                refuellingDirectionId,
+                shiftCount,
+                fuelTypeId);
+        }
+
+        public static Phase8UnityInputCommandV1 PreviewRefuelChannel(
+            ulong sequence,
+            uint channelIndex,
+            string refuellingDirectionId,
+            ushort shiftCount,
+            string fuelTypeId)
+        {
+            RequireRefuellingFields(refuellingDirectionId, shiftCount, fuelTypeId);
+
+            return new Phase8UnityInputCommandV1(
+                sequence,
+                Phase8UnityCommandKindV1.PreviewRefuelChannel,
+                0,
+                0.0,
+                null,
+                channelIndex,
+                refuellingDirectionId,
+                shiftCount,
+                fuelTypeId);
+        }
+
+        public static Phase8UnityInputCommandV1 Debug(
+            ulong sequence,
+            Phase8UnityDebugActionKindV1 debugAction,
+            uint debugValue = 0)
+        {
+            if (!Enum.IsDefined(typeof(Phase8UnityDebugActionKindV1), debugAction))
+            {
+                throw new ArgumentOutOfRangeException(nameof(debugAction));
+            }
+
+            return new Phase8UnityInputCommandV1(
+                sequence,
+                Phase8UnityCommandKindV1.Debug,
+                0,
+                0.0,
+                null,
+                0,
+                null,
+                0,
+                null,
+                debugAction,
+                debugValue);
+        }
+
+        private static void RequireRefuellingFields(
+            string refuellingDirectionId,
+            ushort shiftCount,
+            string fuelTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(refuellingDirectionId))
+            {
+                throw new ArgumentException(
+                    "A refuelling direction is required.",
+                    nameof(refuellingDirectionId));
+            }
+
+            if (shiftCount == 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(shiftCount));
+            }
+
+            if (string.IsNullOrWhiteSpace(fuelTypeId))
+            {
+                throw new ArgumentException("A fuel type is required.", nameof(fuelTypeId));
+            }
+        }
+
         private static void RequireFinite(double value, string parameterName)
         {
             if (double.IsNaN(value) || double.IsInfinity(value))
@@ -163,6 +287,118 @@ namespace ReactorGame.Unity
             uint turnSummaryCount,
             string outcomeId,
             bool isPaused)
+            : this(
+                scenarioId,
+                difficultyId,
+                playbackModeId,
+                accelerationFactor,
+                wallControlTickMilliseconds,
+                scenarioHorizonSeconds,
+                simulationTimeSeconds,
+                wallElapsedSeconds,
+                normalizedPowerFraction,
+                absoluteTiltFraction,
+                controlMarginFraction,
+                deviceAvailableFraction,
+                refuelRequestsRemaining,
+                pendingActionCount,
+                processedScriptedEventCount,
+                scoreTotal,
+                turnSummaryCount,
+                outcomeId,
+                isPaused,
+                0,
+                0,
+                -1,
+                string.Empty,
+                0,
+                null,
+                0)
+        {
+        }
+
+        public Phase8UnityPresentationSnapshotV1(
+            string scenarioId,
+            string difficultyId,
+            string playbackModeId,
+            double accelerationFactor,
+            uint wallControlTickMilliseconds,
+            double scenarioHorizonSeconds,
+            double simulationTimeSeconds,
+            double wallElapsedSeconds,
+            double normalizedPowerFraction,
+            double absoluteTiltFraction,
+            double controlMarginFraction,
+            double deviceAvailableFraction,
+            uint refuelRequestsRemaining,
+            uint pendingActionCount,
+            uint processedScriptedEventCount,
+            double scoreTotal,
+            uint turnSummaryCount,
+            string outcomeId,
+            bool isPaused,
+            uint freshBundlesAvailable,
+            uint refuellingOperationCount,
+            int lastRefuelledChannel,
+            string lastRefuellingDirectionId,
+            ushort lastRefuellingShiftCount)
+            : this(
+                scenarioId,
+                difficultyId,
+                playbackModeId,
+                accelerationFactor,
+                wallControlTickMilliseconds,
+                scenarioHorizonSeconds,
+                simulationTimeSeconds,
+                wallElapsedSeconds,
+                normalizedPowerFraction,
+                absoluteTiltFraction,
+                controlMarginFraction,
+                deviceAvailableFraction,
+                refuelRequestsRemaining,
+                pendingActionCount,
+                processedScriptedEventCount,
+                scoreTotal,
+                turnSummaryCount,
+                outcomeId,
+                isPaused,
+                freshBundlesAvailable,
+                refuellingOperationCount,
+                lastRefuelledChannel,
+                lastRefuellingDirectionId,
+                lastRefuellingShiftCount,
+                null,
+                0)
+        {
+        }
+
+        public Phase8UnityPresentationSnapshotV1(
+            string scenarioId,
+            string difficultyId,
+            string playbackModeId,
+            double accelerationFactor,
+            uint wallControlTickMilliseconds,
+            double scenarioHorizonSeconds,
+            double simulationTimeSeconds,
+            double wallElapsedSeconds,
+            double normalizedPowerFraction,
+            double absoluteTiltFraction,
+            double controlMarginFraction,
+            double deviceAvailableFraction,
+            uint refuelRequestsRemaining,
+            uint pendingActionCount,
+            uint processedScriptedEventCount,
+            double scoreTotal,
+            uint turnSummaryCount,
+            string outcomeId,
+            bool isPaused,
+            uint freshBundlesAvailable,
+            uint refuellingOperationCount,
+            int lastRefuelledChannel,
+            string lastRefuellingDirectionId,
+            ushort lastRefuellingShiftCount,
+            GameCorePresentationSnapshot core,
+            ulong seed)
         {
             if (string.IsNullOrWhiteSpace(scenarioId))
             {
@@ -220,6 +456,13 @@ namespace ReactorGame.Unity
             TurnSummaryCount = turnSummaryCount;
             OutcomeId = outcomeId;
             IsPaused = isPaused;
+            FreshBundlesAvailable = freshBundlesAvailable;
+            RefuellingOperationCount = refuellingOperationCount;
+            LastRefuelledChannel = lastRefuelledChannel;
+            LastRefuellingDirectionId = lastRefuellingDirectionId ?? string.Empty;
+            LastRefuellingShiftCount = lastRefuellingShiftCount;
+            Core = core;
+            Seed = seed;
         }
 
         public string ScenarioId { get; }
@@ -260,6 +503,20 @@ namespace ReactorGame.Unity
 
         public bool IsPaused { get; }
 
+        public uint FreshBundlesAvailable { get; }
+
+        public uint RefuellingOperationCount { get; }
+
+        public int LastRefuelledChannel { get; }
+
+        public string LastRefuellingDirectionId { get; }
+
+        public ushort LastRefuellingShiftCount { get; }
+
+        public GameCorePresentationSnapshot Core { get; }
+
+        public ulong Seed { get; }
+
         private static void RequireFinite(double value, string parameterName)
         {
             if (double.IsNaN(value) || double.IsInfinity(value))
@@ -282,14 +539,18 @@ namespace ReactorGame.Unity
             bool accepted,
             string diagnosticCode,
             string diagnosticMessage,
-            Phase8UnityPresentationSnapshotV1 snapshot)
+            string message,
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            GameCorePresentationSnapshot previewCore)
         {
             Sequence = sequence;
             Kind = kind;
             Accepted = accepted;
             DiagnosticCode = diagnosticCode;
             DiagnosticMessage = diagnosticMessage;
+            Message = message;
             Snapshot = snapshot;
+            PreviewCore = previewCore;
         }
 
         public ulong Sequence { get; }
@@ -302,11 +563,32 @@ namespace ReactorGame.Unity
 
         public string DiagnosticMessage { get; }
 
+        public string Message { get; }
+
         public Phase8UnityPresentationSnapshotV1 Snapshot { get; }
+
+        public GameCorePresentationSnapshot PreviewCore { get; }
 
         public static Phase8UnityCommandResultV1 AcceptedResult(
             Phase8UnityInputCommandV1 command,
             Phase8UnityPresentationSnapshotV1 snapshot)
+        {
+            return AcceptedResult(command, snapshot, string.Empty, null);
+        }
+
+        public static Phase8UnityCommandResultV1 AcceptedResult(
+            Phase8UnityInputCommandV1 command,
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            string message)
+        {
+            return AcceptedResult(command, snapshot, message, null);
+        }
+
+        public static Phase8UnityCommandResultV1 AcceptedResult(
+            Phase8UnityInputCommandV1 command,
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            string message,
+            GameCorePresentationSnapshot previewCore)
         {
             if (command == null)
             {
@@ -324,7 +606,9 @@ namespace ReactorGame.Unity
                 true,
                 null,
                 null,
-                snapshot);
+                message ?? string.Empty,
+                snapshot,
+                previewCore);
         }
 
         public static Phase8UnityCommandResultV1 RejectedResult(
@@ -364,7 +648,9 @@ namespace ReactorGame.Unity
                 false,
                 diagnosticCode,
                 diagnosticMessage ?? string.Empty,
-                snapshot);
+                diagnosticMessage ?? string.Empty,
+                snapshot,
+                null);
         }
     }
 

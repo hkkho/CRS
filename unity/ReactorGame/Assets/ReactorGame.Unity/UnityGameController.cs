@@ -19,6 +19,8 @@ namespace ReactorGame.Unity
         private Phase10DashboardView _dashboard;
         private Phase10ControlsView _controls;
         private Phase10TimelineView _timeline;
+        private CoreMapView _coreMap;
+        private DebugMenuView _debugMenu;
         private double _accumulatedWallMilliseconds;
 
         public bool IsInitialized { get; private set; }
@@ -26,6 +28,16 @@ namespace ReactorGame.Unity
         public bool AutoAdvance { get; set; } = true;
 
         public UnityRuntimePort RuntimePort { get; private set; }
+
+        public CoreMapView CoreMap
+        {
+            get { return _coreMap; }
+        }
+
+        public DebugMenuView DebugMenu
+        {
+            get { return _debugMenu; }
+        }
 
         private void Start()
         {
@@ -51,6 +63,16 @@ namespace ReactorGame.Unity
                 _dashboard = RequireComponent<Phase10DashboardView>();
                 _controls = RequireComponent<Phase10ControlsView>();
                 _timeline = RequireComponent<Phase10TimelineView>();
+                _coreMap = GetComponent<CoreMapView>();
+                if (_coreMap == null)
+                {
+                    _coreMap = gameObject.AddComponent<CoreMapView>();
+                }
+                _debugMenu = GetComponent<DebugMenuView>();
+                if (_debugMenu == null)
+                {
+                    _debugMenu = gameObject.AddComponent<DebugMenuView>();
+                }
 
                 shell.BuildVisualShell();
                 RuntimePort = new UnityRuntimePort(PracticeGameSessionFactory.Create());
@@ -58,6 +80,8 @@ namespace ReactorGame.Unity
                 _dashboard.Bind(_adapter);
                 _controls.Bind(_adapter);
                 _timeline.Bind(_adapter);
+                _coreMap.Bind(_adapter);
+                _debugMenu.Bind(_adapter);
                 IsInitialized = true;
                 Debug.Log("CANDU practice session started; real-time simulation pacing is active.");
             }
@@ -110,6 +134,41 @@ namespace ReactorGame.Unity
             }
         }
 
+        public bool RestartPracticeSession()
+        {
+            if (!IsInitialized)
+            {
+                return false;
+            }
+
+            try
+            {
+                _debugMenu.Unbind();
+                _coreMap.Unbind();
+                _timeline.Unbind();
+                _controls.Unbind();
+                _dashboard.Unbind();
+                _adapter.Unbind();
+
+                RuntimePort = new UnityRuntimePort(PracticeGameSessionFactory.Create());
+                _adapter.Bind(RuntimePort);
+                _dashboard.Bind(_adapter);
+                _controls.Bind(_adapter);
+                _timeline.Bind(_adapter);
+                _coreMap.Bind(_adapter);
+                _debugMenu.Bind(_adapter);
+                _accumulatedWallMilliseconds = 0.0;
+                AutoAdvance = true;
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception, this);
+                AutoAdvance = false;
+                return false;
+            }
+        }
+
         private void OnDestroy()
         {
             if (!IsInitialized)
@@ -118,6 +177,14 @@ namespace ReactorGame.Unity
             }
 
             _timeline.Unbind();
+            if (_debugMenu != null)
+            {
+                _debugMenu.Unbind();
+            }
+            if (_coreMap != null)
+            {
+                _coreMap.Unbind();
+            }
             _controls.Unbind();
             _dashboard.Unbind();
             _adapter.Unbind();

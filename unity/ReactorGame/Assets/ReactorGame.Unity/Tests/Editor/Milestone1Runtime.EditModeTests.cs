@@ -38,5 +38,25 @@ namespace ReactorGame.Unity.Milestone1
                 Object.DestroyImmediate(gameObject);
             }
         }
+
+        [Test]
+        public void RuntimePortMapsPlayerRefuellingCommandAndSnapshot()
+        {
+            UnityRuntimePort port = new UnityRuntimePort();
+
+            Phase8UnityCommandResultV1 result = port.Execute(
+                Phase8UnityInputCommandV1.RefuelChannel(
+                    1,
+                    190,
+                    Phase10ControlsView.TowardEndBDirectionId,
+                    4,
+                    "NAT-U-SYNTHETIC"));
+
+            Assert.That(result.Accepted, Is.True, result.DiagnosticMessage);
+            Assert.That(result.Snapshot.RefuellingOperationCount, Is.EqualTo(1));
+            Assert.That(result.Snapshot.FreshBundlesAvailable, Is.EqualTo(124));
+            Assert.That(result.Snapshot.LastRefuelledChannel, Is.EqualTo(190));
+            Assert.That(result.Message, Does.Contain("Channel 190 refuelled toward End B"));
+        }
     }
 }
