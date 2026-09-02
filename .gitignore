@@ -5,6 +5,13 @@ TestResults/
 
 # Local/generated artifacts.
 tmp/
+
+# Browser WASM output is generated locally by tools/Build-BrowserWasm.ps1.
+web/candu-playtest/public/wasm/*
+!web/candu-playtest/public/wasm/.gitkeep
+web/candu-playtest/dist/
+web/candu-playtest/node_modules/
+web/candu-playtest/tsconfig.tsbuildinfo
 output/
 **/Library/
 **/Logs/

@@ -27,6 +27,17 @@ localized power, tilt, and score response. The owner debug menu is available
 from F1 or backquote for pause, time control, restart, inventory, pending-action,
 and synthetic-response controls.
 
+The browser algorithm/playtest pivot is also part of the implementation path.
+The companion Vite/Three.js console in `web/candu-playtest` exercises the same
+public `GameSession` contract through a versioned JSON bridge when browser WASM
+is available. Play mode is the existing reduced session; Lab mode is an opt-in
+small-fixture/full-synthetic spatial-solver surface that reuses Core contracts.
+The console records command history, state digests, replay JSON, and feedback
+notes locally so the owner can give dynamic UI and algorithm feedback before a
+Unity presentation change is justified. A compatibility fixture may render the
+console when WASM is unavailable, but it is marked non-authoritative and does
+not contain a second physics implementation.
+
 ## Repository review
 
 ### What already exists
@@ -110,6 +121,42 @@ Introduce the full spatial/refuelling simulation behind the same game-session
 API incrementally. This keeps a runnable build available throughout development.
 
 ## Ordered implementation
+
+### Milestone 0.5: browser algorithm/playtest pivot (companion surface)
+
+This milestone is deliberately placed before the Unity vertical-slice roadmap
+as a fast feedback loop, not as a replacement for Unity.
+
+- Build `web/candu-playtest` as a static Vite + React + TypeScript app with
+  native Three.js rendering and an accessible 2D fallback.
+- Use the versioned `candu-playtest-v1` boundary. Its browser-facing operations
+  are `GetCapabilities()`, `Initialize(requestJson)`, and
+  `Dispatch(commandJson)`. JSON responses carry a protocol version, model/data
+  identity, explicit SI units and two-group ordering, deterministic state
+  digests, and finite numeric values.
+- Keep Play mode backed by `PracticeGameSessionFactory`/`GameSession`, including
+  the 380-channel, 12-bundle inspection and preview/commit flow. Do not copy
+  those rules into TypeScript.
+- Make Lab mode invoke the existing Core spatial contracts on a small explicit
+  fixture first, then expose the full synthetic core as an opt-in diagnostic
+  view. A refuel is atomic: inventory and bindings are updated together,
+  coefficients are rebuilt/rebound, and a failed or nonconverged solve leaves
+  the prior state active.
+- Run the bridge in a Web Worker so the browser remains interactive. If WASM is
+  absent, render compatibility state only, identify it in the UI, and provide
+  the browser-side controls without claiming authoritative solver results.
+- Provide local-only feedback notes, state digest, command-history/replay JSON
+  export, and localStorage persistence. Do not add a backend, authentication,
+  telemetry, or public real-reactor data.
+- Verify with bridge serialization and parity tests, solver/refuelling tests,
+  frontend reducer/protocol tests, a production Vite build, and an
+  `agent-browser` smoke check of the running dev server. Deploy the built static
+  directory with Vercel only after the local build is green.
+
+Done means the owner can open the browser console, run a Play trace, inspect and
+preview a channel, opt into Lab diagnostics, export a reproducible local replay,
+and describe what should or should not be carried into Unity. Unity remains the
+primary acceptance path for the actual game.
 
 ### Milestone 0: make the project easy to launch
 

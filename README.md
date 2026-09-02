@@ -23,24 +23,36 @@ target player experience, and ordered implementation path.
   overlay. It advances the session continuously in fixed 100 ms wall-time requests;
   the Core Map presents 380 selectable channels, 12-bundle burnup details, preview
   and commit actions, and deterministic localized power/tilt/score feedback.
+- `web/candu-playtest` is a companion browser pivot for algorithm and interaction
+  playtesting. It uses the same `ReactorSim.Game` Play session through the
+  versioned browser bridge when WASM is available, and exposes a visibly labelled
+  compatibility fixture when the bridge is not loaded. It is not a second
+  authoritative simulator or a replacement for Unity acceptance.
 - `data` and `reference` contain synthetic packs, literature-derived design context,
   and offline DRAGON5/DONJON5 integration specs.
 
 ## Implementation Roadmap
 
 As detailed in [`gemini_review.md`](gemini_review.md):
-1. **Complete — Slice 1 (Milestone 1):** Interactive 380-channel Core Map heat map
+1. **Milestone 0.5 — Browser algorithm/playtest pivot:** Build and host the
+   small Vite/Three.js console in [`web/candu-playtest`](web/candu-playtest/).
+   Keep Play mode backed by `GameSession`, make Lab mode call the existing Core
+   spatial solver through browser WASM, and capture local replay/digest/feedback
+   data so UI and algorithm decisions can be iterated before Unity presentation
+   work. The browser surface is public synthetic data only, contains no backend
+   or authentication, and remains a companion validation tool.
+2. **Complete — Slice 1 (Milestone 1):** Interactive 380-channel Core Map heat map
    with channel selection, 12-bundle axial profile inspection, and refuel preview.
-2. **Complete — Slice 2:** Deterministic localized power/tilt feedback and
+3. **Complete — Slice 2:** Deterministic localized power/tilt feedback and
    fuel-utilization scoring are connected to committed refuelling.
-3. **Complete — Slice 3 (Milestone 2):** In-game debug and playtesting menu
+4. **Complete — Slice 3 (Milestone 2):** In-game debug and playtesting menu
    (`F1` / backquote overlay) for time jumps, playback, restart, inventory, and
    snapshot diagnostics.
-4. **Slice 4 (Milestone 3):** Refuelling candidate recommendations and operational
+5. **Slice 4 (Milestone 3):** Refuelling candidate recommendations and operational
    trade-off guidance.
-5. **Slice 5 (Milestone 4):** Full 3D two-group spatial diffusion solver (`SpatialEigenSolve`)
+6. **Slice 5 (Milestone 4):** Full 3D two-group spatial diffusion solver (`SpatialEigenSolve`)
    integrated on a background simulation cadence.
-6. **Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack pass.
+7. **Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack pass.
 
 ## Quick start
 
@@ -63,6 +75,23 @@ Automated tests are intentionally limited to focused checks for code being
 changed. The primary acceptance path is a playable build exercised through the
 in-game debug menu. Historical task, gate, approval, and review language in
 supporting research is not an active development requirement.
+
+### Browser playtest pivot
+
+The browser console is launched independently from the Unity project:
+
+```powershell
+cd web/candu-playtest
+npm install
+npm run dev
+```
+
+For a production-shaped static build, run `npm run build`. If the optional
+browser bridge has been published, copy its output into `public/wasm` with
+`tools/Build-BrowserWasm.ps1` before building. Vercel can deploy the
+`web/candu-playtest` directory as a static Vite project; there is no runtime
+server, user account, or reactor-analysis executable involved. See the web
+README for the bridge, replay, and deployment details.
 
 ## Codex agent collaboration
 
