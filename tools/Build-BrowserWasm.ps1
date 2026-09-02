@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+    [string]$CommitSha = $env:GITHUB_SHA
 )
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -67,5 +68,31 @@ function Copy-PublishedFiles {
 # publish root while the boot/runtime assets live below wwwroot.
 Copy-PublishedFiles -SourceRoot $stagingPath -RelativeBase ''
 Copy-PublishedFiles -SourceRoot $publishedWebRoot -RelativeBase '' -Recurse
+
+if ([string]::IsNullOrWhiteSpace($CommitSha)) {
+    try {
+        $CommitSha = (git -C $repoRoot rev-parse --verify HEAD 2>$null).Trim()
+    } catch {
+        $CommitSha = ''
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($CommitSha)) {
+    $CommitSha = 'unknown'
+}
+
+$buildInfo = [ordered]@{
+    gitCommitSha      = $CommitSha
+    configuration     = $Configuration
+    targetFramework   = 'net10.0'
+    runtimeIdentifier = 'browser-wasm'
+}
+$buildInfo | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $targetPath 'build-info.json') -Encoding utf8
+
+$mainModulePath = Join-Path $targetPath 'main.mjs'
+$wasmFiles = @(Get-ChildItem -LiteralPath $targetPath -Recurse -File -Filter '*.wasm')
+if (-not (Test-Path -LiteralPath $mainModulePath -PathType Leaf) -or $wasmFiles.Count -eq 0) {
+    throw "Browser WASM staging did not produce main.mjs and at least one .wasm payload."
+}
 
 Write-Host "Browser WASM staged at $targetPath"

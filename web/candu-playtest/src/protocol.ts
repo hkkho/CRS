@@ -6,13 +6,14 @@ export const CORE_GRID_WIDTH = 22 as const;
 export const CORE_GRID_HEIGHT = 22 as const;
 
 export type ProtocolSource = "wasm" | "synthetic-fixture";
+export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
 export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
 export type DiagnosticLevel = "info" | "warning" | "error";
 export type EventTone = "info" | "positive" | "warning";
 
 export interface BridgeStatus {
-  source: ProtocolSource;
+  source: BridgeAvailability;
   title: string;
   detail: string;
   isWasmAvailable: boolean;

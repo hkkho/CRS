@@ -3,10 +3,11 @@
 Milestone 0.5 is a static browser companion for testing the refuelling loop and
 collecting dynamic feedback before the Unity presentation is refined. The
 authoritative path is the engine-neutral C# model compiled to browser WASM and
-called from a dedicated Web Worker. If the generated WASM files are absent, the
-UI labels itself as `SYNTHETIC FIXTURE`; that fixture exists only to keep the
-interaction surface usable during frontend work and is not a second source of
-reactor truth.
+called from a dedicated Web Worker. In development, or when explicitly enabled
+with `?compatibility=fixture` (or `?debug=fixture`), the UI can use the clearly
+labelled `SYNTHETIC FIXTURE` compatibility surface. Production fails closed with
+`Authoritative WASM bridge unavailable` and disables simulation controls if the
+bridge cannot load; the fixture is never treated as authoritative.
 
 ## Local run
 
@@ -28,6 +29,38 @@ root:
 The script publishes `src/ReactorSim.BrowserHost` for `browser-wasm` and copies
 its `wwwroot` output into `public/wasm`. Generated WASM output is intentionally
 ignored; deployments should run the staging script before the Vercel build.
+The staging script also writes `public/wasm/build-info.json` with the source
+commit, Release configuration, target framework, and runtime identifier.
+
+## Production deployment
+
+`.github/workflows/deploy-candu-playtest.yml` is the production path. On a push
+to `main` or `master`, or from `workflow_dispatch`, it:
+
+1. installs the pinned .NET 10 SDK and `wasm-tools` workload;
+2. publishes `src/ReactorSim.BrowserHost/ReactorSim.BrowserHost.csproj` in
+   Release mode and stages the complete output under `public/wasm`;
+3. verifies `main.mjs`, a `.wasm` payload, and build provenance;
+4. runs `npm ci`, frontend tests, and the Vite production build;
+5. links and pulls the existing Vercel project, runs `vercel build --prod`, and
+   checks that the bridge assets survived into `.vercel/output`;
+6. deploys the prebuilt output with `vercel deploy --prebuilt --prod
+   --archive=tgz`; and
+7. runs a Chromium smoke test against the deployment.
+
+Configure these GitHub Actions secrets on the `hkkho/CRS` repository before
+running the workflow:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+The workflow uses the Vercel CLI and never uses the inline-files deployment
+connector. The Vercel project is linked from `web/candu-playtest`, so the
+frontend remains a static Vite deployment with no backend or authentication.
+
+For local staging, run `./tools/Build-BrowserWasm.ps1` from the repository root,
+then `npm ci`, `npm test`, and `npm run build` from `web/candu-playtest`.
 
 ## Playtest contract
 

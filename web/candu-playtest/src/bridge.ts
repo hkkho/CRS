@@ -22,11 +22,21 @@ const authoritativeWasmStatus: BridgeStatus = {
 };
 
 const loadingStatus: BridgeStatus = {
-  source: "synthetic-fixture",
+  source: "loading",
   title: "LOADING WASM",
   detail: "Attempting the authoritative browser bridge in a dedicated worker",
   isWasmAvailable: false,
-  capabilities: ["compatibility snapshot", "queued commands", "automatic fallback"],
+  capabilities: ["bridge initialization pending"],
+};
+
+export const AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE = "Authoritative WASM bridge unavailable";
+
+const unavailableStatus: BridgeStatus = {
+  source: "unavailable",
+  title: "AUTHORITATIVE WASM UNAVAILABLE",
+  detail: AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE,
+  isWasmAvailable: false,
+  capabilities: [],
 };
 
 export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
@@ -211,8 +221,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
 
 class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private readonly fixture: CanduPlaytestBridge;
+  private readonly compatibilityFixtureEnabled: boolean;
   private readonly listeners = new Set<(status: BridgeStatus, snapshot: CanduSnapshot) => void>();
   private readonly wasm: WorkerProtocolBridge | null;
+  private readonly unavailable: CanduPlaytestBridge;
   private active: CanduPlaytestBridge;
   private activeStatus: BridgeStatus;
   private selectedMode: "play" | "lab" = "play";
@@ -220,8 +232,14 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
 
   constructor() {
     this.fixture = createSyntheticFixtureBridge();
-    this.active = this.fixture;
+    this.compatibilityFixtureEnabled = isCompatibilityFixtureEnabled();
+    this.unavailable = new UnavailableProtocolBridge(this.fixture.getSnapshot());
+    this.active = this.compatibilityFixtureEnabled ? this.fixture : this.unavailable;
     this.activeStatus = loadingStatus;
+
+    if (!this.compatibilityFixtureEnabled) {
+      this.activeStatus = unavailableStatus;
+    }
 
     try {
       this.wasm = new WorkerProtocolBridge();
@@ -231,7 +249,9 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
 
     if (this.wasm === null) {
       this.settled = Promise.resolve();
-      this.activeStatus = this.fixture.status;
+      if (this.compatibilityFixtureEnabled) {
+        this.activeStatus = this.fixture.status;
+      }
       return;
     }
 
@@ -244,12 +264,20 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
       })
       .catch((error: unknown) => {
         const reason = error instanceof Error ? error.message : "module unavailable";
-        this.active = this.fixture;
-        this.activeStatus = {
-          ...this.fixture.status,
-          detail: `Deterministic compatibility data · browser WASM unavailable (${reason})`,
-        };
-        this.notify(this.fixture.getSnapshot());
+        if (this.compatibilityFixtureEnabled) {
+          this.active = this.fixture;
+          this.activeStatus = {
+            ...this.fixture.status,
+            detail: `Deterministic compatibility data · browser WASM unavailable (${reason})`,
+          };
+        } else {
+          this.active = this.unavailable;
+          this.activeStatus = {
+            ...unavailableStatus,
+            detail: `${AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}. ${reason}`,
+          };
+        }
+        this.notify(this.active.getSnapshot());
       });
   }
 
@@ -275,6 +303,10 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
       return snapshot;
     }
 
+    if (this.active === this.unavailable) {
+      throw new Error(AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE);
+    }
+
     const reset = await this.fixture.dispatch({ type: "reset" });
     this.notify(reset.snapshot);
     return reset.snapshot;
@@ -290,6 +322,33 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
       listener(this.activeStatus, snapshot);
     }
   }
+}
+
+class UnavailableProtocolBridge implements CanduPlaytestBridge {
+  readonly status = unavailableStatus;
+
+  constructor(private readonly snapshot: CanduSnapshot) {}
+
+  getSnapshot(): CanduSnapshot {
+    return this.snapshot;
+  }
+
+  dispatch(): Promise<CanduCommandResponse> {
+    return Promise.reject(new Error(AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE));
+  }
+}
+
+function isCompatibilityFixtureEnabled(): boolean {
+  if (import.meta.env.DEV) {
+    return true;
+  }
+
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const parameters = new URLSearchParams(window.location.search);
+  return parameters.get("compatibility") === "fixture" || parameters.get("debug") === "fixture";
 }
 
 export function createCanduPlaytestBridge(): CanduPlaytestBridgeLifecycle {

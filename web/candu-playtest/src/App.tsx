@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, ReactNode } from "react";
-import { createCanduPlaytestBridge, type CanduPlaytestBridgeLifecycle } from "./bridge";
+import {
+  AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE,
+  createCanduPlaytestBridge,
+  type CanduPlaytestBridgeLifecycle,
+} from "./bridge";
 import { CoreScene } from "./components/CoreScene";
 import {
   type CanduChannelSnapshot,
@@ -58,9 +62,11 @@ export default function App() {
 
   useEffect(() => {
     const lifecycle = bridge as CanduPlaytestBridgeLifecycle;
-    return lifecycle.subscribe((bridgeStatus, nextSnapshot) => {
+    const unsubscribe = lifecycle.subscribe((bridgeStatus, nextSnapshot) => {
       uiDispatch({ type: "bridge-state", bridgeStatus, snapshot: nextSnapshot });
     });
+    uiDispatch({ type: "bridge-state", bridgeStatus: bridge.status, snapshot: bridge.getSnapshot() });
+    return unsubscribe;
   }, []);
 
   const snapshot = uiState.snapshot;
@@ -180,7 +186,7 @@ export default function App() {
   }, []);
 
   const saveReplay = useCallback(() => {
-    const archive = createReplayArchive(uiState.history, uiState.bridgeStatus.source);
+    const archive = createReplayArchive(uiState.history, uiState.snapshot.source);
     const saved = saveReplayArchive(archive);
     uiDispatch({
       type: "set-replay-status",
@@ -189,7 +195,7 @@ export default function App() {
   }, [uiState.history]);
 
   const downloadReplay = useCallback(() => {
-    const archive = createReplayArchive(uiState.history, uiState.bridgeStatus.source);
+    const archive = createReplayArchive(uiState.history, uiState.snapshot.source);
     downloadReplayArchive(archive);
     uiDispatch({ type: "set-replay-status", status: `Downloaded ${archive.commands.length} commands as JSON.` });
   }, [uiState.history]);
@@ -243,9 +249,12 @@ export default function App() {
     return <div className="fatal-state">Core snapshot did not contain a selectable channel.</div>;
   }
 
+  const bridgeInteractive = uiState.bridgeStatus.source === "wasm" || uiState.bridgeStatus.source === "synthetic-fixture";
+  const commandControlsDisabled = isCommandPending || !bridgeInteractive;
+
   return (
-    <div className="app-shell">
-      <Sidebar mode={uiState.mode} onChangeMode={changeMode} snapshot={snapshot} />
+    <div className="app-shell" data-bridge-status={uiState.bridgeStatus.source}>
+      <Sidebar mode={uiState.mode} onChangeMode={changeMode} snapshot={snapshot} bridgeInteractive={bridgeInteractive} />
       <main className="console-main">
         <TopBar bridgeStatus={uiState.bridgeStatus} snapshot={snapshot} overallStatus={overallStatus} />
         <section className="hero-row" aria-labelledby="page-title">
@@ -258,8 +267,8 @@ export default function App() {
           </div>
           <div className="hero-session-card">
             <div className="hero-session-line">
-              <span className="status-dot is-live" aria-hidden="true" />
-              <span>Practice session live</span>
+              <span className={bridgeInteractive ? "status-dot is-live" : "status-dot is-warm"} aria-hidden="true" />
+              <span>{bridgeInteractive ? "Practice session live" : "Playtest unavailable"}</span>
             </div>
             <strong>{formatSimulationTime(snapshot.simulationTimeSeconds)}</strong>
             <span>wall {formatClockDuration(snapshot.wallElapsedSeconds)} · seed 1001</span>
@@ -297,7 +306,12 @@ export default function App() {
           />
         </section>
 
-        <div className="source-banner" role="status">
+        <div
+          className="source-banner"
+          data-bridge-source={uiState.bridgeStatus.source}
+          data-authoritative-bridge={uiState.bridgeStatus.source === "wasm" ? "active" : "inactive"}
+          role="status"
+        >
           <span className="source-banner-label">
             <span className="status-dot is-warm" aria-hidden="true" />
             {uiState.bridgeStatus.title}
@@ -305,6 +319,13 @@ export default function App() {
           <span>{uiState.bridgeStatus.detail}.</span>
           <span className="source-banner-protocol">{snapshot.protocol}</span>
         </div>
+
+        {uiState.bridgeStatus.source === "unavailable" ? (
+          <div className="bridge-unavailable" role="alert">
+            <strong>{AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}</strong>
+            <span>Production playtest controls are disabled until the C#/.NET browser bridge is available.</span>
+          </div>
+        ) : null}
 
         {uiState.mode === "play" ? (
           <PlayWorkspace
@@ -315,7 +336,7 @@ export default function App() {
             preview={uiState.preview}
             history={uiState.history}
             feedbackNote={feedbackNote}
-            isCommandPending={isCommandPending}
+            isCommandPending={commandControlsDisabled}
             commandError={commandError}
             onSelectChannel={selectChannel}
             onChangeCoreView={(viewMode) => uiDispatch({ type: "set-core-view", viewMode })}
@@ -337,7 +358,7 @@ export default function App() {
             stateDigest={stateDigest}
             replayStatus={uiState.replayStatus}
             copyStatus={copyStatus}
-            isCommandPending={isCommandPending}
+            isCommandPending={commandControlsDisabled}
             onSelectChannel={selectChannel}
             onChangeCoreView={(viewMode) => uiDispatch({ type: "set-core-view", viewMode })}
             onCopyDigest={copyDigest}
@@ -367,10 +388,11 @@ export default function App() {
 interface SidebarProps {
   mode: ConsoleMode;
   snapshot: CanduSnapshot;
+  bridgeInteractive: boolean;
   onChangeMode: (mode: ConsoleMode) => void;
 }
 
-function Sidebar({ mode, snapshot, onChangeMode }: SidebarProps) {
+function Sidebar({ mode, snapshot, bridgeInteractive, onChangeMode }: SidebarProps) {
   return (
     <aside className="sidebar" aria-label="Playtest navigation">
       <div className="brand-lockup">
@@ -388,7 +410,7 @@ function Sidebar({ mode, snapshot, onChangeMode }: SidebarProps) {
       <div className="sidebar-rule" />
       <nav className="mode-nav" aria-label="Console mode">
         <p className="sidebar-label">Workspace</p>
-        <button className={mode === "play" ? "nav-button is-active" : "nav-button"} type="button" onClick={() => onChangeMode("play")} aria-current={mode === "play" ? "page" : undefined}>
+        <button className={mode === "play" ? "nav-button is-active" : "nav-button"} type="button" onClick={() => onChangeMode("play")} aria-current={mode === "play" ? "page" : undefined} disabled={!bridgeInteractive}>
           <span className="nav-icon" aria-hidden="true">◈</span>
           <span>
             <strong>Play</strong>
@@ -396,7 +418,7 @@ function Sidebar({ mode, snapshot, onChangeMode }: SidebarProps) {
           </span>
           {mode === "play" ? <span className="nav-pulse" aria-hidden="true" /> : null}
         </button>
-        <button className={mode === "lab" ? "nav-button is-active" : "nav-button"} type="button" onClick={() => onChangeMode("lab")} aria-current={mode === "lab" ? "page" : undefined}>
+        <button className={mode === "lab" ? "nav-button is-active" : "nav-button"} type="button" onClick={() => onChangeMode("lab")} aria-current={mode === "lab" ? "page" : undefined} disabled={!bridgeInteractive}>
           <span className="nav-icon" aria-hidden="true">⌘</span>
           <span>
             <strong>Lab</strong>
@@ -424,7 +446,7 @@ function Sidebar({ mode, snapshot, onChangeMode }: SidebarProps) {
           <span className="status-dot is-warm" aria-hidden="true" />
           <div>
             <span>System status</span>
-            <strong>Nominal</strong>
+            <strong>{bridgeInteractive ? "Nominal" : "Bridge offline"}</strong>
           </div>
         </div>
         <p className="sidebar-hint">Use 2D map for full keyboard channel selection.</p>
@@ -441,13 +463,14 @@ interface TopBarProps {
 
 function TopBar({ bridgeStatus, snapshot, overallStatus }: TopBarProps) {
   const statusCopy = overallStatus === "stable" ? "Operating envelope stable" : overallStatus === "watch" ? "Watch axial response" : "Attention required";
+  const sourceCopy = bridgeStatus.source === "wasm" ? "WASM LINK" : bridgeStatus.source === "synthetic-fixture" ? "SYNTHETIC DATA" : bridgeStatus.source === "loading" ? "BRIDGE LOADING" : "BRIDGE OFFLINE";
   return (
     <header className="topbar">
       <div className="breadcrumb"><span>WORKSPACE</span><span className="breadcrumb-slash">/</span><strong>LIVE PLAYTEST</strong></div>
       <div className="topbar-actions">
         <span className={`envelope-status is-${overallStatus}`}><span className="status-dot" aria-hidden="true" />{statusCopy}</span>
         <span className="topbar-divider" aria-hidden="true" />
-        <span className="topbar-source"><span className="status-dot is-warm" aria-hidden="true" />{bridgeStatus.source === "wasm" ? "WASM LINK" : "SYNTHETIC DATA"}</span>
+        <span className="topbar-source"><span className="status-dot is-warm" aria-hidden="true" />{sourceCopy}</span>
         <span className="topbar-time">{formatSimulationTime(snapshot.simulationTimeSeconds)}</span>
       </div>
     </header>
@@ -820,7 +843,7 @@ function LabWorkspace(props: LabWorkspaceProps) {
         </section>
         <LabDiagnostics snapshot={props.snapshot} />
       </div>
-      <ReplayPanel history={props.history} source={props.snapshot.source} stateDigest={props.stateDigest} replayStatus={props.replayStatus} copyStatus={props.copyStatus} onCopyDigest={props.onCopyDigest} onSaveReplay={props.onSaveReplay} onDownloadReplay={props.onDownloadReplay} onReplaySaved={props.onReplaySaved} onClearHistory={props.onClearHistory} />
+      <ReplayPanel history={props.history} source={props.snapshot.source} stateDigest={props.stateDigest} replayStatus={props.replayStatus} copyStatus={props.copyStatus} isCommandPending={props.isCommandPending} onCopyDigest={props.onCopyDigest} onSaveReplay={props.onSaveReplay} onDownloadReplay={props.onDownloadReplay} onReplaySaved={props.onReplaySaved} onClearHistory={props.onClearHistory} />
     </>
   );
 }
@@ -872,6 +895,7 @@ interface ReplayPanelProps {
   stateDigest: string;
   replayStatus: string;
   copyStatus: string;
+  isCommandPending: boolean;
   onCopyDigest: () => void;
   onSaveReplay: () => void;
   onDownloadReplay: () => void;
@@ -879,13 +903,13 @@ interface ReplayPanelProps {
   onClearHistory: () => void;
 }
 
-function ReplayPanel({ history, source, stateDigest, replayStatus, copyStatus, onCopyDigest, onSaveReplay, onDownloadReplay, onReplaySaved, onClearHistory }: ReplayPanelProps) {
+function ReplayPanel({ history, source, stateDigest, replayStatus, copyStatus, isCommandPending, onCopyDigest, onSaveReplay, onDownloadReplay, onReplaySaved, onClearHistory }: ReplayPanelProps) {
   const [showJson, setShowJson] = useState(false);
   const previewJson = useMemo(() => serializeReplayForDownload(createReplayArchive(history, source, "2026-01-01T00:00:00.000Z")), [history, source]);
   return (
     <section className="panel replay-panel" aria-labelledby="replay-heading">
       <div className="replay-heading-row"><div><p className="panel-kicker">Deterministic handoff</p><h2 id="replay-heading">State digest & command replay</h2><p>History is JSON-safe, localStorage-backed, and replayable against the active bridge.</p></div><div className="digest-badge"><span>STATE DIGEST</span><strong>{stateDigest}</strong><button type="button" onClick={onCopyDigest} aria-label="Copy state digest">{copyStatus || "copy"}</button></div></div>
-      <div className="replay-controls"><div className="replay-count"><strong>{history.length}</strong><span>recorded commands</span></div><div className="replay-buttons"><button className="button button-secondary" type="button" onClick={onSaveReplay}>Save to localStorage</button><button className="button button-secondary" type="button" onClick={onDownloadReplay}>Download JSON</button><button className="button button-primary" type="button" onClick={onReplaySaved}>Replay saved</button><button className="button button-quiet" type="button" onClick={onClearHistory} disabled={history.length === 0}>Clear history</button></div></div>
+      <div className="replay-controls"><div className="replay-count"><strong>{history.length}</strong><span>recorded commands</span></div><div className="replay-buttons"><button className="button button-secondary" type="button" onClick={onSaveReplay}>Save to localStorage</button><button className="button button-secondary" type="button" onClick={onDownloadReplay}>Download JSON</button><button className="button button-primary" type="button" onClick={onReplaySaved} disabled={isCommandPending}>Replay saved</button><button className="button button-quiet" type="button" onClick={onClearHistory} disabled={history.length === 0}>Clear history</button></div></div>
       <div className="replay-status" role="status"><span className="status-dot is-live" aria-hidden="true" />{replayStatus}<span className="replay-storage-key">{REPLAY_STORAGE_KEY}</span><span className="replay-storage-key">{NOTE_STORAGE_KEY}</span></div>
       <button className="json-disclosure" type="button" aria-expanded={showJson} onClick={() => setShowJson((visible) => !visible)}>{showJson ? "Hide" : "Preview"} replay JSON <span aria-hidden="true">{showJson ? "⌃" : "⌄"}</span></button>
       {showJson ? <pre className="json-preview" aria-label="Replay JSON preview">{previewJson}</pre> : null}

@@ -142,9 +142,11 @@ as a fast feedback loop, not as a replacement for Unity.
   view. A refuel is atomic: inventory and bindings are updated together,
   coefficients are rebuilt/rebound, and a failed or nonconverged solve leaves
   the prior state active.
-- Run the bridge in a Web Worker so the browser remains interactive. If WASM is
-  absent, render compatibility state only, identify it in the UI, and provide
-  the browser-side controls without claiming authoritative solver results.
+- Run the bridge in a Web Worker so the browser remains interactive. In
+  development or with an explicit compatibility-debug URL, absent WASM may
+  render clearly labelled compatibility state; production must fail closed,
+  identify the unavailable authoritative bridge, and disable simulation
+  controls.
 - Provide local-only feedback notes, state digest, command-history/replay JSON
   export, and localStorage persistence. Do not add a backend, authentication,
   telemetry, or public real-reactor data.

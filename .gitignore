@@ -12,6 +12,7 @@ web/candu-playtest/public/wasm/*
 web/candu-playtest/dist/
 web/candu-playtest/node_modules/
 web/candu-playtest/tsconfig.tsbuildinfo
+.vercel/
 output/
 **/Library/
 **/Logs/

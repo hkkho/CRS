@@ -25,8 +25,9 @@ target player experience, and ordered implementation path.
   and commit actions, and deterministic localized power/tilt/score feedback.
 - `web/candu-playtest` is a companion browser pivot for algorithm and interaction
   playtesting. It uses the same `ReactorSim.Game` Play session through the
-  versioned browser bridge when WASM is available, and exposes a visibly labelled
-  compatibility fixture when the bridge is not loaded. It is not a second
+  versioned browser bridge when WASM is available. Development and explicit
+  compatibility-debug URLs may expose a visibly labelled fixture, while
+  production fails closed if the bridge is not loaded. It is not a second
   authoritative simulator or a replacement for Unity acceptance.
 - `data` and `reference` contain synthetic packs, literature-derived design context,
   and offline DRAGON5/DONJON5 integration specs.
@@ -86,10 +87,11 @@ npm install
 npm run dev
 ```
 
-For a production-shaped static build, run `npm run build`. If the optional
-browser bridge has been published, copy its output into `public/wasm` with
-`tools/Build-BrowserWasm.ps1` before building. Vercel can deploy the
-`web/candu-playtest` directory as a static Vite project; there is no runtime
+For a production-shaped static build, stage the authoritative bridge with
+`tools/Build-BrowserWasm.ps1` and then run `npm run build`. The production
+deployment workflow in `.github/workflows/deploy-candu-playtest.yml` performs
+that staging, verifies the Vercel prebuilt output, and runs the browser smoke
+test. Vercel hosts the directory as a static Vite project; there is no runtime
 server, user account, or reactor-analysis executable involved. See the web
 README for the bridge, replay, and deployment details.
 
