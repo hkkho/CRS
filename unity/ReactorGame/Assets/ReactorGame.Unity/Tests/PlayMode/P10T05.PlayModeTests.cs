@@ -20,9 +20,9 @@ namespace ReactorGame.Unity.P10T05
             Assert.That(shell, Is.Not.Null);
             Assert.That(timeline, Is.Not.Null);
             Assert.That(timeline.IsBuilt, Is.True);
-            Assert.That(timeline.IsBound, Is.False);
-            Assert.That(timeline.SnapshotCount, Is.EqualTo(0));
-            Assert.That(timeline.StatusText, Does.Contain("waiting"));
+            Assert.That(timeline.IsBound, Is.True);
+            Assert.That(timeline.SnapshotCount, Is.GreaterThanOrEqualTo(1));
+            Assert.That(timeline.StatusText, Does.Contain("Status: bound"));
             Assert.That(
                 shell.TryGetPageRoot(Phase10ShellPageV1.Timeline, out _),
                 Is.True);

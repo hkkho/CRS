@@ -9,7 +9,7 @@ namespace ReactorGame.Unity.P10T03
     public sealed class P10T03PlayModeTests
     {
         [UnityTest]
-        public IEnumerator BootstrapSceneContainsExplicitDashboardBindingPoint()
+        public IEnumerator BootstrapSceneStartsAndBindsLiveDashboardSession()
         {
             SceneManager.LoadScene("Bootstrap", LoadSceneMode.Single);
             yield return null;
@@ -19,12 +19,20 @@ namespace ReactorGame.Unity.P10T03
                 Object.FindFirstObjectByType<Phase8UnityRuntimeAdapter>();
             Phase10DashboardView view =
                 Object.FindFirstObjectByType<Phase10DashboardView>();
+            UnityGameController controller =
+                Object.FindFirstObjectByType<UnityGameController>();
 
             Assert.That(shell, Is.Not.Null);
             Assert.That(adapter, Is.Not.Null);
             Assert.That(view, Is.Not.Null);
-            Assert.That(adapter.IsBound, Is.False);
-            Assert.That(view.IsBound, Is.False);
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(controller.IsInitialized, Is.True);
+            Assert.That(controller.RuntimePort, Is.Not.Null);
+            Assert.That(adapter.IsBound, Is.True);
+            Assert.That(adapter.Snapshot, Is.Not.Null);
+            Assert.That(view.IsBound, Is.True);
+            Assert.That(view.Snapshot, Is.SameAs(adapter.Snapshot));
+            Assert.That(view.OutcomeText, Does.Contain("Running"));
             Assert.That(shell.TryGetPageRoot(
                 Phase10ShellPageV1.Dashboard,
                 out RectTransform dashboardRoot), Is.True);

@@ -30,12 +30,16 @@ namespace ReactorGame.Unity.P10T04
                 Assert.That(controls.TiltTargetText, Is.EqualTo("0.1"));
 
                 InputField[] inputs = controls.GetComponentsInChildren<InputField>(true);
-                Assert.That(inputs, Has.Length.EqualTo(2));
+                Assert.That(inputs, Has.Length.EqualTo(5));
                 inputs[0].text = "0.875";
                 inputs[1].text = "0.125";
+                inputs[2].text = "190";
+                inputs[3].text = "4";
+                inputs[4].text = "NAT-U-SYNTHETIC";
 
                 Assert.That(controls.ApplyPowerTarget().Accepted, Is.True);
                 Assert.That(controls.ApplyTiltTarget().Accepted, Is.True);
+                Assert.That(controls.RefuelTowardEndA().Accepted, Is.True);
                 Assert.That(controls.AdvanceControlTick().Accepted, Is.True);
                 Assert.That(controls.AdvanceOneSecond().Accepted, Is.True);
                 Assert.That(controls.Pause().Accepted, Is.True);
@@ -43,15 +47,20 @@ namespace ReactorGame.Unity.P10T04
                 Assert.That(controls.UseAuditPlayback().Accepted, Is.True);
                 Assert.That(controls.UseAcceleratedPlayback().Accepted, Is.True);
 
-                Assert.That(port.Commands, Has.Count.EqualTo(8));
+                Assert.That(port.Commands, Has.Count.EqualTo(9));
                 Assert.That(port.Commands[0].Kind, Is.EqualTo(Phase8UnityCommandKindV1.QueuePowerTarget));
                 Assert.That(port.Commands[0].TargetFraction, Is.EqualTo(0.875));
                 Assert.That(port.Commands[1].Kind, Is.EqualTo(Phase8UnityCommandKindV1.QueueTiltTarget));
                 Assert.That(port.Commands[1].TargetFraction, Is.EqualTo(0.125));
-                Assert.That(port.Commands[2].WallMilliseconds, Is.EqualTo(100UL));
-                Assert.That(port.Commands[3].WallMilliseconds, Is.EqualTo(1000UL));
-                Assert.That(port.Commands[6].PlaybackModeId, Is.EqualTo(Phase10ControlsView.AuditPlaybackModeId));
-                Assert.That(port.Commands[7].PlaybackModeId, Is.EqualTo(Phase10ControlsView.AcceleratedPlaybackModeId));
+                Assert.That(port.Commands[2].Kind, Is.EqualTo(Phase8UnityCommandKindV1.RefuelChannel));
+                Assert.That(port.Commands[2].ChannelIndex, Is.EqualTo(190U));
+                Assert.That(port.Commands[2].RefuellingDirectionId, Is.EqualTo(Phase10ControlsView.TowardEndADirectionId));
+                Assert.That(port.Commands[2].ShiftCount, Is.EqualTo(4));
+                Assert.That(port.Commands[2].FuelTypeId, Is.EqualTo("NAT-U-SYNTHETIC"));
+                Assert.That(port.Commands[3].WallMilliseconds, Is.EqualTo(100UL));
+                Assert.That(port.Commands[4].WallMilliseconds, Is.EqualTo(1000UL));
+                Assert.That(port.Commands[7].PlaybackModeId, Is.EqualTo(Phase10ControlsView.AuditPlaybackModeId));
+                Assert.That(port.Commands[8].PlaybackModeId, Is.EqualTo(Phase10ControlsView.AcceleratedPlaybackModeId));
                 for (int index = 0; index < port.Commands.Count; index++)
                 {
                     Assert.That(port.Commands[index].Sequence, Is.EqualTo((ulong)(index + 1)));
