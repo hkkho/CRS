@@ -143,7 +143,7 @@ jobs:
       - name: Smoke test authoritative bridge
         working-directory: web/candu-playtest
         env:
-          PLAYTEST_URL: ${{ steps.deploy.outputs.url }}
+          PLAYTEST_URL: https://crs-candu-playtest.vercel.app
           PLAYTEST_WASM_PATH: ${{ steps.vercel-output.outputs.wasm_path }}
         run: npm run smoke
 
