@@ -90,7 +90,7 @@ jobs:
 
       - name: Link Vercel project
         working-directory: web/candu-playtest
-        run: vercel link --yes --token "$VERCEL_TOKEN" --team "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
+        run: vercel link --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
 
       - name: Pull Vercel production configuration
         working-directory: web/candu-playtest

@@ -14,7 +14,7 @@ function absolutePath(pathname) {
   return new URL(pathname.replace(/^\//, ""), `${targetUrl.origin}/`).toString();
 }
 
-async function assertAsset(response, label, { rejectHtml = false, contentTypeIncludes } = {}) {
+function assertAsset(response, label, { rejectHtml = false, contentTypeIncludes } = {}) {
   if (!response.ok()) {
     throw new Error(`${label} returned HTTP ${response.status()}.`);
   }
@@ -29,6 +29,28 @@ async function assertAsset(response, label, { rejectHtml = false, contentTypeInc
   return contentType;
 }
 
+async function getAssetWithRetry(pathname, label, options = {}) {
+  const retryWindowMs = 60000;
+  const retryDelayMs = 2000;
+  const deadline = Date.now() + retryWindowMs;
+  let lastError;
+
+  while (true) {
+    const response = await page.request.get(absolutePath(pathname));
+    try {
+      assertAsset(response, label, options);
+      return response;
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (Date.now() >= deadline) {
+      throw new Error(`${lastError.message} (after ${retryWindowMs / 1000}s of retries)`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+  }
+}
+
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 const consoleErrors = [];
@@ -41,16 +63,14 @@ page.on("console", (message) => {
 page.on("pageerror", (error) => pageErrors.push(error.message));
 
 try {
-  const mainResponse = await page.request.get(absolutePath("/wasm/main.mjs"));
-  await assertAsset(mainResponse, "/wasm/main.mjs", { rejectHtml: true });
+  const mainResponse = await getAssetWithRetry("/wasm/main.mjs", "/wasm/main.mjs", { rejectHtml: true });
   const mainText = await mainResponse.text();
   if (mainText.trimStart().startsWith("<")) {
     throw new Error("/wasm/main.mjs returned markup instead of JavaScript.");
   }
 
   if (wasmPath) {
-    const wasmResponse = await page.request.get(absolutePath(wasmPath));
-    await assertAsset(wasmResponse, wasmPath, {
+    const wasmResponse = await getAssetWithRetry(wasmPath, wasmPath, {
       rejectHtml: true,
       contentTypeIncludes: "application/wasm",
     });
