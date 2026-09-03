@@ -1,0 +1,149 @@
+name: Deploy CANDU browser playtest
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_CLI_VERSION: 59.11.2
+  VERCEL_TELEMETRY_DISABLED: "1"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Expand deployment source bundle
+        if: ${{ hashFiles('candu-deployment-source.zip') != '' }}
+        run: unzip -q candu-deployment-source.zip -d .
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.302
+
+      - name: Install WebAssembly workload
+        run: dotnet workload install wasm-tools --skip-manifest-update
+
+      - name: Publish authoritative browser bridge
+        shell: pwsh
+        env:
+          BUILD_COMMIT_SHA: ${{ github.sha }}
+        run: .\tools\Build-BrowserWasm.ps1 -Configuration Release -CommitSha $env:BUILD_COMMIT_SHA
+
+      - name: Verify staged bridge output
+        id: staged-wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          wasm_root="web/candu-playtest/public/wasm"
+          test -s "$wasm_root/main.mjs"
+          wasm_file="$(find "$wasm_root" -type f -name '*.wasm' -print -quit)"
+          test -n "$wasm_file"
+          test -s "$wasm_root/build-info.json"
+          node - "$wasm_root/build-info.json" <<'NODE'
+          const fs = require('node:fs');
+          const info = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          if (info.gitCommitSha !== process.env.GITHUB_SHA) throw new Error('build-info.json has the wrong commit SHA');
+          if (info.configuration !== 'Release') throw new Error('build-info.json is not a Release build');
+          if (info.targetFramework !== 'net10.0' || info.runtimeIdentifier !== 'browser-wasm') {
+            throw new Error('build-info.json has the wrong browser target');
+          }
+          NODE
+          wasm_url_path="/${wasm_file#web/candu-playtest/public/}"
+          echo "wasm_path=$wasm_url_path" >> "$GITHUB_OUTPUT"
+          printf 'Staged bridge: %s\n' "$wasm_file"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.x
+          cache: npm
+          cache-dependency-path: web/candu-playtest/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: web/candu-playtest
+        run: npm ci
+
+      - name: Run frontend protocol tests
+        working-directory: web/candu-playtest
+        run: npm test
+
+      - name: Build frontend
+        working-directory: web/candu-playtest
+        run: npm run build
+
+      - name: Install Vercel CLI
+        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
+
+      - name: Link Vercel project
+        working-directory: web/candu-playtest
+        run: vercel link --yes --token "$VERCEL_TOKEN" --team "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
+
+      - name: Pull Vercel production configuration
+        working-directory: web/candu-playtest
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Build Vercel production output
+        working-directory: web/candu-playtest
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      - name: Verify Vercel output contains the bridge
+        id: vercel-output
+        working-directory: web/candu-playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          main_asset="$(find .vercel/output -type f -path '*/wasm/main.mjs' -print -quit)"
+          wasm_asset="$(find .vercel/output -type f -name '*.wasm' -print -quit)"
+          test -n "$main_asset"
+          test -n "$wasm_asset"
+          test -s "$main_asset"
+          test -s "$wasm_asset"
+          node - "$main_asset" <<'NODE'
+          const fs = require('node:fs');
+          const content = fs.readFileSync(process.argv[2], 'utf8').trimStart();
+          if (content.startsWith('<')) throw new Error('Vercel output rewrote main.mjs to HTML');
+          NODE
+          case "$wasm_asset" in
+            .vercel/output/static/*) wasm_url_path="/${wasm_asset#.vercel/output/static/}" ;;
+            .vercel/output/*) wasm_url_path="/${wasm_asset#.vercel/output/}" ;;
+            *) echo "Unexpected Vercel output path: $wasm_asset" >&2; exit 1 ;;
+          esac
+          echo "wasm_path=$wasm_url_path" >> "$GITHUB_OUTPUT"
+          printf 'Vercel bridge assets: %s and %s\n' "$main_asset" "$wasm_asset"
+
+      - name: Deploy prebuilt production output
+        id: deploy
+        working-directory: web/candu-playtest
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_url="$(vercel deploy --prebuilt --prod --archive=tgz --token "$VERCEL_TOKEN")"
+          test -n "$deploy_url"
+          echo "url=$deploy_url" >> "$GITHUB_OUTPUT"
+          printf 'Production deployment: %s\n' "$deploy_url"
+
+      - name: Install Chromium for post-deployment smoke test
+        working-directory: web/candu-playtest
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke test authoritative bridge
+        working-directory: web/candu-playtest
+        env:
+          PLAYTEST_URL: ${{ steps.deploy.outputs.url }}
+          PLAYTEST_WASM_PATH: ${{ steps.vercel-output.outputs.wasm_path }}
+        run: npm run smoke
+
