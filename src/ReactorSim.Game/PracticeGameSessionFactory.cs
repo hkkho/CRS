@@ -12,22 +12,52 @@ namespace ReactorSim.Game
         public const string PlayPlaybackModeId = "play-accelerated-10x";
         public const string DebugPlaybackModeId = "debug-accelerated-60x";
         public const uint WallControlTickMilliseconds = 100;
+        public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
+        public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
 
         public static GameSession Create()
+        {
+            return CreateSession(
+                1.0,
+                10.0,
+                60.0,
+                6.0,
+                600.0,
+                PlayPlaybackModeId);
+        }
+
+        public static GameSession CreateBrowserPlaytest()
+        {
+            return CreateSession(
+                BrowserBaseSimulationSecondsPerWallSecond,
+                BrowserBaseSimulationSecondsPerWallSecond * 10.0,
+                BrowserBaseSimulationSecondsPerWallSecond * 60.0,
+                BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
+                BrowserScenarioHorizonSeconds,
+                RealTimePlaybackModeId);
+        }
+
+        private static GameSession CreateSession(
+            double realTimeAccelerationFactor,
+            double playAccelerationFactor,
+            double debugAccelerationFactor,
+            double maximumPresentationAdvancePerWallTickSeconds,
+            double scenarioHorizonSeconds,
+            string initialPlaybackModeId)
         {
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
                     WallControlTickMilliseconds,
-                    6.0,
-                    10.0,
-                    60.0,
+                    maximumPresentationAdvancePerWallTickSeconds,
+                    playAccelerationFactor,
+                    debugAccelerationFactor,
                     true));
             Phase8PlaybackModeV1 realTime = Require(
-                Phase8PlaybackModeV1.TryCreate(RealTimePlaybackModeId, 1.0, timeModel));
+                Phase8PlaybackModeV1.TryCreate(RealTimePlaybackModeId, realTimeAccelerationFactor, timeModel));
             Phase8PlaybackModeV1 play = Require(
-                Phase8PlaybackModeV1.TryCreate(PlayPlaybackModeId, 10.0, timeModel));
+                Phase8PlaybackModeV1.TryCreate(PlayPlaybackModeId, playAccelerationFactor, timeModel));
             Phase8PlaybackModeV1 debug = Require(
-                Phase8PlaybackModeV1.TryCreate(DebugPlaybackModeId, 60.0, timeModel));
+                Phase8PlaybackModeV1.TryCreate(DebugPlaybackModeId, debugAccelerationFactor, timeModel));
             var playbackModes = new Dictionary<string, Phase8PlaybackModeV1>(StringComparer.Ordinal)
             {
                 [realTime.ModeId] = realTime,
@@ -48,7 +78,7 @@ namespace ReactorSim.Game
             Phase8DifficultyProfileV1 profile = Require(
                 Phase8DifficultyProfileV1.TryCreate(
                     DifficultyId,
-                    600.0,
+                    scenarioHorizonSeconds,
                     20.0,
                     4,
                     6,
@@ -94,7 +124,11 @@ namespace ReactorSim.Game
                     initialState,
                     events));
             Phase8ScenarioRuntimeV1 runtime = Require(
-                Phase8ScenarioRuntimeV1.TryCreate(scenario, profile, timeModel, play));
+                Phase8ScenarioRuntimeV1.TryCreate(
+                    scenario,
+                    profile,
+                    timeModel,
+                    playbackModes[initialPlaybackModeId]));
             Phase8ScoringParametersV1 scoring = Require(
                 Phase8ScoringParametersV1.TryCreate(
                     0.0,

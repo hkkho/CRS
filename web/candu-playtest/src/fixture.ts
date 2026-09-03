@@ -1,4 +1,5 @@
 import {
+  BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND,
   clamp,
   CORE_BUNDLE_POSITION_COUNT,
   CORE_CHANNEL_COUNT,
@@ -23,33 +24,33 @@ import type { BridgeStatus } from "./protocol";
 const HOURS_TO_SECONDS = 60 * 60;
 const PLAYBACK_FACTORS: Record<PlaybackModeId, number> = {
   pause: 0,
-  "1x": 1,
-  "10x": 10,
-  "60x": 60,
+  "1x": BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND,
+  "10x": BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND * 10,
+  "60x": BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND * 60,
 };
 const ROW_LENGTHS = [
-  8,
+  6,
   12,
   14,
   16,
+  18,
+  18,
   20,
   20,
+  22,
+  22,
+  22,
+  22,
+  22,
+  22,
   20,
   20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
-  20,
+  18,
+  18,
   16,
   14,
   12,
-  8,
+  6,
 ] as const;
 
 interface FixtureChannel extends CanduChannelSnapshot {
@@ -89,7 +90,7 @@ const fixtureStatus: BridgeStatus = {
   title: "SYNTHETIC FIXTURE",
   detail: "Deterministic compatibility data · WASM not detected",
   isWasmAvailable: false,
-  capabilities: ["380-channel core", "refuelling preview", "replay-safe commands"],
+  capabilities: ["380-channel CANDU-6 face", "1 h / 2 s base clock", "refuelling preview", "replay-safe commands"],
 };
 
 /**
@@ -155,23 +156,34 @@ function createInitialState(): FixtureState {
 
   for (let channelIndex = 0; channelIndex < CORE_CHANNEL_COUNT; channelIndex += 1) {
     const position = positions[channelIndex];
-    const radialShape = 1 - Math.abs(position.column - 10.5) / 11.5;
-    const verticalShape = 1 - Math.abs(position.row - 10.5) / 11.5;
+    const normalizedX = (position.column - 10.5) / 11.5;
+    const normalizedY = (position.row - 10.5) / 11.5;
+    const radialDistance = Math.sqrt(normalizedX ** 2 + normalizedY ** 2);
+    const radialShape = clamp(1 - radialDistance ** 1.45, 0, 1);
+    const azimuthalRipple =
+      (Math.sin((position.column + 1) * 0.73) + Math.cos((position.row + 1) * 0.61)) * 0.005;
     const basePowerFraction = clamp(
-      0.81 + radialShape * 0.17 + verticalShape * 0.07 + Math.sin(channelIndex * 0.17) * 0.018,
-      0.72,
-      1.17,
+      0.74 + radialShape * 0.34 + azimuthalRipple,
+      0.68,
+      1.12,
     );
     const baseTiltFraction = clamp(
-      -0.025 + Math.sin(channelIndex * 0.11) * 0.06 + (position.row - 10.5) * 0.0014,
-      -0.14,
-      0.14,
+      normalizedY * 0.035 + normalizedX * 0.012 + azimuthalRipple * 0.7,
+      -0.08,
+      0.08,
     );
-    const averageBurnupMwdPerKg = 7.2 + radialShape * 3.8 + verticalShape * 0.85;
+    const nominalBurnupMwdPerKg = clamp(
+      5.8 + radialShape * 5.0 - normalizedY * 0.16 + normalizedX * 0.08,
+      4.8,
+      11.4,
+    );
     const bundles = Array.from({ length: CORE_BUNDLE_POSITION_COUNT }, (_, bundlePosition) => {
       const axialShape = 1 - Math.abs(bundlePosition - 5.5) / 6.5;
       const burnup = clamp(
-        averageBurnupMwdPerKg * (0.66 + axialShape * 0.27) + Math.sin((channelIndex + bundlePosition) * 0.3) * 0.12,
+        nominalBurnupMwdPerKg * (0.66 + axialShape * 0.27) +
+          (Math.sin((position.column + 1) * 0.37 + bundlePosition * 0.6) +
+            Math.cos((position.row + 1) * 0.29 - bundlePosition * 0.25)) *
+            0.06,
         3.4,
         13.9,
       );
@@ -190,7 +202,8 @@ function createInitialState(): FixtureState {
       channelIndex,
       gridColumn: position.column,
       gridRow: position.row,
-      averageBurnupMwdPerKg,
+      flowDirection: getFlowDirection(position),
+      averageBurnupMwdPerKg: bundles.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / bundles.length,
       localPowerFraction: basePowerFraction,
       localTiltFraction: baseTiltFraction,
       bundles,
@@ -227,7 +240,7 @@ function createInitialState(): FixtureState {
       eventId: "fixture-event-0",
       timeSeconds: 0,
       title: "Practice session online",
-      detail: "Select a channel to inspect the 12-position bundle stack.",
+      detail: "Base control is 1 simulated hour every 2 seconds; select a channel to inspect its 12-position bundle stack.",
       tone: "info",
     },
   };
@@ -246,6 +259,10 @@ function createGridPositions(): Array<{ column: number; row: number }> {
     throw new Error("The deterministic compatibility fixture must contain 380 channels.");
   }
   return positions;
+}
+
+function getFlowDirection(position: { column: number; row: number }): RefuelRequest["directionId"] {
+  return (position.column + position.row) % 2 === 0 ? "toward-end-b" : "toward-end-a";
 }
 
 function createBundle(
@@ -451,7 +468,7 @@ function commitRefuel(
   setEvent(
     state,
     `Channel ${request.channelIndex} refuelled`,
-    `${request.shiftCount} bundles inserted ${request.directionId === "toward-end-b" ? "from end B" : "from end A"}; ${preview.dischargeBurnupMwdPerKg.toFixed(1)} MWd/kg discharged.`,
+    `${request.shiftCount} bundles moved ${request.directionId === "toward-end-b" ? "End A → End B" : "End B → End A"}; ${preview.dischargeBurnupMwdPerKg.toFixed(1)} MWd/kg discharged.`,
     "positive",
   );
   return accept(state, command, `Committed ${request.shiftCount}-bundle shift on channel ${request.channelIndex}.`, preview);
@@ -600,6 +617,7 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
         channelIndex: channel.channelIndex,
         gridColumn: channel.gridColumn,
         gridRow: channel.gridRow,
+        flowDirection: channel.flowDirection,
         averageBurnupMwdPerKg: channel.averageBurnupMwdPerKg,
         localPowerFraction: channel.localPowerFraction,
         localTiltFraction: channel.localTiltFraction,

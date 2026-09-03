@@ -4,6 +4,8 @@ export const CORE_CHANNEL_COUNT = 380 as const;
 export const CORE_BUNDLE_POSITION_COUNT = 12 as const;
 export const CORE_GRID_WIDTH = 22 as const;
 export const CORE_GRID_HEIGHT = 22 as const;
+export const BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND = 1_800 as const;
+export const BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR = 2 as const;
 
 export type ProtocolSource = "wasm" | "synthetic-fixture";
 export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
@@ -35,6 +37,7 @@ export interface CanduChannelSnapshot {
   channelIndex: number;
   gridColumn: number;
   gridRow: number;
+  flowDirection: RefuellingDirection;
   averageBurnupMwdPerKg: number;
   localPowerFraction: number;
   localTiltFraction: number;

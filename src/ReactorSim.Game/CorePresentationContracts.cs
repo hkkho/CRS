@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using ReactorSim.Core;
 
 namespace ReactorSim.Game
 {
@@ -65,6 +66,7 @@ namespace ReactorSim.Game
             double averageBurnupMwDayPerKg,
             double localPowerFraction,
             double localTiltFraction,
+            FlowDirection flowDirection,
             IEnumerable<GameBundlePresentationSnapshot> bundles)
         {
             if (bundles == null)
@@ -86,6 +88,7 @@ namespace ReactorSim.Game
             AverageBurnupMwDayPerKg = averageBurnupMwDayPerKg;
             LocalPowerFraction = localPowerFraction;
             LocalTiltFraction = localTiltFraction;
+            FlowDirection = flowDirection;
             Bundles = new ReadOnlyCollection<GameBundlePresentationSnapshot>(copy);
         }
 
@@ -100,6 +103,8 @@ namespace ReactorSim.Game
         public double LocalPowerFraction { get; }
 
         public double LocalTiltFraction { get; }
+
+        public FlowDirection FlowDirection { get; }
 
         public IReadOnlyList<GameBundlePresentationSnapshot> Bundles { get; }
     }
@@ -165,17 +170,18 @@ namespace ReactorSim.Game
 
     /// <summary>
     /// Deterministic synthetic face layout. The row lengths describe a
-    /// rounded 22x22 CANDU-style face and sum to the approved 380 channels.
+    /// rounded 22x22 CANDU-6 face and sum to the approved 380 channels. The
+    /// row lengths retain the stepped CANDU-6 outline rather than filling a
+    /// rectangular 20-channel middle band.
     /// Channel identifiers are assigned row-major within this layout.
     /// </summary>
     internal static class PracticeCoreLayout
     {
         private static readonly int[] RowLengths =
         {
-            8, 12, 14, 16,
-            20, 20, 20, 20, 20, 20, 20,
-            20, 20, 20, 20, 20, 20, 20,
-            16, 14, 12, 8
+            6, 12, 14, 16, 18, 18, 20, 20,
+            22, 22, 22, 22, 22, 22,
+            20, 20, 18, 18, 16, 14, 12, 6
         };
 
         private static readonly PracticeCoreGridPosition[] Positions = CreatePositions();
@@ -198,6 +204,13 @@ namespace ReactorSim.Game
             }
 
             return RowLengths[row];
+        }
+
+        public static FlowDirection GetFlowDirection(PracticeCoreGridPosition position)
+        {
+            return (position.Column + position.Row) % 2 == 0
+                ? FlowDirection.EndAtoEndB
+                : FlowDirection.EndBtoEndA;
         }
 
         private static PracticeCoreGridPosition[] CreatePositions()

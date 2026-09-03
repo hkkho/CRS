@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
 
@@ -20,6 +21,8 @@ public sealed class GameSessionTests
         Assert.NotEqual(
             snapshot.Core.GetChannel(0).GridRow,
             snapshot.Core.GetChannel(379).GridRow);
+        Assert.Equal(FlowDirection.EndAtoEndB, snapshot.Core.GetChannel(0).FlowDirection);
+        Assert.Equal(FlowDirection.EndBtoEndA, snapshot.Core.GetChannel(1).FlowDirection);
 
         HashSet<(int Column, int Row)> coordinates =
             new HashSet<(int Column, int Row)>();
@@ -55,6 +58,21 @@ public sealed class GameSessionTests
         Assert.True(session.Pause().Accepted);
         Assert.Equal(1.0, session.AdvanceWallMilliseconds(100).Snapshot.SimulationTimeSeconds);
         Assert.True(session.Resume().Accepted);
+    }
+
+    [Fact]
+    public void SelectingLivePlaybackModeAfterPauseResumesTheSession()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+
+        Assert.True(session.Pause().Accepted);
+        GameSessionCommandResult mode = session.SetPlaybackMode(
+            PracticeGameSessionFactory.RealTimePlaybackModeId);
+
+        Assert.True(mode.Accepted, mode.DiagnosticMessage);
+        Assert.False(mode.Snapshot.IsPaused);
+        Assert.Equal(PracticeGameSessionFactory.RealTimePlaybackModeId,
+            mode.Snapshot.PlaybackModeId);
     }
 
     [Fact]

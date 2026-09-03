@@ -7,6 +7,8 @@ import {
 } from "./bridge";
 import { CoreScene } from "./components/CoreScene";
 import {
+  BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND,
+  BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR,
   type CanduChannelSnapshot,
   type CanduCommand,
   type CanduCommandResponse,
@@ -38,6 +40,8 @@ import {
   formatClockDuration,
   formatSimulationTime,
   formatSignedNumber,
+  getFlowArrow,
+  getFlowDirectionLabel,
   getChannelBand,
   getHeatColor,
   getOverallStatus,
@@ -46,6 +50,7 @@ import {
 } from "./visuals";
 
 const bridge = createCanduPlaytestBridge();
+const LIVE_CLOCK_WALL_INTERVAL_MS = 1_000;
 
 export default function App() {
   const [uiState, uiDispatch] = useReducer(
@@ -132,12 +137,12 @@ export default function App() {
     const timer = window.setInterval(() => {
       if (pendingCountRef.current === 0 && !backgroundCommandInFlightRef.current) {
         backgroundCommandInFlightRef.current = true;
-        void sendCommand({ type: "advance", wallMilliseconds: 1000 }, false, false)
+        void sendCommand({ type: "advance", wallMilliseconds: LIVE_CLOCK_WALL_INTERVAL_MS }, false, false)
           .finally(() => {
             backgroundCommandInFlightRef.current = false;
           });
       }
-    }, 1000);
+    }, LIVE_CLOCK_WALL_INTERVAL_MS);
     return () => window.clearInterval(timer);
   }, [sendCommand, snapshot.isPaused, snapshot.playbackModeId]);
 
@@ -597,7 +602,6 @@ function HeatLegend() {
 
 function ChannelDetail({ channel }: { channel: CanduChannelSnapshot }) {
   const band = getChannelBand(channel);
-  const maxBurnup = Math.max(...channel.bundles.map((bundle) => bundle.currentBurnupMwdPerKg), 1);
   return (
     <section className="panel channel-panel" aria-labelledby="channel-heading">
       <div className="channel-heading-row">
@@ -605,7 +609,12 @@ function ChannelDetail({ channel }: { channel: CanduChannelSnapshot }) {
           <p className="panel-kicker">Selected channel</p>
           <h2 id="channel-heading"><span className="channel-prefix">CH</span> {String(channel.channelIndex).padStart(3, "0")}</h2>
         </div>
-        <span className={`channel-status is-${band}`}>{band === "nominal" ? "NOMINAL" : band.toUpperCase()}</span>
+        <div className="channel-heading-badges">
+          <span className={`channel-status is-${band}`}>{band === "nominal" ? "NOMINAL" : band.toUpperCase()}</span>
+          <span className="channel-flow-chip" title="Coolant and fuel travel direction for this channel">
+            <span aria-hidden="true">{getFlowArrow(channel.flowDirection)}</span>{getFlowDirectionLabel(channel.flowDirection)}
+          </span>
+        </div>
       </div>
       <div className="channel-metrics">
         <div><span>Local power</span><strong>{getPowerLabel(channel.localPowerFraction)}</strong></div>
@@ -615,22 +624,47 @@ function ChannelDetail({ channel }: { channel: CanduChannelSnapshot }) {
       <div className="channel-power-bar" aria-label={`Channel ${channel.channelIndex} local power ${getPowerLabel(channel.localPowerFraction)}`}>
         <span className="channel-power-marker" style={{ left: `${Math.min(100, Math.max(0, (channel.localPowerFraction - 0.68) / 0.58 * 100))}%` }} />
       </div>
-      <div className="stack-header"><span>Axial bundle stack</span><span>burnup / identity</span></div>
-      <div className="stack-orientation"><span>END A</span><span>↕ coolant path</span><span>END B</span></div>
+      <BundlePowerChart channel={channel} />
+      <div className="stack-header"><span>Bundle inventory</span><span>burnup / identity</span></div>
+      <div className="stack-orientation"><span>END A</span><span><span aria-hidden="true">{getFlowArrow(channel.flowDirection)}</span> coolant + fuel path</span><span>END B</span></div>
       <div className="bundle-stack" role="list" aria-label={`Channel ${channel.channelIndex} bundle stack`}>
         {channel.bundles.map((bundle) => (
-          <BundleRow key={bundle.bundleId} bundle={bundle} maxBurnup={maxBurnup} />
+          <BundleRow key={bundle.bundleId} bundle={bundle} />
         ))}
       </div>
     </section>
   );
 }
 
-function BundleRow({ bundle, maxBurnup }: { bundle: CanduChannelSnapshot["bundles"][number]; maxBurnup: number }) {
+function BundlePowerChart({ channel }: { channel: CanduChannelSnapshot }) {
+  const displayMaximum = 1.15;
+  return (
+    <div className="bundle-power-chart">
+      <div className="bundle-power-chart-header"><span>Bundle power profile</span><span>0–115% nominal</span></div>
+      <div className="bundle-power-bars" role="img" aria-label={`Bundle power across channel ${channel.channelIndex}, from End A to End B`}>
+        {channel.bundles.map((bundle) => {
+          const height = Math.min(100, Math.max(4, (bundle.localPowerFraction / displayMaximum) * 100));
+          return (
+            <div
+              className={bundle.isFresh ? "bundle-power-column is-fresh" : "bundle-power-column"}
+              key={bundle.bundleId}
+              title={`Bundle ${bundle.position + 1}: ${getPowerLabel(bundle.localPowerFraction)} local power`}
+            >
+              <div className="bundle-power-bar-track"><span className="bundle-power-bar-fill" style={{ height: `${height}%`, background: getHeatColor(bundle.localPowerFraction) }} /></div>
+              <span className="bundle-power-position">{String(bundle.position + 1).padStart(2, "0")}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="bundle-power-axis"><span>END A</span><span><span aria-hidden="true">{getFlowArrow(channel.flowDirection)}</span> fuel / coolant</span><span>END B</span></div>
+    </div>
+  );
+}
+
+function BundleRow({ bundle }: { bundle: CanduChannelSnapshot["bundles"][number] }) {
   return (
     <div className={bundle.isFresh ? "bundle-row is-fresh" : "bundle-row"} role="listitem">
       <span className="bundle-position">{String(bundle.position + 1).padStart(2, "0")}</span>
-      <span className="bundle-burnup-track"><span className="bundle-burnup-fill" style={{ width: `${Math.min(100, (bundle.currentBurnupMwdPerKg / maxBurnup) * 100)}%` }} /></span>
       <span className="bundle-reading"><strong>{bundle.isFresh ? "FRESH" : bundle.currentBurnupMwdPerKg.toFixed(1)}</strong><small>{bundle.isFresh ? bundle.fuelTypeId : "MWd/kg"}</small></span>
       <span className="bundle-id" title={bundle.bundleId}>{bundle.bundleId.replace("SYN-B-", "B-")}</span>
     </div>
@@ -647,9 +681,10 @@ interface RefuelPlannerProps {
 }
 
 function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isCommandPending, onPreview, onCommit }: RefuelPlannerProps) {
-  const [directionId, setDirectionId] = useState<RefuelRequest["directionId"]>("toward-end-b");
+  const [directionId, setDirectionId] = useState<RefuelRequest["directionId"]>(selectedChannel.flowDirection);
   const [shiftCount, setShiftCount] = useState<RefuelRequest["shiftCount"]>(4);
   const [fuelTypeId, setFuelTypeId] = useState("NAT-U-SYNTHETIC");
+  useEffect(() => setDirectionId(selectedChannel.flowDirection), [selectedChannel.channelIndex, selectedChannel.flowDirection]);
   const request: RefuelRequest = { channelIndex: selectedChannel.channelIndex, directionId, shiftCount, fuelTypeId };
   const previewMatches = preview?.request.channelIndex === selectedChannel.channelIndex && preview.request.directionId === directionId && preview.request.shiftCount === shiftCount;
 
@@ -667,8 +702,8 @@ function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isComm
       <form className="refuel-form" onSubmit={submitPreview}>
         <label className="field-label">Fuelling direction
           <select value={directionId} onChange={(event) => setDirectionId(event.target.value as RefuelRequest["directionId"])}>
-            <option value="toward-end-b">Toward end B</option>
-            <option value="toward-end-a">Toward end A</option>
+            <option value="toward-end-b">End A → End B {selectedChannel.flowDirection === "toward-end-b" ? "(with flow)" : "(reverse)"}</option>
+            <option value="toward-end-a">End B → End A {selectedChannel.flowDirection === "toward-end-a" ? "(with flow)" : "(reverse)"}</option>
           </select>
         </label>
         <div className="field-row">
@@ -691,7 +726,7 @@ function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isComm
 
       {previewMatches && preview !== null ? (
         <div className="refuel-preview" aria-live="polite">
-          <div className="preview-heading"><span className="preview-check">✓</span><div><strong>Preview ready</strong><span>{shiftCount} bundles · {directionId === "toward-end-b" ? "end B → A" : "end A → B"}</span></div></div>
+          <div className="preview-heading"><span className="preview-check">✓</span><div><strong>Preview ready</strong><span>{shiftCount} bundles · {directionId === "toward-end-b" ? "End A → End B" : "End B → End A"}</span></div></div>
           <div className="preview-grid">
             <PreviewMetric label="Discharge" value={`${preview.dischargeBurnupMwdPerKg.toFixed(1)} MWd/kg`} />
             <PreviewMetric label="Local power" value={formatSignedNumber(preview.localPowerDeltaFraction * 100, 2) + " pts"} />
@@ -704,7 +739,7 @@ function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isComm
           <p className="preview-note">Commit sends the selected transition to the active bridge.</p>
         </div>
       ) : (
-        <div className="empty-preview"><span className="empty-preview-icon" aria-hidden="true">◎</span><span>Set a direction and shift size, then preview the bundle movement before committing.</span></div>
+        <div className="empty-preview"><span className="empty-preview-icon" aria-hidden="true">◎</span><span>Direction defaults to this channel’s coolant path. Choose a shift size, then preview the bundle movement.</span></div>
       )}
     </section>
   );
@@ -737,10 +772,21 @@ function ControlDeck({ snapshot, isCommandPending, onSetPlayback, onStepSimulati
           <div className="control-label-row"><span>Playback</span><strong>{snapshot.isPaused ? "PAUSED" : snapshot.playbackModeId}</strong></div>
           <div className="playback-buttons" role="group" aria-label="Simulation playback speed">
             {(["pause", "1x", "10x", "60x"] as PlaybackModeId[]).map((modeId) => (
-              <button key={modeId} className={snapshot.playbackModeId === modeId ? "speed-button is-active" : "speed-button"} type="button" aria-pressed={snapshot.playbackModeId === modeId} disabled={isCommandPending} onClick={() => onSetPlayback(modeId)}>{modeId === "pause" ? "Ⅱ" : modeId}</button>
+              <button
+                key={modeId}
+                className={snapshot.playbackModeId === modeId ? "speed-button is-active" : "speed-button"}
+                type="button"
+                aria-label={modeId === "pause" ? "Pause simulation" : snapshot.isPaused ? `Resume simulation at ${modeId}` : `Set playback to ${modeId}`}
+                aria-pressed={snapshot.playbackModeId === modeId}
+                disabled={isCommandPending}
+                onClick={() => onSetPlayback(modeId)}
+              >
+                {modeId === "pause" ? "Ⅱ" : modeId}
+              </button>
             ))}
           </div>
-          <div className="step-row"><span>Step while paused</span><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(1)}>+1 h</button><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(8)}>+8 h</button><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(24)}>+1 d</button></div>
+          <div className="playback-rate-note" title={`${BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND} simulated seconds per wall second`}><span>Base clock</span><strong>{BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR} s = 1 simulated hour</strong></div>
+          <div className="step-row"><span>Jump while paused</span><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(1)}>+1 h</button><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(8)}>+8 h</button><button type="button" className="step-button" disabled={isCommandPending} onClick={() => onStepSimulation(24)}>+1 d</button></div>
         </div>
 
         <div className="target-section">

@@ -36,6 +36,12 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal("play", initialized.GetProperty("mode").GetString());
             Assert.Equal(380, initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channelCount").GetInt32());
             Assert.Equal(12, initialized.GetProperty("snapshot").GetProperty("core").GetProperty("bundlePositionCount").GetInt32());
+            Assert.Equal(
+                "toward-end-b",
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0].GetProperty("flowDirection").GetString());
+            Assert.Equal(
+                "toward-end-a",
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[1].GetProperty("flowDirection").GetString());
 
             JsonElement preview = Parse(
                 PlaytestBridgeV1.Dispatch(
@@ -66,6 +72,41 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(
                 1,
                 invalid.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
+        }
+
+        [Fact]
+        public void BrowserPlayUsesTheHourPerTwoSecondsClockAndResumesAfterDayJump()
+        {
+            JsonElement initialized = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            Assert.Equal("1x", initialized.GetProperty("snapshot").GetProperty("playbackModeId").GetString());
+
+            JsonElement hour = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            Assert.Equal(3_600.0, hour.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+            Assert.Equal(2.0, hour.GetProperty("snapshot").GetProperty("wallElapsedSeconds").GetDouble());
+
+            JsonElement paused = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"set-playback-mode\",\"modeId\":\"pause\"}"));
+            Assert.True(paused.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+
+            JsonElement jumped = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"step\",\"simulationSeconds\":86400}"));
+            Assert.True(jumped.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+            Assert.Equal(90_000.0, jumped.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+
+            JsonElement resumed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"set-playback-mode\",\"modeId\":\"1x\"}"));
+            Assert.False(resumed.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+
+            JsonElement nextHour = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            Assert.Equal(93_600.0, nextHour.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
         }
 
         [Fact]

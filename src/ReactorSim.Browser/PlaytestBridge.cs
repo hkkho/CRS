@@ -342,7 +342,7 @@ namespace ReactorSim.Browser
 
         private static BridgeRuntime CreateRuntime(string mode, string initializationJson)
         {
-            GameSession playSession = PracticeGameSessionFactory.Create();
+            GameSession playSession = PracticeGameSessionFactory.CreateBrowserPlaytest();
             LabPlaytestSession? labSession = null;
             BridgeDiagnosticDto? failure = null;
             if (mode == "lab" &&
@@ -497,7 +497,7 @@ namespace ReactorSim.Browser
                     return Refuel(session, payload, false, out preview);
 
                 case "reset":
-                    runtime.PlaySession = PracticeGameSessionFactory.Create();
+                    runtime.PlaySession = PracticeGameSessionFactory.CreateBrowserPlaytest();
                     runtime.LastEvent = new PlaytestEventDto
                     {
                         EventId = "wasm-event-reset",
@@ -802,6 +802,9 @@ namespace ReactorSim.Browser
                         ChannelIndex = channel.ChannelIndex,
                         GridColumn = channel.GridColumn,
                         GridRow = channel.GridRow,
+                        FlowDirection = channel.FlowDirection == FlowDirection.EndAtoEndB
+                            ? TowardEndB
+                            : TowardEndA,
                         AverageBurnupMwdPerKg = channel.AverageBurnupMwDayPerKg,
                         LocalPowerFraction = channel.LocalPowerFraction,
                         LocalTiltFraction = channel.LocalTiltFraction,
@@ -1163,6 +1166,8 @@ namespace ReactorSim.Browser
         public int GridColumn { get; set; }
 
         public int GridRow { get; set; }
+
+        public string FlowDirection { get; set; } = string.Empty;
 
         public double AverageBurnupMwdPerKg { get; set; }
 

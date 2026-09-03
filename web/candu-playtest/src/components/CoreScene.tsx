@@ -2,7 +2,9 @@ import { useEffect, useRef } from "react";
 import type { PointerEvent } from "react";
 import * as THREE from "three";
 import type { CanduChannelSnapshot } from "../protocol";
-import { getHeatColor } from "../visuals";
+import { getFlowArrow, getFlowDirectionLabel, getHeatColor } from "../visuals";
+
+const CANDU6_ROW_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] as const;
 
 interface CoreSceneProps {
   channels: readonly CanduChannelSnapshot[];
@@ -215,7 +217,7 @@ export function CoreScene({
       <div className="core-scene-toolbar">
         <div>
           <p className="panel-kicker">Core surface</p>
-          <p className="scene-caption">Flux-weighted channel response · select a node to inspect</p>
+          <p className="scene-caption">CANDU 6 · 380 channels · alternating coolant / fuelling flow</p>
         </div>
         <div className="view-toggle" role="group" aria-label="Core map view mode">
           <button
@@ -256,16 +258,22 @@ function CoreMap2d({
   onSelectChannel,
 }: Pick<CoreSceneProps, "channels" | "selectedChannelIndex" | "onSelectChannel">) {
   return (
-    <div className="core-map-2d" role="grid" aria-label="Keyboard-accessible 2D reactor channel heat map">
+    <div className="core-map-2d" role="grid" aria-label="Keyboard-accessible CANDU 6 channel heat map with alternating fuelling directions">
+      <div className="core-map-column-labels" aria-hidden="true">
+        {Array.from({ length: 22 }, (_, index) => <span key={index}>{String(index + 1).padStart(2, "0")}</span>)}
+      </div>
+      <div className="core-map-row-labels" aria-hidden="true">
+        {CANDU6_ROW_LABELS.map((label) => <span key={label}>{label}</span>)}
+      </div>
       {channels.map((channel) => (
         <button
           className={channel.channelIndex === selectedChannelIndex ? "channel-cell is-selected" : "channel-cell"}
           key={channel.channelIndex}
           type="button"
           role="gridcell"
-          aria-label={`Channel ${channel.channelIndex}, power ${(channel.localPowerFraction * 100).toFixed(1)} percent`}
+          aria-label={`Channel ${channel.channelIndex}, ${CANDU6_ROW_LABELS[channel.gridRow]}${String(channel.gridColumn + 1).padStart(2, "0")}, power ${(channel.localPowerFraction * 100).toFixed(1)} percent, ${getFlowDirectionLabel(channel.flowDirection)}`}
           aria-pressed={channel.channelIndex === selectedChannelIndex}
-          title={`CH ${channel.channelIndex} · ${(channel.localPowerFraction * 100).toFixed(1)}% power`}
+          title={`CH ${channel.channelIndex} · ${CANDU6_ROW_LABELS[channel.gridRow]}${String(channel.gridColumn + 1).padStart(2, "0")} · ${(channel.localPowerFraction * 100).toFixed(1)}% power · ${getFlowDirectionLabel(channel.flowDirection)}`}
           style={{
             gridColumn: channel.gridColumn + 1,
             gridRow: channel.gridRow + 1,
@@ -273,7 +281,8 @@ function CoreMap2d({
           }}
           onClick={() => onSelectChannel(channel.channelIndex)}
         >
-          <span>{channel.channelIndex}</span>
+          <span className="channel-cell-index">{channel.channelIndex}</span>
+          <span className="channel-cell-flow" aria-hidden="true">{getFlowArrow(channel.flowDirection)}</span>
         </button>
       ))}
     </div>

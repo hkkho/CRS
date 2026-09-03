@@ -218,7 +218,17 @@ namespace ReactorSim.Game
                     "The requested playback mode is not available in this game session.");
             }
 
-            return Complete(_runtime.TrySetPlaybackMode(playbackMode));
+            ContractValidationResult<bool> result = _runtime.TrySetPlaybackMode(playbackMode);
+            if (!result.IsValid || !_runtime.IsPaused)
+            {
+                return Complete(result);
+            }
+
+            // Selecting a live speed is also the explicit resume action after
+            // a day jump. This keeps the desktop, browser, and fixture
+            // controls consistent while the pause button remains a separate
+            // hard hold.
+            return Complete(_runtime.TryResume());
         }
 
         public GameSessionCommandResult Pause()
@@ -509,16 +519,17 @@ namespace ReactorSim.Game
                 }
 
                 double averageBurnup = burnupTotal / GameCorePresentationConstants.BundlePositionCount;
-                double centeredX = (grid.Column - 10.5) / 10.5;
-                double centeredY = (10.5 - grid.Row) / 10.5;
-                double radial = Clamp(
-                    1.0 - Math.Sqrt(centeredX * centeredX + centeredY * centeredY) / 1.45,
-                    0.0,
-                    1.0);
+                double centeredX = (grid.Column - 10.5) / 11.5;
+                double centeredY = (grid.Row - 10.5) / 11.5;
+                double radialDistance = Math.Sqrt(centeredX * centeredX + centeredY * centeredY);
+                double radial = Clamp(1.0 - Math.Pow(radialDistance, 1.45), 0.0, 1.0);
+                double azimuthalRipple =
+                    (Math.Sin((grid.Column + 1) * 0.73) + Math.Cos((grid.Row + 1) * 0.61)) * 0.005;
                 double localPower = Clamp(
-                    0.78 + 0.30 * radial + _channelPowerResponses[(int)channelIndex],
-                    0.10,
-                    1.50);
+                    0.74 + 0.34 * radial + azimuthalRipple +
+                    _channelPowerResponses[(int)channelIndex],
+                    0.64,
+                    1.28);
                 double localTilt = Math.Abs(_channelPowerResponses[(int)channelIndex]) +
                                    Math.Abs(centeredY * _syntheticTiltY) +
                                    Math.Abs(centeredX * _syntheticTiltX);
@@ -531,6 +542,7 @@ namespace ReactorSim.Game
                         averageBurnup,
                         localPower,
                         localTilt,
+                        PracticeCoreLayout.GetFlowDirection(grid),
                         bundleSnapshots));
             }
 

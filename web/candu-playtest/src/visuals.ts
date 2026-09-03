@@ -1,4 +1,4 @@
-import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
+import type { CanduChannelSnapshot, CanduSnapshot, RefuellingDirection } from "./protocol";
 
 const HEAT_STOPS = [
   { at: 0, color: [20, 42, 59] },
@@ -31,6 +31,14 @@ export function getPowerLabel(powerFraction: number): string {
 
 export function getTiltLabel(tiltFraction: number): string {
   return `${tiltFraction >= 0 ? "+" : ""}${(tiltFraction * 100).toFixed(2)}%`;
+}
+
+export function getFlowArrow(direction: RefuellingDirection): string {
+  return direction === "toward-end-b" ? "→" : "←";
+}
+
+export function getFlowDirectionLabel(direction: RefuellingDirection): string {
+  return direction === "toward-end-b" ? "END A → END B" : "END B → END A";
 }
 
 export function getChannelBand(channel: CanduChannelSnapshot): "low" | "nominal" | "high" {
