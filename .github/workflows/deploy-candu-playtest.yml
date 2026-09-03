@@ -25,6 +25,10 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Expand deployment source bundle
+        if: ${{ hashFiles('candu-deployment-source.zip') != '' }}
+        run: unzip -q -o candu-deployment-source.zip -d .
+
       - name: Install .NET 10
         uses: actions/setup-dotnet@v4
         with:
