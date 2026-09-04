@@ -8,9 +8,8 @@ namespace ReactorSim.Game
 {
     /// <summary>
     /// Explicit physics metrics exposed to presentation consumers. The
-    /// reduced source is a deterministic migration fallback; it is not a
-    /// calibrated plant model and does not expose a per-bundle reactivity
-    /// value. Reactivity is a state-level value derived from k.
+    /// current practice path is backed by the shared full-core two-group
+    /// diffusion solve; Reactivity remains a state-level value derived from k.
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
@@ -27,7 +26,10 @@ namespace ReactorSim.Game
             double meanBundlePowerWatts,
             double effectiveK,
             double reactivity,
-            double powerBalanceRelativeError)
+            double powerBalanceRelativeError,
+            string solverIdentity,
+            int solverIterationCount,
+            double solverResidualRelativeInfinity)
         {
             if (string.IsNullOrWhiteSpace(sourceId))
             {
@@ -48,6 +50,21 @@ namespace ReactorSim.Game
             RequireFinitePositive(effectiveK, nameof(effectiveK));
             RequireFinite(reactivity, nameof(reactivity));
             RequireFiniteNonnegative(powerBalanceRelativeError, nameof(powerBalanceRelativeError));
+            if (string.IsNullOrWhiteSpace(solverIdentity))
+            {
+                throw new ArgumentException(
+                    "Physics metrics require a solver identity.",
+                    nameof(solverIdentity));
+            }
+
+            if (solverIterationCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(solverIterationCount));
+            }
+
+            RequireFiniteNonnegative(
+                solverResidualRelativeInfinity,
+                nameof(solverResidualRelativeInfinity));
 
             SourceId = sourceId;
             SolveState = solveState;
@@ -62,6 +79,9 @@ namespace ReactorSim.Game
             EffectiveK = effectiveK;
             Reactivity = reactivity;
             PowerBalanceRelativeError = powerBalanceRelativeError;
+            SolverIdentity = solverIdentity;
+            SolverIterationCount = solverIterationCount;
+            SolverResidualRelativeInfinity = solverResidualRelativeInfinity;
         }
 
         public string SourceId { get; }
@@ -89,6 +109,12 @@ namespace ReactorSim.Game
         public double Reactivity { get; }
 
         public double PowerBalanceRelativeError { get; }
+
+        public string SolverIdentity { get; }
+
+        public int SolverIterationCount { get; }
+
+        public double SolverResidualRelativeInfinity { get; }
 
         private static void RequireFinite(double value, string parameterName)
         {
@@ -301,24 +327,10 @@ namespace ReactorSim.Game
     /// </summary>
     internal static class PracticeCoreLayout
     {
-        private static readonly int[] RowLengths =
-        {
-            6, 12, 14, 16, 18, 18, 20, 20,
-            22, 22, 22, 22, 22, 22,
-            20, 20, 18, 18, 16, 14, 12, 6
-        };
-
-        private static readonly PracticeCoreGridPosition[] Positions = CreatePositions();
-        private static readonly Dictionary<int, uint> ChannelIndices = CreateChannelIndices();
-
         public static PracticeCoreGridPosition GetPosition(uint channelIndex)
         {
-            if (channelIndex >= GameCorePresentationConstants.ChannelCount)
-            {
-                throw new ArgumentOutOfRangeException(nameof(channelIndex));
-            }
-
-            return Positions[(int)channelIndex];
+            Candu6GridPositionV1 position = Candu6CoreTopologyFactoryV1.GetPosition(channelIndex);
+            return new PracticeCoreGridPosition(position.Column, position.DisplayRow);
         }
 
         public static bool TryGetChannelIndex(
@@ -326,63 +338,22 @@ namespace ReactorSim.Game
             int row,
             out uint channelIndex)
         {
-            return ChannelIndices.TryGetValue(
-                checked(row * GameCorePresentationConstants.GridWidth + column),
+            return Candu6CoreTopologyFactoryV1.TryGetChannelIndex(
+                column,
+                row,
                 out channelIndex);
         }
 
         public static int GetRowLength(int row)
         {
-            if (row < 0 || row >= RowLengths.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(row));
-            }
-
-            return RowLengths[row];
+            return Candu6CoreTopologyFactoryV1.GetRowLength(row);
         }
 
         public static FlowDirection GetFlowDirection(PracticeCoreGridPosition position)
         {
-            return (position.Column + position.Row) % 2 == 0
-                ? FlowDirection.EndAtoEndB
-                : FlowDirection.EndBtoEndA;
-        }
-
-        private static PracticeCoreGridPosition[] CreatePositions()
-        {
-            var positions = new List<PracticeCoreGridPosition>(
-                (int)GameCorePresentationConstants.ChannelCount);
-            for (int row = 0; row < RowLengths.Length; row++)
-            {
-                int rowLength = RowLengths[row];
-                int firstColumn = (GameCorePresentationConstants.GridWidth - rowLength) / 2;
-                for (int offset = 0; offset < rowLength; offset++)
-                {
-                    positions.Add(new PracticeCoreGridPosition(firstColumn + offset, row));
-                }
-            }
-
-            if (positions.Count != GameCorePresentationConstants.ChannelCount)
-            {
-                throw new InvalidOperationException(
-                    "The deterministic practice core layout must contain 380 channels.");
-            }
-
-            return positions.ToArray();
-        }
-
-        private static Dictionary<int, uint> CreateChannelIndices()
-        {
-            var result = new Dictionary<int, uint>();
-            for (uint index = 0; index < Positions.Length; index++)
-            {
-                PracticeCoreGridPosition position = Positions[(int)index];
-                result.Add(
-                    checked(position.Row * GameCorePresentationConstants.GridWidth + position.Column),
-                    index);
-            }
-
-            return result;
+            return Candu6CoreTopologyFactoryV1.GetFlowDirection(
+                position.Column,
+                position.Row);
         }
     }
 

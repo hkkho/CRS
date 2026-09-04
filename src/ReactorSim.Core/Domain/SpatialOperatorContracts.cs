@@ -12,9 +12,9 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
-    /// In-memory node coefficients for the approved P2-T02 static model.
-    /// Loading, versioning, hashing, and serialization belong to a later
-    /// data-pack task.
+    /// In-memory node coefficients for the two-group static diffusion model.
+    /// Loading, versioning, hashing, and serialization are handled by the
+    /// full-core data-pack adapter at the composition boundary.
     /// </summary>
     public sealed class SpatialNodeCoefficients
     {

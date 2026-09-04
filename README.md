@@ -23,8 +23,9 @@ target player experience, and ordered implementation path.
   overlay. It advances the session continuously in fixed 100 ms wall-time requests;
   the Core Map presents 380 selectable channels, 12-bundle burnup details, preview
   and commit actions, deterministic localized power/tilt/score feedback, and
-  explicit watts/k/rho physics diagnostics. The current reduced projection is
-  state-derived and clearly labelled synthetic; it is not a plant rating.
+  explicit watts/k/rho physics diagnostics from the shared 380 × 12 two-group
+  full-core diffusion solve. Its embedded pack is explicitly pre-calibration,
+  not a plant rating or an external DRAGON/DONJON result.
 - `web/candu-playtest` is a companion browser pivot for algorithm and interaction
   playtesting. It uses the same `ReactorSim.Game` Play session through the
   versioned browser bridge when WASM is available. Development and explicit
@@ -53,17 +54,20 @@ As detailed in [`gemini_review.md`](gemini_review.md):
    snapshot diagnostics.
 5. **Slice 4 (Milestone 3):** Refuelling candidate recommendations and operational
    trade-off guidance.
-6. **Slice 5 (Milestone 4):** Full 3D two-group spatial diffusion solver (`SpatialEigenSolve`)
-   integrated on a background simulation cadence.
-7. **Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack pass.
+6. **Complete initial slice — Slice 5 (Milestone 4):** Two-group full-core
+   spatial diffusion solver (`SpatialEigenSolve`) integrated on the shared
+   one-hour simulation cadence.
+7. **Next — Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack
+   admission and calibration.
 
 The physics migration is intentionally staged. The current session publishes a
-versioned reduced-model projection with `P_ref`, amplitude, total/channel/bundle
-watts, `k`, and `rho = (k - 1) / k`; refuelling reprojects the resulting bundle
-inventory and burnup advances from those bundle powers. The existing two-group
-`SpatialEigenSolve` remains the next authoritative integration step, followed by
-validated offline data packs. Synthetic display constants must not be presented
-as CANDU plant ratings.
+versioned two-group full-core projection with `P_ref`, amplitude,
+total/channel/bundle watts, `k`, and `rho = (k - 1) / k`; refuelling re-solves
+the resulting bundle inventory and burnup advances from the retained node
+powers. The embedded `candu6-two-group-diffusion-v1-precalibration` pack is a
+project-authored surrogate with explicit provenance. It is the seam for the
+next offline DRAGON5 lattice/depletion plus DONJON5/TRIVAC core-follow export;
+runtime code never invokes those tools.
 
 ## Quick start
 

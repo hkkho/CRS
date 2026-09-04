@@ -30,7 +30,7 @@ namespace ReactorSim.Core
 
     /// <summary>
     /// One explicit boundary face in the canonical static-solve order.
-    /// Numerical conductances are supplied by a later coefficient task.
+    /// Numerical conductances are supplied by the data-pack composition layer.
     /// </summary>
     public sealed class SpatialBoundaryTerm
     {

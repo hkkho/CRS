@@ -48,9 +48,9 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
-    /// Small deterministic bundle inventory used by the first playable game
-    /// slice. It owns real bundle movement and identities while the detailed
-    /// spatial/depletion model is integrated behind the same game API later.
+    /// Deterministic bundle inventory used by the playable game slice. It owns
+    /// bundle movement and identities; the shared full-core model consumes its
+    /// live records for spatial coefficient binding and power projection.
     /// </summary>
     public sealed class SyntheticGameCoreStateV1
     {
@@ -100,7 +100,16 @@ namespace ReactorSim.Core
             for (uint channel = 0; channel < ChannelCount; channel++)
             {
                 channels[channel] = new BundleState[BundlePositionCount];
-                double radialShape = 1.0 - Math.Abs(channel - 189.5) / 380.0;
+                Candu6GridPositionV1 gridPosition =
+                    Candu6CoreTopologyFactoryV1.GetPosition(channel);
+                double centeredX = (gridPosition.Column - 10.5) / 11.5;
+                double centeredY = (gridPosition.CartesianY - 10.5) / 11.5;
+                double radialDistance = Math.Sqrt(
+                    centeredX * centeredX + centeredY * centeredY) /
+                    Math.Sqrt(2.0);
+                double radialShape = Math.Max(
+                    0.0,
+                    Math.Min(1.0, 1.0 - radialDistance));
                 for (uint position = 0; position < BundlePositionCount; position++)
                 {
                     double axialShape = 1.0 - Math.Abs(position - 5.5) / 12.0;
@@ -150,6 +159,23 @@ namespace ReactorSim.Core
             }
 
             return new ReadOnlyCollection<BundleState>(_channels[channelIndex].ToArray());
+        }
+
+        /// <summary>
+        /// Enumerates the immutable live inventory in the same channel-major,
+        /// bundle-position order used by the full-core spatial stencil.
+        /// </summary>
+        public IEnumerable<BundleState> EnumerateBundles()
+        {
+            for (uint channelIndex = 0; channelIndex < ChannelCount; channelIndex++)
+            {
+                for (uint positionIndex = 0;
+                     positionIndex < BundlePositionCount;
+                     positionIndex++)
+                {
+                    yield return _channels[channelIndex][positionIndex];
+                }
+            }
         }
 
         /// <summary>

@@ -462,6 +462,7 @@ namespace ReactorSim.Core
                     _group1Solution,
                     _group1Candidate,
                     _group1Applied,
+                    state.Group1Flux,
                     out solveDiagnostic))
             {
                 return ContractValidationResult<SpatialEigenIterationState>.Invalid(
@@ -495,6 +496,7 @@ namespace ReactorSim.Core
                     _group2Solution,
                     _group2Candidate,
                     _group2Applied,
+                    state.Group2Flux,
                     out solveDiagnostic))
             {
                 return ContractValidationResult<SpatialEigenIterationState>.Invalid(
@@ -682,6 +684,7 @@ namespace ReactorSim.Core
             double[] solution,
             double[] candidate,
             double[] applied,
+            IReadOnlyList<double>? initialGuess,
             out ContractDiagnostic diagnostic)
         {
             for (int nodeIndex = 0; nodeIndex < source.Length; nodeIndex++)
@@ -696,7 +699,36 @@ namespace ReactorSim.Core
                 }
             }
 
-            Array.Clear(solution, 0, solution.Length);
+            if (initialGuess == null)
+            {
+                Array.Clear(solution, 0, solution.Length);
+            }
+            else
+            {
+                if (initialGuess.Count != solution.Length)
+                {
+                    diagnostic = new ContractDiagnostic(
+                        "SpatialEigenIteration.InnerInitialGuess.DimensionMismatch",
+                        "linear_solve.initial_guess",
+                        "An inner-solve initial guess must match the spatial node count.");
+                    return false;
+                }
+
+                for (int nodeIndex = 0; nodeIndex < solution.Length; nodeIndex++)
+                {
+                    double initialValue = initialGuess[nodeIndex];
+                    if (!IsValidFlux(initialValue))
+                    {
+                        diagnostic = new ContractDiagnostic(
+                            "SpatialEigenIteration.InnerInitialGuess.Invalid",
+                            ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".initial_guess"),
+                            "An inner-solve initial guess must be finite and componentwise nonnegative.");
+                        return false;
+                    }
+
+                    solution[nodeIndex] = initialValue;
+                }
+            }
             for (int innerIteration = 0;
                  innerIteration < _linearSolvePolicy.MaximumInnerIterations;
                  innerIteration++)

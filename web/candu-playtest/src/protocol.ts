@@ -78,6 +78,9 @@ export interface CanduPhysicsSnapshot {
   effectiveK: number;
   reactivity: number;
   powerBalanceRelativeError: number;
+  solverIdentity: string;
+  solverIterationCount: number;
+  solverResidualRelativeInfinity: number;
 }
 
 export interface CanduEvent {

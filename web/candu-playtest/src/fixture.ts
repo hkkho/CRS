@@ -716,7 +716,7 @@ function getConvergence(state: FixtureState): CanduConvergenceStatus {
     residual: projection.powerBalanceRelativeError,
     relativePowerError: Math.abs(state.normalizedPowerFraction - state.targetPowerFraction),
     lastSolveMilliseconds: 0,
-    solverLabel: "compatibility reduced power / awaiting SpatialEigenSolve",
+    solverLabel: "compatibility reduced power / no full-core WASM",
   };
 }
 
@@ -736,7 +736,7 @@ function createDiagnostics(state: FixtureState): CanduDiagnostics {
 function createSnapshot(state: FixtureState): CanduSnapshot {
   const projection = createFixturePowerProjection(state);
   const physics: CanduPhysicsSnapshot = {
-    sourceId: "reduced-synthetic-candu6-power-v2",
+    sourceId: "compatibility-reduced-synthetic-candu6-power-v2",
     solveState: "accepted-reduced",
     isAuthoritative: false,
     bindingVersion: state.sequence,
@@ -749,13 +749,16 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     effectiveK: projection.effectiveK,
     reactivity: projection.reactivity,
     powerBalanceRelativeError: projection.powerBalanceRelativeError,
+    solverIdentity: "compatibility-reduced-power-v2",
+    solverIterationCount: 0,
+    solverResidualRelativeInfinity: projection.powerBalanceRelativeError,
   };
   return {
     protocol: PROTOCOL_VERSION,
     source: "synthetic-fixture",
     sequence: state.sequence,
     scenarioId: "CANDU6-PRACTICE-1001",
-    dataPackId: "synthetic-candu6-v1",
+    dataPackId: "compatibility-synthetic-candu6-v1",
     simulationTimeSeconds: state.simulationTimeSeconds,
     wallElapsedSeconds: state.wallElapsedSeconds,
     normalizedPowerFraction: state.normalizedPowerFraction,

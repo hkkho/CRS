@@ -44,7 +44,8 @@ export function formatPowerWatts(powerWatts: number): string {
 }
 
 export function formatReactivity(reactivity: number): string {
-  return `${reactivity >= 0 ? "+" : ""}${reactivity.toFixed(5)} ρ`;
+  const milliK = reactivity * 1000;
+  return `${milliK >= 0 ? "+" : ""}${milliK.toFixed(3)} mk`;
 }
 
 export function getTiltLabel(tiltFraction: number): string {

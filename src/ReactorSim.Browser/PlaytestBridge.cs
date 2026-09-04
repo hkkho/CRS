@@ -16,7 +16,8 @@ namespace ReactorSim.Browser
     public static class PlaytestBridgeV1
     {
         private const string DefaultMode = "play";
-        private const string DefaultDataPackId = "synthetic-candu6-v1";
+        private const string DefaultDataPackId =
+            PracticeGameSessionFactory.DiffusionDataPackVersion;
         private const string LabDataPackId = "lab-2x8-synthetic-v1";
         private const string TowardEndA = "toward-end-a";
         private const string TowardEndB = "toward-end-b";
@@ -45,7 +46,7 @@ namespace ReactorSim.Browser
                         Id = "play",
                         Label = "Play",
                         AuthoritativeModel = "ReactorSim.Game.GameSession",
-                        FixtureId = "synthetic-candu6-v1",
+                        FixtureId = PracticeGameSessionFactory.DiffusionDataPackVersion,
                         Commands = PlayCommands()
                     },
                     new BridgeModeCapabilityDto
@@ -695,13 +696,12 @@ namespace ReactorSim.Browser
             PlaytestConvergenceDto convergence = solve == null
                 ? new PlaytestConvergenceDto
                 {
-                    State = "settling",
-                    Iterations = 0,
-                    Residual = game.Physics.PowerBalanceRelativeError,
+                    State = game.Physics.SolveState,
+                    Iterations = game.Physics.SolverIterationCount,
+                    Residual = game.Physics.SolverResidualRelativeInfinity,
                     RelativePowerError = relativePowerError,
                     LastSolveMilliseconds = 0.0,
-                    SolverLabel = game.Physics.SourceId +
-                                  " / explicit watts; awaiting SpatialEigenSolve"
+                    SolverLabel = game.Physics.SolverIdentity
                 }
                 : new PlaytestConvergenceDto
                 {
@@ -760,7 +760,10 @@ namespace ReactorSim.Browser
                     MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
                     EffectiveK = game.Physics.EffectiveK,
                     Reactivity = game.Physics.Reactivity,
-                    PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError
+                    PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError,
+                    SolverIdentity = game.Physics.SolverIdentity,
+                    SolverIterationCount = game.Physics.SolverIterationCount,
+                    SolverResidualRelativeInfinity = game.Physics.SolverResidualRelativeInfinity
                 },
                 Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
                 Diagnostics = new PlaytestDiagnosticsDto
@@ -785,7 +788,7 @@ namespace ReactorSim.Browser
                             Label = "Data provenance",
                             Value = runtime.Mode == "lab"
                                 ? "synthetic Lab fixture"
-                                : "synthetic GameSession",
+                                : "synthetic-precalibration full-core pack",
                             Status = "info"
                         }
                     }
@@ -1271,6 +1274,12 @@ namespace ReactorSim.Browser
         public double Reactivity { get; set; }
 
         public double PowerBalanceRelativeError { get; set; }
+
+        public string SolverIdentity { get; set; } = string.Empty;
+
+        public int SolverIterationCount { get; set; }
+
+        public double SolverResidualRelativeInfinity { get; set; }
     }
 
     internal sealed class PlaytestCheckDto

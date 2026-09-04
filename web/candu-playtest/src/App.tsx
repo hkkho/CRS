@@ -300,8 +300,8 @@ export default function App() {
           <MetricCard
             label="State reactivity"
             value={formatReactivity(snapshot.physics.reactivity)}
-            detail={`k ${snapshot.physics.effectiveK.toFixed(5)}`}
-            indicator="state-level · no per-bundle ρ"
+            detail={`k ${snapshot.physics.effectiveK.toFixed(5)} · ${snapshot.physics.solverIterationCount} outer iterations`}
+            indicator={snapshot.physics.isAuthoritative ? "full-core diffusion · state-level" : "compatibility projection"}
             tone="violet"
           />
           <MetricCard
@@ -331,7 +331,7 @@ export default function App() {
             {uiState.bridgeStatus.title}
           </span>
           <span>{uiState.bridgeStatus.detail}.</span>
-          <span className="source-banner-physics">{snapshot.physics.isAuthoritative ? "SPATIAL SOLVE" : "REDUCED MODEL"} · {snapshot.physics.sourceId}</span>
+          <span className="source-banner-physics">{snapshot.physics.isAuthoritative ? "SPATIAL SOLVE" : "REDUCED MODEL"} · {snapshot.physics.sourceId} · {snapshot.physics.solverIdentity}</span>
           <span className="source-banner-protocol">{snapshot.protocol}</span>
         </div>
 
@@ -937,7 +937,7 @@ function LabDiagnostics({ snapshot }: { snapshot: CanduSnapshot }) {
         {checks.map((check) => <div className="diagnostic-check" key={check.label}><span className={`check-mark is-${check.status}`} aria-hidden="true">{check.status === "pass" ? "✓" : check.status === "watch" ? "!" : "·"}</span><span>{check.label}</span><strong>{check.value}</strong></div>)}
       </div>
       <div className="protocol-card"><div className="protocol-card-header"><span>WIRE CONTRACT</span><span>{snapshot.protocol}</span></div><code>{`{\n  "protocol": "${snapshot.protocol}",\n  "source": "${snapshot.source}",\n  "core": "${snapshot.core.channelCount} channels × ${snapshot.core.bundlePositionCount} bundles"\n}`}</code></div>
-      <p className="diagnostic-note"><span aria-hidden="true">i</span> {labSolve === undefined ? "Convergence values are synthetic fixture diagnostics until an authoritative browser WASM export is detected." : "These values come from the authoritative Core spatial solve on the explicit synthetic Lab fixture."}</p>
+      <p className="diagnostic-note"><span aria-hidden="true">i</span> {labSolve === undefined ? (snapshot.physics.isAuthoritative ? "Full-core convergence is reported by ReactorSim.Core using the versioned two-group pack." : "Compatibility fixture diagnostics are shown because an authoritative browser WASM export is not active.") : "These values come from the authoritative Core spatial solve on the explicit synthetic Lab fixture."}</p>
     </section>
   );
 }

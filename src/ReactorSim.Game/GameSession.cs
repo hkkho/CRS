@@ -156,7 +156,10 @@ namespace ReactorSim.Game
         private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
+        private readonly FullCoreDiffusionModelV1 _fullCoreModel;
         private SyntheticGameCoreStateV1 _coreState;
+        private FullCoreDiffusionSolveResultV1 _fullCoreSolve;
+        private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private double _scoreResetBaseline;
         private ulong _powerProjectionVersion;
@@ -165,12 +168,17 @@ namespace ReactorSim.Game
             Phase8ScoredScenarioRuntimeV1 runtime,
             IReadOnlyDictionary<string, Phase8PlaybackModeV1> playbackModes,
             uint wallControlTickMilliseconds,
-            SyntheticGameCoreStateV1 coreState)
+            SyntheticGameCoreStateV1 coreState,
+            FullCoreDiffusionModelV1 fullCoreModel)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
+            _fullCoreModel = fullCoreModel ?? throw new ArgumentNullException(nameof(fullCoreModel));
+            _fullCoreSolve = RequireFullCoreSolve(
+                SolveFullCore(_coreState, null));
+            _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
 
         public GameSessionSnapshot Snapshot
@@ -266,7 +274,7 @@ namespace ReactorSim.Game
         {
             _syntheticScore = 0.0;
             _scoreResetBaseline = _runtime.Score.TotalPoints;
-            return AcceptedMessage("Debug: reduced-model score adjustment reset.");
+            return AcceptedMessage("Debug: practice score adjustment reset.");
         }
 
         public GameSessionCommandResult RefuelChannel(
@@ -292,7 +300,18 @@ namespace ReactorSim.Game
                 return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
             }
 
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> projected =
+                SolveFullCore(result.Value.ResultingState, _fullCoreSolve);
+            if (!projected.IsValid)
+            {
+                return Rejected(
+                    projected.FirstDiagnostic.Code,
+                    projected.FirstDiagnostic.Message);
+            }
+
             _coreState = result.Value.ResultingState;
+            _fullCoreSolve = projected.Value;
+            _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
             ApplyPracticeRefuellingScore(result.Value);
             _powerProjectionVersion = checked(_powerProjectionVersion + 1);
             string message = FormatRefuellingMessage(result.Value, false);
@@ -328,13 +347,25 @@ namespace ReactorSim.Game
                 return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
             }
 
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> projected =
+                SolveFullCore(result.Value.ResultingState, _fullCoreSolve);
+            if (!projected.IsValid)
+            {
+                return Rejected(
+                    projected.FirstDiagnostic.Code,
+                    projected.FirstDiagnostic.Message);
+            }
+
             return new GameSessionCommandResult(
                 true,
                 string.Empty,
                 string.Empty,
                 FormatRefuellingMessage(result.Value, true),
                 CreateSnapshot(),
-                CreateCorePresentationSnapshot(result.Value.ResultingState));
+                CreateCorePresentationSnapshot(
+                    result.Value.ResultingState,
+                    CurrentPowerFraction(),
+                    projected.Value));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -448,13 +479,14 @@ namespace ReactorSim.Game
             double shiftFactor = result.ShiftCount / 4.0;
             // Scoring observes the operation. It does not modify power,
             // tilt, or reactivity; those are recomputed from the resulting
-            // bundle state by the reduced projection.
+            // bundle state by the full-core diffusion solve.
             _syntheticScore +=
                 6.0 + 10.0 * utilizationQuality - 0.75 * shiftFactor;
         }
 
         private void ApplyPracticeAdvance(Phase8ScenarioAdvanceResultV1 advance)
         {
+            bool stateChanged = false;
             foreach (Phase8ScenarioAdvanceSegmentV1 segment in advance.StateSegments)
             {
                 double remainingSeconds = segment.SimulationTimeEndSeconds -
@@ -468,18 +500,14 @@ namespace ReactorSim.Game
                 while (remainingSeconds > 0.0)
                 {
                     double stepSeconds = Math.Min(600.0, remainingSeconds);
-                    GameCorePresentationSnapshot projected =
-                        CreateCorePresentationSnapshot(_coreState, amplitude);
                     var deltaEnergy = new double[
                         checked((int)(GameCorePresentationConstants.ChannelCount *
                                      GameCorePresentationConstants.BundlePositionCount))];
-                    int index = 0;
-                    foreach (GameChannelPresentationSnapshot channel in projected.Channels)
+                    for (int index = 0; index < deltaEnergy.Length; index++)
                     {
-                        foreach (GameBundlePresentationSnapshot bundle in channel.Bundles)
-                        {
-                            deltaEnergy[index++] = bundle.PowerWatts * stepSeconds;
-                        }
+                        deltaEnergy[index] = _fullCoreSolve.NodePowerWatts[index] *
+                                             amplitude *
+                                             stepSeconds;
                     }
 
                     ContractValidationResult<SyntheticGameCoreStateV1> integrated =
@@ -487,11 +515,12 @@ namespace ReactorSim.Game
                     if (!integrated.IsValid)
                     {
                         throw new InvalidOperationException(
-                            "The reduced practice burnup integration failed: " +
+                            "The full-core practice burnup integration failed: " +
                             integrated.FirstDiagnostic);
                     }
 
                     _coreState = integrated.Value;
+                    stateChanged = true;
                     _powerProjectionVersion = checked(_powerProjectionVersion + 1);
                     double powerQuality = 1.0 -
                         Clamp(Math.Abs(amplitude - 1.0) / 0.02, 0.0, 1.0);
@@ -501,6 +530,15 @@ namespace ReactorSim.Game
                         (0.35 * powerQuality + 0.15 * tiltQuality);
                     remainingSeconds -= stepSeconds;
                 }
+            }
+
+            if (stateChanged &&
+                _runtime.SimulationTimeSeconds - _lastFullCoreSolveSimulationTime >=
+                PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds)
+            {
+                _fullCoreSolve = RequireFullCoreSolve(
+                    SolveFullCore(_coreState, _fullCoreSolve));
+                _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
             }
         }
 
@@ -514,9 +552,15 @@ namespace ReactorSim.Game
             SyntheticGameCoreStateV1 state,
             double powerAmplitude)
         {
+            return CreateCorePresentationSnapshot(state, powerAmplitude, _fullCoreSolve);
+        }
+
+        private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
+            SyntheticGameCoreStateV1 state,
+            double powerAmplitude,
+            FullCoreDiffusionSolveResultV1 projection)
+        {
             var channelStates = new IReadOnlyList<BundleState>[
-                (int)GameCorePresentationConstants.ChannelCount];
-            var channelAverageBurnups = new double[
                 (int)GameCorePresentationConstants.ChannelCount];
             for (uint channelIndex = 0;
                  channelIndex < GameCorePresentationConstants.ChannelCount;
@@ -524,78 +568,19 @@ namespace ReactorSim.Game
             {
                 IReadOnlyList<BundleState> bundles = state.GetChannel(channelIndex);
                 channelStates[(int)channelIndex] = bundles;
-                channelAverageBurnups[(int)channelIndex] = bundles.Average(
-                    bundle => bundle.CurrentBurnupJPerKgHm /
-                              GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
             }
 
-            var inputs = new List<ReducedPowerNodeInputV1>(
-                checked((int)(GameCorePresentationConstants.ChannelCount *
-                              GameCorePresentationConstants.BundlePositionCount)));
-            for (uint channelIndex = 0;
-                 channelIndex < GameCorePresentationConstants.ChannelCount;
-                 channelIndex++)
-            {
-                PracticeCoreGridPosition grid = PracticeCoreLayout.GetPosition(channelIndex);
-                double neighbourAverage = GetNeighbourAverage(
-                    grid,
-                    channelAverageBurnups);
-                FlowDirection flowDirection = PracticeCoreLayout.GetFlowDirection(grid);
-                int flowSign = flowDirection == FlowDirection.EndAtoEndB ? 1 : -1;
-                double centeredX = (grid.Column - 10.5) / 11.5;
-                double centeredY = (grid.Row - 10.5) / 11.5;
-                double radialDistance = Clamp(
-                    Math.Sqrt(centeredX * centeredX + centeredY * centeredY) /
-                    Math.Sqrt(2.0),
-                    0.0,
-                    1.0);
-                double channelAverage = channelAverageBurnups[(int)channelIndex];
-                foreach (BundleState bundle in channelStates[(int)channelIndex])
-                {
-                    double burnup = bundle.CurrentBurnupJPerKgHm /
-                                    GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
-                    ContractValidationResult<ReducedPowerNodeInputV1> input =
-                        ReducedPowerNodeInputV1.TryCreate(
-                            bundle.Node,
-                            radialDistance,
-                            bundle.Position.Value /
-                                (double)(GameCorePresentationConstants.BundlePositionCount - 1),
-                            burnup,
-                            channelAverage,
-                            neighbourAverage,
-                            flowSign,
-                            MaterialPowerFactor(bundle.MaterialVariantId.Value));
-                    if (!input.IsValid)
-                    {
-                        throw new InvalidOperationException(
-                            "The reduced practice power input failed: " + input.FirstDiagnostic);
-                    }
-
-                    inputs.Add(input.Value);
-                }
-            }
-
-            ContractValidationResult<ReducedCorePowerProjectionV1> projectionResult =
-                ReducedCorePowerModelV1.TryProject(
-                    inputs,
-                    PracticeGameSessionFactory.PracticeReferencePowerWatts,
-                    Clamp(powerAmplitude, 0.0, 1.5));
-            if (!projectionResult.IsValid)
-            {
-                throw new InvalidOperationException(
-                    "The reduced practice power projection failed: " +
-                    projectionResult.FirstDiagnostic);
-            }
-
-            ReducedCorePowerProjectionV1 projection = projectionResult.Value;
-            double meanChannelPowerWatts = projection.TotalPowerWatts /
+            double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
+            double meanChannelPowerWatts = projection.TotalPowerWatts * amplitude /
                                            GameCorePresentationConstants.ChannelCount;
             var channelPowerWatts = new double[
                 (int)GameCorePresentationConstants.ChannelCount];
-            for (int index = 0; index < projection.Nodes.Count; index++)
+            for (int index = 0; index < projection.NodePowerWatts.Count; index++)
             {
-                ReducedPowerNodeResultV1 node = projection.Nodes[index];
-                channelPowerWatts[(int)node.Node.ChannelId.Value] += node.PowerWatts;
+                uint channelIndex = (uint)(index /
+                    (int)GameCorePresentationConstants.BundlePositionCount);
+                channelPowerWatts[(int)channelIndex] +=
+                    projection.NodePowerWatts[index] * amplitude;
             }
 
             var channels = new List<GameChannelPresentationSnapshot>(
@@ -611,13 +596,14 @@ namespace ReactorSim.Game
                     (int)GameCorePresentationConstants.BundlePositionCount);
                 double burnupTotal = 0.0;
                 double axialPowerMoment = 0.0;
-                foreach (BundleState bundle in bundles)
+                for (int bundleIndex = 0; bundleIndex < bundles.Count; bundleIndex++)
                 {
+                    BundleState bundle = bundles[bundleIndex];
                     double burnup = bundle.CurrentBurnupJPerKgHm /
                                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
-                    ReducedPowerNodeResultV1 node = projection.Nodes[nodeIndex++];
+                    double bundlePower = projection.NodePowerWatts[nodeIndex++] * amplitude;
                     burnupTotal += burnup;
-                    axialPowerMoment += node.PowerWatts *
+                    axialPowerMoment += bundlePower *
                         (2.0 * bundle.Position.Value /
                          (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
                     bundleSnapshots.Add(
@@ -626,7 +612,7 @@ namespace ReactorSim.Game
                             bundle.BundleId.ToString(),
                             bundle.MaterialVariantId.Value,
                             burnup,
-                            node.PowerWatts,
+                            bundlePower,
                             bundle.InsertedAtSeconds,
                             bundle.StateVersion));
                 }
@@ -652,59 +638,50 @@ namespace ReactorSim.Game
             }
 
             var physics = new GamePhysicsPresentationSnapshot(
-                projection.ModelId,
-                "accepted-reduced",
-                false,
+                projection.DataPack.ModelId,
+                "converged",
+                true,
                 _powerProjectionVersion,
-                projection.ReferencePowerWatts,
-                projection.Amplitude,
-                projection.TargetPowerWatts,
-                projection.TotalPowerWatts,
+                PracticeGameSessionFactory.PracticeReferencePowerWatts,
+                amplitude,
+                PracticeGameSessionFactory.PracticeReferencePowerWatts * amplitude,
+                projection.TotalPowerWatts * amplitude,
                 meanChannelPowerWatts,
-                projection.MeanNodePowerWatts,
+                projection.TotalPowerWatts * amplitude /
+                    (GameCorePresentationConstants.ChannelCount *
+                     GameCorePresentationConstants.BundlePositionCount),
                 projection.EffectiveK,
                 projection.Reactivity,
-                projection.PowerBalanceRelativeError);
+                projection.PowerBalanceRelativeError,
+                projection.SolverIdentity,
+                projection.IterationCount,
+                projection.ResidualRelativeInfinity);
             return new GameCorePresentationSnapshot(channels, physics);
         }
 
-        private static double GetNeighbourAverage(
-            PracticeCoreGridPosition grid,
-            double[] channelAverageBurnups)
+        private ContractValidationResult<FullCoreDiffusionSolveResultV1> SolveFullCore(
+            SyntheticGameCoreStateV1 state,
+            FullCoreDiffusionSolveResultV1? previous)
         {
-            double total = 0.0;
-            int count = 0;
-            int[,] offsets =
-            {
-                { 0, -1 },
-                { 1, 0 },
-                { 0, 1 },
-                { -1, 0 }
-            };
-            for (int index = 0; index < offsets.GetLength(0); index++)
-            {
-                if (!PracticeCoreLayout.TryGetChannelIndex(
-                        grid.Column + offsets[index, 0],
-                        grid.Row + offsets[index, 1],
-                        out uint neighbourIndex))
-                {
-                    continue;
-                }
-
-                total += channelAverageBurnups[(int)neighbourIndex];
-                count++;
-            }
-
-            return count == 0
-                ? channelAverageBurnups[0]
-                : total / count;
+            return _fullCoreModel.TrySolve(
+                state.EnumerateBundles(),
+                PracticeGameSessionFactory.PracticeReferencePowerWatts,
+                previous == null ? 1.0 : previous.EffectiveK,
+                previous?.Group1Flux,
+                previous?.Group2Flux);
         }
 
-        private static double MaterialPowerFactor(string materialVariantId)
+        private static FullCoreDiffusionSolveResultV1 RequireFullCoreSolve(
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> result)
         {
-            return string.Equals(materialVariantId, "NAT-U-SYNTHETIC", StringComparison.Ordinal)
-                ? 1.0
-                : 0.99;
+            if (!result.IsValid)
+            {
+                throw new InvalidOperationException(
+                    "The CANDU-6 full-core diffusion solve failed: " +
+                    result.FirstDiagnostic);
+            }
+
+            return result.Value;
         }
 
         private string FormatRefuellingMessage(
