@@ -71,5 +71,14 @@ by 12-bundle presentation snapshot. Lab mode exposes the explicit 2-channel by
 experiments. Invalid and non-converged Lab transitions fail without mutating
 the accepted state.
 
+The Play snapshot carries a reduced-model physics contract in explicit SI
+units: reference/target/total/channel/bundle watts, dimensionless amplitude,
+state-level `k`, and `rho = (k - 1) / k`. The current reduced source is
+state-derived and non-authoritative; bundle power sums are normalized to the
+requested amplitude, refuelling reprojects the candidate inventory, and
+burnup advances from bundle watts. The existing two-group solve is the next
+authority behind this same contract. The display scale is project-authored
+synthetic data, not a CANDU plant rating.
+
 Commands, state digests, replay JSON, and feedback notes stay in the browser.
 There is no backend, login, telemetry, or external reactor data in this pivot.

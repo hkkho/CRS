@@ -47,6 +47,8 @@ import {
   getOverallStatus,
   getPowerLabel,
   getTiltLabel,
+  formatPowerWatts,
+  formatReactivity,
 } from "./visuals";
 
 const bridge = createCanduPlaytestBridge();
@@ -283,8 +285,8 @@ export default function App() {
         <section className="metric-grid" aria-label="Reactor summary">
           <MetricCard
             label="Reactor power"
-            value={getPowerLabel(snapshot.normalizedPowerFraction)}
-            detail={`target ${getPowerLabel(snapshot.targetPowerFraction)}`}
+            value={formatPowerWatts(snapshot.physics.totalPowerWatts)}
+            detail={`${getPowerLabel(snapshot.physics.powerAmplitude)} amplitude · setpoint ${formatPowerWatts(snapshot.physics.referencePowerWatts * snapshot.targetPowerFraction)}`}
             indicator={powerIndicator(snapshot)}
             tone={overallStatus === "attention" ? "warning" : "cyan"}
           />
@@ -293,6 +295,13 @@ export default function App() {
             value={getTiltLabel(snapshot.absoluteTiltFraction)}
             detail={`target ${getTiltLabel(snapshot.targetTiltFraction)}`}
             indicator={snapshot.absoluteTiltFraction >= 0 ? "upper half > lower" : "lower half > upper"}
+            tone="violet"
+          />
+          <MetricCard
+            label="State reactivity"
+            value={formatReactivity(snapshot.physics.reactivity)}
+            detail={`k ${snapshot.physics.effectiveK.toFixed(5)}`}
+            indicator="state-level · no per-bundle ρ"
             tone="violet"
           />
           <MetricCard
@@ -322,6 +331,7 @@ export default function App() {
             {uiState.bridgeStatus.title}
           </span>
           <span>{uiState.bridgeStatus.detail}.</span>
+          <span className="source-banner-physics">{snapshot.physics.isAuthoritative ? "SPATIAL SOLVE" : "REDUCED MODEL"} · {snapshot.physics.sourceId}</span>
           <span className="source-banner-protocol">{snapshot.protocol}</span>
         </div>
 
@@ -617,7 +627,7 @@ function ChannelDetail({ channel }: { channel: CanduChannelSnapshot }) {
         </div>
       </div>
       <div className="channel-metrics">
-        <div><span>Local power</span><strong>{getPowerLabel(channel.localPowerFraction)}</strong></div>
+        <div><span>Channel power</span><strong>{formatPowerWatts(channel.powerWatts)} <small>{getPowerLabel(channel.localPowerFraction)}</small></strong></div>
         <div><span>Flux tilt</span><strong>{getTiltLabel(channel.localTiltFraction)}</strong></div>
         <div><span>Avg. burnup</span><strong>{channel.averageBurnupMwdPerKg.toFixed(1)} <small>MWd/kg</small></strong></div>
       </div>
@@ -637,10 +647,10 @@ function ChannelDetail({ channel }: { channel: CanduChannelSnapshot }) {
 }
 
 function BundlePowerChart({ channel }: { channel: CanduChannelSnapshot }) {
-  const displayMaximum = 1.15;
+  const displayMaximum = Math.max(1.15, ...channel.bundles.map((bundle) => bundle.localPowerFraction));
   return (
     <div className="bundle-power-chart">
-      <div className="bundle-power-chart-header"><span>Bundle power profile</span><span>0–115% nominal</span></div>
+      <div className="bundle-power-chart-header"><span>Bundle power profile</span><span>relative to mean</span></div>
       <div className="bundle-power-bars" role="img" aria-label={`Bundle power across channel ${channel.channelIndex}, from End A to End B`}>
         {channel.bundles.map((bundle) => {
           const height = Math.min(100, Math.max(4, (bundle.localPowerFraction / displayMaximum) * 100));
@@ -648,7 +658,7 @@ function BundlePowerChart({ channel }: { channel: CanduChannelSnapshot }) {
             <div
               className={bundle.isFresh ? "bundle-power-column is-fresh" : "bundle-power-column"}
               key={bundle.bundleId}
-              title={`Bundle ${bundle.position + 1}: ${getPowerLabel(bundle.localPowerFraction)} local power`}
+              title={`Bundle ${bundle.position + 1}: ${formatPowerWatts(bundle.powerWatts)} · ${getPowerLabel(bundle.localPowerFraction)} of mean`}
             >
               <div className="bundle-power-bar-track"><span className="bundle-power-bar-fill" style={{ height: `${height}%`, background: getHeatColor(bundle.localPowerFraction) }} /></div>
               <span className="bundle-power-position">{String(bundle.position + 1).padStart(2, "0")}</span>
@@ -731,6 +741,7 @@ function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isComm
             <PreviewMetric label="Discharge" value={`${preview.dischargeBurnupMwdPerKg.toFixed(1)} MWd/kg`} />
             <PreviewMetric label="Local power" value={formatSignedNumber(preview.localPowerDeltaFraction * 100, 2) + " pts"} />
             <PreviewMetric label="Tilt shift" value={formatSignedNumber(preview.localTiltDeltaFraction * 100, 2) + " pts"} />
+            <PreviewMetric label="Δ reactivity" value={formatReactivity(preview.predictedReactivityDelta)} />
             <PreviewMetric label="Score effect" value={formatSignedNumber(preview.projectedScoreDelta, 1)} />
           </div>
           <button className="button button-commit button-wide" type="button" disabled={isCommandPending} onClick={() => onCommit(preview.request)}>

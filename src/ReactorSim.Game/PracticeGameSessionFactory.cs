@@ -14,6 +14,9 @@ namespace ReactorSim.Game
         public const uint WallControlTickMilliseconds = 100;
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
+        // Deliberately project-authored synthetic display scale. It is not a
+        // plant rating and must be replaced only by a validated runtime pack.
+        public const double PracticeReferencePowerWatts = 1_000_000_000.0;
 
         public static GameSession Create()
         {

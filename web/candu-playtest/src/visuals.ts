@@ -29,6 +29,24 @@ export function getPowerLabel(powerFraction: number): string {
   return `${(powerFraction * 100).toFixed(1)}%`;
 }
 
+export function formatPowerWatts(powerWatts: number): string {
+  const magnitude = Math.abs(powerWatts);
+  if (magnitude >= 1e9) {
+    return `${(powerWatts / 1e9).toFixed(3)} GW`;
+  }
+  if (magnitude >= 1e6) {
+    return `${(powerWatts / 1e6).toFixed(1)} MW`;
+  }
+  if (magnitude >= 1e3) {
+    return `${(powerWatts / 1e3).toFixed(1)} kW`;
+  }
+  return `${powerWatts.toFixed(0)} W`;
+}
+
+export function formatReactivity(reactivity: number): string {
+  return `${reactivity >= 0 ? "+" : ""}${reactivity.toFixed(5)} ρ`;
+}
+
 export function getTiltLabel(tiltFraction: number): string {
   return `${tiltFraction >= 0 ? "+" : ""}${(tiltFraction * 100).toFixed(2)}%`;
 }

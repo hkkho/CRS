@@ -7,6 +7,117 @@ using ReactorSim.Core;
 namespace ReactorSim.Game
 {
     /// <summary>
+    /// Explicit physics metrics exposed to presentation consumers. The
+    /// reduced source is a deterministic migration fallback; it is not a
+    /// calibrated plant model and does not expose a per-bundle reactivity
+    /// value. Reactivity is a state-level value derived from k.
+    /// </summary>
+    public sealed class GamePhysicsPresentationSnapshot
+    {
+        internal GamePhysicsPresentationSnapshot(
+            string sourceId,
+            string solveState,
+            bool isAuthoritative,
+            ulong bindingVersion,
+            double referencePowerWatts,
+            double powerAmplitude,
+            double targetPowerWatts,
+            double totalPowerWatts,
+            double meanChannelPowerWatts,
+            double meanBundlePowerWatts,
+            double effectiveK,
+            double reactivity,
+            double powerBalanceRelativeError)
+        {
+            if (string.IsNullOrWhiteSpace(sourceId))
+            {
+                throw new ArgumentException("Physics metrics require a source identity.", nameof(sourceId));
+            }
+
+            if (string.IsNullOrWhiteSpace(solveState))
+            {
+                throw new ArgumentException("Physics metrics require a solve state.", nameof(solveState));
+            }
+
+            RequireFinitePositive(referencePowerWatts, nameof(referencePowerWatts));
+            RequireFiniteNonnegative(powerAmplitude, nameof(powerAmplitude));
+            RequireFiniteNonnegative(targetPowerWatts, nameof(targetPowerWatts));
+            RequireFiniteNonnegative(totalPowerWatts, nameof(totalPowerWatts));
+            RequireFiniteNonnegative(meanChannelPowerWatts, nameof(meanChannelPowerWatts));
+            RequireFiniteNonnegative(meanBundlePowerWatts, nameof(meanBundlePowerWatts));
+            RequireFinitePositive(effectiveK, nameof(effectiveK));
+            RequireFinite(reactivity, nameof(reactivity));
+            RequireFiniteNonnegative(powerBalanceRelativeError, nameof(powerBalanceRelativeError));
+
+            SourceId = sourceId;
+            SolveState = solveState;
+            IsAuthoritative = isAuthoritative;
+            BindingVersion = bindingVersion;
+            ReferencePowerWatts = referencePowerWatts;
+            PowerAmplitude = powerAmplitude;
+            TargetPowerWatts = targetPowerWatts;
+            TotalPowerWatts = totalPowerWatts;
+            MeanChannelPowerWatts = meanChannelPowerWatts;
+            MeanBundlePowerWatts = meanBundlePowerWatts;
+            EffectiveK = effectiveK;
+            Reactivity = reactivity;
+            PowerBalanceRelativeError = powerBalanceRelativeError;
+        }
+
+        public string SourceId { get; }
+
+        public string SolveState { get; }
+
+        public bool IsAuthoritative { get; }
+
+        public ulong BindingVersion { get; }
+
+        public double ReferencePowerWatts { get; }
+
+        public double PowerAmplitude { get; }
+
+        public double TargetPowerWatts { get; }
+
+        public double TotalPowerWatts { get; }
+
+        public double MeanChannelPowerWatts { get; }
+
+        public double MeanBundlePowerWatts { get; }
+
+        public double EffectiveK { get; }
+
+        public double Reactivity { get; }
+
+        public double PowerBalanceRelativeError { get; }
+
+        private static void RequireFinite(double value, string parameterName)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "Physics metrics must be finite.");
+            }
+        }
+
+        private static void RequireFiniteNonnegative(double value, string parameterName)
+        {
+            RequireFinite(value, parameterName);
+            if (value < 0.0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "Physics metrics must be nonnegative.");
+            }
+        }
+
+        private static void RequireFinitePositive(double value, string parameterName)
+        {
+            RequireFinite(value, parameterName);
+            if (value <= 0.0)
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "This physics metric must be strictly positive.");
+            }
+        }
+    }
+
+    /// <summary>
     /// Immutable presentation projection of the synthetic 380-channel core.
     /// It contains only values needed by the game surface; Core remains the
     /// owner of bundle transitions and physical state.
@@ -14,12 +125,15 @@ namespace ReactorSim.Game
     public sealed class GameCorePresentationSnapshot
     {
         internal GameCorePresentationSnapshot(
-            IEnumerable<GameChannelPresentationSnapshot> channels)
+            IEnumerable<GameChannelPresentationSnapshot> channels,
+            GamePhysicsPresentationSnapshot physics)
         {
             if (channels == null)
             {
                 throw new ArgumentNullException(nameof(channels));
             }
+
+            Physics = physics ?? throw new ArgumentNullException(nameof(physics));
 
             GameChannelPresentationSnapshot[] copy = channels.ToArray();
             if (copy.Length != GameCorePresentationConstants.ChannelCount)
@@ -40,6 +154,8 @@ namespace ReactorSim.Game
         }
 
         public IReadOnlyList<GameChannelPresentationSnapshot> Channels { get; }
+
+        public GamePhysicsPresentationSnapshot Physics { get; }
 
         public uint ChannelCount
         {
@@ -64,6 +180,7 @@ namespace ReactorSim.Game
             int gridColumn,
             int gridRow,
             double averageBurnupMwDayPerKg,
+            double powerWatts,
             double localPowerFraction,
             double localTiltFraction,
             FlowDirection flowDirection,
@@ -86,6 +203,7 @@ namespace ReactorSim.Game
             GridColumn = gridColumn;
             GridRow = gridRow;
             AverageBurnupMwDayPerKg = averageBurnupMwDayPerKg;
+            PowerWatts = powerWatts;
             LocalPowerFraction = localPowerFraction;
             LocalTiltFraction = localTiltFraction;
             FlowDirection = flowDirection;
@@ -99,6 +217,8 @@ namespace ReactorSim.Game
         public int GridRow { get; }
 
         public double AverageBurnupMwDayPerKg { get; }
+
+        public double PowerWatts { get; }
 
         public double LocalPowerFraction { get; }
 
@@ -116,6 +236,7 @@ namespace ReactorSim.Game
             string bundleId,
             string fuelTypeId,
             double currentBurnupMwDayPerKg,
+            double powerWatts,
             double insertedAtSeconds,
             ulong stateVersion)
         {
@@ -137,6 +258,7 @@ namespace ReactorSim.Game
             BundleId = bundleId;
             FuelTypeId = fuelTypeId;
             CurrentBurnupMwDayPerKg = currentBurnupMwDayPerKg;
+            PowerWatts = powerWatts;
             InsertedAtSeconds = insertedAtSeconds;
             StateVersion = stateVersion;
         }
@@ -148,6 +270,8 @@ namespace ReactorSim.Game
         public string FuelTypeId { get; }
 
         public double CurrentBurnupMwDayPerKg { get; }
+
+        public double PowerWatts { get; }
 
         public double InsertedAtSeconds { get; }
 
@@ -185,6 +309,7 @@ namespace ReactorSim.Game
         };
 
         private static readonly PracticeCoreGridPosition[] Positions = CreatePositions();
+        private static readonly Dictionary<int, uint> ChannelIndices = CreateChannelIndices();
 
         public static PracticeCoreGridPosition GetPosition(uint channelIndex)
         {
@@ -194,6 +319,16 @@ namespace ReactorSim.Game
             }
 
             return Positions[(int)channelIndex];
+        }
+
+        public static bool TryGetChannelIndex(
+            int column,
+            int row,
+            out uint channelIndex)
+        {
+            return ChannelIndices.TryGetValue(
+                checked(row * GameCorePresentationConstants.GridWidth + column),
+                out channelIndex);
         }
 
         public static int GetRowLength(int row)
@@ -234,6 +369,20 @@ namespace ReactorSim.Game
             }
 
             return positions.ToArray();
+        }
+
+        private static Dictionary<int, uint> CreateChannelIndices()
+        {
+            var result = new Dictionary<int, uint>();
+            for (uint index = 0; index < Positions.Length; index++)
+            {
+                PracticeCoreGridPosition position = Positions[(int)index];
+                result.Add(
+                    checked(position.Row * GameCorePresentationConstants.GridWidth + position.Column),
+                    index);
+            }
+
+            return result;
         }
     }
 

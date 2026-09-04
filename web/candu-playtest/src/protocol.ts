@@ -27,6 +27,7 @@ export interface CanduBundleSnapshot {
   bundleId: string;
   fuelTypeId: string;
   currentBurnupMwdPerKg: number;
+  powerWatts: number;
   localPowerFraction: number;
   insertedAtSeconds: number;
   stateVersion: number;
@@ -39,6 +40,7 @@ export interface CanduChannelSnapshot {
   gridRow: number;
   flowDirection: RefuellingDirection;
   averageBurnupMwdPerKg: number;
+  powerWatts: number;
   localPowerFraction: number;
   localTiltFraction: number;
   bundles: CanduBundleSnapshot[];
@@ -60,6 +62,22 @@ export interface CanduDiagnostics {
     value: string;
     status: "pass" | "watch" | "info";
   }>;
+}
+
+export interface CanduPhysicsSnapshot {
+  sourceId: string;
+  solveState: string;
+  isAuthoritative: boolean;
+  bindingVersion: number;
+  referencePowerWatts: number;
+  powerAmplitude: number;
+  targetPowerWatts: number;
+  totalPowerWatts: number;
+  meanChannelPowerWatts: number;
+  meanBundlePowerWatts: number;
+  effectiveK: number;
+  reactivity: number;
+  powerBalanceRelativeError: number;
 }
 
 export interface CanduEvent {
@@ -154,6 +172,7 @@ export interface CanduSnapshot {
   lastRefuelledChannel: number;
   lastRefuellingDirectionId: RefuellingDirection | null;
   lastRefuellingShiftCount: number;
+  physics: CanduPhysicsSnapshot;
   core: CanduCoreSnapshot;
   diagnostics: CanduDiagnostics;
   lastEvent: CanduEvent | null;
@@ -172,6 +191,7 @@ export interface RefuelPreview {
   dischargeBurnupMwdPerKg: number;
   localPowerDeltaFraction: number;
   localTiltDeltaFraction: number;
+  predictedReactivityDelta: number;
   projectedPowerFraction: number;
   projectedTiltFraction: number;
   projectedScoreDelta: number;

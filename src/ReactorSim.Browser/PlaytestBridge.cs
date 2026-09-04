@@ -631,14 +631,11 @@ namespace ReactorSim.Browser
                 DischargeBurnupMwdPerKg = dischargeBurnup,
                 LocalPowerDeltaFraction = localPowerDelta,
                 LocalTiltDeltaFraction = localTiltDelta,
-                ProjectedPowerFraction = Clamp(
-                    before.NormalizedPowerFraction + localPowerDelta * 0.08,
-                    0.0,
-                    1.5),
-                ProjectedTiltFraction = Clamp(
-                    before.AbsoluteTiltFraction + localTiltDelta * 0.24,
-                    -1.0,
-                    1.0),
+                PredictedReactivityDelta = candidate.Physics.Reactivity - before.Physics.Reactivity,
+                ProjectedPowerFraction = before.Physics.ReferencePowerWatts <= 0.0
+                    ? before.NormalizedPowerFraction
+                    : candidate.Physics.TotalPowerWatts / candidate.Physics.ReferencePowerWatts,
+                ProjectedTiltFraction = before.AbsoluteTiltFraction,
                 ProjectedScoreDelta = 6.0 + dischargeBurnup - shiftCount * 0.75,
                 InsertedBundleIds = target.Bundles
                     .Where(bundle => !sourceIds.Contains(bundle.BundleId))
@@ -694,16 +691,17 @@ namespace ReactorSim.Browser
                         : "10x";
             LabSnapshotDto? labSnapshot = runtime.LabSession?.CreateSnapshot();
             LabSpatialSolveSnapshotDto? solve = labSnapshot?.SpatialSolve;
-            double relativePowerError = Math.Abs(game.NormalizedPowerFraction - 1.0);
+            double relativePowerError = game.Physics.PowerBalanceRelativeError;
             PlaytestConvergenceDto convergence = solve == null
                 ? new PlaytestConvergenceDto
                 {
-                    State = "unavailable",
+                    State = "settling",
                     Iterations = 0,
-                    Residual = 0.0,
+                    Residual = game.Physics.PowerBalanceRelativeError,
                     RelativePowerError = relativePowerError,
                     LastSolveMilliseconds = 0.0,
-                    SolverLabel = "GameSession synthetic response / no spatial solve"
+                    SolverLabel = game.Physics.SourceId +
+                                  " / explicit watts; awaiting SpatialEigenSolve"
                 }
                 : new PlaytestConvergenceDto
                 {
@@ -748,7 +746,23 @@ namespace ReactorSim.Browser
                 LastRefuellingShiftCount = game.RefuellingOperationCount == 0
                     ? (ushort)0
                     : game.LastRefuellingShiftCount,
-                Core = CreateCoreSnapshot(game.Core),
+                Physics = new PlaytestPhysicsDto
+                {
+                    SourceId = game.Physics.SourceId,
+                    SolveState = game.Physics.SolveState,
+                    IsAuthoritative = game.Physics.IsAuthoritative,
+                    BindingVersion = game.Physics.BindingVersion,
+                    ReferencePowerWatts = game.Physics.ReferencePowerWatts,
+                    PowerAmplitude = game.Physics.PowerAmplitude,
+                    TargetPowerWatts = game.Physics.TargetPowerWatts,
+                    TotalPowerWatts = game.Physics.TotalPowerWatts,
+                    MeanChannelPowerWatts = game.Physics.MeanChannelPowerWatts,
+                    MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
+                    EffectiveK = game.Physics.EffectiveK,
+                    Reactivity = game.Physics.Reactivity,
+                    PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError
+                },
+                Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
                 Diagnostics = new PlaytestDiagnosticsDto
                 {
                     Convergence = convergence,
@@ -788,7 +802,9 @@ namespace ReactorSim.Browser
             };
         }
 
-        private static PlaytestCoreDto CreateCoreSnapshot(GameCorePresentationSnapshot core)
+        private static PlaytestCoreDto CreateCoreSnapshot(
+            GameCorePresentationSnapshot core,
+            double meanBundlePowerWatts)
         {
             return new PlaytestCoreDto
             {
@@ -806,6 +822,7 @@ namespace ReactorSim.Browser
                             ? TowardEndB
                             : TowardEndA,
                         AverageBurnupMwdPerKg = channel.AverageBurnupMwDayPerKg,
+                        PowerWatts = channel.PowerWatts,
                         LocalPowerFraction = channel.LocalPowerFraction,
                         LocalTiltFraction = channel.LocalTiltFraction,
                         Bundles = channel.Bundles
@@ -815,8 +832,10 @@ namespace ReactorSim.Browser
                                 BundleId = bundle.BundleId,
                                 FuelTypeId = bundle.FuelTypeId,
                                 CurrentBurnupMwdPerKg = bundle.CurrentBurnupMwDayPerKg,
-                                LocalPowerFraction = channel.LocalPowerFraction *
-                                    (0.76 + (1.0 - Math.Abs(bundle.Position - 5.5) / 6.5) * 0.34),
+                                PowerWatts = bundle.PowerWatts,
+                                LocalPowerFraction = meanBundlePowerWatts <= 0.0
+                                    ? 0.0
+                                    : bundle.PowerWatts / meanBundlePowerWatts,
                                 InsertedAtSeconds = bundle.InsertedAtSeconds,
                                 StateVersion = bundle.StateVersion,
                                 IsFresh = bundle.IsFresh
@@ -1139,6 +1158,8 @@ namespace ReactorSim.Browser
 
         public PlaytestCoreDto Core { get; set; } = new PlaytestCoreDto();
 
+        public PlaytestPhysicsDto Physics { get; set; } = new PlaytestPhysicsDto();
+
         public PlaytestDiagnosticsDto Diagnostics { get; set; } = new PlaytestDiagnosticsDto();
 
         public PlaytestEventDto? LastEvent { get; set; }
@@ -1171,6 +1192,8 @@ namespace ReactorSim.Browser
 
         public double AverageBurnupMwdPerKg { get; set; }
 
+        public double PowerWatts { get; set; }
+
         public double LocalPowerFraction { get; set; }
 
         public double LocalTiltFraction { get; set; }
@@ -1187,6 +1210,8 @@ namespace ReactorSim.Browser
         public string FuelTypeId { get; set; } = string.Empty;
 
         public double CurrentBurnupMwdPerKg { get; set; }
+
+        public double PowerWatts { get; set; }
 
         public double LocalPowerFraction { get; set; }
 
@@ -1217,6 +1242,35 @@ namespace ReactorSim.Browser
         public double LastSolveMilliseconds { get; set; }
 
         public string SolverLabel { get; set; } = string.Empty;
+    }
+
+    internal sealed class PlaytestPhysicsDto
+    {
+        public string SourceId { get; set; } = string.Empty;
+
+        public string SolveState { get; set; } = string.Empty;
+
+        public bool IsAuthoritative { get; set; }
+
+        public ulong BindingVersion { get; set; }
+
+        public double ReferencePowerWatts { get; set; }
+
+        public double PowerAmplitude { get; set; }
+
+        public double TargetPowerWatts { get; set; }
+
+        public double TotalPowerWatts { get; set; }
+
+        public double MeanChannelPowerWatts { get; set; }
+
+        public double MeanBundlePowerWatts { get; set; }
+
+        public double EffectiveK { get; set; }
+
+        public double Reactivity { get; set; }
+
+        public double PowerBalanceRelativeError { get; set; }
     }
 
     internal sealed class PlaytestCheckDto
@@ -1261,6 +1315,8 @@ namespace ReactorSim.Browser
         public double LocalPowerDeltaFraction { get; set; }
 
         public double LocalTiltDeltaFraction { get; set; }
+
+        public double PredictedReactivityDelta { get; set; }
 
         public double ProjectedPowerFraction { get; set; }
 

@@ -45,5 +45,38 @@ describe("synthetic CANDU-6 playtest fixture", () => {
     const centerChannel = channels.find((channel) => channel.gridRow === 10 && channel.gridColumn === 10);
     expect(centerChannel!.localPowerFraction).toBeGreaterThan(outerChannel!.localPowerFraction);
     expect(centerChannel!.bundles[5].localPowerFraction).toBeGreaterThan(centerChannel!.bundles[0].localPowerFraction);
+
+    const channelPowerTotal = channels.reduce((sum, channel) => sum + channel.powerWatts, 0);
+    const bundlePowerTotal = channels.reduce(
+      (sum, channel) => sum + channel.bundles.reduce((channelSum, bundle) => channelSum + bundle.powerWatts, 0),
+      0,
+    );
+    expect(channels[0].powerWatts).toBeGreaterThan(0);
+    expect(channels[0].powerWatts).toBeCloseTo(channels[0].bundles.reduce((sum, bundle) => sum + bundle.powerWatts, 0), 6);
+    expect(channelPowerTotal).toBeCloseTo(channels[0].powerWatts + channels.slice(1).reduce((sum, channel) => sum + channel.powerWatts, 0), 6);
+    expect(channelPowerTotal).toBeCloseTo(bridge.getSnapshot().physics.totalPowerWatts, 6);
+    expect(bundlePowerTotal).toBeCloseTo(bridge.getSnapshot().physics.totalPowerWatts, 6);
+    expect(bridge.getSnapshot().physics.powerBalanceRelativeError).toBeLessThan(1e-12);
+  });
+
+  it("derives a refuelling reactivity preview from the candidate bundle state", async () => {
+    const bridge = createSyntheticFixtureBridge();
+    const before = bridge.getSnapshot();
+
+    const response = await bridge.dispatch({
+      type: "preview-refuel",
+      request: {
+        channelIndex: 0,
+        directionId: "toward-end-b",
+        shiftCount: 4,
+        fuelTypeId: "NAT-U-SYNTHETIC",
+      },
+    });
+
+    expect(response.accepted).toBe(true);
+    expect(response.preview).not.toBeNull();
+    expect(response.preview!.predictedReactivityDelta).toBeGreaterThan(0);
+    expect(response.preview!.projectedPowerFraction).toBe(before.physics.powerAmplitude);
+    expect(response.snapshot.physics.reactivity).toBe(before.physics.reactivity);
   });
 });

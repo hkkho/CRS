@@ -22,7 +22,9 @@ target player experience, and ordered implementation path.
   dashboard, Controls, Timeline, and Core Map views, plus the F1/backquote debug
   overlay. It advances the session continuously in fixed 100 ms wall-time requests;
   the Core Map presents 380 selectable channels, 12-bundle burnup details, preview
-  and commit actions, and deterministic localized power/tilt/score feedback.
+  and commit actions, deterministic localized power/tilt/score feedback, and
+  explicit watts/k/rho physics diagnostics. The current reduced projection is
+  state-derived and clearly labelled synthetic; it is not a plant rating.
 - `web/candu-playtest` is a companion browser pivot for algorithm and interaction
   playtesting. It uses the same `ReactorSim.Game` Play session through the
   versioned browser bridge when WASM is available. Development and explicit
@@ -54,6 +56,14 @@ As detailed in [`gemini_review.md`](gemini_review.md):
 6. **Slice 5 (Milestone 4):** Full 3D two-group spatial diffusion solver (`SpatialEigenSolve`)
    integrated on a background simulation cadence.
 7. **Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack pass.
+
+The physics migration is intentionally staged. The current session publishes a
+versioned reduced-model projection with `P_ref`, amplitude, total/channel/bundle
+watts, `k`, and `rho = (k - 1) / k`; refuelling reprojects the resulting bundle
+inventory and burnup advances from those bundle powers. The existing two-group
+`SpatialEigenSolve` remains the next authoritative integration step, followed by
+validated offline data packs. Synthetic display constants must not be presented
+as CANDU plant ratings.
 
 ## Quick start
 

@@ -173,6 +173,78 @@ namespace ReactorSim.Core
                 LastShiftCount);
         }
 
+        /// <summary>
+        /// Applies one deterministic burnup integration result in canonical
+        /// channel-major, bundle-position order. The caller supplies actual
+        /// bundle energy increments in joules; this transition only updates
+        /// the immutable inventory and invalidates any accepted power binding
+        /// through BundleState.WithEnergy.
+        /// </summary>
+        public ContractValidationResult<SyntheticGameCoreStateV1> TryAddFissionEnergy(
+            IReadOnlyList<double> deltaFissionEnergyJ)
+        {
+            if (deltaFissionEnergyJ == null)
+            {
+                return ContractValidationResult<SyntheticGameCoreStateV1>.Invalid(
+                    "SyntheticCore.Burnup.Energy.Missing",
+                    "delta_fission_energy_j",
+                    "A burnup integration requires one energy increment for every bundle position.");
+            }
+
+            int expectedCount = checked((int)(ChannelCount * BundlePositionCount));
+            if (deltaFissionEnergyJ.Count != expectedCount)
+            {
+                return ContractValidationResult<SyntheticGameCoreStateV1>.Invalid(
+                    "SyntheticCore.Burnup.Energy.CountMismatch",
+                    "delta_fission_energy_j",
+                    "Burnup integration requires exactly 4560 channel-major bundle energy increments.");
+            }
+
+            BundleState[][] nextChannels = new BundleState[ChannelCount][];
+            int index = 0;
+            for (uint channelIndex = 0; channelIndex < ChannelCount; channelIndex++)
+            {
+                BundleState[] source = _channels[channelIndex];
+                BundleState[] target = new BundleState[BundlePositionCount];
+                for (uint position = 0; position < BundlePositionCount; position++)
+                {
+                    double delta = deltaFissionEnergyJ[index++];
+                    if (!PowerHistoryRecordV1.IsCanonicalNonnegative(delta))
+                    {
+                        return ContractValidationResult<SyntheticGameCoreStateV1>.Invalid(
+                            "SyntheticCore.Burnup.Energy.Invalid",
+                            "delta_fission_energy_j[" + (index - 1).ToString(CultureInfo.InvariantCulture) + "]",
+                            "Burnup energy increments must be finite, canonical, and nonnegative SI joules.");
+                    }
+
+                    double cumulative = source[position].CumulativeFissionEnergyJ + delta;
+                    if (!PowerHistoryRecordV1.IsCanonicalNonnegative(cumulative))
+                    {
+                        return ContractValidationResult<SyntheticGameCoreStateV1>.Invalid(
+                            "SyntheticCore.Burnup.Energy.Overflow",
+                            "delta_fission_energy_j[" + (index - 1).ToString(CultureInfo.InvariantCulture) + "]",
+                            "Burnup integration would make cumulative fission energy non-finite.");
+                    }
+
+                    target[position] = delta == 0.0
+                        ? source[position]
+                        : source[position].WithEnergy(cumulative);
+                }
+
+                nextChannels[channelIndex] = target;
+            }
+
+            return ContractValidationResult<SyntheticGameCoreStateV1>.Valid(
+                new SyntheticGameCoreStateV1(
+                    nextChannels,
+                    FreshBundlesAvailable,
+                    RefuellingOperationCount,
+                    NextFreshBundleSequence,
+                    LastRefuelledChannel,
+                    LastDirection,
+                    LastShiftCount));
+        }
+
         public ContractValidationResult<GameRefuellingResultV1> TryRefuel(
             uint channelIndex,
             GameRefuellingDirectionV1 direction,

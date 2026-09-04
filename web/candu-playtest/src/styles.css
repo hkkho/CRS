@@ -503,7 +503,7 @@ input:focus-visible {
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 11px;
 }
 
@@ -617,6 +617,10 @@ input:focus-visible {
 .tone-warning .metric-track { color: var(--red); }
 
 .source-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px 13px;
+  flex-wrap: wrap;
   min-height: 38px;
   margin: 18px 0 13px;
   padding: 9px 12px;
@@ -632,6 +636,12 @@ input:focus-visible {
   flex: 0 0 auto;
   color: var(--amber);
   font-weight: 800;
+}
+
+.source-banner-physics {
+  color: var(--cyan-deep);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 8px;
 }
 
 .source-banner-protocol {
@@ -1425,7 +1435,7 @@ input:focus-visible {
 
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 7px;
   margin: 17px 0 14px;
 }

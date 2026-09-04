@@ -62,6 +62,7 @@ namespace ReactorSim.Game
             LastRefuellingDirectionId = lastRefuellingDirectionId;
             LastRefuellingShiftCount = lastRefuellingShiftCount;
             Core = core ?? throw new ArgumentNullException(nameof(core));
+            Physics = Core.Physics;
         }
 
         public string ScenarioId { get; }
@@ -115,6 +116,8 @@ namespace ReactorSim.Game
         public ushort LastRefuellingShiftCount { get; }
 
         public GameCorePresentationSnapshot Core { get; }
+
+        public GamePhysicsPresentationSnapshot Physics { get; }
     }
 
     public sealed class GameSessionCommandResult
@@ -154,13 +157,9 @@ namespace ReactorSim.Game
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private SyntheticGameCoreStateV1 _coreState;
-        private readonly double[] _channelPowerResponses =
-            new double[GameCorePresentationConstants.ChannelCount];
-        private double _syntheticPowerDelta;
-        private double _syntheticTiltX;
-        private double _syntheticTiltY;
         private double _syntheticScore;
         private double _scoreResetBaseline;
+        private ulong _powerProjectionVersion;
 
         internal GameSession(
             Phase8ScoredScenarioRuntimeV1 runtime,
@@ -190,9 +189,7 @@ namespace ReactorSim.Game
                 _runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
             if (result.IsValid)
             {
-                ApplySyntheticAdvance(
-                    result.Value.TurnSummary.SimulationTimeStartSeconds,
-                    result.Value.TurnSummary.SimulationTimeEndSeconds);
+                ApplyPracticeAdvance(result.Value.Advance);
             }
 
             return Complete(result);
@@ -267,13 +264,9 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult DebugResetSyntheticResponse()
         {
-            Array.Clear(_channelPowerResponses, 0, _channelPowerResponses.Length);
-            _syntheticPowerDelta = 0.0;
-            _syntheticTiltX = 0.0;
-            _syntheticTiltY = 0.0;
             _syntheticScore = 0.0;
             _scoreResetBaseline = _runtime.Score.TotalPoints;
-            return AcceptedMessage("Debug: synthetic response and score reset.");
+            return AcceptedMessage("Debug: reduced-model score adjustment reset.");
         }
 
         public GameSessionCommandResult RefuelChannel(
@@ -300,7 +293,8 @@ namespace ReactorSim.Game
             }
 
             _coreState = result.Value.ResultingState;
-            ApplySyntheticRefuellingResponse(result.Value);
+            ApplyPracticeRefuellingScore(result.Value);
+            _powerProjectionVersion = checked(_powerProjectionVersion + 1);
             string message = FormatRefuellingMessage(result.Value, false);
             return new GameSessionCommandResult(
                 true,
@@ -399,6 +393,7 @@ namespace ReactorSim.Game
 
         private GameSessionSnapshot CreateSnapshot()
         {
+            GameCorePresentationSnapshot core = CreateCorePresentationSnapshot(_coreState);
             return new GameSessionSnapshot(
                 _runtime.ScenarioId,
                 _runtime.DifficultyId,
@@ -425,7 +420,7 @@ namespace ReactorSim.Game
                 _coreState.LastRefuelledChannel,
                 DirectionId(_coreState.LastDirection),
                 _coreState.LastShiftCount,
-                CreateCorePresentationSnapshot(_coreState));
+                core);
         }
 
         private ContractValidationResult<GameRefuellingResultV1> TryRefuel(
@@ -442,111 +437,274 @@ namespace ReactorSim.Game
                 _runtime.SimulationTimeSeconds);
         }
 
-        private void ApplySyntheticRefuellingResponse(GameRefuellingResultV1 result)
+        private void ApplyPracticeRefuellingScore(GameRefuellingResultV1 result)
         {
-            PracticeCoreGridPosition position = PracticeCoreLayout.GetPosition(result.ChannelIndex);
-            double x = (position.Column - 10.5) / 10.5;
-            double y = (10.5 - position.Row) / 10.5;
-            double shiftFactor = result.ShiftCount / 4.0;
             double averageDischargedBurnup = result.DischargedBundles.Count == 0
                 ? 0.0
                 : result.DischargedBundles.Average(
                     bundle => bundle.CurrentBurnupJPerKgHm /
                               GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
             double utilizationQuality = Clamp((averageDischargedBurnup - 4.0) / 6.0, 0.0, 1.0);
-            double responseMagnitude = 0.004 * shiftFactor + 0.002 * utilizationQuality;
-
-            _channelPowerResponses[(int)result.ChannelIndex] += responseMagnitude;
-            _syntheticPowerDelta += 0.0025 * shiftFactor + 0.0015 * utilizationQuality;
-            _syntheticTiltX += x * responseMagnitude * 1.8;
-            _syntheticTiltY += y * responseMagnitude * 1.8;
+            double shiftFactor = result.ShiftCount / 4.0;
+            // Scoring observes the operation. It does not modify power,
+            // tilt, or reactivity; those are recomputed from the resulting
+            // bundle state by the reduced projection.
             _syntheticScore +=
                 6.0 + 10.0 * utilizationQuality - 0.75 * shiftFactor;
         }
 
-        private void ApplySyntheticAdvance(
-            double simulationTimeStartSeconds,
-            double simulationTimeEndSeconds)
+        private void ApplyPracticeAdvance(Phase8ScenarioAdvanceResultV1 advance)
         {
-            double elapsedSeconds = simulationTimeEndSeconds - simulationTimeStartSeconds;
-            if (elapsedSeconds <= 0.0)
+            foreach (Phase8ScenarioAdvanceSegmentV1 segment in advance.StateSegments)
             {
-                return;
+                double remainingSeconds = segment.SimulationTimeEndSeconds -
+                                           segment.SimulationTimeStartSeconds;
+                if (remainingSeconds <= 0.0)
+                {
+                    continue;
+                }
+
+                double amplitude = Clamp(segment.NormalizedPowerFraction, 0.0, 1.5);
+                while (remainingSeconds > 0.0)
+                {
+                    double stepSeconds = Math.Min(600.0, remainingSeconds);
+                    GameCorePresentationSnapshot projected =
+                        CreateCorePresentationSnapshot(_coreState, amplitude);
+                    var deltaEnergy = new double[
+                        checked((int)(GameCorePresentationConstants.ChannelCount *
+                                     GameCorePresentationConstants.BundlePositionCount))];
+                    int index = 0;
+                    foreach (GameChannelPresentationSnapshot channel in projected.Channels)
+                    {
+                        foreach (GameBundlePresentationSnapshot bundle in channel.Bundles)
+                        {
+                            deltaEnergy[index++] = bundle.PowerWatts * stepSeconds;
+                        }
+                    }
+
+                    ContractValidationResult<SyntheticGameCoreStateV1> integrated =
+                        _coreState.TryAddFissionEnergy(deltaEnergy);
+                    if (!integrated.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            "The reduced practice burnup integration failed: " +
+                            integrated.FirstDiagnostic);
+                    }
+
+                    _coreState = integrated.Value;
+                    _powerProjectionVersion = checked(_powerProjectionVersion + 1);
+                    double powerQuality = 1.0 -
+                        Clamp(Math.Abs(amplitude - 1.0) / 0.02, 0.0, 1.0);
+                    double tiltQuality = 1.0 -
+                        Clamp(Math.Abs(segment.AbsoluteTiltFraction) / 0.05, 0.0, 1.0);
+                    _syntheticScore += stepSeconds *
+                        (0.35 * powerQuality + 0.15 * tiltQuality);
+                    remainingSeconds -= stepSeconds;
+                }
             }
-
-            double decay = Math.Exp(-elapsedSeconds / 900.0);
-            for (int index = 0; index < _channelPowerResponses.Length; index++)
-            {
-                _channelPowerResponses[index] *= decay;
-            }
-
-            _syntheticPowerDelta *= decay;
-            _syntheticTiltX *= decay;
-            _syntheticTiltY *= decay;
-
-            double powerQuality = 1.0 - Clamp(Math.Abs(CurrentPowerFraction() - 1.0) / 0.02, 0.0, 1.0);
-            double tiltQuality = 1.0 - Clamp(CurrentTiltFraction() / 0.05, 0.0, 1.0);
-            _syntheticScore += elapsedSeconds * (0.35 * powerQuality + 0.15 * tiltQuality);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state)
         {
-            var channels = new List<GameChannelPresentationSnapshot>(
-                (int)GameCorePresentationConstants.ChannelCount);
+            return CreateCorePresentationSnapshot(state, CurrentPowerFraction());
+        }
+
+        private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
+            SyntheticGameCoreStateV1 state,
+            double powerAmplitude)
+        {
+            var channelStates = new IReadOnlyList<BundleState>[
+                (int)GameCorePresentationConstants.ChannelCount];
+            var channelAverageBurnups = new double[
+                (int)GameCorePresentationConstants.ChannelCount];
+            for (uint channelIndex = 0;
+                 channelIndex < GameCorePresentationConstants.ChannelCount;
+                 channelIndex++)
+            {
+                IReadOnlyList<BundleState> bundles = state.GetChannel(channelIndex);
+                channelStates[(int)channelIndex] = bundles;
+                channelAverageBurnups[(int)channelIndex] = bundles.Average(
+                    bundle => bundle.CurrentBurnupJPerKgHm /
+                              GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
+            }
+
+            var inputs = new List<ReducedPowerNodeInputV1>(
+                checked((int)(GameCorePresentationConstants.ChannelCount *
+                              GameCorePresentationConstants.BundlePositionCount)));
             for (uint channelIndex = 0;
                  channelIndex < GameCorePresentationConstants.ChannelCount;
                  channelIndex++)
             {
                 PracticeCoreGridPosition grid = PracticeCoreLayout.GetPosition(channelIndex);
-                IReadOnlyList<BundleState> bundles = state.GetChannel(channelIndex);
+                double neighbourAverage = GetNeighbourAverage(
+                    grid,
+                    channelAverageBurnups);
+                FlowDirection flowDirection = PracticeCoreLayout.GetFlowDirection(grid);
+                int flowSign = flowDirection == FlowDirection.EndAtoEndB ? 1 : -1;
+                double centeredX = (grid.Column - 10.5) / 11.5;
+                double centeredY = (grid.Row - 10.5) / 11.5;
+                double radialDistance = Clamp(
+                    Math.Sqrt(centeredX * centeredX + centeredY * centeredY) /
+                    Math.Sqrt(2.0),
+                    0.0,
+                    1.0);
+                double channelAverage = channelAverageBurnups[(int)channelIndex];
+                foreach (BundleState bundle in channelStates[(int)channelIndex])
+                {
+                    double burnup = bundle.CurrentBurnupJPerKgHm /
+                                    GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
+                    ContractValidationResult<ReducedPowerNodeInputV1> input =
+                        ReducedPowerNodeInputV1.TryCreate(
+                            bundle.Node,
+                            radialDistance,
+                            bundle.Position.Value /
+                                (double)(GameCorePresentationConstants.BundlePositionCount - 1),
+                            burnup,
+                            channelAverage,
+                            neighbourAverage,
+                            flowSign,
+                            MaterialPowerFactor(bundle.MaterialVariantId.Value));
+                    if (!input.IsValid)
+                    {
+                        throw new InvalidOperationException(
+                            "The reduced practice power input failed: " + input.FirstDiagnostic);
+                    }
+
+                    inputs.Add(input.Value);
+                }
+            }
+
+            ContractValidationResult<ReducedCorePowerProjectionV1> projectionResult =
+                ReducedCorePowerModelV1.TryProject(
+                    inputs,
+                    PracticeGameSessionFactory.PracticeReferencePowerWatts,
+                    Clamp(powerAmplitude, 0.0, 1.5));
+            if (!projectionResult.IsValid)
+            {
+                throw new InvalidOperationException(
+                    "The reduced practice power projection failed: " +
+                    projectionResult.FirstDiagnostic);
+            }
+
+            ReducedCorePowerProjectionV1 projection = projectionResult.Value;
+            double meanChannelPowerWatts = projection.TotalPowerWatts /
+                                           GameCorePresentationConstants.ChannelCount;
+            var channelPowerWatts = new double[
+                (int)GameCorePresentationConstants.ChannelCount];
+            for (int index = 0; index < projection.Nodes.Count; index++)
+            {
+                ReducedPowerNodeResultV1 node = projection.Nodes[index];
+                channelPowerWatts[(int)node.Node.ChannelId.Value] += node.PowerWatts;
+            }
+
+            var channels = new List<GameChannelPresentationSnapshot>(
+                (int)GameCorePresentationConstants.ChannelCount);
+            int nodeIndex = 0;
+            for (uint channelIndex = 0;
+                 channelIndex < GameCorePresentationConstants.ChannelCount;
+                 channelIndex++)
+            {
+                PracticeCoreGridPosition grid = PracticeCoreLayout.GetPosition(channelIndex);
+                IReadOnlyList<BundleState> bundles = channelStates[(int)channelIndex];
                 var bundleSnapshots = new List<GameBundlePresentationSnapshot>(
                     (int)GameCorePresentationConstants.BundlePositionCount);
                 double burnupTotal = 0.0;
+                double axialPowerMoment = 0.0;
                 foreach (BundleState bundle in bundles)
                 {
                     double burnup = bundle.CurrentBurnupJPerKgHm /
                                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
+                    ReducedPowerNodeResultV1 node = projection.Nodes[nodeIndex++];
                     burnupTotal += burnup;
+                    axialPowerMoment += node.PowerWatts *
+                        (2.0 * bundle.Position.Value /
+                         (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
                     bundleSnapshots.Add(
                         new GameBundlePresentationSnapshot(
                             bundle.Position.Value,
                             bundle.BundleId.ToString(),
                             bundle.MaterialVariantId.Value,
                             burnup,
+                            node.PowerWatts,
                             bundle.InsertedAtSeconds,
                             bundle.StateVersion));
                 }
 
-                double averageBurnup = burnupTotal / GameCorePresentationConstants.BundlePositionCount;
-                double centeredX = (grid.Column - 10.5) / 11.5;
-                double centeredY = (grid.Row - 10.5) / 11.5;
-                double radialDistance = Math.Sqrt(centeredX * centeredX + centeredY * centeredY);
-                double radial = Clamp(1.0 - Math.Pow(radialDistance, 1.45), 0.0, 1.0);
-                double azimuthalRipple =
-                    (Math.Sin((grid.Column + 1) * 0.73) + Math.Cos((grid.Row + 1) * 0.61)) * 0.005;
-                double localPower = Clamp(
-                    0.74 + 0.34 * radial + azimuthalRipple +
-                    _channelPowerResponses[(int)channelIndex],
-                    0.64,
-                    1.28);
-                double localTilt = Math.Abs(_channelPowerResponses[(int)channelIndex]) +
-                                   Math.Abs(centeredY * _syntheticTiltY) +
-                                   Math.Abs(centeredX * _syntheticTiltX);
-
+                double channelPower = channelPowerWatts[(int)channelIndex];
+                double localPower = meanChannelPowerWatts <= 0.0
+                    ? 1.0
+                    : channelPower / meanChannelPowerWatts;
+                double localTilt = channelPower <= 0.0
+                    ? 0.0
+                    : Math.Abs(axialPowerMoment / channelPower);
                 channels.Add(
                     new GameChannelPresentationSnapshot(
                         channelIndex,
                         grid.Column,
                         grid.Row,
-                        averageBurnup,
+                        burnupTotal / GameCorePresentationConstants.BundlePositionCount,
+                        channelPower,
                         localPower,
                         localTilt,
                         PracticeCoreLayout.GetFlowDirection(grid),
                         bundleSnapshots));
             }
 
-            return new GameCorePresentationSnapshot(channels);
+            var physics = new GamePhysicsPresentationSnapshot(
+                projection.ModelId,
+                "accepted-reduced",
+                false,
+                _powerProjectionVersion,
+                projection.ReferencePowerWatts,
+                projection.Amplitude,
+                projection.TargetPowerWatts,
+                projection.TotalPowerWatts,
+                meanChannelPowerWatts,
+                projection.MeanNodePowerWatts,
+                projection.EffectiveK,
+                projection.Reactivity,
+                projection.PowerBalanceRelativeError);
+            return new GameCorePresentationSnapshot(channels, physics);
+        }
+
+        private static double GetNeighbourAverage(
+            PracticeCoreGridPosition grid,
+            double[] channelAverageBurnups)
+        {
+            double total = 0.0;
+            int count = 0;
+            int[,] offsets =
+            {
+                { 0, -1 },
+                { 1, 0 },
+                { 0, 1 },
+                { -1, 0 }
+            };
+            for (int index = 0; index < offsets.GetLength(0); index++)
+            {
+                if (!PracticeCoreLayout.TryGetChannelIndex(
+                        grid.Column + offsets[index, 0],
+                        grid.Row + offsets[index, 1],
+                        out uint neighbourIndex))
+                {
+                    continue;
+                }
+
+                total += channelAverageBurnups[(int)neighbourIndex];
+                count++;
+            }
+
+            return count == 0
+                ? channelAverageBurnups[0]
+                : total / count;
+        }
+
+        private static double MaterialPowerFactor(string materialVariantId)
+        {
+            return string.Equals(materialVariantId, "NAT-U-SYNTHETIC", StringComparison.Ordinal)
+                ? 1.0
+                : 0.99;
         }
 
         private string FormatRefuellingMessage(
@@ -576,16 +734,12 @@ namespace ReactorSim.Game
 
         private double CurrentPowerFraction()
         {
-            return Clamp(_runtime.NormalizedPowerFraction + _syntheticPowerDelta, 0.0, 1.50);
+            return Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.50);
         }
 
         private double CurrentTiltFraction()
         {
-            return Clamp(
-                _runtime.AbsoluteTiltFraction +
-                Math.Sqrt(_syntheticTiltX * _syntheticTiltX + _syntheticTiltY * _syntheticTiltY),
-                0.0,
-                1.0);
+            return Clamp(Math.Abs(_runtime.AbsoluteTiltFraction), 0.0, 1.0);
         }
 
         private static double Clamp(double value, double minimum, double maximum)

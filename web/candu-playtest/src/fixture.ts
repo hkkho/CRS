@@ -11,6 +11,7 @@ import {
   type CanduConvergenceStatus,
   type CanduDiagnostics,
   type CanduEvent,
+  type CanduPhysicsSnapshot,
   type CanduPlaytestBridge,
   type CanduReplayArchive,
   type CanduSnapshot,
@@ -22,6 +23,9 @@ import {
 import type { BridgeStatus } from "./protocol";
 
 const HOURS_TO_SECONDS = 60 * 60;
+const REFERENCE_POWER_WATTS = 1_000_000_000;
+const BUNDLE_HEAVY_METAL_MASS_KG = 19.2;
+const JOULES_PER_MW_DAY_PER_KG = 8.64e10;
 const PLAYBACK_FACTORS: Record<PlaybackModeId, number> = {
   pause: 0,
   "1x": BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND,
@@ -53,11 +57,28 @@ const ROW_LENGTHS = [
   6,
 ] as const;
 
-interface FixtureChannel extends CanduChannelSnapshot {
-  basePowerFraction: number;
-  baseTiltFraction: number;
-  refuelPowerOffset: number;
-  refuelTiltOffset: number;
+interface FixtureChannel {
+  channelIndex: number;
+  gridColumn: number;
+  gridRow: number;
+  flowDirection: RefuelRequest["directionId"];
+  averageBurnupMwdPerKg: number;
+  bundles: CanduChannelSnapshot["bundles"];
+}
+
+interface FixturePowerProjection {
+  referencePowerWatts: number;
+  powerAmplitude: number;
+  targetPowerWatts: number;
+  totalPowerWatts: number;
+  meanChannelPowerWatts: number;
+  meanBundlePowerWatts: number;
+  effectiveK: number;
+  reactivity: number;
+  powerBalanceRelativeError: number;
+  channelPowerWatts: number[];
+  channelTiltFractions: number[];
+  bundlePowerWatts: Map<string, number>;
 }
 
 interface FixtureState {
@@ -95,8 +116,9 @@ const fixtureStatus: BridgeStatus = {
 
 /**
  * UI-only compatibility behavior for Milestone 0.5. This is deliberately not
- * a second reactor simulator: it supplies stable protocol-shaped values and
- * state transitions until the engine-neutral model is compiled to browser WASM.
+ * an authoritative reactor simulator: it supplies stable protocol-shaped
+ * state transitions and a matching reduced projection until the engine-neutral
+ * model is compiled to browser WASM.
  */
 export function createSyntheticFixtureBridge(): CanduPlaytestBridge {
   let state = createInitialState();
@@ -160,18 +182,6 @@ function createInitialState(): FixtureState {
     const normalizedY = (position.row - 10.5) / 11.5;
     const radialDistance = Math.sqrt(normalizedX ** 2 + normalizedY ** 2);
     const radialShape = clamp(1 - radialDistance ** 1.45, 0, 1);
-    const azimuthalRipple =
-      (Math.sin((position.column + 1) * 0.73) + Math.cos((position.row + 1) * 0.61)) * 0.005;
-    const basePowerFraction = clamp(
-      0.74 + radialShape * 0.34 + azimuthalRipple,
-      0.68,
-      1.12,
-    );
-    const baseTiltFraction = clamp(
-      normalizedY * 0.035 + normalizedX * 0.012 + azimuthalRipple * 0.7,
-      -0.08,
-      0.08,
-    );
     const nominalBurnupMwdPerKg = clamp(
       5.8 + radialShape * 5.0 - normalizedY * 0.16 + normalizedX * 0.08,
       4.8,
@@ -191,7 +201,6 @@ function createInitialState(): FixtureState {
         bundleSequence,
         bundlePosition,
         burnup,
-        basePowerFraction * (0.76 + axialShape * 0.34),
         0,
       );
       bundleSequence += 1;
@@ -204,13 +213,7 @@ function createInitialState(): FixtureState {
       gridRow: position.row,
       flowDirection: getFlowDirection(position),
       averageBurnupMwdPerKg: bundles.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / bundles.length,
-      localPowerFraction: basePowerFraction,
-      localTiltFraction: baseTiltFraction,
       bundles,
-      basePowerFraction,
-      baseTiltFraction,
-      refuelPowerOffset: 0,
-      refuelTiltOffset: 0,
     });
   }
 
@@ -269,17 +272,17 @@ function createBundle(
   sequence: number,
   position: number,
   burnup: number,
-  localPowerFraction: number,
   insertedAtSeconds: number,
   fuelTypeId = "NAT-U-SYNTHETIC",
   stateVersion = 0,
-) {
+): CanduChannelSnapshot["bundles"][number] {
   return {
     position,
     bundleId: `SYN-B-${String(sequence).padStart(6, "0")}`,
     fuelTypeId,
     currentBurnupMwdPerKg: burnup,
-    localPowerFraction,
+    powerWatts: 0,
+    localPowerFraction: 0,
     insertedAtSeconds,
     stateVersion,
     isFresh: burnup <= 0.001,
@@ -322,42 +325,46 @@ function advanceSimulation(state: FixtureState, simulationSeconds: number): void
     return;
   }
 
-  state.simulationTimeSeconds += simulationSeconds;
-  const hours = simulationSeconds / HOURS_TO_SECONDS;
-  const response = clamp(hours * 0.08, 0, 0.24);
-  state.normalizedPowerFraction += (state.targetPowerFraction - state.normalizedPowerFraction) * response;
-  state.absoluteTiltFraction += (state.targetTiltFraction - state.absoluteTiltFraction) * response;
-  state.controlMarginFraction = clamp(
-    0.84 - Math.abs(state.targetPowerFraction - 1) * 0.22 - Math.abs(state.absoluteTiltFraction) * 0.38,
-    0.56,
-    0.9,
-  );
-  state.deviceAvailableFraction = clamp(0.98 - state.refuellingOperationCount * 0.004, 0.86, 0.98);
+  let remainingSeconds = simulationSeconds;
+  state.scoreDelta = 0;
+  while (remainingSeconds > 0) {
+    const stepSeconds = Math.min(600, remainingSeconds);
+    const hours = stepSeconds / HOURS_TO_SECONDS;
+    const response = clamp(hours * 0.08, 0, 0.24);
+    state.normalizedPowerFraction += (state.targetPowerFraction - state.normalizedPowerFraction) * response;
+    state.absoluteTiltFraction += (state.targetTiltFraction - state.absoluteTiltFraction) * response;
+    state.simulationTimeSeconds += stepSeconds;
+    state.controlMarginFraction = clamp(
+      0.84 - Math.abs(state.targetPowerFraction - 1) * 0.22 - Math.abs(state.absoluteTiltFraction) * 0.38,
+      0.56,
+      0.9,
+    );
+    state.deviceAvailableFraction = clamp(0.98 - state.refuellingOperationCount * 0.004, 0.86, 0.98);
 
-  let stabilityScore = 10 - Math.abs(state.normalizedPowerFraction - state.targetPowerFraction) * 90;
-  stabilityScore -= Math.abs(state.absoluteTiltFraction - state.targetTiltFraction) * 32;
-  state.scoreDelta = stabilityScore * hours * 0.16;
-  state.scoreTotal = Math.max(0, state.scoreTotal + state.scoreDelta);
+    const projection = createFixturePowerProjection(state);
+    let stabilityScore = 10 - Math.abs(state.normalizedPowerFraction - state.targetPowerFraction) * 90;
+    stabilityScore -= Math.abs(state.absoluteTiltFraction - state.targetTiltFraction) * 32;
+    state.scoreDelta += stabilityScore * hours * 0.16;
+    state.scoreTotal = Math.max(0, state.scoreTotal + stabilityScore * hours * 0.16);
 
-  for (const channel of state.channels) {
-    const channelIncrement = hours * (0.0031 + channel.localPowerFraction * 0.0016);
-    for (const bundle of channel.bundles) {
-      if (!bundle.isFresh) {
-        bundle.currentBurnupMwdPerKg = clamp(bundle.currentBurnupMwdPerKg + channelIncrement, 0, 24);
+    for (const channel of state.channels) {
+      for (const bundle of channel.bundles) {
+        const powerWatts = projection.bundlePowerWatts.get(bundle.bundleId) ?? 0;
+        const burnupDelta = powerWatts * stepSeconds /
+          BUNDLE_HEAVY_METAL_MASS_KG /
+          JOULES_PER_MW_DAY_PER_KG;
+        bundle.currentBurnupMwdPerKg = clamp(bundle.currentBurnupMwdPerKg + burnupDelta, 0, 24);
+        bundle.isFresh = bundle.currentBurnupMwdPerKg <= 0.001;
       }
+      channel.averageBurnupMwdPerKg = averageBurnup(channel);
     }
-    channel.averageBurnupMwdPerKg = averageBurnup(channel);
-    channel.localPowerFraction = getChannelPower(state, channel);
-    channel.localTiltFraction = getChannelTilt(state, channel);
-    for (const bundle of channel.bundles) {
-      bundle.localPowerFraction = channel.localPowerFraction * (0.76 + (1 - Math.abs(bundle.position - 5.5) / 6.5) * 0.34);
-      bundle.isFresh = bundle.currentBurnupMwdPerKg <= 0.001;
-    }
+
+    remainingSeconds -= stepSeconds;
   }
 
   const status: CanduConvergenceStatus = getConvergence(state);
   if (status.state === "settling") {
-    setEvent(state, "Core response settling", "The compatibility response is converging on the queued targets.", "info");
+    setEvent(state, "Core response settling", "The reduced projection is active while queued control targets converge.", "info");
   }
 }
 
@@ -426,43 +433,13 @@ function commitRefuel(
 
   const request = normalizeRequest(command.request);
   const preview = makePreview(state, request);
-  const channel = state.channels[request.channelIndex];
-  const source = channel.bundles;
-  const target = new Array(source.length);
-  const insertedStart = request.directionId === "toward-end-b" ? 0 : CORE_BUNDLE_POSITION_COUNT - request.shiftCount;
-  const inserted = request.shiftCount === 4 ? [0, 1, 2, 3] : [0, 1, 2, 3, 4, 5, 6, 7];
-
-  for (const index of inserted) {
-    const position = insertedStart + index;
-    target[position] = createBundle(
-      state.nextFreshBundleSequence + index,
-      position,
-      0,
-      channel.localPowerFraction * 0.76,
-      state.simulationTimeSeconds,
-      request.fuelTypeId,
-    );
-  }
-
-  if (request.directionId === "toward-end-b") {
-    for (let position = 0; position < CORE_BUNDLE_POSITION_COUNT - request.shiftCount; position += 1) {
-      target[position + request.shiftCount] = moveBundle(source[position], position + request.shiftCount);
-    }
-  } else {
-    for (let position = request.shiftCount; position < CORE_BUNDLE_POSITION_COUNT; position += 1) {
-      target[position - request.shiftCount] = moveBundle(source[position], position - request.shiftCount);
-    }
-  }
-
-  channel.bundles = target;
-  channel.refuelPowerOffset = clamp(channel.refuelPowerOffset + preview.localPowerDeltaFraction, -0.09, 0.09);
-  channel.refuelTiltOffset = clamp(channel.refuelTiltOffset + preview.localTiltDeltaFraction, -0.08, 0.08);
-  channel.averageBurnupMwdPerKg = averageBurnup(channel);
+  state.channels = createRefuelCandidateChannels(state, request);
   state.freshBundlesAvailable -= request.shiftCount;
   state.refuellingOperationCount += 1;
   state.lastRefuelledChannel = request.channelIndex;
   state.lastRefuellingDirectionId = request.directionId;
   state.lastRefuellingShiftCount = request.shiftCount;
+  state.nextFreshBundleSequence += request.shiftCount;
   state.scoreDelta = preview.projectedScoreDelta;
   state.scoreTotal = Math.max(0, state.scoreTotal + state.scoreDelta);
   setEvent(
@@ -499,15 +476,28 @@ function normalizeRequest(request: RefuelRequest): RefuelRequest {
 
 function makePreview(state: FixtureState, request: RefuelRequest): RefuelPreview {
   const channel = state.channels[request.channelIndex];
+  const sourceProjection = createFixturePowerProjection(state);
+  const candidateState: FixtureState = {
+    ...state,
+    channels: createRefuelCandidateChannels(state, request),
+  };
+  const candidateProjection = createFixturePowerProjection(candidateState);
+  const sourceChannelPower = sourceProjection.channelPowerWatts[request.channelIndex];
+  const candidateChannelPower = candidateProjection.channelPowerWatts[request.channelIndex];
+  const sourceLocalPower = sourceProjection.meanChannelPowerWatts <= 0
+    ? 1
+    : sourceChannelPower / sourceProjection.meanChannelPowerWatts;
+  const candidateLocalPower = candidateProjection.meanChannelPowerWatts <= 0
+    ? 1
+    : candidateChannelPower / candidateProjection.meanChannelPowerWatts;
+  const sourceLocalTilt = sourceProjection.channelTiltFractions[request.channelIndex];
+  const candidateLocalTilt = candidateProjection.channelTiltFractions[request.channelIndex];
   const discharged = request.directionId === "toward-end-b"
     ? channel.bundles.slice(CORE_BUNDLE_POSITION_COUNT - request.shiftCount)
     : channel.bundles.slice(0, request.shiftCount);
-  const directionSign = request.directionId === "toward-end-b" ? 1 : -1;
-  const intensity = 0.008 + channel.localPowerFraction * 0.004;
-  const localPowerDeltaFraction = directionSign * intensity * (request.shiftCount / 4);
-  const localTiltDeltaFraction = directionSign * (0.004 + Math.abs(channel.localTiltFraction) * 0.012) * (request.shiftCount / 4);
-  const projectedPowerFraction = clamp(state.normalizedPowerFraction + localPowerDeltaFraction * 0.08, 0.7, 1.3);
-  const projectedTiltFraction = clamp(state.absoluteTiltFraction + localTiltDeltaFraction * 0.24, -0.3, 0.3);
+  const dischargeBurnupMwdPerKg = discharged.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / discharged.length;
+  const localPowerDeltaFraction = candidateLocalPower - sourceLocalPower;
+  const localTiltDeltaFraction = candidateLocalTilt - sourceLocalTilt;
   const projectedScoreDelta = clamp(
     1.8 + discharged.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) * 0.12 - Math.abs(localTiltDeltaFraction) * 14,
     -4,
@@ -516,17 +506,59 @@ function makePreview(state: FixtureState, request: RefuelRequest): RefuelPreview
 
   return {
     request,
-    dischargeBurnupMwdPerKg: discharged.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / discharged.length,
+    dischargeBurnupMwdPerKg,
     localPowerDeltaFraction,
     localTiltDeltaFraction,
-    projectedPowerFraction,
-    projectedTiltFraction,
+    predictedReactivityDelta: candidateProjection.reactivity - sourceProjection.reactivity,
+    projectedPowerFraction: state.normalizedPowerFraction,
+    projectedTiltFraction: state.absoluteTiltFraction,
     projectedScoreDelta,
     insertedBundleIds: Array.from({ length: request.shiftCount }, (_, index) =>
       `SYN-B-${String(state.nextFreshBundleSequence + index).padStart(6, "0")}`,
     ),
     dischargedBundleIds: discharged.map((bundle) => bundle.bundleId),
   };
+}
+
+function createRefuelCandidateChannels(
+  state: FixtureState,
+  request: RefuelRequest,
+): FixtureChannel[] {
+  const channels = state.channels.map((channel) => ({
+    ...channel,
+    bundles: channel.bundles.map((bundle) => ({ ...bundle })),
+  }));
+  const channel = channels[request.channelIndex];
+  const source = channel.bundles;
+  const target: CanduChannelSnapshot["bundles"] = new Array(source.length);
+  const insertedStart = request.directionId === "toward-end-b"
+    ? 0
+    : CORE_BUNDLE_POSITION_COUNT - request.shiftCount;
+
+  for (let index = 0; index < request.shiftCount; index += 1) {
+    const position = insertedStart + index;
+    target[position] = createBundle(
+      state.nextFreshBundleSequence + index,
+      position,
+      0,
+      state.simulationTimeSeconds,
+      request.fuelTypeId,
+    );
+  }
+
+  if (request.directionId === "toward-end-b") {
+    for (let position = 0; position < CORE_BUNDLE_POSITION_COUNT - request.shiftCount; position += 1) {
+      target[position + request.shiftCount] = moveBundle(source[position], position + request.shiftCount);
+    }
+  } else {
+    for (let position = request.shiftCount; position < CORE_BUNDLE_POSITION_COUNT; position += 1) {
+      target[position - request.shiftCount] = moveBundle(source[position], position - request.shiftCount);
+    }
+  }
+
+  channel.bundles = target;
+  channel.averageBurnupMwdPerKg = averageBurnup(channel);
+  return channels;
 }
 
 function moveBundle(bundle: FixtureChannel["bundles"][number], position: number) {
@@ -537,36 +569,154 @@ function moveBundle(bundle: FixtureChannel["bundles"][number], position: number)
   };
 }
 
-function getChannelPower(state: FixtureState, channel: FixtureChannel): number {
-  return clamp(
-    channel.basePowerFraction + (state.normalizedPowerFraction - 1) * 0.18 + channel.refuelPowerOffset,
-    0.64,
-    1.28,
-  );
-}
-
-function getChannelTilt(state: FixtureState, channel: FixtureChannel): number {
-  return clamp(
-    channel.baseTiltFraction + state.absoluteTiltFraction * 0.22 + channel.refuelTiltOffset,
-    -0.25,
-    0.25,
-  );
-}
-
 function averageBurnup(channel: FixtureChannel): number {
   return channel.bundles.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / channel.bundles.length;
 }
 
-function getConvergence(state: FixtureState): CanduConvergenceStatus {
-  const distance = Math.abs(state.normalizedPowerFraction - state.targetPowerFraction) + Math.abs(state.absoluteTiltFraction - state.targetTiltFraction);
-  const residual = 0.000008 + distance * 0.00042 + state.pendingActionCount * 0.00001;
+function createFixturePowerProjection(state: FixtureState): FixturePowerProjection {
+  const channelAverageBurnups = state.channels.map((channel) => averageBurnup(channel));
+  const channelsByCoordinate = new Map(
+    state.channels.map((channel) => [`${channel.gridColumn}:${channel.gridRow}`, channel]),
+  );
+  const nodes: Array<{
+    channel: FixtureChannel;
+    bundle: FixtureChannel["bundles"][number];
+    rawWeight: number;
+  }> = [];
+  let rawWeightTotal = 0;
+  let worthTotal = 0;
+  let radialBalanceTotal = 0;
+  let flowTotal = 0;
+
+  for (const channel of state.channels) {
+    const normalizedX = (channel.gridColumn - 10.5) / 11.5;
+    const normalizedY = (channel.gridRow - 10.5) / 11.5;
+    const radialDistance = clamp(
+      Math.sqrt(normalizedX ** 2 + normalizedY ** 2) / Math.sqrt(2),
+      0,
+      1,
+    );
+    const neighbours = [
+      channelsByCoordinate.get(`${channel.gridColumn}:${channel.gridRow - 1}`),
+      channelsByCoordinate.get(`${channel.gridColumn + 1}:${channel.gridRow}`),
+      channelsByCoordinate.get(`${channel.gridColumn}:${channel.gridRow + 1}`),
+      channelsByCoordinate.get(`${channel.gridColumn - 1}:${channel.gridRow}`),
+    ].filter((candidate): candidate is FixtureChannel => candidate !== undefined);
+    const neighbouringAverageBurnupMwdPerKg = neighbours.length === 0
+      ? channelAverageBurnups[0]
+      : neighbours.reduce(
+          (sum, candidate) => sum + channelAverageBurnups[candidate.channelIndex],
+          0,
+        ) / neighbours.length;
+    const flowDirectionSign = channel.flowDirection === "toward-end-b" ? 1 : -1;
+    const channelAverageBurnupMwdPerKg = channelAverageBurnups[channel.channelIndex];
+
+    for (const bundle of channel.bundles) {
+      const burnup = bundle.currentBurnupMwdPerKg;
+      const radialShape = 0.84 + 0.30 * (1 - radialDistance ** 1.35);
+      const axialPosition = bundle.position / (CORE_BUNDLE_POSITION_COUNT - 1);
+      const axialShape = 0.86 + 0.28 * Math.sin(Math.PI * axialPosition);
+      const burnupShape = clamp(1.04 - 0.006 * burnup, 0.90, 1.04);
+      const neighbourShape = clamp(
+        1 + (channelAverageBurnupMwdPerKg - neighbouringAverageBurnupMwdPerKg) * 0.0025,
+        0.96,
+        1.04,
+      );
+      const flowShape = 1 + flowDirectionSign * 0.004;
+      const materialPowerFactor = bundle.fuelTypeId === "NAT-U-SYNTHETIC" ? 1 : 0.99;
+      const materialShape = clamp(materialPowerFactor, 0.85, 1.15);
+      const rawWeight = radialShape * axialShape * burnupShape * neighbourShape * flowShape * materialShape;
+      nodes.push({ channel, bundle, rawWeight });
+      rawWeightTotal += rawWeight;
+
+      const burnupWorth = clamp(1.03 - 0.004 * burnup, 0.90, 1.03);
+      const neighbourWorth = clamp(
+        1 + (neighbouringAverageBurnupMwdPerKg - channelAverageBurnupMwdPerKg) * 0.001,
+        0.98,
+        1.02,
+      );
+      worthTotal += materialShape * burnupWorth * neighbourWorth * (1 + flowDirectionSign * 0.001);
+    }
+
+    radialBalanceTotal += channel.bundles.length * (1 - radialDistance);
+    flowTotal += channel.bundles.length * flowDirectionSign;
+  }
+
+  const powerAmplitude = clamp(state.normalizedPowerFraction, 0, 1.5);
+  const targetPowerWatts = REFERENCE_POWER_WATTS * powerAmplitude;
+  const channelPowerWatts = new Array<number>(CORE_CHANNEL_COUNT).fill(0);
+  const channelAxialPowerMoments = new Array<number>(CORE_CHANNEL_COUNT).fill(0);
+  const channelTiltFractions = new Array<number>(CORE_CHANNEL_COUNT).fill(0);
+  const bundlePowerWatts = new Map<string, number>();
+  let totalPowerWatts = 0;
+  let burnupTotal = 0;
+  for (const node of nodes) {
+    const powerWatts = rawWeightTotal <= 0
+      ? 0
+      : targetPowerWatts * node.rawWeight / rawWeightTotal;
+    bundlePowerWatts.set(node.bundle.bundleId, powerWatts);
+    channelPowerWatts[node.channel.channelIndex] += powerWatts;
+    channelAxialPowerMoments[node.channel.channelIndex] += powerWatts *
+      (2 * node.bundle.position / (CORE_BUNDLE_POSITION_COUNT - 1) - 1);
+    totalPowerWatts += powerWatts;
+    burnupTotal += node.bundle.currentBurnupMwdPerKg;
+  }
+
+  if (nodes.length > 0 && targetPowerWatts > 0) {
+    const last = nodes[nodes.length - 1];
+    const correction = targetPowerWatts - totalPowerWatts;
+    const correctedPower = (bundlePowerWatts.get(last.bundle.bundleId) ?? 0) + correction;
+    bundlePowerWatts.set(last.bundle.bundleId, correctedPower);
+    channelPowerWatts[last.channel.channelIndex] += correction;
+    channelAxialPowerMoments[last.channel.channelIndex] += correction *
+      (2 * last.bundle.position / (CORE_BUNDLE_POSITION_COUNT - 1) - 1);
+    totalPowerWatts += correction;
+  }
+
+  for (const channel of state.channels) {
+    const channelPower = channelPowerWatts[channel.channelIndex];
+    channelTiltFractions[channel.channelIndex] = channelPower <= 0
+      ? 0
+      : Math.abs(channelAxialPowerMoments[channel.channelIndex] / channelPower);
+  }
+
+  const nodeCount = nodes.length;
+  const meanBundlePowerWatts = totalPowerWatts / nodeCount;
+  const meanChannelPowerWatts = totalPowerWatts / CORE_CHANNEL_COUNT;
+  const meanWorth = worthTotal / nodeCount;
+  const radialBalance = radialBalanceTotal / nodeCount;
+  const meanFlow = flowTotal / nodeCount;
+  const effectiveK = clamp(
+    1 + 0.012 * (meanWorth - 1) + 0.0008 * (radialBalance - 0.55) + 0.0002 * meanFlow,
+    0.90,
+    1.10,
+  );
+  const reactivity = (effectiveK - 1) / effectiveK;
   return {
-    state: distance < 0.012 ? "converged" : distance < 0.06 ? "settling" : "pending",
-    iterations: 18 + (state.sequence % 7),
-    residual,
+    referencePowerWatts: REFERENCE_POWER_WATTS,
+    powerAmplitude,
+    targetPowerWatts,
+    totalPowerWatts,
+    meanChannelPowerWatts,
+    meanBundlePowerWatts,
+    effectiveK,
+    reactivity,
+    powerBalanceRelativeError: targetPowerWatts <= 0 ? 0 : Math.abs(totalPowerWatts - targetPowerWatts) / targetPowerWatts,
+    channelPowerWatts,
+    channelTiltFractions,
+    bundlePowerWatts,
+  };
+}
+
+function getConvergence(state: FixtureState): CanduConvergenceStatus {
+  const projection = createFixturePowerProjection(state);
+  return {
+    state: "settling",
+    iterations: 0,
+    residual: projection.powerBalanceRelativeError,
     relativePowerError: Math.abs(state.normalizedPowerFraction - state.targetPowerFraction),
-    lastSolveMilliseconds: 0.32 + (state.sequence % 5) * 0.04,
-    solverLabel: "compatibility response / no authoritative solver",
+    lastSolveMilliseconds: 0,
+    solverLabel: "compatibility reduced power / awaiting SpatialEigenSolve",
   };
 }
 
@@ -584,6 +734,22 @@ function createDiagnostics(state: FixtureState): CanduDiagnostics {
 }
 
 function createSnapshot(state: FixtureState): CanduSnapshot {
+  const projection = createFixturePowerProjection(state);
+  const physics: CanduPhysicsSnapshot = {
+    sourceId: "reduced-synthetic-candu6-power-v2",
+    solveState: "accepted-reduced",
+    isAuthoritative: false,
+    bindingVersion: state.sequence,
+    referencePowerWatts: projection.referencePowerWatts,
+    powerAmplitude: projection.powerAmplitude,
+    targetPowerWatts: projection.targetPowerWatts,
+    totalPowerWatts: projection.totalPowerWatts,
+    meanChannelPowerWatts: projection.meanChannelPowerWatts,
+    meanBundlePowerWatts: projection.meanBundlePowerWatts,
+    effectiveK: projection.effectiveK,
+    reactivity: projection.reactivity,
+    powerBalanceRelativeError: projection.powerBalanceRelativeError,
+  };
   return {
     protocol: PROTOCOL_VERSION,
     source: "synthetic-fixture",
@@ -608,6 +774,7 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     lastRefuelledChannel: state.lastRefuelledChannel,
     lastRefuellingDirectionId: state.lastRefuellingDirectionId,
     lastRefuellingShiftCount: state.lastRefuellingShiftCount,
+    physics,
     core: {
       channelCount: CORE_CHANNEL_COUNT,
       bundlePositionCount: CORE_BUNDLE_POSITION_COUNT,
@@ -619,9 +786,18 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
         gridRow: channel.gridRow,
         flowDirection: channel.flowDirection,
         averageBurnupMwdPerKg: channel.averageBurnupMwdPerKg,
-        localPowerFraction: channel.localPowerFraction,
-        localTiltFraction: channel.localTiltFraction,
-        bundles: channel.bundles.map((bundle) => ({ ...bundle })),
+        powerWatts: projection.channelPowerWatts[channel.channelIndex],
+        localPowerFraction: projection.meanChannelPowerWatts <= 0
+          ? 1
+          : projection.channelPowerWatts[channel.channelIndex] / projection.meanChannelPowerWatts,
+        localTiltFraction: projection.channelTiltFractions[channel.channelIndex],
+        bundles: channel.bundles.map((bundle) => ({
+          ...bundle,
+          powerWatts: projection.bundlePowerWatts.get(bundle.bundleId) ?? 0,
+          localPowerFraction: projection.meanBundlePowerWatts <= 0
+            ? 0
+            : (projection.bundlePowerWatts.get(bundle.bundleId) ?? 0) / projection.meanBundlePowerWatts,
+        })),
       })),
     },
     diagnostics: createDiagnostics(state),
