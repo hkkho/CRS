@@ -57,6 +57,7 @@ namespace ReactorSim.Core
         public const uint ChannelCount = 380;
         public const uint BundlePositionCount = 12;
         public const uint DefaultFreshBundleCount = 128;
+        public const double DefaultHeavyMetalMassKg = 20.6;
 
         private const ulong FirstFreshBundleSequence = 100000;
         private const double JoulesPerMegaWattDayPerKilogram = 8.64e10;
@@ -121,7 +122,7 @@ namespace ReactorSim.Core
                         new MaterialVariantId("NAT-U-SYNTHETIC"),
                         burnupMwDayPerKg * JoulesPerMegaWattDayPerKilogram,
                         0.0,
-                        19.2,
+                        DefaultHeavyMetalMassKg,
                         0.0);
                 }
             }
@@ -348,7 +349,7 @@ namespace ReactorSim.Core
                     new MaterialVariantId(fuelTypeId.Trim()),
                     0.0,
                     0.0,
-                    19.2,
+                    DefaultHeavyMetalMassKg,
                     simulationTimeSeconds);
                 target[position] = fresh;
                 inserted[index] = fresh;

@@ -202,7 +202,7 @@ namespace ReactorGame.Unity
                     _powerPlotRoot,
                     x,
                     sampleWidth,
-                    DisplayFraction(snapshot.NormalizedPowerFraction),
+                    DisplayFraction(snapshot.ActualPowerFraction),
                     new Color(0.18f, 0.73f, 0.98f, 0.90f));
                 CreatePlotBar(
                     _tiltPlotRoot,
@@ -294,7 +294,7 @@ namespace ReactorGame.Unity
             _legendText = AddValueLabel(
                 _timelineRoot,
                 "TimelineLegend",
-                "Power / Tilt / Margin trends are presentation-only observations.",
+                "Actual power / Tilt / Margin trends are presentation-only observations.",
                 16,
                 28);
 

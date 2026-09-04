@@ -71,7 +71,7 @@ export function getChannelBand(channel: CanduChannelSnapshot): "low" | "nominal"
 }
 
 export function getOverallStatus(snapshot: CanduSnapshot): "stable" | "watch" | "attention" {
-  const powerError = Math.abs(snapshot.normalizedPowerFraction - snapshot.targetPowerFraction);
+  const powerError = Math.abs(snapshot.physics.actualPowerFraction - snapshot.targetPowerFraction);
   const tiltError = Math.abs(snapshot.absoluteTiltFraction - snapshot.targetTiltFraction);
   if (powerError > 0.06 || tiltError > 0.1 || snapshot.controlMarginFraction < 0.6) {
     return "attention";

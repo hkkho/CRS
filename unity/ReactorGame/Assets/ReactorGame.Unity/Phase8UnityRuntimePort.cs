@@ -462,6 +462,9 @@ namespace ReactorGame.Unity
             LastRefuellingDirectionId = lastRefuellingDirectionId ?? string.Empty;
             LastRefuellingShiftCount = lastRefuellingShiftCount;
             Core = core;
+            ActualPowerFraction = core == null
+                ? normalizedPowerFraction
+                : core.Physics.ActualPowerFraction;
             Seed = seed;
         }
 
@@ -482,6 +485,13 @@ namespace ReactorGame.Unity
         public double WallElapsedSeconds { get; }
 
         public double NormalizedPowerFraction { get; }
+
+        /// <summary>
+        /// The displayed fission power after the full-core criticality
+        /// response. Legacy snapshots without a core projection fall back to
+        /// their normalized operator setpoint.
+        /// </summary>
+        public double ActualPowerFraction { get; }
 
         public double AbsoluteTiltFraction { get; }
 

@@ -287,7 +287,7 @@ export default function App() {
           <MetricCard
             label="Reactor power"
             value={formatPowerWatts(snapshot.physics.totalPowerWatts)}
-            detail={`${getPowerLabel(snapshot.physics.powerAmplitude)} amplitude · setpoint ${formatPowerWatts(snapshot.physics.referencePowerWatts * snapshot.targetPowerFraction)}`}
+            detail={`${getPowerLabel(snapshot.physics.actualPowerFraction)} actual · setpoint ${formatPowerWatts(snapshot.physics.referencePowerWatts * snapshot.targetPowerFraction)}`}
             indicator={powerIndicator(snapshot)}
             tone={overallStatus === "attention" ? "warning" : "cyan"}
           />
@@ -976,7 +976,7 @@ function ReplayPanel({ history, source, stateDigest, replayStatus, copyStatus, i
 }
 
 function powerIndicator(snapshot: CanduSnapshot): string {
-  const delta = (snapshot.normalizedPowerFraction - snapshot.targetPowerFraction) * 100;
+  const delta = (snapshot.physics.actualPowerFraction - snapshot.targetPowerFraction) * 100;
   return `${delta >= 0 ? "+" : ""}${delta.toFixed(2)} pts to target`;
 }
 

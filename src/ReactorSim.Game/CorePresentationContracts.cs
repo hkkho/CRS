@@ -20,6 +20,7 @@ namespace ReactorSim.Game
             ulong bindingVersion,
             double referencePowerWatts,
             double powerAmplitude,
+            double actualPowerFraction,
             double targetPowerWatts,
             double totalPowerWatts,
             double meanChannelPowerWatts,
@@ -43,6 +44,7 @@ namespace ReactorSim.Game
 
             RequireFinitePositive(referencePowerWatts, nameof(referencePowerWatts));
             RequireFiniteNonnegative(powerAmplitude, nameof(powerAmplitude));
+            RequireFiniteNonnegative(actualPowerFraction, nameof(actualPowerFraction));
             RequireFiniteNonnegative(targetPowerWatts, nameof(targetPowerWatts));
             RequireFiniteNonnegative(totalPowerWatts, nameof(totalPowerWatts));
             RequireFiniteNonnegative(meanChannelPowerWatts, nameof(meanChannelPowerWatts));
@@ -72,6 +74,7 @@ namespace ReactorSim.Game
             BindingVersion = bindingVersion;
             ReferencePowerWatts = referencePowerWatts;
             PowerAmplitude = powerAmplitude;
+            ActualPowerFraction = actualPowerFraction;
             TargetPowerWatts = targetPowerWatts;
             TotalPowerWatts = totalPowerWatts;
             MeanChannelPowerWatts = meanChannelPowerWatts;
@@ -95,6 +98,12 @@ namespace ReactorSim.Game
         public double ReferencePowerWatts { get; }
 
         public double PowerAmplitude { get; }
+
+        /// <summary>
+        /// Normalized fission power after applying the relative effective-k
+        /// response to the operator setpoint.
+        /// </summary>
+        public double ActualPowerFraction { get; }
 
         public double TargetPowerWatts { get; }
 

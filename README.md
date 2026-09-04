@@ -24,8 +24,9 @@ target player experience, and ordered implementation path.
   the Core Map presents 380 selectable channels, 12-bundle burnup details, preview
   and commit actions, deterministic localized power/tilt/score feedback, and
   explicit watts/k/rho physics diagnostics from the shared 380 × 12 two-group
-  full-core diffusion solve. Its embedded pack is explicitly pre-calibration,
-  not a plant rating or an external DRAGON/DONJON result.
+  full-core diffusion solve. Its embedded pack is a project-authored,
+  infinite-cell-calibrated surrogate, not a plant rating or an external
+  DRAGON/DONJON result.
 - `web/candu-playtest` is a companion browser pivot for algorithm and interaction
   playtesting. It uses the same `ReactorSim.Game` Play session through the
   versioned browser bridge when WASM is available. Development and explicit
@@ -64,10 +65,12 @@ The physics migration is intentionally staged. The current session publishes a
 versioned two-group full-core projection with `P_ref`, amplitude,
 total/channel/bundle watts, `k`, and `rho = (k - 1) / k`; refuelling re-solves
 the resulting bundle inventory and burnup advances from the retained node
-powers. The embedded `candu6-two-group-diffusion-v1-precalibration` pack is a
-project-authored surrogate with explicit provenance. It is the seam for the
-next offline DRAGON5 lattice/depletion plus DONJON5/TRIVAC core-follow export;
-runtime code never invokes those tools.
+powers. The embedded
+`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack is a project-authored
+surrogate with explicit provenance; its static flux shape is normalized to the
+operator setpoint and its displayed fission power responds to relative `k`.
+It is the seam for the next offline DRAGON5 lattice/depletion plus
+DONJON5/TRIVAC core-follow export; runtime code never invokes those tools.
 
 ## Quick start
 

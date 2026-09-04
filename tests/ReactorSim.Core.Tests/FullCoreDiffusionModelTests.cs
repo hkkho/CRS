@@ -24,7 +24,7 @@ public sealed class FullCoreDiffusionModelTests
         Assert.Equal(FullCoreDiffusionDataPackV1.SupportedUnitsProfileId, packResult.Value.Descriptor.UnitsProfileId);
         Assert.Equal(FullCoreDiffusionDataPackV1.SupportedModelId, packResult.Value.ModelId);
         Assert.Equal(FullCoreDiffusionDataPackV1.SupportedSolverId, packResult.Value.SolverId);
-        Assert.Equal("synthetic-precalibration", packResult.Value.EvidenceClass);
+        Assert.Equal("synthetic-calibrated", packResult.Value.EvidenceClass);
         Assert.Equal(6, Candu6CoreTopologyFactoryV1.GetRowLength(0));
         Assert.Equal(22, Candu6CoreTopologyFactoryV1.GetRowLength(8));
         Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(8, 0, out uint firstChannel));
@@ -77,7 +77,7 @@ public sealed class FullCoreDiffusionModelTests
         Assert.True(burned.IsValid, burned.IsValid ? string.Empty : burned.FirstDiagnostic.ToString());
         double reactivityChangePerFullPowerDay =
             (burned.Value.Reactivity - result.Value.Reactivity) * 1000.0;
-        Assert.InRange(reactivityChangePerFullPowerDay, -0.65, -0.40);
+        Assert.InRange(reactivityChangePerFullPowerDay, -0.25, -0.05);
         Assert.True(result.Value.NodePowerWatts.Max() > result.Value.NodePowerWatts.Min());
         Assert.True(result.Value.IterationCount > 0);
     }
@@ -115,7 +115,28 @@ public sealed class FullCoreDiffusionModelTests
                 baseline.Group2Flux));
 
         double reactivityStepMk = (fresh.Reactivity - baseline.Reactivity) * 1000.0;
-        Assert.InRange(reactivityStepMk, 0.35, 0.65);
+        Assert.InRange(reactivityStepMk, 0.05, 0.30);
+    }
+
+    [Fact]
+    public void CalibratedPackKeepsNeutronYieldSeparateFromFissionRate()
+    {
+        FullCoreDiffusionDataPackV1 pack = Require(
+            FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+
+        foreach (BurnupCoefficientRowV1 row in pack.CoefficientTables[0].Rows)
+        {
+            Assert.Equal(
+                2.4,
+                row.Coefficients.NuFissionGroup1PerM /
+                    row.Coefficients.FissionGroup1PerM,
+                12);
+            Assert.Equal(
+                2.43,
+                row.Coefficients.NuFissionGroup2PerM /
+                    row.Coefficients.FissionGroup2PerM,
+                12);
+        }
     }
 
     private static T Require<T>(ContractValidationResult<T> result)

@@ -134,13 +134,15 @@ public sealed class GameSessionTests
         Assert.Equal(before.NormalizedPowerFraction, result.Snapshot.NormalizedPowerFraction);
         Assert.Equal(before.AbsoluteTiltFraction, result.Snapshot.AbsoluteTiltFraction);
         Assert.True(result.Snapshot.Physics.Reactivity > before.Physics.Reactivity);
+        Assert.True(result.Snapshot.Physics.TotalPowerWatts >
+            before.Physics.TotalPowerWatts);
         Assert.True(result.Snapshot.ScoreTotal > before.ScoreTotal);
         Assert.True(result.Snapshot.Core.GetChannel(0).PowerWatts >
             before.Core.GetChannel(0).PowerWatts);
     }
 
     [Fact]
-    public void PracticePhysicsProjectionPreservesExplicitPowerAndReactivityIdentities()
+    public void PracticePhysicsProjectionSeparatesSetpointFromCriticalityResponse()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot snapshot = session.Snapshot;
@@ -158,7 +160,11 @@ public sealed class GameSessionTests
             snapshot.Physics.ReferencePowerWatts * snapshot.Physics.PowerAmplitude,
             snapshot.Physics.TargetPowerWatts,
             6);
-        Assert.Equal(snapshot.Physics.TargetPowerWatts, snapshot.Physics.TotalPowerWatts, 4);
+        Assert.Equal(1.0, snapshot.Physics.ActualPowerFraction, 12);
+        Assert.Equal(
+            snapshot.Physics.ReferencePowerWatts * snapshot.Physics.ActualPowerFraction,
+            snapshot.Physics.TotalPowerWatts,
+            4);
         Assert.InRange(snapshot.Physics.PowerBalanceRelativeError, 0.0, 1e-12);
 
         double channelPowerTotal = 0.0;
@@ -190,7 +196,7 @@ public sealed class GameSessionTests
         Assert.True(result.Accepted, result.DiagnosticMessage);
         GameBundlePresentationSnapshot afterBundle = result.Snapshot.Core.GetChannel(0).Bundles[0];
         double expectedBurnupDelta = beforeBundle.PowerWatts * stepSeconds /
-                                     19.2 /
+                                     SyntheticGameCoreStateV1.DefaultHeavyMetalMassKg /
                                      GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
         Assert.Equal(
             beforeBundle.CurrentBurnupMwDayPerKg + expectedBurnupDelta,
@@ -201,6 +207,27 @@ public sealed class GameSessionTests
             session.CoreState.GetBundle(0, 0).CumulativeFissionEnergyJ,
             6);
         Assert.True(result.Snapshot.Physics.BindingVersion > before.Physics.BindingVersion);
+    }
+
+    [Fact]
+    public void PracticeAdvanceRespondsToTheReactivityChangeWithLowerPower()
+    {
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSessionSnapshot before = session.Snapshot;
+
+        GameSessionCommandResult result = session.AdvanceWallMilliseconds(48_000);
+
+        Assert.True(result.Accepted, result.DiagnosticMessage);
+        Assert.True(result.Snapshot.Physics.Reactivity < before.Physics.Reactivity);
+        Assert.True(result.Snapshot.Physics.ActualPowerFraction <
+            before.Physics.ActualPowerFraction);
+        Assert.True(result.Snapshot.Physics.TotalPowerWatts <
+            before.Physics.TotalPowerWatts);
+        Assert.Equal(
+            result.Snapshot.Physics.ReferencePowerWatts *
+                result.Snapshot.Physics.ActualPowerFraction,
+            result.Snapshot.Physics.TotalPowerWatts,
+            4);
     }
 
     [Fact]

@@ -69,6 +69,7 @@ interface FixtureChannel {
 interface FixturePowerProjection {
   referencePowerWatts: number;
   powerAmplitude: number;
+  actualPowerFraction: number;
   targetPowerWatts: number;
   totalPowerWatts: number;
   meanChannelPowerWatts: number;
@@ -695,6 +696,7 @@ function createFixturePowerProjection(state: FixtureState): FixturePowerProjecti
   return {
     referencePowerWatts: REFERENCE_POWER_WATTS,
     powerAmplitude,
+    actualPowerFraction: powerAmplitude,
     targetPowerWatts,
     totalPowerWatts,
     meanChannelPowerWatts,
@@ -742,6 +744,7 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     bindingVersion: state.sequence,
     referencePowerWatts: projection.referencePowerWatts,
     powerAmplitude: projection.powerAmplitude,
+    actualPowerFraction: projection.actualPowerFraction,
     targetPowerWatts: projection.targetPowerWatts,
     totalPowerWatts: projection.totalPowerWatts,
     meanChannelPowerWatts: projection.meanChannelPowerWatts,

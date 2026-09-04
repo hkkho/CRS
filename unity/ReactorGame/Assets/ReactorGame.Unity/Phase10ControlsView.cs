@@ -270,7 +270,8 @@ namespace ReactorGame.Unity
         {
             Snapshot = snapshot;
             _observedText.text =
-                "Observed: Power " + FormatPercent(snapshot.NormalizedPowerFraction) +
+                "Observed: Power " + FormatPercent(snapshot.ActualPowerFraction) +
+                " actual (setpoint " + FormatPercent(snapshot.NormalizedPowerFraction) + ")" +
                 " | Tilt " + FormatPercent(snapshot.AbsoluteTiltFraction) +
                 " | State " + (snapshot.IsPaused ? "Paused" : "Running");
             _pacingText.text =

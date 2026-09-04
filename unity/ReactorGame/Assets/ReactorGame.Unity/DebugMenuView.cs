@@ -749,7 +749,8 @@ namespace ReactorGame.Unity
                 Format(snapshot.WallElapsedSeconds) + " s wall" +
                 " | Playback: " + snapshot.PlaybackModeId + " (x" +
                 Format(snapshot.AccelerationFactor) + ")\n" +
-                "Power: " + FormatPercent(snapshot.NormalizedPowerFraction) +
+                "Power: " + FormatPercent(snapshot.ActualPowerFraction) +
+                " actual | Setpoint: " + FormatPercent(snapshot.NormalizedPowerFraction) +
                 " | Tilt: " + FormatPercent(snapshot.AbsoluteTiltFraction) +
                 " | Score: " + Format(snapshot.ScoreTotal) +
                 " | Inventory: " + Format(snapshot.FreshBundlesAvailable) +
@@ -885,6 +886,8 @@ namespace ReactorGame.Unity
                 .Append(";paused=")
                 .Append(snapshot.IsPaused ? "1" : "0")
                 .Append(";power=")
+                .Append(FormatPrecise(snapshot.ActualPowerFraction))
+                .Append(";powerSetpoint=")
                 .Append(FormatPrecise(snapshot.NormalizedPowerFraction))
                 .Append(";tilt=")
                 .Append(FormatPrecise(snapshot.AbsoluteTiltFraction))

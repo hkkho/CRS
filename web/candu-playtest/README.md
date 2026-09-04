@@ -76,9 +76,11 @@ explicit SI units: reference/target/total/channel/bundle watts, dimensionless
 amplitude, state-level `k`, `rho = (k - 1) / k`, and solver diagnostics. The
 authoritative path assembles the 380 × 12 CANDU-6 stencil and binds each bundle
 to the embedded versioned pack. Bundle power sums are normalized to the
-requested amplitude, refuelling re-solves the candidate inventory, and burnup
-advances from retained bundle watts. The current pack is project-authored
-`synthetic-precalibration` data, not a CANDU plant rating or an external
+requested amplitude at the static solve, then exposed as actual fission power
+after the relative criticality response; the setpoint and actual value remain
+separate. Refuelling re-solves the candidate inventory, and burnup advances
+from retained actual bundle watts. The current pack is project-authored
+`synthetic-calibrated` data, not a CANDU plant rating or an external
 DRAGON/DONJON result; the next pass can replace it with an offline admitted
 export without changing the browser contract.
 

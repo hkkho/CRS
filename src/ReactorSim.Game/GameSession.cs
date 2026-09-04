@@ -159,6 +159,7 @@ namespace ReactorSim.Game
         private readonly FullCoreDiffusionModelV1 _fullCoreModel;
         private SyntheticGameCoreStateV1 _coreState;
         private FullCoreDiffusionSolveResultV1 _fullCoreSolve;
+        private readonly double _referenceEffectiveK;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private double _scoreResetBaseline;
@@ -178,6 +179,7 @@ namespace ReactorSim.Game
             _fullCoreModel = fullCoreModel ?? throw new ArgumentNullException(nameof(fullCoreModel));
             _fullCoreSolve = RequireFullCoreSolve(
                 SolveFullCore(_coreState, null));
+            _referenceEffectiveK = _fullCoreSolve.EffectiveK;
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
 
@@ -496,7 +498,10 @@ namespace ReactorSim.Game
                     continue;
                 }
 
-                double amplitude = Clamp(segment.NormalizedPowerFraction, 0.0, 1.5);
+                double requestedAmplitude = Clamp(segment.NormalizedPowerFraction, 0.0, 1.5);
+                double actualAmplitude = CurrentPhysicsPowerFraction(
+                    requestedAmplitude,
+                    _fullCoreSolve);
                 while (remainingSeconds > 0.0)
                 {
                     double stepSeconds = Math.Min(600.0, remainingSeconds);
@@ -506,7 +511,7 @@ namespace ReactorSim.Game
                     for (int index = 0; index < deltaEnergy.Length; index++)
                     {
                         deltaEnergy[index] = _fullCoreSolve.NodePowerWatts[index] *
-                                             amplitude *
+                                             actualAmplitude *
                                              stepSeconds;
                     }
 
@@ -523,7 +528,7 @@ namespace ReactorSim.Game
                     stateChanged = true;
                     _powerProjectionVersion = checked(_powerProjectionVersion + 1);
                     double powerQuality = 1.0 -
-                        Clamp(Math.Abs(amplitude - 1.0) / 0.02, 0.0, 1.0);
+                        Clamp(Math.Abs(actualAmplitude - 1.0) / 0.02, 0.0, 1.0);
                     double tiltQuality = 1.0 -
                         Clamp(Math.Abs(segment.AbsoluteTiltFraction) / 0.05, 0.0, 1.0);
                     _syntheticScore += stepSeconds *
@@ -571,7 +576,8 @@ namespace ReactorSim.Game
             }
 
             double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
-            double meanChannelPowerWatts = projection.TotalPowerWatts * amplitude /
+            double actualPowerFraction = CurrentPhysicsPowerFraction(amplitude, projection);
+            double meanChannelPowerWatts = projection.TotalPowerWatts * actualPowerFraction /
                                            GameCorePresentationConstants.ChannelCount;
             var channelPowerWatts = new double[
                 (int)GameCorePresentationConstants.ChannelCount];
@@ -580,7 +586,7 @@ namespace ReactorSim.Game
                 uint channelIndex = (uint)(index /
                     (int)GameCorePresentationConstants.BundlePositionCount);
                 channelPowerWatts[(int)channelIndex] +=
-                    projection.NodePowerWatts[index] * amplitude;
+                    projection.NodePowerWatts[index] * actualPowerFraction;
             }
 
             var channels = new List<GameChannelPresentationSnapshot>(
@@ -601,7 +607,7 @@ namespace ReactorSim.Game
                     BundleState bundle = bundles[bundleIndex];
                     double burnup = bundle.CurrentBurnupJPerKgHm /
                                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
-                    double bundlePower = projection.NodePowerWatts[nodeIndex++] * amplitude;
+                    double bundlePower = projection.NodePowerWatts[nodeIndex++] * actualPowerFraction;
                     burnupTotal += burnup;
                     axialPowerMoment += bundlePower *
                         (2.0 * bundle.Position.Value /
@@ -644,10 +650,11 @@ namespace ReactorSim.Game
                 _powerProjectionVersion,
                 PracticeGameSessionFactory.PracticeReferencePowerWatts,
                 amplitude,
+                actualPowerFraction,
                 PracticeGameSessionFactory.PracticeReferencePowerWatts * amplitude,
-                projection.TotalPowerWatts * amplitude,
+                projection.TotalPowerWatts * actualPowerFraction,
                 meanChannelPowerWatts,
-                projection.TotalPowerWatts * amplitude /
+                projection.TotalPowerWatts * actualPowerFraction /
                     (GameCorePresentationConstants.ChannelCount *
                      GameCorePresentationConstants.BundlePositionCount),
                 projection.EffectiveK,
@@ -657,6 +664,25 @@ namespace ReactorSim.Game
                 projection.IterationCount,
                 projection.ResidualRelativeInfinity);
             return new GameCorePresentationSnapshot(channels, physics);
+        }
+
+        private double CurrentPhysicsPowerFraction(
+            double requestedPowerFraction,
+            FullCoreDiffusionSolveResultV1 projection)
+        {
+            ContractValidationResult<double> response =
+                FullCorePowerResponseV1.TryComputeNormalizedPowerFraction(
+                    requestedPowerFraction,
+                    projection.EffectiveK,
+                    _referenceEffectiveK);
+            if (!response.IsValid)
+            {
+                throw new InvalidOperationException(
+                    "The full-core criticality power response failed: " +
+                    response.FirstDiagnostic);
+            }
+
+            return response.Value;
         }
 
         private ContractValidationResult<FullCoreDiffusionSolveResultV1> SolveFullCore(

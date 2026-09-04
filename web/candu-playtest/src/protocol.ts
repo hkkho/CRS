@@ -71,6 +71,7 @@ export interface CanduPhysicsSnapshot {
   bindingVersion: number;
   referencePowerWatts: number;
   powerAmplitude: number;
+  actualPowerFraction: number;
   targetPowerWatts: number;
   totalPowerWatts: number;
   meanChannelPowerWatts: number;

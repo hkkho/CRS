@@ -15,7 +15,7 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-precalibration";
+            "candu6-two-group-diffusion-v1-infinite-cell-calibrated";
         public const double FullCoreDiffusionRecomputeIntervalSeconds = 3_600.0;
         // The target is the practice display scale. It is not a plant rating;
         // the solver's energy balance remains in SI watts.

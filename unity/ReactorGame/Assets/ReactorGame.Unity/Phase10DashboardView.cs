@@ -125,7 +125,8 @@ namespace ReactorGame.Unity
                 " | Control tick: " + Format(snapshot.WallControlTickMilliseconds) + " ms" +
                 " | Simulation: " + Format(snapshot.SimulationTimeSeconds) + " s" +
                 " | Wall: " + Format(snapshot.WallElapsedSeconds) + " s";
-            _powerText.text = "Power: " + FormatPercent(snapshot.NormalizedPowerFraction) +
+            _powerText.text = "Power: " + FormatPercent(snapshot.ActualPowerFraction) +
+                " actual | Setpoint: " + FormatPercent(snapshot.NormalizedPowerFraction) +
                 " | Tilt: " + FormatPercent(snapshot.AbsoluteTiltFraction) +
                 " | Control margin: " + FormatPercent(snapshot.ControlMarginFraction);
             _resourcesText.text = "Device: " + FormatPercent(snapshot.DeviceAvailableFraction) +

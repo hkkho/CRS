@@ -692,7 +692,10 @@ namespace ReactorSim.Browser
                         : "10x";
             LabSnapshotDto? labSnapshot = runtime.LabSession?.CreateSnapshot();
             LabSpatialSolveSnapshotDto? solve = labSnapshot?.SpatialSolve;
-            double relativePowerError = game.Physics.PowerBalanceRelativeError;
+            double relativePowerError = game.Physics.TargetPowerWatts <= 0.0
+                ? 0.0
+                : Math.Abs(game.Physics.TotalPowerWatts - game.Physics.TargetPowerWatts) /
+                  game.Physics.TargetPowerWatts;
             PlaytestConvergenceDto convergence = solve == null
                 ? new PlaytestConvergenceDto
                 {
@@ -754,6 +757,7 @@ namespace ReactorSim.Browser
                     BindingVersion = game.Physics.BindingVersion,
                     ReferencePowerWatts = game.Physics.ReferencePowerWatts,
                     PowerAmplitude = game.Physics.PowerAmplitude,
+                    ActualPowerFraction = game.Physics.ActualPowerFraction,
                     TargetPowerWatts = game.Physics.TargetPowerWatts,
                     TotalPowerWatts = game.Physics.TotalPowerWatts,
                     MeanChannelPowerWatts = game.Physics.MeanChannelPowerWatts,
@@ -788,7 +792,7 @@ namespace ReactorSim.Browser
                             Label = "Data provenance",
                             Value = runtime.Mode == "lab"
                                 ? "synthetic Lab fixture"
-                                : "synthetic-precalibration full-core pack",
+                                : "synthetic-calibrated full-core pack",
                             Status = "info"
                         }
                     }
@@ -1260,6 +1264,8 @@ namespace ReactorSim.Browser
         public double ReferencePowerWatts { get; set; }
 
         public double PowerAmplitude { get; set; }
+
+        public double ActualPowerFraction { get; set; }
 
         public double TargetPowerWatts { get; set; }
 
