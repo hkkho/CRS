@@ -533,6 +533,7 @@ namespace ReactorGame.Unity
                 " | Grid (" + liveChannel.GridColumn.ToString(CultureInfo.InvariantCulture) +
                 ", " + liveChannel.GridRow.ToString(CultureInfo.InvariantCulture) + ")" +
                 " | Avg burnup " + Format(liveChannel.AverageBurnupMwDayPerKg) + " MWd/kg" +
+                " | Power " + Format(liveChannel.PowerWatts) + " W" +
                 " | Local power " + FormatPercent(liveChannel.LocalPowerFraction) +
                 " | Tilt " + FormatPercent(liveChannel.LocalTiltFraction);
 

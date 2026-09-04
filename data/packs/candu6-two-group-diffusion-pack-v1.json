@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "data_pack_id": "00000000-0000-0000-0000-000000000601",
+  "data_pack_version": "candu6-two-group-diffusion-v1-precalibration",
+  "topology_schema_id": "candu6-380x12-grid-v1",
+  "channel_count": 380,
+  "bundle_position_count": 12,
+  "units_profile_id": "SI-v1",
+  "energy_group_order": [ "fast", "thermal" ],
+  "model_id": "candu6-two-group-full-core-diffusion-v1",
+  "solver_id": "spatial-eigen-jacobi-v1",
+  "evidence_class": "synthetic-precalibration",
+  "source_provenance": "synthetic-precalibration; project-authored coefficients; replace with offline DRAGON5 and DONJON5 export",
+  "source_toolchain": "DRAGON5/DONJON5 offline-admission-boundary-v1",
+  "transform_id": "two-group-m1-scalar-node-centred-v1",
+  "geometry": {
+    "node_volume_m3": 0.05,
+    "axial_edge_conductance_m2": {
+      "group1_m2": 0.0008,
+      "group2_m2": 0.0004
+    },
+    "transverse_edge_conductance_m2": {
+      "group1_m2": 0.0012,
+      "group2_m2": 0.0006
+    },
+    "vacuum_boundary_conductance_m2": {
+      "group1_m2": 0.0024,
+      "group2_m2": 0.0012
+    }
+  },
+  "solver": {
+    "linear_method_id": "jacobi-v1",
+    "linear_method_version": "1",
+    "absolute_residual_tolerance": 1.0e-10,
+    "relative_residual_tolerance": 1.0e-6,
+    "maximum_inner_iterations": 64,
+    "k_absolute_tolerance": 1.0e-4,
+    "k_relative_tolerance": 1.0e-3,
+    "residual_tolerance": 2.0e-3,
+    "source_shape_tolerance": 1.0e-3,
+    "power_balance_tolerance": 1.0e-12,
+    "maximum_iterations": 300
+  },
+  "coefficient_tables": [
+    {
+      "table_id": "00000000-0000-0000-0000-000000000611",
+      "schema_version": 1,
+      "data_version": "synthetic-precalibration-natural-uranium-v1",
+      "material_variant_id": "NAT-U-SYNTHETIC",
+      "units_profile_id": "SI-v1",
+      "source_provenance": "synthetic-precalibration; project-authored natural-uranium surrogate",
+      "checksum": "3f0b5a1c9d7e2f406b8a1d5c7e9f0246813579bdf02468ace13579bdf02468ac",
+      "rows": [
+        {
+          "burnup_j_per_kg_hm": 0.0,
+          "absorption_group1_per_m": 0.30,
+          "absorption_group2_per_m": 0.16,
+          "fission_group1_per_m": 0.16,
+          "fission_group2_per_m": 0.10,
+          "nu_fission_group1_per_m": 0.2400,
+          "nu_fission_group2_per_m": 0.3200,
+          "downscatter_group1_to_2_per_m": 0.070,
+          "chi_group1": 1.0,
+          "energy_per_fission_j": 3.204353268e-11
+        },
+        {
+          "burnup_j_per_kg_hm": 432000000000.0,
+          "absorption_group1_per_m": 0.30,
+          "absorption_group2_per_m": 0.16,
+          "fission_group1_per_m": 0.16,
+          "fission_group2_per_m": 0.10,
+          "nu_fission_group1_per_m": 0.225,
+          "nu_fission_group2_per_m": 0.310,
+          "downscatter_group1_to_2_per_m": 0.070,
+          "chi_group1": 1.0,
+          "energy_per_fission_j": 3.204353268e-11
+        },
+        {
+          "burnup_j_per_kg_hm": 864000000000.0,
+          "absorption_group1_per_m": 0.30,
+          "absorption_group2_per_m": 0.16,
+          "fission_group1_per_m": 0.16,
+          "fission_group2_per_m": 0.10,
+          "nu_fission_group1_per_m": 0.180,
+          "nu_fission_group2_per_m": 0.276,
+          "downscatter_group1_to_2_per_m": 0.070,
+          "chi_group1": 1.0,
+          "energy_per_fission_j": 3.204353268e-11
+        },
+        {
+          "burnup_j_per_kg_hm": 1296000000000.0,
+          "absorption_group1_per_m": 0.30,
+          "absorption_group2_per_m": 0.16,
+          "fission_group1_per_m": 0.16,
+          "fission_group2_per_m": 0.10,
+          "nu_fission_group1_per_m": 0.102,
+          "nu_fission_group2_per_m": 0.210,
+          "downscatter_group1_to_2_per_m": 0.070,
+          "chi_group1": 1.0,
+          "energy_per_fission_j": 3.204353268e-11
+        },
+        {
+          "burnup_j_per_kg_hm": 1728000000000.0,
+          "absorption_group1_per_m": 0.30,
+          "absorption_group2_per_m": 0.16,
+          "fission_group1_per_m": 0.16,
+          "fission_group2_per_m": 0.10,
+          "nu_fission_group1_per_m": 0.067,
+          "nu_fission_group2_per_m": 0.180,
+          "downscatter_group1_to_2_per_m": 0.070,
+          "chi_group1": 1.0,
+          "energy_per_fission_j": 3.204353268e-11
+        }
+      ]
+    }
+  ]
+}

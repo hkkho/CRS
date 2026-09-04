@@ -119,7 +119,7 @@ public sealed class GameSessionTests
     }
 
     [Fact]
-    public void RefuellingProducesDeterministicSyntheticPowerTiltAndScoreResponse()
+    public void RefuellingReprojectsStateDerivedPowerReactivityAndScore()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
@@ -131,11 +131,76 @@ public sealed class GameSessionTests
             "NAT-U-SYNTHETIC");
 
         Assert.True(result.Accepted, result.DiagnosticMessage);
-        Assert.True(result.Snapshot.NormalizedPowerFraction > before.NormalizedPowerFraction);
-        Assert.True(result.Snapshot.AbsoluteTiltFraction > before.AbsoluteTiltFraction);
+        Assert.Equal(before.NormalizedPowerFraction, result.Snapshot.NormalizedPowerFraction);
+        Assert.Equal(before.AbsoluteTiltFraction, result.Snapshot.AbsoluteTiltFraction);
+        Assert.True(result.Snapshot.Physics.Reactivity > before.Physics.Reactivity);
         Assert.True(result.Snapshot.ScoreTotal > before.ScoreTotal);
-        Assert.True(result.Snapshot.Core.GetChannel(0).LocalPowerFraction >
-            before.Core.GetChannel(0).LocalPowerFraction);
+        Assert.True(result.Snapshot.Core.GetChannel(0).PowerWatts >
+            before.Core.GetChannel(0).PowerWatts);
+    }
+
+    [Fact]
+    public void PracticePhysicsProjectionPreservesExplicitPowerAndReactivityIdentities()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+        GameSessionSnapshot snapshot = session.Snapshot;
+
+        Assert.Equal("candu6-two-group-full-core-diffusion-v1", snapshot.Physics.SourceId);
+        Assert.Equal("converged", snapshot.Physics.SolveState);
+        Assert.True(snapshot.Physics.IsAuthoritative);
+        Assert.Contains("spatial-eigen-jacobi-v1", snapshot.Physics.SolverIdentity);
+        Assert.True(snapshot.Physics.SolverIterationCount > 0);
+        Assert.Equal(
+            snapshot.Physics.EffectiveK,
+            (1.0 / (1.0 - snapshot.Physics.Reactivity)),
+            12);
+        Assert.Equal(
+            snapshot.Physics.ReferencePowerWatts * snapshot.Physics.PowerAmplitude,
+            snapshot.Physics.TargetPowerWatts,
+            6);
+        Assert.Equal(snapshot.Physics.TargetPowerWatts, snapshot.Physics.TotalPowerWatts, 4);
+        Assert.InRange(snapshot.Physics.PowerBalanceRelativeError, 0.0, 1e-12);
+
+        double channelPowerTotal = 0.0;
+        double bundlePowerTotal = 0.0;
+        foreach (GameChannelPresentationSnapshot channel in snapshot.Core.Channels)
+        {
+            channelPowerTotal += channel.PowerWatts;
+            foreach (GameBundlePresentationSnapshot bundle in channel.Bundles)
+            {
+                Assert.True(bundle.PowerWatts >= 0.0);
+                bundlePowerTotal += bundle.PowerWatts;
+            }
+        }
+
+        Assert.Equal(snapshot.Physics.TotalPowerWatts, channelPowerTotal, 4);
+        Assert.Equal(snapshot.Physics.TotalPowerWatts, bundlePowerTotal, 4);
+    }
+
+    [Fact]
+    public void PracticeAdvanceIntegratesTheProjectedBundlePowerIntoBurnup()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+        GameSessionSnapshot before = session.Snapshot;
+        GameBundlePresentationSnapshot beforeBundle = before.Core.GetChannel(0).Bundles[0];
+        const double stepSeconds = 1.0;
+
+        GameSessionCommandResult result = session.AdvanceWallMilliseconds(100);
+
+        Assert.True(result.Accepted, result.DiagnosticMessage);
+        GameBundlePresentationSnapshot afterBundle = result.Snapshot.Core.GetChannel(0).Bundles[0];
+        double expectedBurnupDelta = beforeBundle.PowerWatts * stepSeconds /
+                                     19.2 /
+                                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
+        Assert.Equal(
+            beforeBundle.CurrentBurnupMwDayPerKg + expectedBurnupDelta,
+            afterBundle.CurrentBurnupMwDayPerKg,
+            12);
+        Assert.Equal(
+            beforeBundle.PowerWatts * stepSeconds,
+            session.CoreState.GetBundle(0, 0).CumulativeFissionEnergyJ,
+            6);
+        Assert.True(result.Snapshot.Physics.BindingVersion > before.Physics.BindingVersion);
     }
 
     [Fact]

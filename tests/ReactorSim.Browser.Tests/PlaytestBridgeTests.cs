@@ -42,6 +42,18 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(
                 "toward-end-a",
                 initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[1].GetProperty("flowDirection").GetString());
+            JsonElement initialPhysics = initialized.GetProperty("snapshot").GetProperty("physics");
+            Assert.Equal("candu6-two-group-full-core-diffusion-v1", initialPhysics.GetProperty("sourceId").GetString());
+            Assert.Equal("converged", initialPhysics.GetProperty("solveState").GetString());
+            Assert.True(initialPhysics.GetProperty("isAuthoritative").GetBoolean());
+            Assert.Contains("spatial-eigen-jacobi-v1", initialPhysics.GetProperty("solverIdentity").GetString());
+            Assert.Equal(
+                initialPhysics.GetProperty("targetPowerWatts").GetDouble(),
+                initialPhysics.GetProperty("totalPowerWatts").GetDouble(),
+                2);
+            Assert.True(
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0]
+                    .GetProperty("powerWatts").GetDouble() > 0.0);
 
             JsonElement preview = Parse(
                 PlaytestBridgeV1.Dispatch(
@@ -53,6 +65,8 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(
                 0,
                 preview.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.True(
+                preview.GetProperty("preview").GetProperty("predictedReactivityDelta").GetDouble() > 0.0);
 
             JsonElement committed = Parse(
                 PlaytestBridgeV1.Dispatch(

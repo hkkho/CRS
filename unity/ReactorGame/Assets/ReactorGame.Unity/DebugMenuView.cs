@@ -754,7 +754,14 @@ namespace ReactorGame.Unity
                 " | Score: " + Format(snapshot.ScoreTotal) +
                 " | Inventory: " + Format(snapshot.FreshBundlesAvailable) +
                 " fresh | Pending: " + Format(snapshot.PendingActionCount) +
-                " | Channel: " + selectedChannel;
+                " | Channel: " + selectedChannel +
+                "\nPhysics: " + snapshot.Core.Physics.SourceId +
+                " / P=" + Format(snapshot.Core.Physics.TotalPowerWatts) + " W" +
+                " / k=" + FormatPrecise(snapshot.Core.Physics.EffectiveK) +
+                " / rho=" + FormatPrecise(snapshot.Core.Physics.Reactivity * 1000.0) + " mk" +
+                " / solver=" + snapshot.Core.Physics.SolverIdentity +
+                " / it=" + snapshot.Core.Physics.SolverIterationCount +
+                " / " + snapshot.Core.Physics.SolveState;
 
             _rawCoreText.text = FormatRawCore(channelIndex, channel);
             _commandText.text = _hasCommandResult
@@ -809,6 +816,8 @@ namespace ReactorGame.Unity
                 .Append(FormatPrecise(channel.LocalPowerFraction))
                 .Append(" localTilt=")
                 .Append(FormatPrecise(channel.LocalTiltFraction))
+                .Append(" powerW=")
+                .Append(FormatPrecise(channel.PowerWatts))
                 .Append(" avgBurnup=")
                 .Append(FormatPrecise(channel.AverageBurnupMwDayPerKg))
                 .Append(" MWd/kg HM");
@@ -896,6 +905,8 @@ namespace ReactorGame.Unity
                 builder.Append(channelIndex.ToString(CultureInfo.InvariantCulture))
                     .Append(";rawPower=")
                     .Append(FormatPrecise(channel.LocalPowerFraction))
+                    .Append(";powerW=")
+                    .Append(FormatPrecise(channel.PowerWatts))
                     .Append(";rawTilt=")
                     .Append(FormatPrecise(channel.LocalTiltFraction))
                     .Append(";burnup=")

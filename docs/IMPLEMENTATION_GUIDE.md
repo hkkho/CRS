@@ -9,34 +9,84 @@ and learn the cause-and-effect relationship between fuel history, flux shape,
 xenon, reactivity control, and power production.
 
 The project should become a game before it becomes a high-fidelity reactor
-model. Use the existing synthetic model to complete the player loop, then replace
-or tune synthetic coefficients with lawful, reproducible DRAGON5/DONJON5-derived
-data. Scram, shutdown, accident response, and full plant simulation are out of
-scope.
+model. Use the existing deterministic model to complete the player loop, then
+replace the pre-calibration coefficients with lawful, reproducible
+DRAGON5/DONJON5-derived data. Scram, shutdown, accident response, and full
+plant simulation are out of scope.
 
 ## Implementation status
 
-The playable synthetic vertical slice is implemented. `ReactorSim.Game` creates
-a public synthetic practice session, `UnityRuntimePort` connects it to the Unity
+The playable deterministic vertical slice is implemented. `ReactorSim.Game`
+creates a public practice session, `UnityRuntimePort` connects it to the Unity
 adapter, and `UnityGameController` binds the Bootstrap views and advances the
 session in bounded fixed wall-time requests. The Controls page can execute
 internally consistent four- or eight-bundle shifts toward either channel end,
 while the Core Map presents the deterministic 380-channel face, 12-bundle
-details, preview, and commit actions. Refuelling also produces a deterministic
-localized power, tilt, and score response. The owner debug menu is available
-from F1 or backquote for pause, time control, restart, inventory, pending-action,
-and synthetic-response controls.
+details, preview, and commit actions. Refuelling and scheduled burnup updates
+now rebind the shared two-group full-core solve, which publishes explicit
+watts/k/rho and solver diagnostics to both front ends. The owner debug menu is
+available from F1 or backquote for pause, time control, restart, inventory,
+pending-action, and practice-score controls.
 
 The browser algorithm/playtest pivot is also part of the implementation path.
 The companion Vite/Three.js console in `web/candu-playtest` exercises the same
 public `GameSession` contract through a versioned JSON bridge when browser WASM
-is available. Play mode is the existing reduced session; Lab mode is an opt-in
-small-fixture/full-synthetic spatial-solver surface that reuses Core contracts.
-The console records command history, state digests, replay JSON, and feedback
-notes locally so the owner can give dynamic UI and algorithm feedback before a
-Unity presentation change is justified. A compatibility fixture may render the
-console when WASM is unavailable, but it is marked non-authoritative and does
-not contain a second physics implementation.
+is available. Play mode now reports the shared 380 × 12 two-group full-core
+solve; Lab mode remains an opt-in small-fixture spatial-solver surface that
+reuses Core contracts. The console records command history, state digests,
+replay JSON, and feedback notes locally so the owner can give dynamic UI and
+algorithm feedback before a Unity presentation change is justified. A
+compatibility fixture may render the console when WASM is unavailable. It is
+marked non-authoritative and is not a second simulator.
+
+### Physics migration plan: reduced contract to validated CANDU design
+
+The current power and reactivity values are a deliberate migration layer. They
+make the player loop observable without hiding units or allowing presentation
+code to invent reactor state:
+
+1. **Contract and authority (implemented):** publish explicit SI watts for the
+   reference, target, total, channel, and bundle quantities; carry source and
+   solve identity; keep amplitude separate from normalized shape; derive only
+   state-level reactivity from `k`; and treat a rejected/stale detailed solve as
+   non-authoritative.
+2. **State binding and full-core diffusion (implemented initial slice):**
+   assemble the canonical stepped 380-channel × 12-bundle topology, bind each
+   live bundle's burnup to a validated two-group coefficient table, and solve
+   the resulting node system through `SpatialEigenSolve`. The converged shape
+   is normalized to the requested SI watt target, checked for nonnegative finite
+   power and balance, and retained for deterministic burnup integration. A
+   committed refuelling operation solves immediately; normal operation re-solves
+   on the one-hour simulation cadence. Per-bundle `rho` is intentionally not
+   exposed.
+3. **Authoritative two-group data admission (next):** replace the
+   `synthetic-precalibration` pack with an offline DRAGON5 lattice/depletion and
+   DONJON5/TRIVAC core-follow export. Keep the runtime schema, group ordering,
+   units, topology digest, pack checksum, and provenance visible so changing
+   packs does not change Game or Unity rules.
+4. **Kinetics and poisons (next):** add the existing iodine/xenon and delayed
+   neutron contracts behind the same snapshot boundary. Validate that power
+   history, burnup, poison state, and control actions share one simulation clock;
+   keep preview calculations cheap and reserve the detailed solve for committed
+   or scheduled updates.
+5. **Calibration and gameplay validation (next):** compare conservation,
+   symmetry, refuelling-direction, replay, and long-horizon invariants against
+   small synthetic cases first. Then compare trends—not individual display
+   numbers—when a lawful runtime pack is introduced. Record pack version,
+   energy-group ordering, units, branch grid, source identity, and export hash.
+
+The following references are design context only. They inform the topology,
+refuelling, safety, and modelling questions to resolve; they do not authorize
+copying source values into runtime constants or redistributing vendor data:
+
+- [IAEA CANDU energy-system supplement](https://nucleus.iaea.org/sites/INPRO/df7/Session%202/Vendor%205/02Supplement2_Candu_Energy.pdf)
+- [IAEA Advanced Reactors Information System: CANDU overview](https://www-pub.iaea.org/MTCD/Publications/PDF/te_1444_web.pdf)
+- [IAEA heavy-water reactor technology report](https://www-pub.iaea.org/MTCD/Publications/PDF/te_699_web.pdf)
+- [Polytechnique Montréal CANDU reactor physics thesis repository](https://publications.polymtl.ca/5048/)
+- [Polytechnique Montréal DRAGON5 information and manuals](https://merlin.polymtl.ca/version5.htm)
+- [DRAGON v5 user guide](https://merlin.polymtl.ca/downloads/IGE335.pdf)
+- [TRIVAC v5 diffusion solver manual](https://merlin.polymtl.ca/downloads/IGE369.pdf)
+- [DONJON v5 reactor analysis manual](https://merlin.polymtl.ca/downloads/IGE344.pdf)
 
 ## Repository review
 
@@ -116,9 +166,10 @@ snapshot projection, and save/load orchestration from `CliApplication` into a
 public `ReactorSim.Game` project that targets a Unity-compatible framework. Both
 the CLI and Unity runtime port should call that API.
 
-The first Unity runtime may use the current lightweight Phase 8 response model.
-Introduce the full spatial/refuelling simulation behind the same game-session
-API incrementally. This keeps a runnable build available throughout development.
+The first Unity runtime may use the current lightweight Phase 8 scenario and
+control contracts, while the shared bundle power and reactivity projection is
+already supplied by the full-core diffusion adapter. This keeps a runnable build
+available while the data pack is calibrated.
 
 ## Ordered implementation
 
@@ -181,9 +232,11 @@ manually copying assemblies or discovering paths.
   fixed wall-time chunks; cap catch-up work per frame so the UI stays responsive.
 - Add a new game command for `RefuelChannel(channel, direction, shiftCount,
   fuelType)` and return a post-command snapshot plus a player-readable result.
-- For this milestone, use a deliberately simple synthetic refuelling response
-  if integrating the complete Core transaction would delay playability. Bundle
-  movement and burnup must still be internally consistent.
+- Use the shared full-core diffusion projection for bundle movement,
+  state-derived power, and cumulative burnup. Until an offline export is
+  admitted, the embedded pack must remain explicitly labelled
+  `synthetic-precalibration`; no additive per-refuelling response or generic
+  decay timer should stand in for bundle state.
 - Replace the Core Map placeholder with a selectable 380-channel heat map. A
   details panel should show all 12 bundles and a predicted outcome before commit.
 - Animate bundle insertion/movement/discharge and immediately update power,
@@ -201,7 +254,7 @@ currently includes:
 
 - pause, single-step, time scale, restart, and deterministic seed;
 - add simulated days/hours and jump to an equilibrium-like state;
-- grant fuel inventory, clear pending actions, reset the synthetic response, and
+- grant fuel inventory, clear pending actions, reset the practice score adjustment, and
   copy a compact bug-report state digest;
 - display raw selected-channel/bundle values and the last command/result.
 
@@ -234,7 +287,7 @@ minute without editing JSON or using a debugger.
 Done means a player can explain why a refuelling choice helped or hurt and wants
 to improve their score on another run.
 
-### Milestone 4: connect the existing detailed Core model
+### Milestone 4: connect the existing detailed Core model (initial slice implemented)
 
 - Adapt the existing `RefuellingShift`, inventory, burnup, spatial solve,
   iodine/xenon, and regulating-system contracts into `GameSession` one subsystem
@@ -243,6 +296,10 @@ to improve their score on another run.
   frame. Publish immutable presentation snapshots to Unity.
 - Add predicted-delta calculations using a cheap approximation for hover/preview;
   reserve the detailed solve for committed operations and scheduled updates.
+- Replace the pre-calibration pack with an admitted offline export only after
+  the adapter proves topology/order, normalization, convergence, and
+  power-balance invariants. Keep source identity and solve state visible in
+  Unity and browser snapshots during the transition.
 - Profile before optimizing. Preserve a responsive UI even when simulation time
   is accelerated.
 
@@ -270,7 +327,7 @@ packs and never invoke reactor-analysis executables.
    trends with the synthetic pack, and tune display scaling, scenario pacing,
    score weights, and approximations.
 
-The data pass is complete when changing from `SyntheticPractice` to
+The data pass is complete when changing from the current pre-calibration pack to
 `Candu6DragonDonjon` requires selecting a pack, not changing gameplay code.
 Physics provenance is documentation for reproducibility and lawful reuse; it is
 not an approval gate that blocks ordinary game development.
@@ -316,6 +373,6 @@ Start with these concrete files and responsibilities:
 - new `DebugMenuView.cs`: state controls and compact event log;
 - update `Bootstrap.unity`: wire the controller and views.
 
-Do not start with new DRAGON5/DONJON5 runs. The next implementation work should
-extend the playable loop or its owner diagnostics without changing the Unity
-presentation seam.
+Do not invoke DRAGON5/DONJON5 at runtime. The next data work may produce an
+offline export pack, while gameplay changes continue through the existing Unity
+and browser presentation seam.
