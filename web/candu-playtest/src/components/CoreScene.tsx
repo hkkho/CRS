@@ -5,13 +5,18 @@ import type { CanduChannelSnapshot } from "../protocol";
 import { getFlowArrow, getFlowDirectionLabel, getHeatColor } from "../visuals";
 
 const CANDU6_ROW_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"] as const;
+const CORE_GRID_SIZE = 22;
+const CORE_GRID_SPACING = 0.83;
+const CORE_GRID_OFFSET = 10.5;
+const CORE_GRID_HALF_EXTENT = 9.2;
+const CORE_VIEW_HALF_EXTENT = 10.25;
 
 interface CoreSceneProps {
   channels: readonly CanduChannelSnapshot[];
   selectedChannelIndex: number;
-  viewMode: "3d" | "2d";
+  viewMode: "engine2d" | "grid";
   onSelectChannel: (channelIndex: number) => void;
-  onChangeViewMode: (viewMode: "3d" | "2d") => void;
+  onChangeViewMode: (viewMode: "engine2d" | "grid") => void;
 }
 
 export function CoreScene({
@@ -23,12 +28,13 @@ export function CoreScene({
 }: CoreSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
   const meshRef = useRef<THREE.InstancedMesh | null>(null);
+  const flowMeshRef = useRef<THREE.InstancedMesh | null>(null);
   const markerRef = useRef<THREE.Mesh | null>(null);
-  const groupRef = useRef<THREE.Group | null>(null);
   const channelsRef = useRef(channels);
   const selectRef = useRef(onSelectChannel);
+  const changeViewRef = useRef(onChangeViewMode);
   const raycasterRef = useRef(new THREE.Raycaster());
   const pointerRef = useRef(new THREE.Vector2());
 
@@ -41,7 +47,11 @@ export function CoreScene({
   }, [onSelectChannel]);
 
   useEffect(() => {
-    if (viewMode !== "3d" || mountRef.current === null) {
+    changeViewRef.current = onChangeViewMode;
+  }, [onChangeViewMode]);
+
+  useEffect(() => {
+    if (viewMode !== "engine2d" || mountRef.current === null) {
       return;
     }
 
@@ -50,7 +60,7 @@ export function CoreScene({
     try {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     } catch {
-      onChangeViewMode("2d");
+      changeViewRef.current("grid");
       return;
     }
 
@@ -59,39 +69,46 @@ export function CoreScene({
     renderer.setClearColor(0x07131f, 0);
     renderer.domElement.className = "core-canvas";
     renderer.domElement.setAttribute("role", "img");
-    renderer.domElement.setAttribute("aria-label", "Interactive 3D reactor channel heat map. Use the 2D map for keyboard channel selection.");
+    renderer.domElement.setAttribute(
+      "aria-label",
+      "Interactive engine-rendered 2D CANDU 6 channel heat map. Use Grid Map for keyboard channel selection.",
+    );
     mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-    camera.position.set(0, 11.8, 17.4);
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+    camera.position.set(0, 0, 20);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
-    const ambient = new THREE.HemisphereLight(0x9adbd2, 0x07131f, 2.1);
-    const key = new THREE.DirectionalLight(0xffdf9a, 3.4);
-    key.position.set(3, 10, 7);
+    const ambient = new THREE.AmbientLight(0x9adbd2, 1.85);
+    const key = new THREE.DirectionalLight(0xffdf9a, 2.8);
+    key.position.set(-4, 7, 10);
     scene.add(ambient, key);
 
     const group = new THREE.Group();
-    group.rotation.x = -0.1;
-    groupRef.current = group;
     scene.add(group);
 
     const floor = new THREE.Mesh(
-      new THREE.CircleGeometry(10.1, 64),
-      new THREE.MeshBasicMaterial({ color: 0x0b1c2b, transparent: true, opacity: 0.78 }),
+      new THREE.PlaneGeometry(CORE_VIEW_HALF_EXTENT * 2, CORE_VIEW_HALF_EXTENT * 2),
+      new THREE.MeshBasicMaterial({ color: 0x0b1c2b, transparent: true, opacity: 0.84 }),
     );
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.19;
+    floor.position.z = -0.28;
     group.add(floor);
 
-    const outline = new THREE.Mesh(
-      new THREE.RingGeometry(9.5, 9.57, 64),
-      new THREE.MeshBasicMaterial({ color: 0x274459, transparent: true, opacity: 0.92, side: THREE.DoubleSide }),
+    const grid = createCoreGrid();
+    group.add(grid);
+
+    const outline = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-CORE_GRID_HALF_EXTENT, -CORE_GRID_HALF_EXTENT, 0),
+        new THREE.Vector3(CORE_GRID_HALF_EXTENT, -CORE_GRID_HALF_EXTENT, 0),
+        new THREE.Vector3(CORE_GRID_HALF_EXTENT, CORE_GRID_HALF_EXTENT, 0),
+        new THREE.Vector3(-CORE_GRID_HALF_EXTENT, CORE_GRID_HALF_EXTENT, 0),
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x5ed7c5, transparent: true, opacity: 0.7 }),
     );
-    outline.rotation.x = -Math.PI / 2;
-    outline.position.y = -0.16;
+    outline.position.z = -0.02;
     group.add(outline);
 
     const geometry = new THREE.CylinderGeometry(0.23, 0.31, 0.16, 6);
@@ -104,6 +121,7 @@ export function CoreScene({
     });
     const initialChannels = channelsRef.current;
     const mesh = new THREE.InstancedMesh(geometry, material, initialChannels.length);
+    mesh.frustumCulled = false;
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     const dummy = new THREE.Object3D();
     initialChannels.forEach((channel, index) => {
@@ -118,19 +136,37 @@ export function CoreScene({
     meshRef.current = mesh;
     group.add(mesh);
 
+    const flowGeometry = new THREE.ConeGeometry(0.075, 0.18, 3);
+    const flowMaterial = new THREE.MeshBasicMaterial({ color: 0xd7fff1, transparent: true, opacity: 0.72 });
+    const flowMesh = new THREE.InstancedMesh(flowGeometry, flowMaterial, initialChannels.length);
+    flowMesh.frustumCulled = false;
+    flowMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    initialChannels.forEach((channel, index) => {
+      setFlowArrowTransform(dummy, channel);
+      flowMesh.setMatrixAt(index, dummy.matrix);
+    });
+    flowMesh.instanceMatrix.needsUpdate = true;
+    flowMeshRef.current = flowMesh;
+    group.add(flowMesh);
+
     const marker = new THREE.Mesh(
-      new THREE.TorusGeometry(0.43, 0.035, 8, 32),
+      new THREE.RingGeometry(0.37, 0.43, 32),
       new THREE.MeshBasicMaterial({ color: 0xf9e4ac, transparent: true, opacity: 0.98 }),
     );
-    marker.rotation.x = -Math.PI / 2;
     markerRef.current = marker;
     group.add(marker);
 
     const resize = () => {
       const width = Math.max(1, mount.clientWidth);
       const height = Math.max(1, mount.clientHeight);
+      const aspect = width / height;
+      const halfWidth = Math.max(CORE_VIEW_HALF_EXTENT, CORE_VIEW_HALF_EXTENT * aspect);
+      const halfHeight = Math.max(CORE_VIEW_HALF_EXTENT, CORE_VIEW_HALF_EXTENT / aspect);
       renderer.setSize(width, height, false);
-      camera.aspect = width / height;
+      camera.left = -halfWidth;
+      camera.right = halfWidth;
+      camera.top = halfHeight;
+      camera.bottom = -halfHeight;
       camera.updateProjectionMatrix();
     };
     resize();
@@ -139,14 +175,15 @@ export function CoreScene({
 
     let animationFrame = 0;
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    const render = () => {
+    const render = (time: number) => {
       animationFrame = window.requestAnimationFrame(render);
       if (!reducedMotion) {
-        group.rotation.y += 0.0016;
+        const pulse = 1 + Math.sin(time * 0.004) * 0.05;
+        marker.scale.setScalar(pulse);
       }
       renderer.render(scene, camera);
     };
-    render();
+    animationFrame = window.requestAnimationFrame(render);
 
     return () => {
       window.cancelAnimationFrame(animationFrame);
@@ -154,8 +191,12 @@ export function CoreScene({
       renderer.dispose();
       geometry.dispose();
       material.dispose();
+      flowGeometry.dispose();
+      flowMaterial.dispose();
       floor.geometry.dispose();
       (floor.material as THREE.Material).dispose();
+      grid.geometry.dispose();
+      (grid.material as THREE.Material).dispose();
       outline.geometry.dispose();
       (outline.material as THREE.Material).dispose();
       marker.geometry.dispose();
@@ -164,15 +205,16 @@ export function CoreScene({
       rendererRef.current = null;
       cameraRef.current = null;
       meshRef.current = null;
+      flowMeshRef.current = null;
       markerRef.current = null;
-      groupRef.current = null;
     };
-  }, [onChangeViewMode, viewMode]);
+  }, [viewMode]);
 
   useEffect(() => {
     const mesh = meshRef.current;
+    const flowMesh = flowMeshRef.current;
     const marker = markerRef.current;
-    if (mesh === null || marker === null) {
+    if (mesh === null || flowMesh === null || marker === null) {
       return;
     }
 
@@ -181,15 +223,18 @@ export function CoreScene({
       setInstanceTransform(dummy, channel);
       mesh.setMatrixAt(index, dummy.matrix);
       mesh.setColorAt(index, new THREE.Color(getHeatColor(channel.localPowerFraction)));
+      setFlowArrowTransform(dummy, channel);
+      flowMesh.setMatrixAt(index, dummy.matrix);
     });
     mesh.instanceMatrix.needsUpdate = true;
+    flowMesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor !== null) {
       mesh.instanceColor.needsUpdate = true;
     }
     const selected = channels[selectedChannelIndex];
     if (selected !== undefined) {
       const markerPosition = getChannelPosition(selected);
-      marker.position.set(markerPosition.x, 0.12, markerPosition.z);
+      marker.position.set(markerPosition.x, markerPosition.y, 0.34);
     }
   }, [channels, selectedChannelIndex]);
 
@@ -217,42 +262,46 @@ export function CoreScene({
       <div className="core-scene-toolbar">
         <div>
           <p className="panel-kicker">Core surface</p>
-          <p className="scene-caption">CANDU 6 · 380 channels · alternating coolant / fuelling flow</p>
+          <p className="scene-caption">CANDU 6 · engine-rendered 2D · 380 channels · alternating coolant / fuelling flow</p>
         </div>
-        <div className="view-toggle" role="group" aria-label="Core map view mode">
+        <div className="view-toggle" role="group" aria-label="Core rendering mode">
           <button
-            className={viewMode === "3d" ? "view-toggle-button is-active" : "view-toggle-button"}
+            className={viewMode === "engine2d" ? "view-toggle-button is-active" : "view-toggle-button"}
             type="button"
-            aria-pressed={viewMode === "3d"}
-            onClick={() => onChangeViewMode("3d")}
+            aria-pressed={viewMode === "engine2d"}
+            aria-label="Use engine-rendered 2D view"
+            title="GPU-rendered 2D core view"
+            onClick={() => onChangeViewMode("engine2d")}
           >
-            3D
+            ENGINE 2D
           </button>
           <button
-            className={viewMode === "2d" ? "view-toggle-button is-active" : "view-toggle-button"}
+            className={viewMode === "grid" ? "view-toggle-button is-active" : "view-toggle-button"}
             type="button"
-            aria-pressed={viewMode === "2d"}
-            onClick={() => onChangeViewMode("2d")}
+            aria-pressed={viewMode === "grid"}
+            aria-label="Use accessible grid map"
+            title="Keyboard-accessible HTML grid map"
+            onClick={() => onChangeViewMode("grid")}
           >
-            2D
+            GRID MAP
           </button>
         </div>
       </div>
-      {viewMode === "3d" ? (
+      {viewMode === "engine2d" ? (
         <div
           ref={mountRef}
           className="core-canvas-mount"
           onPointerDown={handlePointerDown}
-          title="Select a reactor channel"
+          title="Select a reactor channel in the engine-rendered 2D view"
         />
       ) : (
-        <CoreMap2d channels={channels} selectedChannelIndex={selectedChannelIndex} onSelectChannel={onSelectChannel} />
+        <CoreMapGrid channels={channels} selectedChannelIndex={selectedChannelIndex} onSelectChannel={onSelectChannel} />
       )}
     </div>
   );
 }
 
-function CoreMap2d({
+function CoreMapGrid({
   channels,
   selectedChannelIndex,
   onSelectChannel,
@@ -289,14 +338,43 @@ function CoreMap2d({
   );
 }
 
+function createCoreGrid(): THREE.LineSegments {
+  const positions: number[] = [];
+  const edge = CORE_GRID_HALF_EXTENT - 0.07;
+  for (let index = 0; index <= CORE_GRID_SIZE; index += 1) {
+    const coordinate = -edge + index * ((edge * 2) / CORE_GRID_SIZE);
+    positions.push(coordinate, -edge, -0.12, coordinate, edge, -0.12);
+    positions.push(-edge, coordinate, -0.12, edge, coordinate, -0.12);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  return new THREE.LineSegments(
+    geometry,
+    new THREE.LineBasicMaterial({ color: 0x31556a, transparent: true, opacity: 0.3 }),
+  );
+}
+
 function getChannelPosition(channel: CanduChannelSnapshot): THREE.Vector3 {
-  return new THREE.Vector3((channel.gridColumn - 10.5) * 0.83, 0, (channel.gridRow - 10.5) * 0.83);
+  return new THREE.Vector3(
+    (channel.gridColumn - CORE_GRID_OFFSET) * CORE_GRID_SPACING,
+    (CORE_GRID_OFFSET - channel.gridRow) * CORE_GRID_SPACING,
+    0,
+  );
 }
 
 function setInstanceTransform(dummy: THREE.Object3D, channel: CanduChannelSnapshot): void {
   const position = getChannelPosition(channel);
-  dummy.position.set(position.x, 0.1 + Math.sin(channel.channelIndex * 0.14) * 0.08, position.z);
+  dummy.position.set(position.x, position.y, 0.1);
   dummy.rotation.set(Math.PI / 2, 0, 0);
-  dummy.scale.set(1, 1, 0.85 + channel.localPowerFraction * 0.22);
+  dummy.scale.set(1, 0.88 + channel.localPowerFraction * 0.24, 1);
+  dummy.updateMatrix();
+}
+
+function setFlowArrowTransform(dummy: THREE.Object3D, channel: CanduChannelSnapshot): void {
+  const position = getChannelPosition(channel);
+  const pointsTowardEndB = channel.flowDirection === "toward-end-b";
+  dummy.position.set(position.x + (pointsTowardEndB ? 0.14 : -0.14), position.y - 0.16, 0.27);
+  dummy.rotation.set(0, 0, pointsTowardEndB ? -Math.PI / 2 : Math.PI / 2);
+  dummy.scale.setScalar(0.78);
   dummy.updateMatrix();
 }

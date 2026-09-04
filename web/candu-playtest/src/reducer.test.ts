@@ -4,6 +4,14 @@ import { createInitialUiState, playtestUiReducer } from "./reducer";
 import type { CanduCommandResponse } from "./protocol";
 
 describe("playtest UI reducer", () => {
+  it("starts with the engine-rendered 2D core surface", () => {
+    const bridge = createSyntheticFixtureBridge();
+    const initial = createInitialUiState(bridge.getSnapshot(), bridge.status);
+
+    expect(initial.coreViewMode).toBe("engine2d");
+    expect(playtestUiReducer(initial, { type: "set-core-view", viewMode: "grid" }).coreViewMode).toBe("grid");
+  });
+
   it("stores a preview and clears it after an accepted commit", async () => {
     const bridge = createSyntheticFixtureBridge();
     const initial = createInitialUiState(bridge.getSnapshot(), bridge.status);

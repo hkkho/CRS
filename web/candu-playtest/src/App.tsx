@@ -21,6 +21,7 @@ import {
   createInitialUiState,
   playtestUiReducer,
   type ConsoleMode,
+  type CoreViewMode,
   type PlaytestUiState,
 } from "./reducer";
 import {
@@ -464,7 +465,7 @@ function Sidebar({ mode, snapshot, bridgeInteractive, onChangeMode }: SidebarPro
             <strong>{bridgeInteractive ? "Nominal" : "Bridge offline"}</strong>
           </div>
         </div>
-        <p className="sidebar-hint">Use 2D map for full keyboard channel selection.</p>
+        <p className="sidebar-hint">Use Grid Map for full keyboard channel selection.</p>
       </div>
     </aside>
   );
@@ -515,14 +516,14 @@ interface PlayWorkspaceProps {
   snapshot: CanduSnapshot;
   selectedChannel: CanduChannelSnapshot;
   selectedChannelIndex: number;
-  coreViewMode: "3d" | "2d";
+  coreViewMode: CoreViewMode;
   preview: RefuelRequestPreview | null;
   history: PlaytestUiState["history"];
   feedbackNote: string;
   isCommandPending: boolean;
   commandError: string;
   onSelectChannel: (channelIndex: number) => void;
-  onChangeCoreView: (viewMode: "3d" | "2d") => void;
+  onChangeCoreView: (viewMode: CoreViewMode) => void;
   onPreviewRefuel: (request: RefuelRequest) => void;
   onCommitRefuel: (request: RefuelRequest) => void;
   onSetPlayback: (modeId: PlaybackModeId) => void;
@@ -868,14 +869,14 @@ interface LabWorkspaceProps {
   snapshot: CanduSnapshot;
   selectedChannel: CanduChannelSnapshot;
   selectedChannelIndex: number;
-  coreViewMode: "3d" | "2d";
+  coreViewMode: CoreViewMode;
   history: PlaytestUiState["history"];
   stateDigest: string;
   replayStatus: string;
   copyStatus: string;
   isCommandPending: boolean;
   onSelectChannel: (channelIndex: number) => void;
-  onChangeCoreView: (viewMode: "3d" | "2d") => void;
+  onChangeCoreView: (viewMode: CoreViewMode) => void;
   onCopyDigest: () => void;
   onSaveReplay: () => void;
   onDownloadReplay: () => void;

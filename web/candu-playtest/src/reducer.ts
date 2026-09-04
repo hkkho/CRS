@@ -8,7 +8,7 @@ import type {
 } from "./protocol";
 
 export type ConsoleMode = "play" | "lab";
-export type CoreViewMode = "3d" | "2d";
+export type CoreViewMode = "engine2d" | "grid";
 
 export interface UiCommandHistoryEntry {
   index: number;
@@ -45,7 +45,7 @@ export type UiAction =
 export function createInitialUiState(snapshot: CanduSnapshot, bridgeStatus: BridgeStatus): PlaytestUiState {
   return {
     mode: "play",
-    coreViewMode: "3d",
+    coreViewMode: "engine2d",
     selectedChannelIndex: snapshot.lastRefuelledChannel >= 0 ? snapshot.lastRefuelledChannel : 189,
     snapshot,
     bridgeStatus,
