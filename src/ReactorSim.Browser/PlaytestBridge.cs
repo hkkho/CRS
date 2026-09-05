@@ -23,7 +23,44 @@ namespace ReactorSim.Browser
         private const string TowardEndB = "toward-end-b";
 
         private static readonly object Sync = new object();
-        private static BridgeRuntime _runtime = CreateRuntime(DefaultMode, "{}");
+        private static BridgeRuntime? _runtimeInstance;
+
+        // Do not construct the full browser session as a type initializer.
+        // A failure there is surfaced by the WASM runtime only as the generic
+        // TypeInitialization_Type error, which hides the actionable cause from
+        // the browser console. Lazy construction keeps capability discovery
+        // available and preserves the original exception at the JSON boundary.
+        private static BridgeRuntime _runtime
+        {
+            get
+            {
+                if (_runtimeInstance != null)
+                {
+                    return _runtimeInstance;
+                }
+
+                lock (Sync)
+                {
+                    if (_runtimeInstance == null)
+                    {
+                        try
+                        {
+                            _runtimeInstance = CreateRuntime(DefaultMode, "{}");
+                        }
+                        catch (Exception exception)
+                        {
+                            throw new InvalidOperationException(
+                                "The authoritative browser session could not initialize: " +
+                                exception,
+                                exception);
+                        }
+                    }
+
+                    return _runtimeInstance;
+                }
+            }
+            set { _runtimeInstance = value; }
+        }
 
         /// <summary>
         /// Returns the stable capability descriptor without creating a game

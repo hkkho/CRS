@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ReactorSim.Core
 {
@@ -101,20 +102,33 @@ namespace ReactorSim.Core
                 return Invalid("IqsDataPack.Json.Empty", "json", "An IQS data pack JSON document is required.");
             }
 
-            IqsPackDto? dto;
+            JObject root;
             try
             {
-                dto = JsonConvert.DeserializeObject<IqsPackDto>(json);
+                root = JObject.Parse(json);
             }
             catch (JsonException exception)
             {
                 return Invalid("IqsDataPack.Json.Invalid", "json", "The IQS data pack is not valid JSON: " + exception.Message);
             }
 
-            if (dto == null)
+            // Parse through JObject rather than Newtonsoft's reflection-based
+            // object materializer. The latter is trimmed out of the Release
+            // browser-WASM build and can no longer construct private DTOs.
+            IqsPackDto dto = new IqsPackDto
             {
-                return Invalid("IqsDataPack.Json.Invalid", "json", "The IQS data pack did not contain an object.");
-            }
+                SchemaVersion = ReadUInt32(root["schema_version"]),
+                DataPackVersion = ReadString(root["data_pack_version"]),
+                TopologySchemaId = ReadString(root["topology_schema_id"]),
+                UnitsProfileId = ReadString(root["units_profile_id"]),
+                ModelId = ReadString(root["model_id"]),
+                SolverId = ReadString(root["solver_id"]),
+                EnergyGroupOrder = ReadStringArray(root["energy_group_order"]),
+                EvidenceClass = ReadString(root["evidence_class"]),
+                SourceProvenance = ReadString(root["source_provenance"]),
+                DelayedNeutronData = ReadDelayedNeutronData(root["delayed_neutron_data"]),
+                TimeIntegration = ReadTimeIntegration(root["time_integration"])
+            };
 
             if (dto.SchemaVersion != CurrentSchemaVersion)
             {
@@ -179,6 +193,124 @@ namespace ReactorSim.Core
                     dto.TimeIntegration.GenerationTimeSeconds,
                     dto.TimeIntegration.MaximumMicroStepSeconds,
                     dto.TimeIntegration.ShapeRecomputeIntervalSeconds));
+        }
+
+        private static string? ReadString(JToken? token)
+        {
+            return token == null || token.Type != JTokenType.String
+                ? null
+                : token.Value<string>();
+        }
+
+        private static uint ReadUInt32(JToken? token)
+        {
+            if (token == null || token.Type != JTokenType.Integer)
+            {
+                return 0;
+            }
+
+            try
+            {
+                long value = token.Value<long>();
+                return value >= 0 && value <= uint.MaxValue ? (uint)value : 0;
+            }
+            catch (Exception exception) when (exception is FormatException || exception is OverflowException)
+            {
+                return 0;
+            }
+        }
+
+        private static double ReadDouble(JToken? token)
+        {
+            if (token == null ||
+                (token.Type != JTokenType.Integer && token.Type != JTokenType.Float))
+            {
+                return 0.0;
+            }
+
+            try
+            {
+                return token.Value<double>();
+            }
+            catch (Exception exception) when (exception is FormatException || exception is OverflowException)
+            {
+                return 0.0;
+            }
+        }
+
+        private static string[]? ReadStringArray(JToken? token)
+        {
+            if (!(token is JArray array))
+            {
+                return null;
+            }
+
+            var values = new string[array.Count];
+            for (int index = 0; index < array.Count; index++)
+            {
+                string? value = ReadString(array[index]);
+                if (value == null)
+                {
+                    return null;
+                }
+
+                values[index] = value;
+            }
+
+            return values;
+        }
+
+        private static double[]? ReadDoubleArray(JToken? token)
+        {
+            if (!(token is JArray array))
+            {
+                return null;
+            }
+
+            var values = new double[array.Count];
+            for (int index = 0; index < array.Count; index++)
+            {
+                JToken item = array[index];
+                if (item.Type != JTokenType.Integer && item.Type != JTokenType.Float)
+                {
+                    return null;
+                }
+
+                values[index] = ReadDouble(item);
+            }
+
+            return values;
+        }
+
+        private static DelayedNeutronDto? ReadDelayedNeutronData(JToken? token)
+        {
+            if (!(token is JObject section))
+            {
+                return null;
+            }
+
+            return new DelayedNeutronDto
+            {
+                BetaTotal = ReadDouble(section["beta_total"]),
+                GroupFractions = ReadDoubleArray(section["group_fractions"]),
+                DecayConstantsPerSec = ReadDoubleArray(section["decay_constants_per_sec"]),
+                GroupVelocitiesMPerS = ReadDoubleArray(section["group_velocities_m_per_s"])
+            };
+        }
+
+        private static TimeIntegrationDto? ReadTimeIntegration(JToken? token)
+        {
+            if (!(token is JObject section))
+            {
+                return null;
+            }
+
+            return new TimeIntegrationDto
+            {
+                GenerationTimeSeconds = ReadDouble(section["generation_time_seconds"]),
+                MaximumMicroStepSeconds = ReadDouble(section["maximum_micro_step_seconds"]),
+                ShapeRecomputeIntervalSeconds = ReadDouble(section["shape_recompute_interval_seconds"])
+            };
         }
 
         private static ContractValidationResult<bool> ValidateIdentity(IqsPackDto dto)
