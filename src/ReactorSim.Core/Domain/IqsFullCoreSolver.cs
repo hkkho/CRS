@@ -21,19 +21,26 @@ namespace ReactorSim.Core
         public const string SupportedUnitsProfileId = "SI-v1";
         public const string SupportedModelId = "candu6-two-group-iqs-full-core-v1";
         public const string SupportedSolverId = "spatial-eigen-iqs-v1";
+        public const string FissionGroupFamily = "fission";
+        public const string PhotoneutronGroupFamily = "photoneutron";
         public const string EmbeddedResourceName =
             "ReactorSim.Core.Data.candu6-two-group-iqs-pack-v1.json";
 
         private readonly ReadOnlyCollection<string> _energyGroupOrder;
+        private readonly ReadOnlyCollection<string> _groupFamilies;
+        private readonly ReadOnlyCollection<int> _delayedGroupOrder;
         private readonly ReadOnlyCollection<double> _betaGroups;
         private readonly ReadOnlyCollection<double> _decayConstants;
         private readonly ReadOnlyCollection<double> _groupVelocities;
 
         private IqsKineticsDataPackV1(
             string dataPackVersion,
+            string sourceIdentity,
             string evidenceClass,
             string sourceProvenance,
             IEnumerable<string> energyGroupOrder,
+            IEnumerable<string> groupFamilies,
+            IEnumerable<int> delayedGroupOrder,
             double betaTotal,
             IEnumerable<double> betaGroups,
             IEnumerable<double> decayConstants,
@@ -43,9 +50,12 @@ namespace ReactorSim.Core
             double shapeRecomputeIntervalSeconds)
         {
             DataPackVersion = dataPackVersion;
+            SourceIdentity = sourceIdentity;
             EvidenceClass = evidenceClass;
             SourceProvenance = sourceProvenance;
             _energyGroupOrder = new ReadOnlyCollection<string>(energyGroupOrder.ToArray());
+            _groupFamilies = new ReadOnlyCollection<string>(groupFamilies.ToArray());
+            _delayedGroupOrder = new ReadOnlyCollection<int>(delayedGroupOrder.ToArray());
             BetaTotal = betaTotal;
             _betaGroups = new ReadOnlyCollection<double>(betaGroups.ToArray());
             _decayConstants = new ReadOnlyCollection<double>(decayConstants.ToArray());
@@ -60,6 +70,7 @@ namespace ReactorSim.Core
         }
 
         public string DataPackVersion { get; }
+        public string SourceIdentity { get; }
         public string TopologySchemaId { get; }
         public string UnitsProfileId { get; }
         public string ModelId { get; }
@@ -67,6 +78,10 @@ namespace ReactorSim.Core
         public string EvidenceClass { get; }
         public string SourceProvenance { get; }
         public IReadOnlyList<string> EnergyGroupOrder { get { return _energyGroupOrder; } }
+        public IReadOnlyList<string> GroupFamilies { get { return _groupFamilies; } }
+        public IReadOnlyList<string> DelayedGroupFamilies { get { return _groupFamilies; } }
+        public IReadOnlyList<int> DelayedGroupOrder { get { return _delayedGroupOrder; } }
+        public int DelayedGroupCount { get { return _betaGroups.Count; } }
         public double BetaTotal { get; }
         public IReadOnlyList<double> BetaGroups { get { return _betaGroups; } }
         public IReadOnlyList<double> DecayConstantsPerSecond { get { return _decayConstants; } }
@@ -119,6 +134,8 @@ namespace ReactorSim.Core
             {
                 SchemaVersion = ReadUInt32(root["schema_version"]),
                 DataPackVersion = ReadString(root["data_pack_version"]),
+                SourceIdentity = ReadString(root["source_identity"]),
+                SourceIdentitySpecified = root["source_identity"] != null,
                 TopologySchemaId = ReadString(root["topology_schema_id"]),
                 UnitsProfileId = ReadString(root["units_profile_id"]),
                 ModelId = ReadString(root["model_id"]),
@@ -149,9 +166,9 @@ namespace ReactorSim.Core
             double[] beta = dto.DelayedNeutronData.GroupFractions ?? Array.Empty<double>();
             double[] lambda = dto.DelayedNeutronData.DecayConstantsPerSec ?? Array.Empty<double>();
             double[] velocities = dto.DelayedNeutronData.GroupVelocitiesMPerS ?? Array.Empty<double>();
-            if (beta.Length != 6 || lambda.Length != 6)
+            if (beta.Length == 0 || beta.Length != lambda.Length)
             {
-                return Invalid("IqsDataPack.DelayedGroups.Dimension", "delayed_neutron_data", "Exactly six delayed-neutron fractions and decay constants are required.");
+                return Invalid("IqsDataPack.DelayedGroups.Dimension", "delayed_neutron_data", "A positive delayed-neutron group count requires equal fraction and decay-constant array lengths.");
             }
 
             if (velocities.Length != 2)
@@ -172,6 +189,73 @@ namespace ReactorSim.Core
                 return Invalid("IqsDataPack.BetaTotal.Mismatch", "delayed_neutron_data.beta_total", "The total delayed fraction must equal the ordered group-fraction sum.");
             }
 
+            string[] groupFamilies;
+            if (!dto.DelayedNeutronData.GroupFamiliesSpecified)
+            {
+                groupFamilies = Enumerable.Repeat(FissionGroupFamily, beta.Length).ToArray();
+            }
+            else if (dto.DelayedNeutronData.GroupFamilies == null)
+            {
+                return Invalid("IqsDataPack.GroupFamilies.Invalid", "delayed_neutron_data.group_families", "Delayed-source group families must be a string array when supplied.");
+            }
+            else if (dto.DelayedNeutronData.GroupFamilies.Length != beta.Length)
+            {
+                return Invalid("IqsDataPack.GroupFamilies.Dimension", "delayed_neutron_data.group_families", "Delayed-source group families must match the delayed-neutron group count.");
+            }
+            else
+            {
+                groupFamilies = dto.DelayedNeutronData.GroupFamilies;
+            }
+
+            for (int index = 0; index < groupFamilies.Length; index++)
+            {
+                if (!IsSupportedGroupFamily(groupFamilies[index]))
+                {
+                    return Invalid(
+                        "IqsDataPack.GroupFamilies.Unsupported",
+                        "delayed_neutron_data.group_families[" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "Delayed-source group families must be the supported canonical values fission or photoneutron.");
+                }
+            }
+
+            if (groupFamilies.Any(family => string.Equals(family, PhotoneutronGroupFamily, StringComparison.Ordinal)) &&
+                !dto.SourceIdentitySpecified)
+            {
+                return Invalid(
+                    "IqsDataPack.SourceIdentity.Missing",
+                    "source_identity",
+                    "A delayed-source pack containing photoneutron groups requires an explicit source identity.");
+            }
+
+            int[] delayedGroupOrder;
+            if (!dto.DelayedNeutronData.GroupOrderSpecified)
+            {
+                delayedGroupOrder = Enumerable.Range(0, beta.Length).ToArray();
+            }
+            else if (dto.DelayedNeutronData.GroupOrder == null)
+            {
+                return Invalid("IqsDataPack.DelayedGroups.Order.Invalid", "delayed_neutron_data.group_order", "Delayed-source group order must be an integer array when supplied.");
+            }
+            else if (dto.DelayedNeutronData.GroupOrder.Length != beta.Length)
+            {
+                return Invalid("IqsDataPack.DelayedGroups.Order.Dimension", "delayed_neutron_data.group_order", "Delayed-source group order must match the delayed-neutron group count.");
+            }
+            else
+            {
+                delayedGroupOrder = dto.DelayedNeutronData.GroupOrder;
+            }
+
+            for (int index = 0; index < delayedGroupOrder.Length; index++)
+            {
+                if (delayedGroupOrder[index] != index)
+                {
+                    return Invalid(
+                        "IqsDataPack.DelayedGroups.Order.Invalid",
+                        "delayed_neutron_data.group_order[" + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "Delayed-source groups must preserve the explicit serialized order 0..G-1.");
+                }
+            }
+
             if (!IsFinitePositive(dto.TimeIntegration.GenerationTimeSeconds) ||
                 !IsFinitePositive(dto.TimeIntegration.MaximumMicroStepSeconds) ||
                 !IsFinitePositive(dto.TimeIntegration.ShapeRecomputeIntervalSeconds) ||
@@ -183,9 +267,12 @@ namespace ReactorSim.Core
             return ContractValidationResult<IqsKineticsDataPackV1>.Valid(
                 new IqsKineticsDataPackV1(
                     dto.DataPackVersion!,
+                    dto.SourceIdentity ?? dto.DataPackVersion!,
                     dto.EvidenceClass!,
                     dto.SourceProvenance!,
                     dto.EnergyGroupOrder!,
+                    groupFamilies,
+                    delayedGroupOrder,
                     dto.DelayedNeutronData.BetaTotal,
                     beta,
                     lambda,
@@ -282,6 +369,35 @@ namespace ReactorSim.Core
             return values;
         }
 
+        private static int[]? ReadIntArray(JToken? token)
+        {
+            if (!(token is JArray array))
+            {
+                return null;
+            }
+
+            var values = new int[array.Count];
+            for (int index = 0; index < array.Count; index++)
+            {
+                JToken item = array[index];
+                if (item.Type != JTokenType.Integer)
+                {
+                    return null;
+                }
+
+                try
+                {
+                    values[index] = item.Value<int>();
+                }
+                catch (Exception exception) when (exception is FormatException || exception is OverflowException)
+                {
+                    return null;
+                }
+            }
+
+            return values;
+        }
+
         private static DelayedNeutronDto? ReadDelayedNeutronData(JToken? token)
         {
             if (!(token is JObject section))
@@ -289,12 +405,19 @@ namespace ReactorSim.Core
                 return null;
             }
 
+            JToken? groupFamiliesToken = section["group_families"];
+            JToken? groupOrderToken = section["group_order"];
+
             return new DelayedNeutronDto
             {
                 BetaTotal = ReadDouble(section["beta_total"]),
                 GroupFractions = ReadDoubleArray(section["group_fractions"]),
                 DecayConstantsPerSec = ReadDoubleArray(section["decay_constants_per_sec"]),
-                GroupVelocitiesMPerS = ReadDoubleArray(section["group_velocities_m_per_s"])
+                GroupVelocitiesMPerS = ReadDoubleArray(section["group_velocities_m_per_s"]),
+                GroupFamilies = ReadStringArray(groupFamiliesToken),
+                GroupFamiliesSpecified = groupFamiliesToken != null,
+                GroupOrder = ReadIntArray(groupOrderToken),
+                GroupOrderSpecified = groupOrderToken != null
             };
         }
 
@@ -322,6 +445,11 @@ namespace ReactorSim.Core
                 return ContractValidationResult<bool>.Invalid("IqsDataPack.Identity.Missing", "identity", "Pack version, evidence class, and provenance are required.");
             }
 
+            if (dto.SourceIdentitySpecified && string.IsNullOrWhiteSpace(dto.SourceIdentity))
+            {
+                return ContractValidationResult<bool>.Invalid("IqsDataPack.SourceIdentity.Invalid", "source_identity", "A supplied source identity must be a nonempty string.");
+            }
+
             if (!string.Equals(dto.TopologySchemaId, SupportedTopologySchemaId, StringComparison.Ordinal) ||
                 !string.Equals(dto.UnitsProfileId, SupportedUnitsProfileId, StringComparison.Ordinal) ||
                 !string.Equals(dto.ModelId, SupportedModelId, StringComparison.Ordinal) ||
@@ -338,6 +466,12 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private static bool IsSupportedGroupFamily(string family)
+        {
+            return string.Equals(family, FissionGroupFamily, StringComparison.Ordinal) ||
+                   string.Equals(family, PhotoneutronGroupFamily, StringComparison.Ordinal);
         }
 
         private static bool IsFinitePositive(double value)
@@ -359,6 +493,8 @@ namespace ReactorSim.Core
         {
             [JsonProperty("schema_version")] public uint SchemaVersion { get; set; }
             [JsonProperty("data_pack_version")] public string? DataPackVersion { get; set; }
+            [JsonProperty("source_identity")] public string? SourceIdentity { get; set; }
+            public bool SourceIdentitySpecified { get; set; }
             [JsonProperty("topology_schema_id")] public string? TopologySchemaId { get; set; }
             [JsonProperty("units_profile_id")] public string? UnitsProfileId { get; set; }
             [JsonProperty("model_id")] public string? ModelId { get; set; }
@@ -376,6 +512,10 @@ namespace ReactorSim.Core
             [JsonProperty("group_fractions")] public double[]? GroupFractions { get; set; }
             [JsonProperty("decay_constants_per_sec")] public double[]? DecayConstantsPerSec { get; set; }
             [JsonProperty("group_velocities_m_per_s")] public double[]? GroupVelocitiesMPerS { get; set; }
+            [JsonProperty("group_families")] public string[]? GroupFamilies { get; set; }
+            public bool GroupFamiliesSpecified { get; set; }
+            [JsonProperty("group_order")] public int[]? GroupOrder { get; set; }
+            public bool GroupOrderSpecified { get; set; }
         }
 
         private sealed class TimeIntegrationDto
@@ -429,16 +569,17 @@ namespace ReactorSim.Core
 
     /// <summary>
     /// Improved quasi-static adapter: the existing deterministic full-core
-    /// diffusion solve supplies the slow shape, while six-group point kinetics
-    /// advances the scalar amplitude. A fixed flat synthetic adjoint is used only
-    /// for the uniqueness constraint until an admitted adjoint data pack exists.
+    /// diffusion solve supplies the slow shape, while the ordered delayed-source
+    /// groups in the pack advance the scalar amplitude. A fixed flat synthetic
+    /// adjoint is used only for the uniqueness constraint until an admitted
+    /// adjoint data pack exists.
     /// </summary>
     public sealed class IqsFullCoreSolver
     {
         private readonly FullCoreDiffusionModelV1 _spatialModel;
         private readonly IqsKineticsDataPackV1 _dataPack;
         private readonly double _targetPowerWatts;
-        private readonly double[] _precursors = new double[6];
+        private readonly double[] _precursors;
         private IqsSpatialCandidateV1 _current;
         private double _amplitude;
         private readonly double _referenceReactivity;
@@ -454,6 +595,7 @@ namespace ReactorSim.Core
             _dataPack = dataPack;
             _targetPowerWatts = targetPowerWatts;
             _amplitude = 1.0;
+            _precursors = new double[_dataPack.DelayedGroupCount];
             _referenceReactivity = initialSpatialSolve.Reactivity;
             _shapeConstraint = ComputeConstraint(initialSpatialSolve.Group1Flux, initialSpatialSolve.Group2Flux);
             _current = BuildCandidate(initialSpatialSolve);
