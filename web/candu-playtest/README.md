@@ -3,11 +3,9 @@
 Milestone 0.5 is a static browser companion for testing the refuelling loop and
 collecting dynamic feedback before the Unity presentation is refined. The
 authoritative path is the engine-neutral C# model compiled to browser WASM and
-called from a dedicated Web Worker. In development, or when explicitly enabled
-with `?compatibility=fixture` (or `?debug=fixture`), the UI can use the clearly
-labelled `SYNTHETIC FIXTURE` compatibility surface. Production fails closed with
+called from a dedicated Web Worker. The UI fails closed with
 `Authoritative WASM bridge unavailable` and disables simulation controls if the
-bridge cannot load; the fixture is never treated as authoritative.
+bridge cannot load.
 
 ## Local run
 

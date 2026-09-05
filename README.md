@@ -29,10 +29,9 @@ target player experience, and ordered implementation path.
   DRAGON/DONJON result.
 - `web/candu-playtest` is a companion browser pivot for algorithm and interaction
   playtesting. It uses the same `ReactorSim.Game` Play session through the
-  versioned browser bridge when WASM is available. Development and explicit
-  compatibility-debug URLs may expose a visibly labelled fixture, while
-  production fails closed if the bridge is not loaded. It is not a second
-  authoritative simulator or a replacement for Unity acceptance.
+  versioned browser bridge. It fails closed if the authoritative WASM bridge is
+  not loaded; it is not a second authoritative simulator or a replacement for
+  Unity acceptance.
 - `data` and `reference` contain synthetic packs, literature-derived design context,
   and offline DRAGON5/DONJON5 integration specs.
 

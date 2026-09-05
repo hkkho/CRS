@@ -254,10 +254,16 @@ export default function App() {
   }, [sendCommand]);
 
   if (selectedChannel === undefined) {
-    return <div className="fatal-state">Core snapshot did not contain a selectable channel.</div>;
+    return (
+      <div className="fatal-state">
+        {uiState.bridgeStatus.source === "loading"
+          ? "Loading the authoritative browser physics model…"
+          : "Authoritative browser physics is unavailable."}
+      </div>
+    );
   }
 
-  const bridgeInteractive = uiState.bridgeStatus.source === "wasm" || uiState.bridgeStatus.source === "synthetic-fixture";
+  const bridgeInteractive = uiState.bridgeStatus.source === "wasm";
   const commandControlsDisabled = isCommandPending || !bridgeInteractive;
 
   return (
@@ -302,7 +308,7 @@ export default function App() {
             label="State reactivity"
             value={formatReactivity(snapshot.physics.reactivity)}
             detail={`k ${snapshot.physics.effectiveK.toFixed(5)} · ${snapshot.physics.solverIterationCount} outer iterations`}
-            indicator={snapshot.physics.isAuthoritative ? "full-core diffusion · state-level" : "compatibility projection"}
+            indicator={snapshot.physics.isAuthoritative ? "full-core diffusion · state-level" : "authoritative solve unavailable"}
             tone="violet"
           />
           <MetricCard
@@ -479,7 +485,7 @@ interface TopBarProps {
 
 function TopBar({ bridgeStatus, snapshot, overallStatus }: TopBarProps) {
   const statusCopy = overallStatus === "stable" ? "Operating envelope stable" : overallStatus === "watch" ? "Watch axial response" : "Attention required";
-  const sourceCopy = bridgeStatus.source === "wasm" ? "WASM LINK" : bridgeStatus.source === "synthetic-fixture" ? "SYNTHETIC DATA" : bridgeStatus.source === "loading" ? "BRIDGE LOADING" : "BRIDGE OFFLINE";
+  const sourceCopy = bridgeStatus.source === "wasm" ? "WASM LINK" : bridgeStatus.source === "loading" ? "BRIDGE LOADING" : "BRIDGE OFFLINE";
   return (
     <header className="topbar">
       <div className="breadcrumb"><span>WORKSPACE</span><span className="breadcrumb-slash">/</span><strong>LIVE PLAYTEST</strong></div>
@@ -938,7 +944,7 @@ function LabDiagnostics({ snapshot }: { snapshot: CanduSnapshot }) {
         {checks.map((check) => <div className="diagnostic-check" key={check.label}><span className={`check-mark is-${check.status}`} aria-hidden="true">{check.status === "pass" ? "✓" : check.status === "watch" ? "!" : "·"}</span><span>{check.label}</span><strong>{check.value}</strong></div>)}
       </div>
       <div className="protocol-card"><div className="protocol-card-header"><span>WIRE CONTRACT</span><span>{snapshot.protocol}</span></div><code>{`{\n  "protocol": "${snapshot.protocol}",\n  "source": "${snapshot.source}",\n  "core": "${snapshot.core.channelCount} channels × ${snapshot.core.bundlePositionCount} bundles"\n}`}</code></div>
-      <p className="diagnostic-note"><span aria-hidden="true">i</span> {labSolve === undefined ? (snapshot.physics.isAuthoritative ? "Full-core convergence is reported by ReactorSim.Core using the versioned two-group pack." : "Compatibility fixture diagnostics are shown because an authoritative browser WASM export is not active.") : "These values come from the authoritative Core spatial solve on the explicit synthetic Lab fixture."}</p>
+      <p className="diagnostic-note"><span aria-hidden="true">i</span> {labSolve === undefined ? (snapshot.physics.isAuthoritative ? "Full-core convergence is reported by ReactorSim.Core using the versioned two-group pack." : "Authoritative browser WASM diagnostics are unavailable.") : "These values come from the authoritative Core spatial solve on the explicit synthetic Lab fixture."}</p>
     </section>
   );
 }

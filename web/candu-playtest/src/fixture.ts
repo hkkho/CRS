@@ -116,10 +116,10 @@ const fixtureStatus: BridgeStatus = {
 };
 
 /**
- * UI-only compatibility behavior for Milestone 0.5. This is deliberately not
+ * Test-only compatibility behavior for Milestone 0.5. This is deliberately not
  * an authoritative reactor simulator: it supplies stable protocol-shaped
- * state transitions and a matching reduced projection until the engine-neutral
- * model is compiled to browser WASM.
+ * state transitions and a matching reduced projection for frontend tests. It
+ * is not wired into the application bridge.
  */
 export function createSyntheticFixtureBridge(): CanduPlaytestBridge {
   let state = createInitialState();

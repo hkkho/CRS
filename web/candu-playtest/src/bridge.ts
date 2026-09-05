@@ -1,4 +1,8 @@
 import {
+  CORE_BUNDLE_POSITION_COUNT,
+  CORE_CHANNEL_COUNT,
+  CORE_GRID_HEIGHT,
+  CORE_GRID_WIDTH,
   type BridgeStatus,
   type CanduCommand,
   type CanduCommandResponse,
@@ -11,7 +15,6 @@ import {
   PROTOCOL_VERSION,
   serializeProtocolCommand,
 } from "./protocol";
-import { createSyntheticFixtureBridge } from "./fixture";
 
 const authoritativeWasmStatus: BridgeStatus = {
   source: "wasm",
@@ -219,9 +222,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   }
 }
 
-class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
-  private readonly fixture: CanduPlaytestBridge;
-  private readonly compatibilityFixtureEnabled: boolean;
+class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private readonly listeners = new Set<(status: BridgeStatus, snapshot: CanduSnapshot) => void>();
   private readonly wasm: WorkerProtocolBridge | null;
   private readonly unavailable: CanduPlaytestBridge;
@@ -231,15 +232,12 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private readonly settled: Promise<void>;
 
   constructor() {
-    this.fixture = createSyntheticFixtureBridge();
-    this.compatibilityFixtureEnabled = isCompatibilityFixtureEnabled();
-    this.unavailable = new UnavailableProtocolBridge(this.fixture.getSnapshot());
-    this.active = this.compatibilityFixtureEnabled ? this.fixture : this.unavailable;
+    // Keep a shape-compatible snapshot available while the authoritative
+    // module loads. It is never an active bridge or a fallback data source.
+    const placeholderSnapshot = createUnavailableSnapshot();
+    this.unavailable = new UnavailableProtocolBridge(placeholderSnapshot);
+    this.active = this.unavailable;
     this.activeStatus = loadingStatus;
-
-    if (!this.compatibilityFixtureEnabled) {
-      this.activeStatus = unavailableStatus;
-    }
 
     try {
       this.wasm = new WorkerProtocolBridge();
@@ -249,9 +247,7 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
 
     if (this.wasm === null) {
       this.settled = Promise.resolve();
-      if (this.compatibilityFixtureEnabled) {
-        this.activeStatus = this.fixture.status;
-      }
+      this.activeStatus = unavailableStatus;
       return;
     }
 
@@ -264,19 +260,11 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
       })
       .catch((error: unknown) => {
         const reason = error instanceof Error ? error.message : "module unavailable";
-        if (this.compatibilityFixtureEnabled) {
-          this.active = this.fixture;
-          this.activeStatus = {
-            ...this.fixture.status,
-            detail: `Deterministic compatibility data · browser WASM unavailable (${reason})`,
-          };
-        } else {
-          this.active = this.unavailable;
-          this.activeStatus = {
-            ...unavailableStatus,
-            detail: `${AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}. ${reason}`,
-          };
-        }
+        this.active = this.unavailable;
+        this.activeStatus = {
+          ...unavailableStatus,
+          detail: `${AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}. ${reason}`,
+        };
         this.notify(this.active.getSnapshot());
       });
   }
@@ -303,13 +291,7 @@ class HybridProtocolBridge implements CanduPlaytestBridgeLifecycle {
       return snapshot;
     }
 
-    if (this.active === this.unavailable) {
-      throw new Error(AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE);
-    }
-
-    const reset = await this.fixture.dispatch({ type: "reset" });
-    this.notify(reset.snapshot);
-    return reset.snapshot;
+    throw new Error(AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE);
   }
 
   subscribe(listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void): () => void {
@@ -338,21 +320,74 @@ class UnavailableProtocolBridge implements CanduPlaytestBridge {
   }
 }
 
-function isCompatibilityFixtureEnabled(): boolean {
-  if (import.meta.env.DEV) {
-    return true;
-  }
-
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  const parameters = new URLSearchParams(window.location.search);
-  return parameters.get("compatibility") === "fixture" || parameters.get("debug") === "fixture";
+function createUnavailableSnapshot(): CanduSnapshot {
+  return {
+    protocol: PROTOCOL_VERSION,
+    source: "wasm",
+    sequence: 0,
+    scenarioId: "unavailable",
+    dataPackId: "unavailable",
+    simulationTimeSeconds: 0,
+    wallElapsedSeconds: 0,
+    normalizedPowerFraction: 0,
+    targetPowerFraction: 0,
+    absoluteTiltFraction: 0,
+    targetTiltFraction: 0,
+    controlMarginFraction: 0,
+    deviceAvailableFraction: 0,
+    pendingActionCount: 0,
+    scoreTotal: 0,
+    scoreDelta: 0,
+    isPaused: true,
+    playbackModeId: "pause",
+    freshBundlesAvailable: 0,
+    refuellingOperationCount: 0,
+    lastRefuelledChannel: -1,
+    lastRefuellingDirectionId: null,
+    lastRefuellingShiftCount: 0,
+    physics: {
+      sourceId: "unavailable",
+      solveState: "unavailable",
+      isAuthoritative: false,
+      bindingVersion: 0,
+      referencePowerWatts: 1,
+      powerAmplitude: 0,
+      actualPowerFraction: 0,
+      targetPowerWatts: 0,
+      totalPowerWatts: 0,
+      meanChannelPowerWatts: 0,
+      meanBundlePowerWatts: 0,
+      effectiveK: 1,
+      reactivity: 0,
+      powerBalanceRelativeError: 0,
+      solverIdentity: "unavailable",
+      solverIterationCount: 0,
+      solverResidualRelativeInfinity: 0,
+    },
+    core: {
+      channelCount: CORE_CHANNEL_COUNT,
+      bundlePositionCount: CORE_BUNDLE_POSITION_COUNT,
+      gridWidth: CORE_GRID_WIDTH,
+      gridHeight: CORE_GRID_HEIGHT,
+      channels: [],
+    },
+    diagnostics: {
+      convergence: {
+        state: "unavailable",
+        iterations: 0,
+        residual: 0,
+        relativePowerError: 0,
+        lastSolveMilliseconds: 0,
+        solverLabel: "unavailable",
+      },
+      checks: [],
+    },
+    lastEvent: null,
+  };
 }
 
 export function createCanduPlaytestBridge(): CanduPlaytestBridgeLifecycle {
-  return new HybridProtocolBridge();
+  return new AuthoritativeProtocolBridge();
 }
 
 export const protocolDescriptor = {
