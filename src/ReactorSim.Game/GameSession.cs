@@ -311,7 +311,7 @@ namespace ReactorSim.Game
 
             ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
                 _practiceRegulator.TryBindCoreReactivity(
-                    projected.Value.SpatialSolve.Reactivity,
+                    projected.Value.RelativeReactivity,
                     _runtime.SimulationTimeSeconds);
             if (!reboundRegulator.IsValid)
             {
@@ -378,7 +378,7 @@ namespace ReactorSim.Game
 
             ContractValidationResult<SyntheticPracticeRegulatorV1> previewRegulator =
                 _practiceRegulator.TryBindCoreReactivity(
-                    projected.Value.SpatialSolve.Reactivity,
+                    projected.Value.RelativeReactivity,
                     _runtime.SimulationTimeSeconds);
             if (!previewRegulator.IsValid)
             {
@@ -546,7 +546,7 @@ namespace ReactorSim.Game
                     double stepEnd = simulationCursor + stepSeconds;
                     ContractValidationResult<SyntheticPracticeRegulatorV1> regulation =
                         _practiceRegulator.TryAdvance(
-                            _adiabaticSolver.CurrentSpatialSolve.Reactivity,
+                            _adiabaticSolver.RelativeReactivity,
                             stepEnd);
                     if (!regulation.IsValid)
                     {
@@ -616,7 +616,7 @@ namespace ReactorSim.Game
 
             ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
                 _practiceRegulator.TryBindCoreReactivity(
-                    candidate.Value.SpatialSolve.Reactivity,
+                    candidate.Value.RelativeReactivity,
                     simulationTimeSeconds);
             if (!reboundRegulator.IsValid)
             {
@@ -762,6 +762,11 @@ namespace ReactorSim.Game
                      GameCorePresentationConstants.BundlePositionCount),
                 spatial.EffectiveK,
                 spatial.Reactivity,
+                projection.WeightedPerturbationReactivity,
+                projection.ReactivityNumerator,
+                projection.ReactivityDenominator,
+                projection.ReactivityIdentity,
+                projection.ReactivityBindingDigestHex,
                 spatial.PowerBalanceRelativeError,
                 _adiabaticSolver.DataPack.SolverId + "/" +
                     _adiabaticSolver.DataPack.DataPackVersion + "+" +

@@ -19,6 +19,9 @@ namespace ReactorSim.Core
         internal FullCoreDiffusionSolveResultV1(
             FullCoreDiffusionDataPackV1 dataPack,
             SpatialSolveResult spatialSolve,
+            SpatialCoefficientSet coefficients,
+            Digest32 inventoryBindingDigest,
+            Digest32 coefficientBindingDigest,
             IEnumerable<double> group1Flux,
             IEnumerable<double> group2Flux,
             IEnumerable<double> nodePowerWatts,
@@ -29,6 +32,9 @@ namespace ReactorSim.Core
         {
             DataPack = dataPack;
             SpatialSolve = spatialSolve;
+            Coefficients = coefficients;
+            InventoryBindingDigest = inventoryBindingDigest;
+            CoefficientBindingDigest = coefficientBindingDigest;
             _group1Flux = new ReadOnlyCollection<double>(group1Flux.ToArray());
             _group2Flux = new ReadOnlyCollection<double>(group2Flux.ToArray());
             _nodePowerWatts = new ReadOnlyCollection<double>(nodePowerWatts.ToArray());
@@ -41,6 +47,17 @@ namespace ReactorSim.Core
         public FullCoreDiffusionDataPackV1 DataPack { get; }
 
         public SpatialSolveResult SpatialSolve { get; }
+
+        /// <summary>
+        /// The immutable material rows used by this solve. Core owns this
+        /// nodewise contract; presentation layers receive only derived
+        /// scalar diagnostics.
+        /// </summary>
+        public SpatialCoefficientSet Coefficients { get; }
+
+        public Digest32 InventoryBindingDigest { get; }
+
+        public Digest32 CoefficientBindingDigest { get; }
 
         public IReadOnlyList<double> Group1Flux
         {
@@ -397,6 +414,13 @@ namespace ReactorSim.Core
                 new FullCoreDiffusionSolveResultV1(
                     _dataPack,
                     spatialResult.Value,
+                    coefficientResult.Value,
+                    FullCoreAdjointImportanceV1.ComputeReferenceStateDigest(
+                        _dataPack,
+                        inventoryResult.Value),
+                    AdjointWeightedReactivityV1.ComputeCoefficientBindingDigest(
+                        _dataPack,
+                        coefficientResult.Value),
                     finalState.Group1Flux,
                     finalState.Group2Flux,
                     nodePowerWatts,

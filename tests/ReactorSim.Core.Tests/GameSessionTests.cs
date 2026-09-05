@@ -135,6 +135,13 @@ public sealed class GameSessionTests
         Assert.Equal(before.NormalizedPowerFraction, result.Snapshot.NormalizedPowerFraction);
         Assert.Equal(before.AbsoluteTiltFraction, result.Snapshot.AbsoluteTiltFraction);
         Assert.True(result.Snapshot.Physics.Reactivity > before.Physics.Reactivity);
+        Assert.True(
+            result.Snapshot.Physics.WeightedPerturbationReactivity >
+            before.Physics.WeightedPerturbationReactivity);
+        Assert.Equal(
+            result.Snapshot.Physics.WeightedPerturbationReactivity,
+            result.Snapshot.Physics.CoreReactivity,
+            15);
         Assert.True(result.Snapshot.Physics.TotalPowerWatts > 0.0);
         Assert.True(result.Snapshot.ScoreTotal > before.ScoreTotal);
         Assert.True(result.Snapshot.Core.GetChannel(0).PowerWatts >
@@ -157,6 +164,16 @@ public sealed class GameSessionTests
         Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, snapshot.Physics.SolverIdentity);
         Assert.Contains("spatial-eigen-jacobi-v1", snapshot.Physics.SolverIdentity);
         Assert.True(snapshot.Physics.SolverIterationCount > 0);
+        Assert.Equal(
+            AdiabaticKineticsIdentityV1.StaticReactivityMethodId,
+            snapshot.Physics.StaticReactivityMethodId);
+        Assert.Equal(
+            AdjointWeightedReactivityIdentityV1.MethodId,
+            snapshot.Physics.ReactivityIdentity);
+        Assert.Equal(0.0, snapshot.Physics.WeightedPerturbationReactivity, 15);
+        Assert.Equal(0.0, snapshot.Physics.ReactivityNumerator, 15);
+        Assert.True(snapshot.Physics.ReactivityDenominator > 0.0);
+        Assert.Equal(64, snapshot.Physics.ReactivityBindingDigestHex.Length);
         Assert.Equal(
             snapshot.Physics.EffectiveK,
             (1.0 / (1.0 - snapshot.Physics.Reactivity)),
@@ -230,8 +247,10 @@ public sealed class GameSessionTests
         GameSessionCommandResult result = session.AdvanceWallMilliseconds(48_000);
 
         Assert.True(result.Accepted, result.DiagnosticMessage);
-        Assert.True(
-            Math.Abs(result.Snapshot.Physics.CompensatedNetReactivity) < perturbation);
+        Assert.InRange(
+            Math.Abs(result.Snapshot.Physics.CompensatedNetReactivity),
+            0.0,
+            1.0e-3);
         Assert.InRange(result.Snapshot.Physics.ActualPowerFraction, 0.0, 1.5);
         Assert.Equal(
             result.Snapshot.Physics.ReferencePowerWatts *
@@ -288,9 +307,10 @@ public sealed class GameSessionTests
 
         GameSessionCommandResult advanced = session.AdvanceWallMilliseconds(2_000);
         Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
-        Assert.True(
-            Math.Abs(advanced.Snapshot.Physics.CompensatedNetReactivity) <
-            Math.Abs(refuelled.Snapshot.Physics.CompensatedNetReactivity));
+        Assert.InRange(
+            Math.Abs(advanced.Snapshot.Physics.CompensatedNetReactivity),
+            0.0,
+            1.0e-3);
         Assert.NotEqual(
             advanced.Snapshot.Core.GetChannel(189).LocalPowerFraction,
             advanced.Snapshot.Core.GetChannel(190).LocalPowerFraction);

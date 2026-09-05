@@ -228,6 +228,183 @@ public sealed class IqsSolverTests
     }
 
     [Fact]
+    public void ReferenceStateReportsZeroWeightedPerturbationAndSeparateStaticRho()
+    {
+        IqsFullCoreSolver solver = CreateSolver(SyntheticGameCoreStateV1.CreatePractice());
+        IqsSpatialCandidateV1 projection = solver.CurrentProjection;
+
+        Assert.Equal(0.0, projection.WeightedPerturbationReactivity, 15);
+        Assert.Equal(0.0, projection.RelativeReactivity, 15);
+        Assert.Equal(0.0, projection.ReactivityNumerator, 15);
+        Assert.True(projection.ReactivityDenominator > 0.0);
+        Assert.Equal(projection.SpatialSolve.Reactivity, projection.StaticReactivity, 15);
+        Assert.NotEqual(
+            AdiabaticKineticsIdentityV1.StaticReactivityMethodId,
+            projection.ReactivityIdentity);
+        Assert.Equal(
+            AdjointWeightedReactivityIdentityV1.MethodId,
+            projection.ReactivityIdentity);
+        Assert.Equal(64, projection.ReactivityBindingDigestHex.Length);
+    }
+
+    [Fact]
+    public void WeightedPerturbationReplayIsDeterministicAndNotStaticKDelta()
+    {
+        SyntheticGameCoreStateV1 initial = SyntheticGameCoreStateV1.CreatePractice();
+        IqsFullCoreSolver first = CreateSolver(initial);
+        IqsFullCoreSolver second = CreateSolver(initial);
+        uint channel = 189;
+        SyntheticGameCoreStateV1 firstState = Require(
+            initial.TryRefuel(
+                channel,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+        SyntheticGameCoreStateV1 secondState = Require(
+            initial.TryRefuel(
+                channel,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+
+        IqsSpatialCandidateV1 firstCandidate = Require(
+            first.TrySolveCandidate(firstState.EnumerateBundles()));
+        IqsSpatialCandidateV1 secondCandidate = Require(
+            second.TrySolveCandidate(secondState.EnumerateBundles()));
+
+        Assert.Equal(
+            firstCandidate.WeightedPerturbationReactivity,
+            secondCandidate.WeightedPerturbationReactivity,
+            15);
+        Assert.Equal(firstCandidate.ReactivityNumerator, secondCandidate.ReactivityNumerator, 15);
+        Assert.Equal(firstCandidate.ReactivityDenominator, secondCandidate.ReactivityDenominator, 15);
+        Assert.Equal(
+            firstCandidate.ReactivityBindingDigestHex,
+            secondCandidate.ReactivityBindingDigestHex);
+        Assert.True(firstCandidate.WeightedPerturbationReactivity > 0.0);
+        Assert.True(
+            Math.Abs(firstCandidate.WeightedPerturbationReactivity -
+                     firstCandidate.StaticRelativeReactivity) > 1.0e-14);
+    }
+
+    [Fact]
+    public void EquivalentCentralAndPeripheralPerturbationsFollowReferenceImportance()
+    {
+        Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(10, 10, out uint center));
+        SyntheticGameCoreStateV1 initial = SyntheticGameCoreStateV1.CreatePractice();
+        SyntheticGameCoreStateV1 equalized = EqualizeChannelBurnup(initial, center, 0);
+        IqsFullCoreSolver solver = CreateSolver(equalized);
+
+        SyntheticGameCoreStateV1 centerState = Require(
+            equalized.TryRefuel(
+                center,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+        SyntheticGameCoreStateV1 peripheralState = Require(
+            equalized.TryRefuel(
+                0,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+
+        IqsSpatialCandidateV1 central = Require(
+            solver.TrySolveCandidate(centerState.EnumerateBundles()));
+        IqsSpatialCandidateV1 peripheral = Require(
+            solver.TrySolveCandidate(peripheralState.EnumerateBundles()));
+
+        Assert.True(central.WeightedPerturbationReactivity > 0.0);
+        Assert.True(peripheral.WeightedPerturbationReactivity > 0.0);
+        Assert.True(
+            central.WeightedPerturbationReactivity >
+            peripheral.WeightedPerturbationReactivity);
+        Assert.True(
+            central.ReactivityNumerator > peripheral.ReactivityNumerator);
+    }
+
+    [Fact]
+    public void SymmetryEquivalentPerturbationsProduceEquivalentWeightedReactivity()
+    {
+        Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(9, 10, out uint left));
+        Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(12, 10, out uint right));
+        SyntheticGameCoreStateV1 initial = SyntheticGameCoreStateV1.CreatePractice();
+        IqsFullCoreSolver solver = CreateSolver(initial);
+        SyntheticGameCoreStateV1 leftState = Require(
+            initial.TryRefuel(
+                left,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+        SyntheticGameCoreStateV1 rightState = Require(
+            initial.TryRefuel(
+                right,
+                GameRefuellingDirectionV1.TowardEndB,
+                4,
+                "NAT-U-SYNTHETIC",
+                0.0)).ResultingState;
+
+        IqsSpatialCandidateV1 leftCandidate = Require(
+            solver.TrySolveCandidate(leftState.EnumerateBundles()));
+        IqsSpatialCandidateV1 rightCandidate = Require(
+            solver.TrySolveCandidate(rightState.EnumerateBundles()));
+
+        Assert.Equal(
+            leftCandidate.WeightedPerturbationReactivity,
+            rightCandidate.WeightedPerturbationReactivity,
+            10);
+        AssertRelativeClose(
+            leftCandidate.ReactivityNumerator,
+            rightCandidate.ReactivityNumerator,
+            1.0e-12);
+        AssertRelativeClose(
+            leftCandidate.ReactivityDenominator,
+            rightCandidate.ReactivityDenominator,
+            1.0e-12);
+    }
+
+    [Fact]
+    public void InvalidWeightedDenominatorAndTopologyBindingFailClosed()
+    {
+        SyntheticGameCoreStateV1 state = SyntheticGameCoreStateV1.CreatePractice();
+        IqsFullCoreSolver solver = CreateSolver(state);
+        int nodeCount = solver.CurrentSpatialSolve.Group1Flux.Count;
+        ContractValidationResult<AdjointWeightedReactivityResultV1> zeroDenominator =
+            AdjointWeightedReactivityV1.TryCompute(
+                solver.ReferenceAdjoint,
+                solver.CurrentSpatialSolve.DataPack,
+                solver.DataPack,
+                solver.CurrentSpatialSolve.Coefficients,
+                solver.CurrentSpatialSolve.Coefficients,
+                new double[nodeCount],
+                new double[nodeCount]);
+
+        Assert.False(zeroDenominator.IsValid, Diagnostic(zeroDenominator));
+        Assert.Equal("AdjointReactivity.Denominator.Invalid", zeroDenominator.FirstDiagnostic.Code);
+
+        FullCoreDiffusionModelV1 otherModel = Require(
+            FullCoreDiffusionModelV1.TryCreateCandu6(solver.CurrentSpatialSolve.DataPack));
+        FullCoreDiffusionSolveResultV1 otherSolve = Require(
+            otherModel.TrySolve(state.EnumerateBundles(), 1_000_000_000.0));
+        ContractValidationResult<AdjointWeightedReactivityResultV1> staleBinding =
+            AdjointWeightedReactivityV1.TryCompute(
+                solver.ReferenceAdjoint,
+                solver.CurrentSpatialSolve.DataPack,
+                solver.DataPack,
+                otherSolve.Coefficients,
+                solver.CurrentSpatialSolve.Coefficients,
+                solver.CurrentSpatialSolve.Group1Flux,
+                solver.CurrentSpatialSolve.Group2Flux);
+
+        Assert.False(staleBinding.IsValid, Diagnostic(staleBinding));
+        Assert.Equal("AdjointReactivity.Topology.BindingMismatch", staleBinding.FirstDiagnostic.Code);
+    }
+
+    [Fact]
     public void CandidateFailureAndPreviewLeaveKineticsAndShapeUnchanged()
     {
         IqsFullCoreSolver solver = CreateSolver(SyntheticGameCoreStateV1.CreatePractice());
@@ -249,6 +426,8 @@ public sealed class IqsSolverTests
             Math.Abs(preview.Value.Constraint - solver.ShapeConstraint) / solver.ShapeConstraint,
             0.0,
             1e-12);
+        Assert.Equal(0.0, preview.Value.WeightedPerturbationReactivity, 15);
+        Assert.Equal(0.0, solver.WeightedPerturbationReactivity, 15);
     }
 
     [Fact]
@@ -377,6 +556,26 @@ public sealed class IqsSolverTests
             1_000_000_000.0));
     }
 
+    private static SyntheticGameCoreStateV1 EqualizeChannelBurnup(
+        SyntheticGameCoreStateV1 state,
+        uint sourceChannel,
+        uint targetChannel)
+    {
+        var deltaEnergy = new double[
+            checked((int)(SyntheticGameCoreStateV1.ChannelCount *
+                          SyntheticGameCoreStateV1.BundlePositionCount))];
+        for (uint position = 0; position < SyntheticGameCoreStateV1.BundlePositionCount; position++)
+        {
+            BundleState source = state.GetBundle(sourceChannel, position);
+            BundleState target = state.GetBundle(targetChannel, position);
+            deltaEnergy[checked((int)(targetChannel * SyntheticGameCoreStateV1.BundlePositionCount + position))] =
+                (source.CurrentBurnupJPerKgHm - target.CurrentBurnupJPerKgHm) *
+                target.HeavyMetalMassKg;
+        }
+
+        return Require(state.TryAddFissionEnergy(deltaEnergy));
+    }
+
     private static string CreatePackJson(
         double[] betaGroups,
         double[] decayConstants,
@@ -440,6 +639,14 @@ public sealed class IqsSolverTests
     private static string Diagnostic<T>(ContractValidationResult<T> result)
     {
         return result.IsValid ? string.Empty : result.FirstDiagnostic.ToString();
+    }
+
+    private static void AssertRelativeClose(double expected, double actual, double tolerance)
+    {
+        double scale = Math.Max(1.0, Math.Max(Math.Abs(expected), Math.Abs(actual)));
+        Assert.True(
+            Math.Abs(expected - actual) <= tolerance * scale,
+            $"Expected {expected:R} and {actual:R} to be within {tolerance:R} relative tolerance.");
     }
 
     private static void AssertInvalid<T>(ContractValidationResult<T> result, string code)

@@ -58,6 +58,16 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, initialPhysics.GetProperty("shapeMethodId").GetString());
             Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, initialPhysics.GetProperty("amplitudeMethodId").GetString());
             Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, initialPhysics.GetProperty("reactivityMethodId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.StaticReactivityMethodId,
+                initialPhysics.GetProperty("staticReactivityMethodId").GetString());
+            Assert.Equal(
+                AdjointWeightedReactivityIdentityV1.MethodId,
+                initialPhysics.GetProperty("reactivityIdentity").GetString());
+            Assert.Equal(0.0, initialPhysics.GetProperty("weightedPerturbationReactivity").GetDouble(), 15);
+            Assert.Equal(0.0, initialPhysics.GetProperty("reactivityNumerator").GetDouble(), 15);
+            Assert.True(initialPhysics.GetProperty("reactivityDenominator").GetDouble() > 0.0);
+            Assert.Equal(64, initialPhysics.GetProperty("reactivityBindingDigestHex").GetString()!.Length);
             Assert.Equal("converged", initialPhysics.GetProperty("solveState").GetString());
             Assert.True(initialPhysics.GetProperty("isAuthoritative").GetBoolean());
             Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, initialPhysics.GetProperty("solverIdentity").GetString());
@@ -76,7 +86,11 @@ namespace ReactorSim.Browser.Tests
                 initialPhysics.GetProperty("totalPowerWatts").GetDouble(),
                 2);
             Assert.Equal(
+                initialPhysics.GetProperty("staticReactivity").GetDouble(),
                 initialPhysics.GetProperty("reactivity").GetDouble(),
+                15);
+            Assert.Equal(
+                initialPhysics.GetProperty("weightedPerturbationReactivity").GetDouble(),
                 initialPhysics.GetProperty("coreReactivity").GetDouble(),
                 15);
             Assert.InRange(

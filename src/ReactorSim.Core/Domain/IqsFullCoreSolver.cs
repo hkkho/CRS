@@ -25,7 +25,11 @@ namespace ReactorSim.Core
         public const string AmplitudeMethodId =
             "semi-implicit-point-kinetics-v1";
         public const string ReactivityMethodId =
+            AdjointWeightedReactivityIdentityV1.MethodId;
+        public const string StaticReactivityMethodId =
             "static-effective-k-rho-v1";
+        public const string LegacyReactivityMethodId =
+            StaticReactivityMethodId;
         public const string ModelId =
             "candu6-two-group-adiabatic-point-kinetics-v1";
         public const string SolverId =
@@ -351,7 +355,7 @@ namespace ReactorSim.Core
                     dto.FormulationId ?? AdiabaticKineticsIdentityV1.FormulationId,
                     dto.ShapeMethodId ?? AdiabaticKineticsIdentityV1.ShapeMethodId,
                     dto.AmplitudeMethodId ?? AdiabaticKineticsIdentityV1.AmplitudeMethodId,
-                    dto.ReactivityMethodId ?? AdiabaticKineticsIdentityV1.ReactivityMethodId,
+                    AdiabaticKineticsIdentityV1.ReactivityMethodId,
                     dto.EnergyGroupOrder!,
                     groupFamilies,
                     delayedGroupOrder,
@@ -551,12 +555,13 @@ namespace ReactorSim.Core
                 (dto.AmplitudeMethodIdSpecified &&
                  !string.Equals(dto.AmplitudeMethodId, AdiabaticKineticsIdentityV1.AmplitudeMethodId, StringComparison.Ordinal)) ||
                 (dto.ReactivityMethodIdSpecified &&
-                 !string.Equals(dto.ReactivityMethodId, AdiabaticKineticsIdentityV1.ReactivityMethodId, StringComparison.Ordinal)))
+                 !string.Equals(dto.ReactivityMethodId, AdiabaticKineticsIdentityV1.ReactivityMethodId, StringComparison.Ordinal) &&
+                 !string.Equals(dto.ReactivityMethodId, AdiabaticKineticsIdentityV1.LegacyReactivityMethodId, StringComparison.Ordinal)))
             {
                 return ContractValidationResult<bool>.Invalid(
                     "IqsDataPack.Formulation.Unsupported",
                     "formulation_id",
-                    "The active pack must identify the adiabatic static-k-eigenmode shape and point-kinetics amplitude methods.");
+                    "The active pack must identify the adiabatic static-k-eigenmode shape, point-kinetics amplitude, and adjoint-weighted first-order reactivity methods.");
             }
 
             if (dto.EnergyGroupOrder == null || dto.EnergyGroupOrder.Length != 2 ||
@@ -655,7 +660,8 @@ namespace ReactorSim.Core
             IEnumerable<double> shapeNodePowerWatts,
             double shapePowerWatts,
             double constraint,
-            double relativeReactivity)
+            double staticRelativeReactivity,
+            AdjointWeightedReactivityResultV1 weightedReactivity)
         {
             Owner = owner;
             SpatialSolve = spatialSolve;
@@ -664,7 +670,8 @@ namespace ReactorSim.Core
             _shapeNodePowerWatts = new ReadOnlyCollection<double>(shapeNodePowerWatts.ToArray());
             ShapePowerWatts = shapePowerWatts;
             Constraint = constraint;
-            RelativeReactivity = relativeReactivity;
+            StaticRelativeReactivity = staticRelativeReactivity;
+            WeightedReactivity = weightedReactivity;
         }
 
         internal IqsFullCoreSolver Owner { get; }
@@ -674,7 +681,54 @@ namespace ReactorSim.Core
         public IReadOnlyList<double> ShapeNodePowerWatts { get { return _shapeNodePowerWatts; } }
         public double ShapePowerWatts { get; }
         public double Constraint { get; }
-        public double RelativeReactivity { get; }
+        public double StaticReactivity
+        {
+            get { return SpatialSolve.Reactivity; }
+        }
+
+        /// <summary>
+        /// Compatibility-facing operational value. It is the B2
+        /// adjoint-weighted first-order perturbation reactivity; the static
+        /// k/rho diagnostic remains available as StaticReactivity.
+        /// </summary>
+        public double RelativeReactivity
+        {
+            get { return WeightedReactivity.Reactivity; }
+        }
+
+        public double StaticRelativeReactivity { get; }
+
+        public AdjointWeightedReactivityResultV1 WeightedReactivity { get; }
+
+        public double WeightedPerturbationReactivity
+        {
+            get { return WeightedReactivity.Reactivity; }
+        }
+
+        public double ReactivityNumerator
+        {
+            get { return WeightedReactivity.Numerator; }
+        }
+
+        public double ReactivityDenominator
+        {
+            get { return WeightedReactivity.Denominator; }
+        }
+
+        public string ReactivityIdentity
+        {
+            get { return WeightedReactivity.Identity; }
+        }
+
+        public Digest32 ReactivityBindingDigest
+        {
+            get { return WeightedReactivity.BindingDigest; }
+        }
+
+        public string ReactivityBindingDigestHex
+        {
+            get { return WeightedReactivity.BindingDigestHex; }
+        }
     }
 
     /// <summary>
@@ -694,7 +748,9 @@ namespace ReactorSim.Core
         private readonly double[] _precursors;
         private IqsSpatialCandidateV1 _current;
         private double _amplitude;
-        private readonly double _referenceReactivity;
+        private readonly FullCoreDiffusionSolveResultV1 _referenceSpatialSolve;
+        private readonly double _referenceStaticReactivity;
+        private readonly string _staticReactivityMethodId;
         private readonly FullCoreAdjointImportanceV1 _referenceAdjoint;
         private readonly double _shapeConstraint;
 
@@ -710,8 +766,10 @@ namespace ReactorSim.Core
             _targetPowerWatts = targetPowerWatts;
             _amplitude = 1.0;
             _precursors = new double[_dataPack.DelayedGroupCount];
+            _referenceSpatialSolve = initialSpatialSolve;
             _referenceAdjoint = referenceAdjoint;
-            _referenceReactivity = initialSpatialSolve.Reactivity;
+            _referenceStaticReactivity = initialSpatialSolve.Reactivity;
+            _staticReactivityMethodId = AdiabaticKineticsIdentityV1.StaticReactivityMethodId;
             _shapeConstraint = ComputeConstraint(initialSpatialSolve.Group1Flux, initialSpatialSolve.Group2Flux);
             _current = BuildCandidate(initialSpatialSolve);
             for (int group = 0; group < _precursors.Length; group++)
@@ -735,12 +793,41 @@ namespace ReactorSim.Core
             get { return _referenceAdjoint.TransposeResidualRelativeInfinity; }
         }
         public double RelativeReactivity { get { return _current.RelativeReactivity; } }
+        public double WeightedPerturbationReactivity
+        {
+            get { return _current.WeightedPerturbationReactivity; }
+        }
+        public double StaticReactivity { get { return _current.StaticReactivity; } }
+        public double StaticRelativeReactivity
+        {
+            get { return _current.StaticRelativeReactivity; }
+        }
+        public double ReactivityNumerator
+        {
+            get { return _current.ReactivityNumerator; }
+        }
+        public double ReactivityDenominator
+        {
+            get { return _current.ReactivityDenominator; }
+        }
+        public string ReactivityIdentity
+        {
+            get { return _current.ReactivityIdentity; }
+        }
+        public string ReactivityBindingDigestHex
+        {
+            get { return _current.ReactivityBindingDigestHex; }
+        }
         public double GenerationTimeSeconds { get { return _dataPack.GenerationTimeSeconds; } }
         public double ShapeConstraint { get { return _shapeConstraint; } }
         public string FormulationId { get { return _dataPack.FormulationId; } }
         public string ShapeMethodId { get { return _dataPack.ShapeMethodId; } }
         public string AmplitudeMethodId { get { return _dataPack.AmplitudeMethodId; } }
         public string ReactivityMethodId { get { return _dataPack.ReactivityMethodId; } }
+        public string StaticReactivityMethodId
+        {
+            get { return _staticReactivityMethodId; }
+        }
         public string SolverIdentity
         {
             get { return _dataPack.SolverId + "/" + _dataPack.DataPackVersion + "+" + _current.SpatialSolve.SolverIdentity; }
@@ -911,6 +998,17 @@ namespace ReactorSim.Core
 
         private IqsSpatialCandidateV1 BuildCandidate(FullCoreDiffusionSolveResultV1 spatial)
         {
+            ContractValidationResult<AdjointWeightedReactivityResultV1> weightedReactivity =
+                AdjointWeightedReactivityV1.TryCompute(
+                    _referenceAdjoint,
+                    _referenceSpatialSolve,
+                    spatial,
+                    _dataPack);
+            if (!weightedReactivity.IsValid)
+            {
+                throw new InvalidOperationException(weightedReactivity.FirstDiagnostic.ToString());
+            }
+
             double rawConstraint = ComputeConstraint(spatial.Group1Flux, spatial.Group2Flux);
             if (!ContractValidation.IsFinite(rawConstraint) || rawConstraint <= 0.0)
             {
@@ -938,7 +1036,8 @@ namespace ReactorSim.Core
                 powers,
                 powerTotal,
                 constraint,
-                spatial.Reactivity - _referenceReactivity);
+                spatial.Reactivity - _referenceStaticReactivity,
+                weightedReactivity.Value);
         }
 
         private double ComputeConstraint(IReadOnlyList<double> group1, IReadOnlyList<double> group2)

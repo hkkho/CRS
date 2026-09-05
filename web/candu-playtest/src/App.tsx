@@ -305,10 +305,10 @@ export default function App() {
             tone="violet"
           />
           <MetricCard
-            label="State reactivity"
+            label="Static reactivity"
             value={formatReactivity(snapshot.physics.reactivity)}
-            detail={`k ${snapshot.physics.effectiveK.toFixed(5)} · ${snapshot.physics.solverIterationCount} outer iterations`}
-            indicator={snapshot.physics.isAuthoritative ? "full-core diffusion · state-level" : "authoritative solve unavailable"}
+            detail={`weighted ${formatReactivity(snapshot.physics.weightedPerturbationReactivity)} · k ${snapshot.physics.effectiveK.toFixed(5)}`}
+            indicator={snapshot.physics.isAuthoritative ? "full-core diffusion · adjoint-weighted control" : "authoritative solve unavailable"}
             tone="violet"
           />
           <MetricCard

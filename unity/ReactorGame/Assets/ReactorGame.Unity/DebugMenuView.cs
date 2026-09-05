@@ -759,7 +759,8 @@ namespace ReactorGame.Unity
                 "\nPhysics: " + snapshot.Core.Physics.SourceId +
                 " / P=" + Format(snapshot.Core.Physics.TotalPowerWatts) + " W" +
                 " / k=" + FormatPrecise(snapshot.Core.Physics.EffectiveK) +
-                " / rho=" + FormatPrecise(snapshot.Core.Physics.Reactivity * 1000.0) + " mk" +
+                " / rho(static)=" + FormatPrecise(snapshot.Core.Physics.StaticReactivity * 1000.0) + " mk" +
+                " / rho(weighted)=" + FormatPrecise(snapshot.Core.Physics.WeightedPerturbationReactivity * 1000.0) + " mk" +
                 " / core-rho=" + FormatPrecise(snapshot.Core.Physics.CoreReactivity * 1000.0) + " mk" +
                 " / net-rho=" + FormatPrecise(snapshot.Core.Physics.CompensatedNetReactivity * 1000.0) + " mk" +
                 " / comp=" + FormatPrecise(snapshot.Core.Physics.CompensationState * 1000.0) +
@@ -899,6 +900,14 @@ namespace ReactorGame.Unity
                 .Append(FormatPrecise(snapshot.NormalizedPowerFraction))
                 .Append(";coreRho=")
                 .Append(FormatPrecise(snapshot.Core.Physics.CoreReactivity))
+                .Append(";staticRho=")
+                .Append(FormatPrecise(snapshot.Core.Physics.StaticReactivity))
+                .Append(";weightedRho=")
+                .Append(FormatPrecise(snapshot.Core.Physics.WeightedPerturbationReactivity))
+                .Append(";reactivityNumerator=")
+                .Append(FormatPrecise(snapshot.Core.Physics.ReactivityNumerator))
+                .Append(";reactivityDenominator=")
+                .Append(FormatPrecise(snapshot.Core.Physics.ReactivityDenominator))
                 .Append(";netRho=")
                 .Append(FormatPrecise(snapshot.Core.Physics.CompensatedNetReactivity))
                 .Append(";compState=")

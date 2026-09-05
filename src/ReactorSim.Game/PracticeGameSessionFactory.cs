@@ -173,7 +173,7 @@ namespace ReactorSim.Game
                     PracticeReferencePowerWatts));
             SyntheticPracticeRegulatorV1 practiceRegulator = Require(
                 SyntheticPracticeRegulatorV1.TryCreate(
-                    adiabaticSolver.CurrentSpatialSolve.Reactivity,
+                    adiabaticSolver.RelativeReactivity,
                     runtime.SimulationTimeSeconds));
             return new GameSession(
                 scoredRuntime,

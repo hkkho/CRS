@@ -669,7 +669,7 @@ namespace ReactorSim.Browser
                 DischargeBurnupMwdPerKg = dischargeBurnup,
                 LocalPowerDeltaFraction = localPowerDelta,
                 LocalTiltDeltaFraction = localTiltDelta,
-                PredictedReactivityDelta = candidate.Physics.Reactivity - before.Physics.Reactivity,
+                PredictedReactivityDelta = candidate.Physics.WeightedPerturbationReactivity,
                 ProjectedPowerFraction = before.Physics.ReferencePowerWatts <= 0.0
                     ? before.NormalizedPowerFraction
                     : candidate.Physics.TotalPowerWatts / candidate.Physics.ReferencePowerWatts,
@@ -805,6 +805,13 @@ namespace ReactorSim.Browser
                     MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
                     EffectiveK = game.Physics.EffectiveK,
                     Reactivity = game.Physics.Reactivity,
+                    StaticReactivity = game.Physics.StaticReactivity,
+                    StaticReactivityMethodId = game.Physics.StaticReactivityMethodId,
+                    WeightedPerturbationReactivity = game.Physics.WeightedPerturbationReactivity,
+                    ReactivityNumerator = game.Physics.ReactivityNumerator,
+                    ReactivityDenominator = game.Physics.ReactivityDenominator,
+                    ReactivityIdentity = game.Physics.ReactivityIdentity,
+                    ReactivityBindingDigestHex = game.Physics.ReactivityBindingDigestHex,
                     CoreReactivity = game.Physics.CoreReactivity,
                     CompensatedNetReactivity = game.Physics.CompensatedNetReactivity,
                     CompensationState = game.Physics.CompensationState,
@@ -1340,6 +1347,20 @@ namespace ReactorSim.Browser
         public double EffectiveK { get; set; }
 
         public double Reactivity { get; set; }
+
+        public double StaticReactivity { get; set; }
+
+        public string StaticReactivityMethodId { get; set; } = string.Empty;
+
+        public double WeightedPerturbationReactivity { get; set; }
+
+        public double ReactivityNumerator { get; set; }
+
+        public double ReactivityDenominator { get; set; }
+
+        public string ReactivityIdentity { get; set; } = string.Empty;
+
+        public string ReactivityBindingDigestHex { get; set; } = string.Empty;
 
         public double CoreReactivity { get; set; }
 

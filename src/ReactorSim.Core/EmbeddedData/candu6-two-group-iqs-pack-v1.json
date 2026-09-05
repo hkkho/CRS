@@ -8,7 +8,7 @@
   "formulation_id": "adiabatic-static-k-eigenmode-plus-point-kinetics-v1",
   "shape_method_id": "deterministic-static-k-eigenmode-recompute-v1",
   "amplitude_method_id": "semi-implicit-point-kinetics-v1",
-  "reactivity_method_id": "static-effective-k-rho-v1",
+  "reactivity_method_id": "adjoint-weighted-first-order-perturbation-v1",
   "source_identity": "project-authored-synthetic-candu6-kinetics",
   "energy_group_order": [ "fast", "thermal" ],
   "evidence_class": "synthetic-calibrated",

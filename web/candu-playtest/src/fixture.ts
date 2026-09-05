@@ -80,6 +80,13 @@ interface FixturePowerProjection {
   meanBundlePowerWatts: number;
   effectiveK: number;
   reactivity: number;
+  staticReactivity: number;
+  staticReactivityMethodId: string;
+  weightedPerturbationReactivity: number;
+  reactivityNumerator: number;
+  reactivityDenominator: number;
+  reactivityIdentity: string;
+  reactivityBindingDigestHex: string;
   coreReactivity: number;
   compensatedNetReactivity: number;
   compensationState: number;
@@ -706,6 +713,9 @@ function createFixturePowerProjection(state: FixtureState): FixturePowerProjecti
     1.10,
   );
   const reactivity = (effectiveK - 1) / effectiveK;
+  const weightedPerturbationReactivity = reactivity;
+  const reactivityDenominator = 1;
+  const reactivityNumerator = weightedPerturbationReactivity * reactivityDenominator;
   const compensationCommand = clamp(
     -reactivity,
     PRACTICE_REGULATOR_LOWER_BOUND,
@@ -721,6 +731,13 @@ function createFixturePowerProjection(state: FixtureState): FixturePowerProjecti
     meanBundlePowerWatts,
     effectiveK,
     reactivity,
+    staticReactivity: reactivity,
+    staticReactivityMethodId: "compatibility-reduced-effective-k-rho-v2",
+    weightedPerturbationReactivity,
+    reactivityNumerator,
+    reactivityDenominator,
+    reactivityIdentity: "compatibility-reduced-adjoint-weighted-unavailable-v1",
+    reactivityBindingDigestHex: "0".repeat(64),
     coreReactivity: reactivity,
     compensatedNetReactivity: reactivity + compensationCommand,
     compensationState: compensationCommand,
@@ -782,6 +799,13 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     meanBundlePowerWatts: projection.meanBundlePowerWatts,
     effectiveK: projection.effectiveK,
     reactivity: projection.reactivity,
+    staticReactivity: projection.staticReactivity,
+    staticReactivityMethodId: projection.staticReactivityMethodId,
+    weightedPerturbationReactivity: projection.weightedPerturbationReactivity,
+    reactivityNumerator: projection.reactivityNumerator,
+    reactivityDenominator: projection.reactivityDenominator,
+    reactivityIdentity: projection.reactivityIdentity,
+    reactivityBindingDigestHex: projection.reactivityBindingDigestHex,
     coreReactivity: projection.coreReactivity,
     compensatedNetReactivity: projection.compensatedNetReactivity,
     compensationState: projection.compensationState,

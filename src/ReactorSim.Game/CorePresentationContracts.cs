@@ -16,6 +16,8 @@ namespace ReactorSim.Game
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
+        private readonly string _staticReactivityMethodId;
+
         internal GamePhysicsPresentationSnapshot(
             string sourceId,
             string formulationId,
@@ -34,6 +36,11 @@ namespace ReactorSim.Game
             double meanBundlePowerWatts,
             double effectiveK,
             double reactivity,
+            double weightedPerturbationReactivity,
+            double reactivityNumerator,
+            double reactivityDenominator,
+            string reactivityIdentity,
+            string reactivityBindingDigestHex,
             double powerBalanceRelativeError,
             string solverIdentity,
             int solverIterationCount,
@@ -76,6 +83,19 @@ namespace ReactorSim.Game
             RequireFiniteNonnegative(meanBundlePowerWatts, nameof(meanBundlePowerWatts));
             RequireFinitePositive(effectiveK, nameof(effectiveK));
             RequireFinite(reactivity, nameof(reactivity));
+            RequireFinite(
+                weightedPerturbationReactivity,
+                nameof(weightedPerturbationReactivity));
+            RequireFinite(reactivityNumerator, nameof(reactivityNumerator));
+            RequireFinitePositive(reactivityDenominator, nameof(reactivityDenominator));
+            RequireIdentity(
+                reactivityIdentity,
+                "reactivity identity",
+                nameof(reactivityIdentity));
+            RequireIdentity(
+                reactivityBindingDigestHex,
+                "reactivity binding digest",
+                nameof(reactivityBindingDigestHex));
             RequireFinite(coreReactivity, nameof(coreReactivity));
             RequireFinite(compensatedNetReactivity, nameof(compensatedNetReactivity));
             RequireFinite(compensationState, nameof(compensationState));
@@ -159,6 +179,12 @@ namespace ReactorSim.Game
             MeanBundlePowerWatts = meanBundlePowerWatts;
             EffectiveK = effectiveK;
             Reactivity = reactivity;
+            WeightedPerturbationReactivity = weightedPerturbationReactivity;
+            ReactivityNumerator = reactivityNumerator;
+            ReactivityDenominator = reactivityDenominator;
+            ReactivityIdentity = reactivityIdentity;
+            ReactivityBindingDigestHex = reactivityBindingDigestHex;
+            _staticReactivityMethodId = AdiabaticKineticsIdentityV1.StaticReactivityMethodId;
             CoreReactivity = coreReactivity;
             CompensatedNetReactivity = compensatedNetReactivity;
             CompensationState = compensationState;
@@ -223,8 +249,37 @@ namespace ReactorSim.Game
         public double Reactivity { get; }
 
         /// <summary>
-        /// Static/core reactivity from the authoritative spatial candidate.
-        /// Reactivity remains the legacy alias for this value.
+        /// Legacy spatial state rho, derived only from EffectiveK as
+        /// (k - 1) / k. It is intentionally separate from the operational
+        /// first-order perturbation value below.
+        /// </summary>
+        public double StaticReactivity
+        {
+            get { return Reactivity; }
+        }
+
+        public string StaticReactivityMethodId
+        {
+            get { return _staticReactivityMethodId; }
+        }
+
+        /// <summary>
+        /// B2's adjoint-weighted first-order perturbation reactivity. This is
+        /// the value consumed by the regulated gameplay response.
+        /// </summary>
+        public double WeightedPerturbationReactivity { get; }
+
+        public double ReactivityNumerator { get; }
+
+        public double ReactivityDenominator { get; }
+
+        public string ReactivityIdentity { get; }
+
+        public string ReactivityBindingDigestHex { get; }
+
+        /// <summary>
+        /// Operational core reactivity supplied to the practice regulator.
+        /// This is the B2 weighted perturbation value, not static k/rho.
         /// </summary>
         public double CoreReactivity { get; }
 

@@ -22,10 +22,10 @@ namespace ReactorSim.Core
 
     /// <summary>
     /// Immutable deterministic scalar compensation state for the synthetic
-    /// practice loop. Core reactivity is the static-eigenmode solve result;
-    /// compensated net reactivity is the sum of that value and the actuator
-    /// state. A transition never mutates its input, which makes preview and
-    /// failed candidate paths safe to discard.
+    /// practice loop. Core reactivity is the active deterministic reactivity
+    /// binding supplied by the caller; compensated net reactivity is the sum
+    /// of that value and the actuator state. A transition never mutates its
+    /// input, which makes preview and failed candidate paths safe to discard.
     /// </summary>
     public sealed class SyntheticPracticeRegulatorV1
     {
