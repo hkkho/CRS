@@ -290,6 +290,7 @@ namespace ReactorSim.Core
     {
         internal XenonSpatialOverlayValueV1(
             NodeKey node,
+            StableId bundleId,
             string nuclideDataId,
             Digest32 nuclideDataDigest,
             double xe135AtomInventory,
@@ -299,6 +300,7 @@ namespace ReactorSim.Core
             ulong stateVersion)
         {
             Node = node;
+            BundleId = bundleId;
             NuclideDataId = nuclideDataId;
             NuclideDataDigest = nuclideDataDigest;
             Xe135AtomInventory = xe135AtomInventory;
@@ -309,6 +311,13 @@ namespace ReactorSim.Core
         }
 
         public NodeKey Node { get; }
+
+        /// <summary>
+        /// Persistent bundle identity bound to this node overlay. Keeping it
+        /// in the overlay prevents a numerically identical burnup row from
+        /// being reused after a refuelling inventory transition.
+        /// </summary>
+        public StableId BundleId { get; }
 
         public string NuclideDataId { get; }
 
@@ -604,6 +613,7 @@ namespace ReactorSim.Core
 
                 overlays.Add(new XenonSpatialOverlayValueV1(
                     baseNode.Node,
+                    input.State.BundleId,
                     input.State.NuclideDataId,
                     input.State.NuclideDataDigest,
                     input.State.Xe135AtomInventory,
@@ -789,6 +799,7 @@ namespace ReactorSim.Core
                     {
                         Phase5CanonicalBytesV1.WriteUInt32(writer, overlay.Node.ChannelId.Value);
                         Phase5CanonicalBytesV1.WriteUInt32(writer, overlay.Node.Position.Value);
+                        Phase5CanonicalBytesV1.WriteStableId(writer, overlay.BundleId);
                         Phase5CanonicalBytesV1.WriteString(writer, overlay.NuclideDataId);
                         Phase5CanonicalBytesV1.WriteDigest(writer, overlay.NuclideDataDigest);
                         Phase5CanonicalBytesV1.WriteDouble(writer, overlay.Xe135AtomInventory);
