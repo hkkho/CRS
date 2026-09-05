@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "data_pack_version": "candu6-two-group-iqs-v1-calibrated",
+  "topology_schema_id": "candu6-380x12-grid-v1",
+  "units_profile_id": "SI-v1",
+  "model_id": "candu6-two-group-iqs-full-core-v1",
+  "solver_id": "spatial-eigen-iqs-v1",
+  "energy_group_order": [ "fast", "thermal" ],
+  "evidence_class": "synthetic-calibrated",
+  "source_provenance": "synthetic-calibrated; project-authored IQS kinetics surrogate coupled to the embedded full-core diffusion pack",
+  "delayed_neutron_data": {
+    "beta_total": 0.0054,
+    "group_fractions": [ 0.00022, 0.00114, 0.00098, 0.00221, 0.00062, 0.00023 ],
+    "decay_constants_per_sec": [ 0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01 ],
+    "group_velocities_m_per_s": [ 1.0e7, 2200.0 ]
+  },
+  "time_integration": {
+    "generation_time_seconds": 0.0001,
+    "maximum_micro_step_seconds": 600.0,
+    "shape_recompute_interval_seconds": 3600.0
+  }
+}

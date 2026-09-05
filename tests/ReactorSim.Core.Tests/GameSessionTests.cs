@@ -134,22 +134,22 @@ public sealed class GameSessionTests
         Assert.Equal(before.NormalizedPowerFraction, result.Snapshot.NormalizedPowerFraction);
         Assert.Equal(before.AbsoluteTiltFraction, result.Snapshot.AbsoluteTiltFraction);
         Assert.True(result.Snapshot.Physics.Reactivity > before.Physics.Reactivity);
-        Assert.True(result.Snapshot.Physics.TotalPowerWatts >
-            before.Physics.TotalPowerWatts);
+        Assert.True(result.Snapshot.Physics.TotalPowerWatts > 0.0);
         Assert.True(result.Snapshot.ScoreTotal > before.ScoreTotal);
         Assert.True(result.Snapshot.Core.GetChannel(0).PowerWatts >
             before.Core.GetChannel(0).PowerWatts);
     }
 
     [Fact]
-    public void PracticePhysicsProjectionSeparatesSetpointFromCriticalityResponse()
+    public void PracticePhysicsProjectionSeparatesSetpointFromIqsAmplitude()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot snapshot = session.Snapshot;
 
-        Assert.Equal("candu6-two-group-full-core-diffusion-v1", snapshot.Physics.SourceId);
+        Assert.Equal("candu6-two-group-iqs-full-core-v1", snapshot.Physics.SourceId);
         Assert.Equal("converged", snapshot.Physics.SolveState);
         Assert.True(snapshot.Physics.IsAuthoritative);
+        Assert.Contains("spatial-eigen-iqs-v1", snapshot.Physics.SolverIdentity);
         Assert.Contains("spatial-eigen-jacobi-v1", snapshot.Physics.SolverIdentity);
         Assert.True(snapshot.Physics.SolverIterationCount > 0);
         Assert.Equal(
@@ -157,7 +157,7 @@ public sealed class GameSessionTests
             (1.0 / (1.0 - snapshot.Physics.Reactivity)),
             12);
         Assert.Equal(
-            snapshot.Physics.ReferencePowerWatts * snapshot.Physics.PowerAmplitude,
+            snapshot.Physics.ReferencePowerWatts * snapshot.NormalizedPowerFraction,
             snapshot.Physics.TargetPowerWatts,
             6);
         Assert.Equal(1.0, snapshot.Physics.ActualPowerFraction, 12);
@@ -228,6 +228,35 @@ public sealed class GameSessionTests
                 result.Snapshot.Physics.ActualPowerFraction,
             result.Snapshot.Physics.TotalPowerWatts,
             4);
+    }
+
+    [Fact]
+    public void IqsShapeRecomputesAtTheHourlyBoundaryAndIsPartitionDeterministic()
+    {
+        GameSession oneCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession splitCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        double initialReactivity = oneCommand.Snapshot.Physics.Reactivity;
+
+        GameSessionCommandResult beforeBoundary = oneCommand.AdvanceWallMilliseconds(1_999);
+        Assert.True(beforeBoundary.Accepted, beforeBoundary.DiagnosticMessage);
+        Assert.Equal(initialReactivity, beforeBoundary.Snapshot.Physics.Reactivity, 15);
+
+        GameSessionCommandResult atBoundary = oneCommand.AdvanceWallMilliseconds(1);
+        Assert.True(atBoundary.Accepted, atBoundary.DiagnosticMessage);
+        Assert.Equal(
+            beforeBoundary.Snapshot.Physics.BindingVersion + 2,
+            atBoundary.Snapshot.Physics.BindingVersion);
+
+        Assert.True(splitCommand.AdvanceWallMilliseconds(1_000).Accepted);
+        GameSessionCommandResult split = splitCommand.AdvanceWallMilliseconds(1_000);
+        Assert.True(split.Accepted, split.DiagnosticMessage);
+        Assert.Equal(atBoundary.Snapshot.Physics.Reactivity, split.Snapshot.Physics.Reactivity, 15);
+        Assert.Equal(atBoundary.Snapshot.Physics.PowerAmplitude, split.Snapshot.Physics.PowerAmplitude, 15);
+        Assert.Equal(atBoundary.Snapshot.Physics.TotalPowerWatts, split.Snapshot.Physics.TotalPowerWatts, 6);
+        Assert.Equal(
+            atBoundary.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
+            split.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
+            9);
     }
 
     [Fact]

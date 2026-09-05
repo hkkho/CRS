@@ -15,7 +15,7 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-infinite-cell-calibrated";
+            "candu6-two-group-iqs-v1-calibrated";
         public const double FullCoreDiffusionRecomputeIntervalSeconds = 3_600.0;
         // The target is the practice display scale. It is not a plant rating;
         // the solver's energy balance remains in SI watts.
@@ -154,12 +154,21 @@ namespace ReactorSim.Game
                 FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
             FullCoreDiffusionModelV1 fullCoreModel = Require(
                 FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
+            IqsKineticsDataPackV1 iqsPack = Require(
+                IqsKineticsDataPackV1.TryLoadEmbeddedCandu6());
+            SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreatePractice();
+            IqsFullCoreSolver iqsSolver = Require(
+                IqsFullCoreSolver.TryCreate(
+                    fullCoreModel,
+                    iqsPack,
+                    coreState.EnumerateBundles(),
+                    PracticeReferencePowerWatts));
             return new GameSession(
                 scoredRuntime,
                 playbackModes,
                 WallControlTickMilliseconds,
-                SyntheticGameCoreStateV1.CreatePractice(),
-                fullCoreModel);
+                coreState,
+                iqsSolver);
         }
 
         private static T Require<T>(ContractValidationResult<T> result)

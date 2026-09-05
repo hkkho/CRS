@@ -8,8 +8,8 @@ namespace ReactorSim.Game
 {
     /// <summary>
     /// Explicit physics metrics exposed to presentation consumers. The
-    /// current practice path is backed by the shared full-core two-group
-    /// diffusion solve; Reactivity remains a state-level value derived from k.
+    /// current practice path is backed by the shared full-core two-group IQS
+    /// solve; Reactivity remains a state-level value derived from k.
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
@@ -97,11 +97,14 @@ namespace ReactorSim.Game
 
         public double ReferencePowerWatts { get; }
 
+        /// <summary>
+        /// Scalar IQS amplitude P(t), independent of the operator setpoint.
+        /// </summary>
         public double PowerAmplitude { get; }
 
         /// <summary>
-        /// Normalized fission power after applying the relative effective-k
-        /// response to the operator setpoint.
+        /// Normalized fission power after applying the IQS amplitude and
+        /// normalized spatial shape to the operator setpoint.
         /// </summary>
         public double ActualPowerFraction { get; }
 

@@ -11,5 +11,7 @@
   <ItemGroup>
     <EmbeddedResource Include="EmbeddedData\candu6-two-group-diffusion-pack-v1.json"
                       LogicalName="ReactorSim.Core.Data.candu6-two-group-diffusion-pack-v1.json" />
+    <EmbeddedResource Include="EmbeddedData\candu6-two-group-iqs-pack-v1.json"
+                      LogicalName="ReactorSim.Core.Data.candu6-two-group-iqs-pack-v1.json" />
   </ItemGroup>
 </Project>

@@ -43,9 +43,10 @@ namespace ReactorSim.Browser.Tests
                 "toward-end-a",
                 initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[1].GetProperty("flowDirection").GetString());
             JsonElement initialPhysics = initialized.GetProperty("snapshot").GetProperty("physics");
-            Assert.Equal("candu6-two-group-full-core-diffusion-v1", initialPhysics.GetProperty("sourceId").GetString());
+            Assert.Equal("candu6-two-group-iqs-full-core-v1", initialPhysics.GetProperty("sourceId").GetString());
             Assert.Equal("converged", initialPhysics.GetProperty("solveState").GetString());
             Assert.True(initialPhysics.GetProperty("isAuthoritative").GetBoolean());
+            Assert.Contains("spatial-eigen-iqs-v1", initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Contains("spatial-eigen-jacobi-v1", initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Equal(
                 initialPhysics.GetProperty("targetPowerWatts").GetDouble(),
