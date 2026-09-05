@@ -55,6 +55,69 @@ public sealed class GameSessionTests
     }
 
     [Fact]
+    public void PracticeSnapshotProjectsFiniteDeterministicCompactXenonDiagnostics()
+    {
+        GameSession first = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession replay = PracticeGameSessionFactory.CreateBrowserPlaytest();
+
+        GameXenonPresentationSnapshot diagnostics = first.Snapshot.Xenon;
+        Assert.Equal(XenonSpatialStateV1.Identity, diagnostics.StateIdentity);
+        Assert.Equal(XenonSpatialCouplingV1.Identity, diagnostics.CouplingIdentity);
+        Assert.StartsWith("sha256:", diagnostics.StateDigestHex);
+        Assert.Equal(4_560, diagnostics.NodeCount);
+        Assert.Equal(-1, diagnostics.SelectedChannelIndex);
+        Assert.Null(diagnostics.SelectedChannel);
+        Assert.Equal(
+            diagnostics.StateDigestHex,
+            replay.Snapshot.Xenon.StateDigestHex);
+        Assert.Equal(
+            diagnostics.GetChannel(189).MeanXe135NumberDensityM3,
+            replay.Snapshot.Xenon.GetChannel(189).MeanXe135NumberDensityM3,
+            15);
+        AssertFiniteNonnegative(diagnostics.MeanI135NumberDensityM3);
+        AssertFiniteNonnegative(diagnostics.MaxI135NumberDensityM3);
+        AssertFiniteNonnegative(diagnostics.MeanXe135NumberDensityM3);
+        AssertFiniteNonnegative(diagnostics.MaxXe135NumberDensityM3);
+        AssertFiniteNonnegative(diagnostics.MeanDynamicAbsorptionGroup1PerM);
+        AssertFiniteNonnegative(diagnostics.MaxDynamicAbsorptionGroup1PerM);
+        AssertFiniteNonnegative(diagnostics.MeanDynamicAbsorptionGroup2PerM);
+        AssertFiniteNonnegative(diagnostics.MaxDynamicAbsorptionGroup2PerM);
+        Assert.Equal((int)GameCorePresentationConstants.ChannelCount, diagnostics.Channels.Count);
+    }
+
+    [Fact]
+    public void PracticeSnapshotSelectedXenonDiagnosticsBindTheSelectedChannel()
+    {
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSessionCommandResult refuelled = session.RefuelChannel(
+            12,
+            "toward-end-b",
+            4,
+            "NAT-U-SYNTHETIC");
+
+        Assert.True(refuelled.Accepted, refuelled.DiagnosticMessage);
+        GameXenonPresentationSnapshot diagnostics = refuelled.Snapshot.Xenon;
+        Assert.Equal(12, diagnostics.SelectedChannelIndex);
+        Assert.NotNull(diagnostics.SelectedChannel);
+        Assert.Equal(
+            diagnostics.GetChannel(12).MeanI135NumberDensityM3,
+            diagnostics.SelectedChannel!.MeanI135NumberDensityM3,
+            15);
+        Assert.Equal(
+            diagnostics.GetChannel(12).MaxDynamicAbsorptionGroup2PerM,
+            diagnostics.SelectedChannel.MaxDynamicAbsorptionGroup2PerM,
+            15);
+        Assert.True(diagnostics.HasCoupling);
+        Assert.StartsWith("sha256:", diagnostics.DynamicXenonDigestHex);
+        Assert.StartsWith("sha256:", diagnostics.EffectiveCoefficientDigestHex);
+
+        GameSessionCommandResult advanced = session.AdvanceWallMilliseconds(2_000);
+        Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
+        Assert.True(advanced.Snapshot.Xenon.MeanXe135NumberDensityM3 >= 0.0);
+        Assert.True(advanced.Snapshot.Xenon.MaxDynamicAbsorptionGroup2PerM >= 0.0);
+    }
+
+    [Fact]
     public void PracticeSessionAdvancesAndAppliesPlayerCommands()
     {
         GameSession session = PracticeGameSessionFactory.Create();
@@ -458,5 +521,12 @@ public sealed class GameSessionTests
         GameSessionCommandResult advance = session.AdvanceWallMilliseconds(100);
         Assert.True(advance.Accepted, advance.DiagnosticMessage);
         Assert.Equal(6.0, advance.Snapshot.SimulationTimeSeconds);
+    }
+
+    private static void AssertFiniteNonnegative(double value)
+    {
+        Assert.False(double.IsNaN(value));
+        Assert.False(double.IsInfinity(value));
+        Assert.True(value >= 0.0);
     }
 }

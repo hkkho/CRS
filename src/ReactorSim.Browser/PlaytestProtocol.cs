@@ -71,8 +71,10 @@ namespace ReactorSim.Browser
                     ["energy"] = "J",
                     ["heavyMetalMass"] = "kg_HM",
                     ["nodeVolume"] = "m^3",
+                    ["numberDensity"] = "m^-3",
                     ["conductance"] = "m^2",
                     ["macroscopicCrossSection"] = "m^-1",
+                    ["dynamicAbsorption"] = "m^-1",
                     ["flux"] = "normalized-arbitrary"
                 },
                 EnergyGroups = new List<BridgeEnergyGroupDto>

@@ -95,6 +95,7 @@ namespace ReactorGame.Unity
         private RectTransform _overlayRoot;
         private Text _stateText;
         private Text _rawCoreText;
+        private Text _xenonText;
         private Text _commandText;
         private Text _statusText;
         private Text _digestText;
@@ -138,6 +139,11 @@ namespace ReactorGame.Unity
         public string RawCoreText
         {
             get { return GetText(_rawCoreText); }
+        }
+
+        public string XenonText
+        {
+            get { return GetText(_xenonText); }
         }
 
         public string CommandText
@@ -250,6 +256,13 @@ namespace ReactorGame.Unity
                 17,
                 new Color(0.72f, 0.90f, 0.95f, 1.0f),
                 56.0f);
+            _xenonText = AddValueLabel(
+                panel,
+                "DebugMenuXenon",
+                "Xenon diagnostics: unavailable",
+                15,
+                new Color(0.72f, 0.94f, 0.78f, 1.0f),
+                102.0f);
             _commandText = AddValueLabel(
                 panel,
                 "DebugMenuCommand",
@@ -774,6 +787,7 @@ namespace ReactorGame.Unity
                 " / " + snapshot.Core.Physics.SolveState;
 
             _rawCoreText.text = FormatRawCore(channelIndex, channel);
+            _xenonText.text = FormatXenon(snapshot, channelIndex);
             _commandText.text = _hasCommandResult
                 ? _commandText.text
                 : "Last command/result: none";
@@ -839,6 +853,71 @@ namespace ReactorGame.Unity
                     .Append("/")
                     .Append(FormatPrecise(bundle.CurrentBurnupMwDayPerKg))
                     .Append(" MWd/kg");
+            }
+
+            return builder.ToString();
+        }
+
+        private string FormatXenon(
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            int channelIndex)
+        {
+            if (snapshot == null || snapshot.Core == null || snapshot.Core.Xenon == null)
+            {
+                return "Xenon diagnostics: unavailable";
+            }
+
+            GameXenonPresentationSnapshot xenon = snapshot.Core.Xenon;
+            StringBuilder builder = new StringBuilder(260);
+            builder.Append("Xenon state ")
+                .Append(xenon.StateIdentity)
+                .Append(" v")
+                .Append(xenon.StateVersion.ToString(CultureInfo.InvariantCulture))
+                .Append(" | mean/max I=")
+                .Append(FormatPrecise(xenon.MeanI135NumberDensityM3))
+                .Append("/")
+                .Append(FormatPrecise(xenon.MaxI135NumberDensityM3))
+                .Append(" Xe=")
+                .Append(FormatPrecise(xenon.MeanXe135NumberDensityM3))
+                .Append("/")
+                .Append(FormatPrecise(xenon.MaxXe135NumberDensityM3))
+                .Append(" m^-3")
+                .Append(" | dSigma-a1=")
+                .Append(FormatPrecise(xenon.MeanDynamicAbsorptionGroup1PerM))
+                .Append("/")
+                .Append(FormatPrecise(xenon.MaxDynamicAbsorptionGroup1PerM))
+                .Append(" m^-1")
+                .Append(" | dSigma-a2=")
+                .Append(FormatPrecise(xenon.MeanDynamicAbsorptionGroup2PerM))
+                .Append("/")
+                .Append(FormatPrecise(xenon.MaxDynamicAbsorptionGroup2PerM))
+                .Append(" m^-1")
+                .Append(" | coupling=")
+                .Append(xenon.HasCoupling ? xenon.DynamicXenonDigestHex : "none");
+
+            if (channelIndex >= 0 &&
+                channelIndex < snapshot.Core.Xenon.Channels.Count)
+            {
+                GameXenonChannelPresentationSnapshot selected =
+                    snapshot.Core.Xenon.GetChannel((uint)channelIndex);
+                builder.Append("\nSelected CH ")
+                    .Append(channelIndex.ToString(CultureInfo.InvariantCulture))
+                    .Append(" I=")
+                    .Append(FormatPrecise(selected.MeanI135NumberDensityM3))
+                    .Append("/")
+                    .Append(FormatPrecise(selected.MaxI135NumberDensityM3))
+                    .Append(" Xe=")
+                    .Append(FormatPrecise(selected.MeanXe135NumberDensityM3))
+                    .Append("/")
+                    .Append(FormatPrecise(selected.MaxXe135NumberDensityM3))
+                    .Append(" dSigma-a1=")
+                    .Append(FormatPrecise(selected.MeanDynamicAbsorptionGroup1PerM))
+                    .Append("/")
+                    .Append(FormatPrecise(selected.MaxDynamicAbsorptionGroup1PerM))
+                    .Append(" a2=")
+                    .Append(FormatPrecise(selected.MeanDynamicAbsorptionGroup2PerM))
+                    .Append("/")
+                    .Append(FormatPrecise(selected.MaxDynamicAbsorptionGroup2PerM));
             }
 
             return builder.ToString();
@@ -996,6 +1075,7 @@ namespace ReactorGame.Unity
 
             _stateText.text = "DEBUG STATE [PLAYTEST ONLY] | waiting for runtime binding";
             _rawCoreText.text = "Raw core channel: unavailable";
+            _xenonText.text = "Xenon diagnostics: unavailable";
             _commandText.text = "Last command/result: none";
             _statusText.text = "DEBUG STATE | waiting for runtime binding";
             _digestText.text = "Digest: unavailable";

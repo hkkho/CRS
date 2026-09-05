@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using ReactorSim.Core;
 
 namespace ReactorSim.Game
@@ -63,6 +64,7 @@ namespace ReactorSim.Game
             LastRefuellingShiftCount = lastRefuellingShiftCount;
             Core = core ?? throw new ArgumentNullException(nameof(core));
             Physics = Core.Physics;
+            Xenon = Core.Xenon;
         }
 
         public string ScenarioId { get; }
@@ -118,6 +120,8 @@ namespace ReactorSim.Game
         public GameCorePresentationSnapshot Core { get; }
 
         public GamePhysicsPresentationSnapshot Physics { get; }
+
+        public GameXenonPresentationSnapshot Xenon { get; }
     }
 
     public sealed class GameSessionCommandResult
@@ -463,7 +467,8 @@ namespace ReactorSim.Game
                     transaction.Value.CoreState,
                     CurrentPowerFraction(transaction.Value.Regulator),
                     transaction.Value.SpatialCandidate,
-                    transaction.Value.Regulator));
+                    transaction.Value.Regulator,
+                    transaction.Value.XenonState));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -1017,15 +1022,24 @@ namespace ReactorSim.Game
                 state,
                 CurrentPowerFraction(),
                 _adiabaticSolver.CurrentProjection,
-                _practiceRegulator);
+                _practiceRegulator,
+                _xenonState);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state,
             double powerAmplitude,
             IqsSpatialCandidateV1 projection,
-            SyntheticPracticeRegulatorV1 regulator)
+            SyntheticPracticeRegulatorV1 regulator,
+            XenonSpatialStateV1 xenonState)
         {
+            GameXenonPresentationSnapshot xenon =
+                CreateXenonPresentationSnapshot(
+                    xenonState,
+                    projection,
+                    state.RefuellingOperationCount == 0
+                        ? -1
+                        : state.LastRefuelledChannel);
             var channelStates = new IReadOnlyList<BundleState>[
                 (int)GameCorePresentationConstants.ChannelCount];
             for (uint channelIndex = 0;
@@ -1105,7 +1119,8 @@ namespace ReactorSim.Game
                         localPower,
                         localTilt,
                         PracticeCoreLayout.GetFlowDirection(grid),
-                        bundleSnapshots));
+                        bundleSnapshots,
+                        xenon.GetChannel(channelIndex)));
             }
 
             FullCoreDiffusionSolveResultV1 spatial = projection.SpatialSolve;
@@ -1157,7 +1172,146 @@ namespace ReactorSim.Game
                 _adiabaticSolver.ReferenceAdjoint.DigestHex,
                 _adiabaticSolver.AdjointIterationCount,
                 _adiabaticSolver.AdjointTransposeResidualRelativeInfinity);
-            return new GameCorePresentationSnapshot(channels, physics);
+            return new GameCorePresentationSnapshot(channels, physics, xenon);
+        }
+
+        private static GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(
+            XenonSpatialStateV1 xenonState,
+            IqsSpatialCandidateV1 projection,
+            int selectedChannelIndex)
+        {
+            XenonSpatialCouplingResultV1? coupling =
+                projection.SpatialSolve.XenonCoupling;
+            var overlaysByNode = coupling == null
+                ? new Dictionary<NodeKey, XenonSpatialOverlayValueV1>()
+                : coupling.Overlays.ToDictionary(overlay => overlay.Node);
+            var channelDiagnostics = new List<GameXenonChannelPresentationSnapshot>(
+                (int)GameCorePresentationConstants.ChannelCount);
+
+            double totalI135NumberDensity = 0.0;
+            double maxI135NumberDensity = 0.0;
+            double totalXe135NumberDensity = 0.0;
+            double maxXe135NumberDensity = 0.0;
+            double totalAbsorptionGroup1 = 0.0;
+            double maxAbsorptionGroup1 = 0.0;
+            double totalAbsorptionGroup2 = 0.0;
+            double maxAbsorptionGroup2 = 0.0;
+
+            for (uint channelIndex = 0;
+                 channelIndex < GameCorePresentationConstants.ChannelCount;
+                 channelIndex++)
+            {
+                double channelI135Total = 0.0;
+                double channelI135Max = 0.0;
+                double channelXe135Total = 0.0;
+                double channelXe135Max = 0.0;
+                double channelAbsorptionGroup1Total = 0.0;
+                double channelAbsorptionGroup1Max = 0.0;
+                double channelAbsorptionGroup2Total = 0.0;
+                double channelAbsorptionGroup2Max = 0.0;
+
+                for (uint position = 0;
+                     position < GameCorePresentationConstants.BundlePositionCount;
+                     position++)
+                {
+                    NodeKey node = new NodeKey(
+                        new ChannelId(channelIndex),
+                        new BundlePosition(position));
+                    if (!xenonState.TryGetNodeState(node, out NuclideStateEnvelopeV1? nodeState) ||
+                        nodeState == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The Game snapshot could not bind xenon diagnostics to a live node.");
+                    }
+
+                    double iodine = nodeState.I135NumberDensity;
+                    double xenon = nodeState.Xe135NumberDensity;
+                    channelI135Total += iodine;
+                    channelI135Max = Math.Max(channelI135Max, iodine);
+                    channelXe135Total += xenon;
+                    channelXe135Max = Math.Max(channelXe135Max, xenon);
+                    totalI135NumberDensity += iodine;
+                    maxI135NumberDensity = Math.Max(maxI135NumberDensity, iodine);
+                    totalXe135NumberDensity += xenon;
+                    maxXe135NumberDensity = Math.Max(maxXe135NumberDensity, xenon);
+
+                    double absorptionGroup1;
+                    double absorptionGroup2;
+                    if (coupling != null &&
+                        overlaysByNode.TryGetValue(node, out XenonSpatialOverlayValueV1 overlay))
+                    {
+                        absorptionGroup1 = overlay.DynamicAbsorptionGroup1PerM;
+                        absorptionGroup2 = overlay.DynamicAbsorptionGroup2PerM;
+                    }
+                    else
+                    {
+                        absorptionGroup1 = 0.0;
+                        absorptionGroup2 = 0.0;
+                    }
+
+                    channelAbsorptionGroup1Total += absorptionGroup1;
+                    channelAbsorptionGroup1Max = Math.Max(
+                        channelAbsorptionGroup1Max,
+                        absorptionGroup1);
+                    channelAbsorptionGroup2Total += absorptionGroup2;
+                    channelAbsorptionGroup2Max = Math.Max(
+                        channelAbsorptionGroup2Max,
+                        absorptionGroup2);
+                    totalAbsorptionGroup1 += absorptionGroup1;
+                    maxAbsorptionGroup1 = Math.Max(maxAbsorptionGroup1, absorptionGroup1);
+                    totalAbsorptionGroup2 += absorptionGroup2;
+                    maxAbsorptionGroup2 = Math.Max(maxAbsorptionGroup2, absorptionGroup2);
+                }
+
+                channelDiagnostics.Add(
+                    new GameXenonChannelPresentationSnapshot(
+                        channelIndex,
+                        channelI135Total / GameCorePresentationConstants.BundlePositionCount,
+                        channelI135Max,
+                        channelXe135Total / GameCorePresentationConstants.BundlePositionCount,
+                        channelXe135Max,
+                        channelAbsorptionGroup1Total /
+                            GameCorePresentationConstants.BundlePositionCount,
+                        channelAbsorptionGroup1Max,
+                        channelAbsorptionGroup2Total /
+                            GameCorePresentationConstants.BundlePositionCount,
+                        channelAbsorptionGroup2Max));
+            }
+
+            int nodeCount = xenonState.NodeStates.Count;
+            return new GameXenonPresentationSnapshot(
+                XenonSpatialStateV1.Identity,
+                xenonState.StateDigestHex,
+                xenonState.CoreStateVersion,
+                xenonState.SimulationTimeSeconds,
+                xenonState.NodeStates.Count,
+                XenonSpatialCouplingV1.Identity,
+                coupling != null,
+                coupling == null ? string.Empty : DigestHex(coupling.BaseCoefficientDigest),
+                coupling == null ? string.Empty : DigestHex(coupling.DynamicXenonDigest),
+                coupling == null ? string.Empty : DigestHex(coupling.EffectiveCoefficientDigest),
+                totalI135NumberDensity / nodeCount,
+                maxI135NumberDensity,
+                totalXe135NumberDensity / nodeCount,
+                maxXe135NumberDensity,
+                totalAbsorptionGroup1 / nodeCount,
+                maxAbsorptionGroup1,
+                totalAbsorptionGroup2 / nodeCount,
+                maxAbsorptionGroup2,
+                channelDiagnostics,
+                selectedChannelIndex);
+        }
+
+        private static string DigestHex(Digest32 digest)
+        {
+            var builder = new StringBuilder(digest.Bytes.Count * 2 + 7);
+            builder.Append("sha256:");
+            foreach (byte value in digest.Bytes)
+            {
+                builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString();
         }
 
         private string FormatRefuellingMessage(

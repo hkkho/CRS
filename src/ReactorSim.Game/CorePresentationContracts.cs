@@ -368,6 +368,225 @@ namespace ReactorSim.Game
     }
 
     /// <summary>
+    /// Compact immutable I/Xe diagnostics for one selected channel. The
+    /// authoritative node state remains in Core; presentation receives only
+    /// channel aggregates and never a 4,560-node vector.
+    /// </summary>
+    public sealed class GameXenonChannelPresentationSnapshot
+    {
+        internal GameXenonChannelPresentationSnapshot(
+            uint channelIndex,
+            double meanI135NumberDensityM3,
+            double maxI135NumberDensityM3,
+            double meanXe135NumberDensityM3,
+            double maxXe135NumberDensityM3,
+            double meanDynamicAbsorptionGroup1PerM,
+            double maxDynamicAbsorptionGroup1PerM,
+            double meanDynamicAbsorptionGroup2PerM,
+            double maxDynamicAbsorptionGroup2PerM)
+        {
+            RequireFiniteNonnegative(meanI135NumberDensityM3, nameof(meanI135NumberDensityM3));
+            RequireFiniteNonnegative(maxI135NumberDensityM3, nameof(maxI135NumberDensityM3));
+            RequireFiniteNonnegative(meanXe135NumberDensityM3, nameof(meanXe135NumberDensityM3));
+            RequireFiniteNonnegative(maxXe135NumberDensityM3, nameof(maxXe135NumberDensityM3));
+            RequireFiniteNonnegative(meanDynamicAbsorptionGroup1PerM, nameof(meanDynamicAbsorptionGroup1PerM));
+            RequireFiniteNonnegative(maxDynamicAbsorptionGroup1PerM, nameof(maxDynamicAbsorptionGroup1PerM));
+            RequireFiniteNonnegative(meanDynamicAbsorptionGroup2PerM, nameof(meanDynamicAbsorptionGroup2PerM));
+            RequireFiniteNonnegative(maxDynamicAbsorptionGroup2PerM, nameof(maxDynamicAbsorptionGroup2PerM));
+            ChannelIndex = channelIndex;
+            MeanI135NumberDensityM3 = meanI135NumberDensityM3;
+            MaxI135NumberDensityM3 = maxI135NumberDensityM3;
+            MeanXe135NumberDensityM3 = meanXe135NumberDensityM3;
+            MaxXe135NumberDensityM3 = maxXe135NumberDensityM3;
+            MeanDynamicAbsorptionGroup1PerM = meanDynamicAbsorptionGroup1PerM;
+            MaxDynamicAbsorptionGroup1PerM = maxDynamicAbsorptionGroup1PerM;
+            MeanDynamicAbsorptionGroup2PerM = meanDynamicAbsorptionGroup2PerM;
+            MaxDynamicAbsorptionGroup2PerM = maxDynamicAbsorptionGroup2PerM;
+        }
+
+        public uint ChannelIndex { get; }
+
+        public double MeanI135NumberDensityM3 { get; }
+
+        public double MaxI135NumberDensityM3 { get; }
+
+        public double MeanXe135NumberDensityM3 { get; }
+
+        public double MaxXe135NumberDensityM3 { get; }
+
+        public double MeanDynamicAbsorptionGroup1PerM { get; }
+
+        public double MaxDynamicAbsorptionGroup1PerM { get; }
+
+        public double MeanDynamicAbsorptionGroup2PerM { get; }
+
+        public double MaxDynamicAbsorptionGroup2PerM { get; }
+
+        private static void RequireFiniteNonnegative(double value, string parameterName)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || value < 0.0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    "Xenon presentation metrics must be finite and nonnegative.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compact immutable spatial xenon diagnostics. Channel summaries are
+    /// intentionally limited to 380 presentation channels; nodewise Core
+    /// state and overlay arrays do not cross the Game boundary.
+    /// </summary>
+    public sealed class GameXenonPresentationSnapshot
+    {
+        internal GameXenonPresentationSnapshot(
+            string stateIdentity,
+            string stateDigestHex,
+            ulong stateVersion,
+            double simulationTimeSeconds,
+            int nodeCount,
+            string couplingIdentity,
+            bool hasCoupling,
+            string baseCoefficientDigestHex,
+            string dynamicXenonDigestHex,
+            string effectiveCoefficientDigestHex,
+            double meanI135NumberDensityM3,
+            double maxI135NumberDensityM3,
+            double meanXe135NumberDensityM3,
+            double maxXe135NumberDensityM3,
+            double meanDynamicAbsorptionGroup1PerM,
+            double maxDynamicAbsorptionGroup1PerM,
+            double meanDynamicAbsorptionGroup2PerM,
+            double maxDynamicAbsorptionGroup2PerM,
+            IEnumerable<GameXenonChannelPresentationSnapshot> channels,
+            int selectedChannelIndex)
+        {
+            if (string.IsNullOrWhiteSpace(stateIdentity) ||
+                string.IsNullOrWhiteSpace(stateDigestHex) ||
+                string.IsNullOrWhiteSpace(couplingIdentity))
+            {
+                throw new ArgumentException(
+                    "Xenon presentation requires state and coupling identities/digests.");
+            }
+
+            RequireFiniteNonnegative(simulationTimeSeconds, nameof(simulationTimeSeconds));
+            RequireFiniteNonnegative(meanI135NumberDensityM3, nameof(meanI135NumberDensityM3));
+            RequireFiniteNonnegative(maxI135NumberDensityM3, nameof(maxI135NumberDensityM3));
+            RequireFiniteNonnegative(meanXe135NumberDensityM3, nameof(meanXe135NumberDensityM3));
+            RequireFiniteNonnegative(maxXe135NumberDensityM3, nameof(maxXe135NumberDensityM3));
+            RequireFiniteNonnegative(meanDynamicAbsorptionGroup1PerM, nameof(meanDynamicAbsorptionGroup1PerM));
+            RequireFiniteNonnegative(maxDynamicAbsorptionGroup1PerM, nameof(maxDynamicAbsorptionGroup1PerM));
+            RequireFiniteNonnegative(meanDynamicAbsorptionGroup2PerM, nameof(meanDynamicAbsorptionGroup2PerM));
+            RequireFiniteNonnegative(maxDynamicAbsorptionGroup2PerM, nameof(maxDynamicAbsorptionGroup2PerM));
+            if (nodeCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(nodeCount));
+            }
+
+            StateIdentity = stateIdentity;
+            StateDigestHex = stateDigestHex;
+            StateVersion = stateVersion;
+            SimulationTimeSeconds = simulationTimeSeconds;
+            NodeCount = nodeCount;
+            CouplingIdentity = couplingIdentity;
+            HasCoupling = hasCoupling;
+            BaseCoefficientDigestHex = baseCoefficientDigestHex;
+            DynamicXenonDigestHex = dynamicXenonDigestHex;
+            EffectiveCoefficientDigestHex = effectiveCoefficientDigestHex;
+            MeanI135NumberDensityM3 = meanI135NumberDensityM3;
+            MaxI135NumberDensityM3 = maxI135NumberDensityM3;
+            MeanXe135NumberDensityM3 = meanXe135NumberDensityM3;
+            MaxXe135NumberDensityM3 = maxXe135NumberDensityM3;
+            MeanDynamicAbsorptionGroup1PerM = meanDynamicAbsorptionGroup1PerM;
+            MaxDynamicAbsorptionGroup1PerM = maxDynamicAbsorptionGroup1PerM;
+            MeanDynamicAbsorptionGroup2PerM = meanDynamicAbsorptionGroup2PerM;
+            MaxDynamicAbsorptionGroup2PerM = maxDynamicAbsorptionGroup2PerM;
+
+            if (channels == null)
+            {
+                throw new ArgumentNullException(nameof(channels));
+            }
+
+            GameXenonChannelPresentationSnapshot[] copy = channels.ToArray();
+            if (copy.Length != GameCorePresentationConstants.ChannelCount)
+            {
+                throw new ArgumentException(
+                    "Xenon presentation requires exactly 380 channel summaries.",
+                    nameof(channels));
+            }
+
+            Channels = new ReadOnlyCollection<GameXenonChannelPresentationSnapshot>(copy);
+            SelectedChannelIndex = selectedChannelIndex;
+            SelectedChannel = selectedChannelIndex < 0
+                ? null
+                : GetChannel((uint)selectedChannelIndex);
+        }
+
+        public string StateIdentity { get; }
+
+        public string StateDigestHex { get; }
+
+        public ulong StateVersion { get; }
+
+        public double SimulationTimeSeconds { get; }
+
+        public int NodeCount { get; }
+
+        public string CouplingIdentity { get; }
+
+        public bool HasCoupling { get; }
+
+        public string BaseCoefficientDigestHex { get; }
+
+        public string DynamicXenonDigestHex { get; }
+
+        public string EffectiveCoefficientDigestHex { get; }
+
+        public double MeanI135NumberDensityM3 { get; }
+
+        public double MaxI135NumberDensityM3 { get; }
+
+        public double MeanXe135NumberDensityM3 { get; }
+
+        public double MaxXe135NumberDensityM3 { get; }
+
+        public double MeanDynamicAbsorptionGroup1PerM { get; }
+
+        public double MaxDynamicAbsorptionGroup1PerM { get; }
+
+        public double MeanDynamicAbsorptionGroup2PerM { get; }
+
+        public double MaxDynamicAbsorptionGroup2PerM { get; }
+
+        public IReadOnlyList<GameXenonChannelPresentationSnapshot> Channels { get; }
+
+        public int SelectedChannelIndex { get; }
+
+        public GameXenonChannelPresentationSnapshot? SelectedChannel { get; }
+
+        private static void RequireFiniteNonnegative(double value, string parameterName)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value) || value < 0.0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    "Xenon presentation metrics must be finite and nonnegative.");
+            }
+        }
+
+        public GameXenonChannelPresentationSnapshot GetChannel(uint channelIndex)
+        {
+            if (channelIndex >= Channels.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(channelIndex));
+            }
+
+            return Channels[(int)channelIndex];
+        }
+    }
+
+    /// <summary>
     /// Immutable presentation projection of the synthetic 380-channel core.
     /// It contains only values needed by the game surface; Core remains the
     /// owner of bundle transitions and physical state.
@@ -376,7 +595,8 @@ namespace ReactorSim.Game
     {
         internal GameCorePresentationSnapshot(
             IEnumerable<GameChannelPresentationSnapshot> channels,
-            GamePhysicsPresentationSnapshot physics)
+            GamePhysicsPresentationSnapshot physics,
+            GameXenonPresentationSnapshot xenon)
         {
             if (channels == null)
             {
@@ -384,6 +604,7 @@ namespace ReactorSim.Game
             }
 
             Physics = physics ?? throw new ArgumentNullException(nameof(physics));
+            Xenon = xenon ?? throw new ArgumentNullException(nameof(xenon));
 
             GameChannelPresentationSnapshot[] copy = channels.ToArray();
             if (copy.Length != GameCorePresentationConstants.ChannelCount)
@@ -406,6 +627,8 @@ namespace ReactorSim.Game
         public IReadOnlyList<GameChannelPresentationSnapshot> Channels { get; }
 
         public GamePhysicsPresentationSnapshot Physics { get; }
+
+        public GameXenonPresentationSnapshot Xenon { get; }
 
         public uint ChannelCount
         {
@@ -434,7 +657,8 @@ namespace ReactorSim.Game
             double localPowerFraction,
             double localTiltFraction,
             FlowDirection flowDirection,
-            IEnumerable<GameBundlePresentationSnapshot> bundles)
+            IEnumerable<GameBundlePresentationSnapshot> bundles,
+            GameXenonChannelPresentationSnapshot xenon)
         {
             if (bundles == null)
             {
@@ -457,6 +681,7 @@ namespace ReactorSim.Game
             LocalPowerFraction = localPowerFraction;
             LocalTiltFraction = localTiltFraction;
             FlowDirection = flowDirection;
+            Xenon = xenon ?? throw new ArgumentNullException(nameof(xenon));
             Bundles = new ReadOnlyCollection<GameBundlePresentationSnapshot>(copy);
         }
 
@@ -475,6 +700,8 @@ namespace ReactorSim.Game
         public double LocalTiltFraction { get; }
 
         public FlowDirection FlowDirection { get; }
+
+        public GameXenonChannelPresentationSnapshot Xenon { get; }
 
         public IReadOnlyList<GameBundlePresentationSnapshot> Bundles { get; }
     }

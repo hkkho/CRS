@@ -43,7 +43,43 @@ export interface CanduChannelSnapshot {
   powerWatts: number;
   localPowerFraction: number;
   localTiltFraction: number;
+  xenon: CanduXenonChannelSnapshot;
   bundles: CanduBundleSnapshot[];
+}
+
+export interface CanduXenonChannelSnapshot {
+  channelIndex: number;
+  meanI135NumberDensityM3: number;
+  maxI135NumberDensityM3: number;
+  meanXe135NumberDensityM3: number;
+  maxXe135NumberDensityM3: number;
+  meanDynamicAbsorptionGroup1PerM: number;
+  maxDynamicAbsorptionGroup1PerM: number;
+  meanDynamicAbsorptionGroup2PerM: number;
+  maxDynamicAbsorptionGroup2PerM: number;
+}
+
+export interface CanduXenonSnapshot {
+  stateIdentity: string;
+  stateDigestHex: string;
+  stateVersion: number;
+  simulationTimeSeconds: number;
+  nodeCount: number;
+  couplingIdentity: string;
+  hasCoupling: boolean;
+  baseCoefficientDigestHex: string;
+  dynamicXenonDigestHex: string;
+  effectiveCoefficientDigestHex: string;
+  meanI135NumberDensityM3: number;
+  maxI135NumberDensityM3: number;
+  meanXe135NumberDensityM3: number;
+  maxXe135NumberDensityM3: number;
+  meanDynamicAbsorptionGroup1PerM: number;
+  maxDynamicAbsorptionGroup1PerM: number;
+  meanDynamicAbsorptionGroup2PerM: number;
+  maxDynamicAbsorptionGroup2PerM: number;
+  selectedChannelIndex: number;
+  selectedChannel: CanduXenonChannelSnapshot | null;
 }
 
 export interface CanduConvergenceStatus {
@@ -201,6 +237,7 @@ export interface CanduSnapshot {
   lastRefuellingDirectionId: RefuellingDirection | null;
   lastRefuellingShiftCount: number;
   physics: CanduPhysicsSnapshot;
+  xenon: CanduXenonSnapshot;
   core: CanduCoreSnapshot;
   diagnostics: CanduDiagnostics;
   lastEvent: CanduEvent | null;

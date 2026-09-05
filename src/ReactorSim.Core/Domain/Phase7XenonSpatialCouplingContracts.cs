@@ -424,6 +424,7 @@ namespace ReactorSim.Core
     public static class XenonSpatialCouplingV1
     {
         public const uint CurrentSchemaVersion = 1;
+        public const string Identity = "xenon-spatial-coupling-v1";
 
         public static ContractValidationResult<XenonSpatialCouplingResultV1> TryApply(
             SpatialCoefficientSet baseCoefficients,

@@ -178,6 +178,71 @@ namespace ReactorSim.Browser.Tests
         }
 
         [Fact]
+        public void BrowserPlaySerializesCompactDeterministicXenonDiagnosticsAndSelection()
+        {
+            JsonElement first = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            JsonElement firstSnapshot = first.GetProperty("snapshot");
+            JsonElement firstXenon = firstSnapshot.GetProperty("xenon");
+
+            Assert.Equal(
+                XenonSpatialStateV1.Identity,
+                firstXenon.GetProperty("stateIdentity").GetString());
+            Assert.Equal(
+                XenonSpatialCouplingV1.Identity,
+                firstXenon.GetProperty("couplingIdentity").GetString());
+            Assert.StartsWith("sha256:", firstXenon.GetProperty("stateDigestHex").GetString());
+            Assert.Equal(4560, firstXenon.GetProperty("nodeCount").GetInt32());
+            Assert.Equal(-1, firstXenon.GetProperty("selectedChannelIndex").GetInt32());
+            Assert.Equal(JsonValueKind.Null, firstXenon.GetProperty("selectedChannel").ValueKind);
+            Assert.Equal(
+                380,
+                firstSnapshot.GetProperty("core").GetProperty("channels").GetArrayLength());
+
+            JsonElement refuelled = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+            Assert.True(refuelled.GetProperty("accepted").GetBoolean());
+            JsonElement snapshot = refuelled.GetProperty("snapshot");
+            JsonElement xenon = snapshot.GetProperty("xenon");
+            Assert.Equal(12, xenon.GetProperty("selectedChannelIndex").GetInt32());
+            JsonElement selected = xenon.GetProperty("selectedChannel");
+            Assert.Equal(12, selected.GetProperty("channelIndex").GetInt32());
+            JsonElement channel = snapshot.GetProperty("core").GetProperty("channels")[12];
+            Assert.Equal(
+                channel.GetProperty("xenon").GetProperty("meanXe135NumberDensityM3").GetDouble(),
+                selected.GetProperty("meanXe135NumberDensityM3").GetDouble(),
+                15);
+            Assert.Equal(
+                channel.GetProperty("xenon").GetProperty("maxDynamicAbsorptionGroup1PerM").GetDouble(),
+                selected.GetProperty("maxDynamicAbsorptionGroup1PerM").GetDouble(),
+                15);
+            Assert.True(xenon.GetProperty("hasCoupling").GetBoolean());
+            Assert.StartsWith("sha256:", xenon.GetProperty("dynamicXenonDigestHex").GetString());
+            Assert.StartsWith("sha256:", xenon.GetProperty("effectiveCoefficientDigestHex").GetString());
+            AssertFinite(xenon.GetProperty("meanI135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("maxI135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("meanXe135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("maxDynamicAbsorptionGroup2PerM").GetDouble());
+
+            string serialized = refuelled.GetRawText();
+            Assert.DoesNotContain("nodeInputs", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("nodeStates", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("overlays", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("group1Flux", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("group2Flux", serialized, StringComparison.Ordinal);
+
+            JsonElement replay = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            Assert.Equal(
+                first.GetProperty("stateDigest").GetString(),
+                replay.GetProperty("stateDigest").GetString());
+            Assert.Equal(
+                firstXenon.GetProperty("stateDigestHex").GetString(),
+                replay.GetProperty("snapshot").GetProperty("xenon").GetProperty("stateDigestHex").GetString());
+        }
+
+        [Fact]
         public void LabRefuellingRequiresAConvergedCoupledSolve()
         {
             JsonElement initialized = Parse(
@@ -237,6 +302,12 @@ namespace ReactorSim.Browser.Tests
         {
             using JsonDocument document = JsonDocument.Parse(json);
             return document.RootElement.Clone();
+        }
+
+        private static void AssertFinite(double value)
+        {
+            Assert.False(double.IsNaN(value));
+            Assert.False(double.IsInfinity(value));
         }
     }
 }

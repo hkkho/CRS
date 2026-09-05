@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ReactorSim.Core;
 using ReactorSim.Game;
 
@@ -830,6 +831,7 @@ namespace ReactorSim.Browser
                     SolverIterationCount = game.Physics.SolverIterationCount,
                     SolverResidualRelativeInfinity = game.Physics.SolverResidualRelativeInfinity
                 },
+                Xenon = CreateXenonSnapshot(game),
                 Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
                 Diagnostics = new PlaytestDiagnosticsDto
                 {
@@ -893,6 +895,18 @@ namespace ReactorSim.Browser
                         PowerWatts = channel.PowerWatts,
                         LocalPowerFraction = channel.LocalPowerFraction,
                         LocalTiltFraction = channel.LocalTiltFraction,
+                        Xenon = new PlaytestXenonChannelDto
+                        {
+                            ChannelIndex = channel.Xenon.ChannelIndex,
+                            MeanI135NumberDensityM3 = channel.Xenon.MeanI135NumberDensityM3,
+                            MaxI135NumberDensityM3 = channel.Xenon.MaxI135NumberDensityM3,
+                            MeanXe135NumberDensityM3 = channel.Xenon.MeanXe135NumberDensityM3,
+                            MaxXe135NumberDensityM3 = channel.Xenon.MaxXe135NumberDensityM3,
+                            MeanDynamicAbsorptionGroup1PerM = channel.Xenon.MeanDynamicAbsorptionGroup1PerM,
+                            MaxDynamicAbsorptionGroup1PerM = channel.Xenon.MaxDynamicAbsorptionGroup1PerM,
+                            MeanDynamicAbsorptionGroup2PerM = channel.Xenon.MeanDynamicAbsorptionGroup2PerM,
+                            MaxDynamicAbsorptionGroup2PerM = channel.Xenon.MaxDynamicAbsorptionGroup2PerM
+                        },
                         Bundles = channel.Bundles
                             .Select(bundle => new PlaytestBundleDto
                             {
@@ -911,6 +925,54 @@ namespace ReactorSim.Browser
                             .ToList()
                     })
                     .ToList()
+            };
+        }
+
+        private static PlaytestXenonDto CreateXenonSnapshot(GameSessionSnapshot game)
+        {
+            GameXenonPresentationSnapshot xenon = game.Xenon;
+            int selectedChannelIndex = xenon.SelectedChannelIndex;
+            return new PlaytestXenonDto
+            {
+                StateIdentity = xenon.StateIdentity,
+                StateDigestHex = xenon.StateDigestHex,
+                StateVersion = xenon.StateVersion,
+                SimulationTimeSeconds = xenon.SimulationTimeSeconds,
+                NodeCount = xenon.NodeCount,
+                CouplingIdentity = xenon.CouplingIdentity,
+                HasCoupling = xenon.HasCoupling,
+                BaseCoefficientDigestHex = xenon.BaseCoefficientDigestHex,
+                DynamicXenonDigestHex = xenon.DynamicXenonDigestHex,
+                EffectiveCoefficientDigestHex = xenon.EffectiveCoefficientDigestHex,
+                MeanI135NumberDensityM3 = xenon.MeanI135NumberDensityM3,
+                MaxI135NumberDensityM3 = xenon.MaxI135NumberDensityM3,
+                MeanXe135NumberDensityM3 = xenon.MeanXe135NumberDensityM3,
+                MaxXe135NumberDensityM3 = xenon.MaxXe135NumberDensityM3,
+                MeanDynamicAbsorptionGroup1PerM = xenon.MeanDynamicAbsorptionGroup1PerM,
+                MaxDynamicAbsorptionGroup1PerM = xenon.MaxDynamicAbsorptionGroup1PerM,
+                MeanDynamicAbsorptionGroup2PerM = xenon.MeanDynamicAbsorptionGroup2PerM,
+                MaxDynamicAbsorptionGroup2PerM = xenon.MaxDynamicAbsorptionGroup2PerM,
+                SelectedChannelIndex = selectedChannelIndex,
+                SelectedChannel = xenon.SelectedChannel == null
+                    ? null
+                    : CreateXenonChannelSnapshot(xenon.SelectedChannel)
+            };
+        }
+
+        private static PlaytestXenonChannelDto CreateXenonChannelSnapshot(
+            GameXenonChannelPresentationSnapshot channel)
+        {
+            return new PlaytestXenonChannelDto
+            {
+                ChannelIndex = channel.ChannelIndex,
+                MeanI135NumberDensityM3 = channel.MeanI135NumberDensityM3,
+                MaxI135NumberDensityM3 = channel.MaxI135NumberDensityM3,
+                MeanXe135NumberDensityM3 = channel.MeanXe135NumberDensityM3,
+                MaxXe135NumberDensityM3 = channel.MaxXe135NumberDensityM3,
+                MeanDynamicAbsorptionGroup1PerM = channel.MeanDynamicAbsorptionGroup1PerM,
+                MaxDynamicAbsorptionGroup1PerM = channel.MaxDynamicAbsorptionGroup1PerM,
+                MeanDynamicAbsorptionGroup2PerM = channel.MeanDynamicAbsorptionGroup2PerM,
+                MaxDynamicAbsorptionGroup2PerM = channel.MaxDynamicAbsorptionGroup2PerM
             };
         }
 
@@ -1226,6 +1288,8 @@ namespace ReactorSim.Browser
 
         public PlaytestCoreDto Core { get; set; } = new PlaytestCoreDto();
 
+        public PlaytestXenonDto Xenon { get; set; } = new PlaytestXenonDto();
+
         public PlaytestPhysicsDto Physics { get; set; } = new PlaytestPhysicsDto();
 
         public PlaytestDiagnosticsDto Diagnostics { get; set; } = new PlaytestDiagnosticsDto();
@@ -1266,6 +1330,8 @@ namespace ReactorSim.Browser
 
         public double LocalTiltFraction { get; set; }
 
+        public PlaytestXenonChannelDto Xenon { get; set; } = new PlaytestXenonChannelDto();
+
         public List<PlaytestBundleDto> Bundles { get; set; } = new List<PlaytestBundleDto>();
     }
 
@@ -1288,6 +1354,71 @@ namespace ReactorSim.Browser
         public ulong StateVersion { get; set; }
 
         public bool IsFresh { get; set; }
+    }
+
+    internal sealed class PlaytestXenonDto
+    {
+        public string StateIdentity { get; set; } = string.Empty;
+
+        public string StateDigestHex { get; set; } = string.Empty;
+
+        public ulong StateVersion { get; set; }
+
+        public double SimulationTimeSeconds { get; set; }
+
+        public int NodeCount { get; set; }
+
+        public string CouplingIdentity { get; set; } = string.Empty;
+
+        public bool HasCoupling { get; set; }
+
+        public string BaseCoefficientDigestHex { get; set; } = string.Empty;
+
+        public string DynamicXenonDigestHex { get; set; } = string.Empty;
+
+        public string EffectiveCoefficientDigestHex { get; set; } = string.Empty;
+
+        public double MeanI135NumberDensityM3 { get; set; }
+
+        public double MaxI135NumberDensityM3 { get; set; }
+
+        public double MeanXe135NumberDensityM3 { get; set; }
+
+        public double MaxXe135NumberDensityM3 { get; set; }
+
+        public double MeanDynamicAbsorptionGroup1PerM { get; set; }
+
+        public double MaxDynamicAbsorptionGroup1PerM { get; set; }
+
+        public double MeanDynamicAbsorptionGroup2PerM { get; set; }
+
+        public double MaxDynamicAbsorptionGroup2PerM { get; set; }
+
+        public int SelectedChannelIndex { get; set; } = -1;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public PlaytestXenonChannelDto? SelectedChannel { get; set; }
+    }
+
+    internal sealed class PlaytestXenonChannelDto
+    {
+        public uint ChannelIndex { get; set; }
+
+        public double MeanI135NumberDensityM3 { get; set; }
+
+        public double MaxI135NumberDensityM3 { get; set; }
+
+        public double MeanXe135NumberDensityM3 { get; set; }
+
+        public double MaxXe135NumberDensityM3 { get; set; }
+
+        public double MeanDynamicAbsorptionGroup1PerM { get; set; }
+
+        public double MaxDynamicAbsorptionGroup1PerM { get; set; }
+
+        public double MeanDynamicAbsorptionGroup2PerM { get; set; }
+
+        public double MaxDynamicAbsorptionGroup2PerM { get; set; }
     }
 
     internal sealed class PlaytestDiagnosticsDto

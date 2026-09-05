@@ -15,6 +15,8 @@ import {
   type CanduPlaytestBridge,
   type CanduReplayArchive,
   type CanduSnapshot,
+  type CanduXenonChannelSnapshot,
+  type CanduXenonSnapshot,
   type RefuelPreview,
   type RefuelRequest,
   type PlaybackModeId,
@@ -67,6 +69,7 @@ interface FixtureChannel {
   gridRow: number;
   flowDirection: RefuelRequest["directionId"];
   averageBurnupMwdPerKg: number;
+  xenon: CanduXenonChannelSnapshot;
   bundles: CanduChannelSnapshot["bundles"];
 }
 
@@ -234,6 +237,7 @@ function createInitialState(): FixtureState {
       gridRow: position.row,
       flowDirection: getFlowDirection(position),
       averageBurnupMwdPerKg: bundles.reduce((sum, bundle) => sum + bundle.currentBurnupMwdPerKg, 0) / bundles.length,
+      xenon: createFixtureXenonChannel(channelIndex),
       bundles,
     });
   }
@@ -283,6 +287,20 @@ function createGridPositions(): Array<{ column: number; row: number }> {
     throw new Error("The deterministic compatibility fixture must contain 380 channels.");
   }
   return positions;
+}
+
+function createFixtureXenonChannel(channelIndex: number): CanduXenonChannelSnapshot {
+  return {
+    channelIndex,
+    meanI135NumberDensityM3: 0,
+    maxI135NumberDensityM3: 0,
+    meanXe135NumberDensityM3: 0,
+    maxXe135NumberDensityM3: 0,
+    meanDynamicAbsorptionGroup1PerM: 0,
+    maxDynamicAbsorptionGroup1PerM: 0,
+    meanDynamicAbsorptionGroup2PerM: 0,
+    maxDynamicAbsorptionGroup2PerM: 0,
+  };
 }
 
 function getFlowDirection(position: { column: number; row: number }): RefuelRequest["directionId"] {
@@ -820,6 +838,30 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     solverIterationCount: 0,
     solverResidualRelativeInfinity: projection.powerBalanceRelativeError,
   };
+  const xenon: CanduXenonSnapshot = {
+    stateIdentity: "compatibility-xenon-spatial-state-v1",
+    stateDigestHex: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    stateVersion: state.sequence,
+    simulationTimeSeconds: state.simulationTimeSeconds,
+    nodeCount: CORE_CHANNEL_COUNT * CORE_BUNDLE_POSITION_COUNT,
+    couplingIdentity: "compatibility-xenon-spatial-coupling-v1",
+    hasCoupling: false,
+    baseCoefficientDigestHex: "",
+    dynamicXenonDigestHex: "",
+    effectiveCoefficientDigestHex: "",
+    meanI135NumberDensityM3: 0,
+    maxI135NumberDensityM3: 0,
+    meanXe135NumberDensityM3: 0,
+    maxXe135NumberDensityM3: 0,
+    meanDynamicAbsorptionGroup1PerM: 0,
+    maxDynamicAbsorptionGroup1PerM: 0,
+    meanDynamicAbsorptionGroup2PerM: 0,
+    maxDynamicAbsorptionGroup2PerM: 0,
+    selectedChannelIndex: state.lastRefuelledChannel,
+    selectedChannel: state.lastRefuelledChannel >= 0
+      ? createFixtureXenonChannel(state.lastRefuelledChannel)
+      : null,
+  };
   return {
     protocol: PROTOCOL_VERSION,
     source: "synthetic-fixture",
@@ -845,6 +887,7 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     lastRefuellingDirectionId: state.lastRefuellingDirectionId,
     lastRefuellingShiftCount: state.lastRefuellingShiftCount,
     physics,
+    xenon,
     core: {
       channelCount: CORE_CHANNEL_COUNT,
       bundlePositionCount: CORE_BUNDLE_POSITION_COUNT,
@@ -861,6 +904,7 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
           ? 1
           : projection.channelPowerWatts[channel.channelIndex] / projection.meanChannelPowerWatts,
         localTiltFraction: projection.channelTiltFractions[channel.channelIndex],
+        xenon: channel.xenon,
         bundles: channel.bundles.map((bundle) => ({
           ...bundle,
           powerWatts: projection.bundlePowerWatts.get(bundle.bundleId) ?? 0,
