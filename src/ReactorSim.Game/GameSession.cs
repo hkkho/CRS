@@ -157,6 +157,7 @@ namespace ReactorSim.Game
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private readonly IqsFullCoreSolver _adiabaticSolver;
+        private SyntheticPracticeRegulatorV1 _practiceRegulator;
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
@@ -168,13 +169,15 @@ namespace ReactorSim.Game
             IReadOnlyDictionary<string, Phase8PlaybackModeV1> playbackModes,
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
-            IqsFullCoreSolver adiabaticSolver)
+            IqsFullCoreSolver adiabaticSolver,
+            SyntheticPracticeRegulatorV1 practiceRegulator)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
             _adiabaticSolver = adiabaticSolver ?? throw new ArgumentNullException(nameof(adiabaticSolver));
+            _practiceRegulator = practiceRegulator ?? throw new ArgumentNullException(nameof(practiceRegulator));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
 
@@ -306,6 +309,17 @@ namespace ReactorSim.Game
                     projected.FirstDiagnostic.Message);
             }
 
+            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
+                _practiceRegulator.TryBindCoreReactivity(
+                    projected.Value.SpatialSolve.Reactivity,
+                    _runtime.SimulationTimeSeconds);
+            if (!reboundRegulator.IsValid)
+            {
+                return Rejected(
+                    reboundRegulator.FirstDiagnostic.Code,
+                    reboundRegulator.FirstDiagnostic.Message);
+            }
+
             ContractValidationResult<bool> committed =
                 _adiabaticSolver.TryCommitCandidate(projected.Value);
             if (!committed.IsValid)
@@ -316,6 +330,7 @@ namespace ReactorSim.Game
             }
 
             _coreState = result.Value.ResultingState;
+            _practiceRegulator = reboundRegulator.Value;
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
             ApplyPracticeRefuellingScore(result.Value);
             _powerProjectionVersion = checked(_powerProjectionVersion + 1);
@@ -361,6 +376,17 @@ namespace ReactorSim.Game
                     projected.FirstDiagnostic.Message);
             }
 
+            ContractValidationResult<SyntheticPracticeRegulatorV1> previewRegulator =
+                _practiceRegulator.TryBindCoreReactivity(
+                    projected.Value.SpatialSolve.Reactivity,
+                    _runtime.SimulationTimeSeconds);
+            if (!previewRegulator.IsValid)
+            {
+                return Rejected(
+                    previewRegulator.FirstDiagnostic.Code,
+                    previewRegulator.FirstDiagnostic.Message);
+            }
+
             return new GameSessionCommandResult(
                 true,
                 string.Empty,
@@ -369,8 +395,9 @@ namespace ReactorSim.Game
                 CreateSnapshot(),
                 CreateCorePresentationSnapshot(
                     result.Value.ResultingState,
-                    CurrentPowerFraction(),
-                    projected.Value));
+                    CurrentPowerFraction(previewRegulator.Value),
+                    projected.Value,
+                    previewRegulator.Value));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -440,7 +467,7 @@ namespace ReactorSim.Game
                 _runtime.ScenarioHorizonSeconds,
                 _runtime.SimulationTimeSeconds,
                 _runtime.WallElapsedSeconds,
-                CurrentPowerFraction(),
+                Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.50),
                 CurrentTiltFraction(),
                 _runtime.ControlMarginFraction,
                 _runtime.DeviceAvailableFraction,
@@ -514,18 +541,26 @@ namespace ReactorSim.Game
                     }
 
                     double stepSeconds = Math.Min(
-                        _adiabaticSolver.DataPack.MaximumMicroStepSeconds,
+                        PracticeGameSessionFactory.SteadyStateLongStepSeconds,
                         Math.Min(remainingSeconds, untilShapeSolve));
-                    ContractValidationResult<double> kinetics =
-                        _adiabaticSolver.TryAdvancePointKinetics(stepSeconds);
-                    if (!kinetics.IsValid)
+                    double stepEnd = simulationCursor + stepSeconds;
+                    ContractValidationResult<SyntheticPracticeRegulatorV1> regulation =
+                        _practiceRegulator.TryAdvance(
+                            _adiabaticSolver.CurrentSpatialSolve.Reactivity,
+                            stepEnd);
+                    if (!regulation.IsValid)
                     {
                         throw new InvalidOperationException(
-                            "The adiabatic point-kinetics advance failed: " +
-                            kinetics.FirstDiagnostic);
+                            "The synthetic steady-state regulation advance failed: " +
+                            regulation.FirstDiagnostic);
                     }
 
-                    double physicalShapeScale = requestedAmplitude * _adiabaticSolver.Amplitude;
+                    _practiceRegulator = regulation.Value;
+                    double actualAmplitude = PowerAmplitudeFor(
+                        requestedAmplitude,
+                        _practiceRegulator);
+
+                    double physicalShapeScale = actualAmplitude * _adiabaticSolver.Amplitude;
                     var deltaEnergy = new double[
                         checked((int)(GameCorePresentationConstants.ChannelCount *
                                      GameCorePresentationConstants.BundlePositionCount))];
@@ -558,7 +593,7 @@ namespace ReactorSim.Game
                     _syntheticScore += stepSeconds *
                         (0.35 * powerQuality + 0.15 * tiltQuality);
                     remainingSeconds -= stepSeconds;
-                    simulationCursor += stepSeconds;
+                    simulationCursor = stepEnd;
                     if (simulationCursor - _lastFullCoreSolveSimulationTime >=
                         _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
                     {
@@ -579,6 +614,17 @@ namespace ReactorSim.Game
                     candidate.FirstDiagnostic);
             }
 
+            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
+                _practiceRegulator.TryBindCoreReactivity(
+                    candidate.Value.SpatialSolve.Reactivity,
+                    simulationTimeSeconds);
+            if (!reboundRegulator.IsValid)
+            {
+                throw new InvalidOperationException(
+                    "The scheduled synthetic regulation binding failed: " +
+                    reboundRegulator.FirstDiagnostic);
+            }
+
             ContractValidationResult<bool> committed =
                 _adiabaticSolver.TryCommitCandidate(candidate.Value);
             if (!committed.IsValid)
@@ -588,6 +634,7 @@ namespace ReactorSim.Game
                     committed.FirstDiagnostic);
             }
 
+            _practiceRegulator = reboundRegulator.Value;
             _lastFullCoreSolveSimulationTime = simulationTimeSeconds;
             _powerProjectionVersion = checked(_powerProjectionVersion + 1);
         }
@@ -595,23 +642,18 @@ namespace ReactorSim.Game
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state)
         {
-            return CreateCorePresentationSnapshot(state, CurrentPowerFraction());
-        }
-
-        private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
-            SyntheticGameCoreStateV1 state,
-            double powerAmplitude)
-        {
             return CreateCorePresentationSnapshot(
                 state,
-                powerAmplitude,
-                _adiabaticSolver.CurrentProjection);
+                CurrentPowerFraction(),
+                _adiabaticSolver.CurrentProjection,
+                _practiceRegulator);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state,
             double powerAmplitude,
-            IqsSpatialCandidateV1 projection)
+            IqsSpatialCandidateV1 projection,
+            SyntheticPracticeRegulatorV1 regulator)
         {
             var channelStates = new IReadOnlyList<BundleState>[
                 (int)GameCorePresentationConstants.ChannelCount];
@@ -696,6 +738,10 @@ namespace ReactorSim.Game
             }
 
             FullCoreDiffusionSolveResultV1 spatial = projection.SpatialSolve;
+            double targetPowerAmplitude = Clamp(
+                _runtime.NormalizedPowerFraction,
+                0.0,
+                1.5);
             var physics = new GamePhysicsPresentationSnapshot(
                 _adiabaticSolver.DataPack.ModelId,
                 _adiabaticSolver.FormulationId,
@@ -706,9 +752,9 @@ namespace ReactorSim.Game
                 true,
                 _powerProjectionVersion,
                 PracticeGameSessionFactory.PracticeReferencePowerWatts,
-                _adiabaticSolver.Amplitude,
+                amplitude,
                 actualPowerFraction,
-                PracticeGameSessionFactory.PracticeReferencePowerWatts * amplitude,
+                PracticeGameSessionFactory.PracticeReferencePowerWatts * targetPowerAmplitude,
                 totalPowerWatts,
                 meanChannelPowerWatts,
                 totalPowerWatts /
@@ -721,7 +767,16 @@ namespace ReactorSim.Game
                     _adiabaticSolver.DataPack.DataPackVersion + "+" +
                     spatial.SolverIdentity,
                 spatial.IterationCount,
-                spatial.ResidualRelativeInfinity);
+                spatial.ResidualRelativeInfinity,
+                regulator.CoreReactivity,
+                regulator.CompensatedNetReactivity,
+                regulator.CompensationState,
+                regulator.CompensationCommand,
+                regulator.LowerBound,
+                regulator.UpperBound,
+                regulator.CompensationSaturated,
+                regulator.ResponseTimeSeconds,
+                regulator.CadenceIdentity);
             return new GameCorePresentationSnapshot(channels, physics);
         }
 
@@ -752,7 +807,38 @@ namespace ReactorSim.Game
 
         private double CurrentPowerFraction()
         {
-            return Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.50);
+            return CurrentPowerFraction(_practiceRegulator);
+        }
+
+        private double CurrentPowerFraction(
+            SyntheticPracticeRegulatorV1 regulator)
+        {
+            return PowerAmplitudeFor(
+                _runtime.NormalizedPowerFraction,
+                regulator);
+        }
+
+        private static double PowerAmplitudeFor(
+            double requestedAmplitude,
+            SyntheticPracticeRegulatorV1 regulator)
+        {
+            double target = Clamp(requestedAmplitude, 0.0, 1.5);
+            if (target <= 0.0)
+            {
+                return 0.0;
+            }
+
+            double netReactivity = regulator.CompensatedNetReactivity;
+            double responseMultiplier = netReactivity <= -1.0
+                ? 0.0
+                : 1.0 + netReactivity;
+            if (double.IsNaN(responseMultiplier) ||
+                double.IsInfinity(responseMultiplier))
+            {
+                responseMultiplier = netReactivity > 0.0 ? 1.5 : 0.0;
+            }
+
+            return Clamp(target * responseMultiplier, 0.0, 1.5);
         }
 
         private double CurrentTiltFraction()

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ReactorSim.Core;
 using ReactorSim.Game;
@@ -214,19 +215,24 @@ public sealed class GameSessionTests
     }
 
     [Fact]
-    public void PracticeAdvanceRespondsToTheReactivityChangeWithLowerPower()
+    public void PracticeAdvanceUsesBoundedSteadyStateRegulation()
     {
         GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
-        GameSessionSnapshot before = session.Snapshot;
+        GameSessionCommandResult refuelled = session.RefuelChannel(
+            0,
+            "toward-end-b",
+            8,
+            "NAT-U-SYNTHETIC");
+        Assert.True(refuelled.Accepted, refuelled.DiagnosticMessage);
+        double perturbation = refuelled.Snapshot.Physics.CompensatedNetReactivity;
+        Assert.True(perturbation > 0.0);
 
         GameSessionCommandResult result = session.AdvanceWallMilliseconds(48_000);
 
         Assert.True(result.Accepted, result.DiagnosticMessage);
-        Assert.True(result.Snapshot.Physics.Reactivity < before.Physics.Reactivity);
-        Assert.True(result.Snapshot.Physics.ActualPowerFraction <
-            before.Physics.ActualPowerFraction);
-        Assert.True(result.Snapshot.Physics.TotalPowerWatts <
-            before.Physics.TotalPowerWatts);
+        Assert.True(
+            Math.Abs(result.Snapshot.Physics.CompensatedNetReactivity) < perturbation);
+        Assert.InRange(result.Snapshot.Physics.ActualPowerFraction, 0.0, 1.5);
         Assert.Equal(
             result.Snapshot.Physics.ReferencePowerWatts *
                 result.Snapshot.Physics.ActualPowerFraction,
@@ -261,6 +267,68 @@ public sealed class GameSessionTests
             atBoundary.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
             split.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
             9);
+    }
+
+    [Fact]
+    public void PracticeRegulationPreservesLocalSpatialPowerDifference()
+    {
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSessionCommandResult refuelled = session.RefuelChannel(
+            189,
+            "toward-end-b",
+            8,
+            "NAT-U-SYNTHETIC");
+        Assert.True(refuelled.Accepted, refuelled.DiagnosticMessage);
+
+        GameChannelPresentationSnapshot channelA =
+            refuelled.Snapshot.Core.GetChannel(189);
+        GameChannelPresentationSnapshot channelB =
+            refuelled.Snapshot.Core.GetChannel(190);
+        Assert.NotEqual(channelA.LocalPowerFraction, channelB.LocalPowerFraction);
+
+        GameSessionCommandResult advanced = session.AdvanceWallMilliseconds(2_000);
+        Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
+        Assert.True(
+            Math.Abs(advanced.Snapshot.Physics.CompensatedNetReactivity) <
+            Math.Abs(refuelled.Snapshot.Physics.CompensatedNetReactivity));
+        Assert.NotEqual(
+            advanced.Snapshot.Core.GetChannel(189).LocalPowerFraction,
+            advanced.Snapshot.Core.GetChannel(190).LocalPowerFraction);
+    }
+
+    [Fact]
+    public void PracticeRegulationIsStableWhenALongAdvanceIsPartitioned()
+    {
+        GameSession oneCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession splitCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();
+
+        Assert.True(oneCommand.RefuelChannel(
+            189,
+            "toward-end-b",
+            8,
+            "NAT-U-SYNTHETIC").Accepted);
+        Assert.True(splitCommand.RefuelChannel(
+            189,
+            "toward-end-b",
+            8,
+            "NAT-U-SYNTHETIC").Accepted);
+
+        GameSessionCommandResult one = oneCommand.AdvanceWallMilliseconds(4_000);
+        Assert.True(one.Accepted, one.DiagnosticMessage);
+        Assert.True(splitCommand.AdvanceWallMilliseconds(2_000).Accepted);
+        GameSessionCommandResult split = splitCommand.AdvanceWallMilliseconds(2_000);
+        Assert.True(split.Accepted, split.DiagnosticMessage);
+
+        Assert.Equal(one.Snapshot.SimulationTimeSeconds, split.Snapshot.SimulationTimeSeconds, 12);
+        Assert.Equal(one.Snapshot.Physics.CoreReactivity, split.Snapshot.Physics.CoreReactivity, 12);
+        Assert.Equal(one.Snapshot.Physics.CompensatedNetReactivity, split.Snapshot.Physics.CompensatedNetReactivity, 12);
+        Assert.Equal(one.Snapshot.Physics.CompensationState, split.Snapshot.Physics.CompensationState, 12);
+        Assert.Equal(one.Snapshot.Physics.CompensationCommand, split.Snapshot.Physics.CompensationCommand, 12);
+        Assert.Equal(one.Snapshot.Physics.CadenceIdentity, split.Snapshot.Physics.CadenceIdentity);
+        Assert.Equal(
+            one.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
+            split.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
+            6);
     }
 
     [Fact]

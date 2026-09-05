@@ -66,6 +66,22 @@ namespace ReactorSim.Browser.Tests
                 initialPhysics.GetProperty("targetPowerWatts").GetDouble(),
                 initialPhysics.GetProperty("totalPowerWatts").GetDouble(),
                 2);
+            Assert.Equal(
+                initialPhysics.GetProperty("reactivity").GetDouble(),
+                initialPhysics.GetProperty("coreReactivity").GetDouble(),
+                15);
+            Assert.InRange(
+                Math.Abs(initialPhysics.GetProperty("compensatedNetReactivity").GetDouble()),
+                0.0,
+                1e-12);
+            Assert.Equal(
+                "deterministic-regulated-steady-state-long-step-v1",
+                initialPhysics.GetProperty("cadenceIdentity").GetString());
+            Assert.Equal(
+                4.0,
+                initialPhysics.GetProperty("compensationResponseTimeSeconds").GetDouble(),
+                12);
+            Assert.False(initialPhysics.GetProperty("compensationSaturated").GetBoolean());
             Assert.True(
                 initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0]
                     .GetProperty("powerWatts").GetDouble() > 0.0);

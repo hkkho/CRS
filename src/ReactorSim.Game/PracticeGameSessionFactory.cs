@@ -19,6 +19,12 @@ namespace ReactorSim.Game
         public const string KineticsDataPackVersion =
             "candu6-two-group-adiabatic-v1-project-authored-synthetic-calibrated";
         public const double FullCoreDiffusionRecomputeIntervalSeconds = 3_600.0;
+        /// <summary>
+        /// Explicit steady-state gameplay partition. It is a long-step
+        /// treatment for regulation and burnup, not a claim of sub-second
+        /// point-kinetics transient fidelity.
+        /// </summary>
+        public const double SteadyStateLongStepSeconds = 600.0;
         // The target is the practice display scale. It is not a plant rating;
         // the solver's energy balance remains in SI watts.
         public const double PracticeReferencePowerWatts = 1_000_000_000.0;
@@ -165,12 +171,17 @@ namespace ReactorSim.Game
                     kineticsPack,
                     coreState.EnumerateBundles(),
                     PracticeReferencePowerWatts));
+            SyntheticPracticeRegulatorV1 practiceRegulator = Require(
+                SyntheticPracticeRegulatorV1.TryCreate(
+                    adiabaticSolver.CurrentSpatialSolve.Reactivity,
+                    runtime.SimulationTimeSeconds));
             return new GameSession(
                 scoredRuntime,
                 playbackModes,
                 WallControlTickMilliseconds,
                 coreState,
-                adiabaticSolver);
+                adiabaticSolver,
+                practiceRegulator);
         }
 
         private static T Require<T>(ContractValidationResult<T> result)

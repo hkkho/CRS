@@ -760,6 +760,14 @@ namespace ReactorGame.Unity
                 " / P=" + Format(snapshot.Core.Physics.TotalPowerWatts) + " W" +
                 " / k=" + FormatPrecise(snapshot.Core.Physics.EffectiveK) +
                 " / rho=" + FormatPrecise(snapshot.Core.Physics.Reactivity * 1000.0) + " mk" +
+                " / core-rho=" + FormatPrecise(snapshot.Core.Physics.CoreReactivity * 1000.0) + " mk" +
+                " / net-rho=" + FormatPrecise(snapshot.Core.Physics.CompensatedNetReactivity * 1000.0) + " mk" +
+                " / comp=" + FormatPrecise(snapshot.Core.Physics.CompensationState * 1000.0) +
+                "→" + FormatPrecise(snapshot.Core.Physics.CompensationCommand * 1000.0) + " mk [" +
+                FormatPrecise(snapshot.Core.Physics.CompensationLowerBound * 1000.0) + "," +
+                FormatPrecise(snapshot.Core.Physics.CompensationUpperBound * 1000.0) + "]" +
+                (snapshot.Core.Physics.CompensationSaturated ? " SAT" : string.Empty) +
+                " / cadence=" + snapshot.Core.Physics.CadenceIdentity +
                 " / solver=" + snapshot.Core.Physics.SolverIdentity +
                 " / it=" + snapshot.Core.Physics.SolverIterationCount +
                 " / " + snapshot.Core.Physics.SolveState;
@@ -889,6 +897,18 @@ namespace ReactorGame.Unity
                 .Append(FormatPrecise(snapshot.ActualPowerFraction))
                 .Append(";powerSetpoint=")
                 .Append(FormatPrecise(snapshot.NormalizedPowerFraction))
+                .Append(";coreRho=")
+                .Append(FormatPrecise(snapshot.Core.Physics.CoreReactivity))
+                .Append(";netRho=")
+                .Append(FormatPrecise(snapshot.Core.Physics.CompensatedNetReactivity))
+                .Append(";compState=")
+                .Append(FormatPrecise(snapshot.Core.Physics.CompensationState))
+                .Append(";compCommand=")
+                .Append(FormatPrecise(snapshot.Core.Physics.CompensationCommand))
+                .Append(";compSaturated=")
+                .Append(snapshot.Core.Physics.CompensationSaturated ? "1" : "0")
+                .Append(";cadence=")
+                .Append(snapshot.Core.Physics.CadenceIdentity)
                 .Append(";tilt=")
                 .Append(FormatPrecise(snapshot.AbsoluteTiltFraction))
                 .Append(";score=")

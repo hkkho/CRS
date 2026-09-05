@@ -9,9 +9,10 @@ namespace ReactorSim.Game
     /// <summary>
     /// Explicit physics metrics exposed to presentation consumers. The
     /// current practice path is backed by deterministic static k-eigenmode
-    /// shape recomputation plus scalar point kinetics; Reactivity remains a
-    /// state-level value derived from k. The legacy source/solver property
-    /// names remain available for public v1 compatibility.
+    /// shape recomputation plus a regulated steady-state scalar amplitude;
+    /// Reactivity remains a state-level value derived from k. The legacy
+    /// source/solver property names remain available for public v1
+    /// compatibility.
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
@@ -36,7 +37,16 @@ namespace ReactorSim.Game
             double powerBalanceRelativeError,
             string solverIdentity,
             int solverIterationCount,
-            double solverResidualRelativeInfinity)
+            double solverResidualRelativeInfinity,
+            double coreReactivity,
+            double compensatedNetReactivity,
+            double compensationState,
+            double compensationCommand,
+            double compensationLowerBound,
+            double compensationUpperBound,
+            bool compensationSaturated,
+            double compensationResponseTimeSeconds,
+            string cadenceIdentity)
         {
             if (string.IsNullOrWhiteSpace(sourceId))
             {
@@ -62,12 +72,39 @@ namespace ReactorSim.Game
             RequireFiniteNonnegative(meanBundlePowerWatts, nameof(meanBundlePowerWatts));
             RequireFinitePositive(effectiveK, nameof(effectiveK));
             RequireFinite(reactivity, nameof(reactivity));
+            RequireFinite(coreReactivity, nameof(coreReactivity));
+            RequireFinite(compensatedNetReactivity, nameof(compensatedNetReactivity));
+            RequireFinite(compensationState, nameof(compensationState));
+            RequireFinite(compensationCommand, nameof(compensationCommand));
+            RequireFinite(compensationLowerBound, nameof(compensationLowerBound));
+            RequireFinite(compensationUpperBound, nameof(compensationUpperBound));
+            if (compensationLowerBound >= compensationUpperBound ||
+                compensationState < compensationLowerBound ||
+                compensationState > compensationUpperBound ||
+                compensationCommand < compensationLowerBound ||
+                compensationCommand > compensationUpperBound)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(compensationState),
+                    "Compensation state and command must remain within ordered explicit bounds.");
+            }
+
+            RequireFinitePositive(
+                compensationResponseTimeSeconds,
+                nameof(compensationResponseTimeSeconds));
             RequireFiniteNonnegative(powerBalanceRelativeError, nameof(powerBalanceRelativeError));
             if (string.IsNullOrWhiteSpace(solverIdentity))
             {
                 throw new ArgumentException(
                     "Physics metrics require a solver identity.",
                     nameof(solverIdentity));
+            }
+
+            if (string.IsNullOrWhiteSpace(cadenceIdentity))
+            {
+                throw new ArgumentException(
+                    "Physics metrics require a deterministic cadence identity.",
+                    nameof(cadenceIdentity));
             }
 
             if (solverIterationCount < 0)
@@ -96,6 +133,15 @@ namespace ReactorSim.Game
             MeanBundlePowerWatts = meanBundlePowerWatts;
             EffectiveK = effectiveK;
             Reactivity = reactivity;
+            CoreReactivity = coreReactivity;
+            CompensatedNetReactivity = compensatedNetReactivity;
+            CompensationState = compensationState;
+            CompensationCommand = compensationCommand;
+            CompensationLowerBound = compensationLowerBound;
+            CompensationUpperBound = compensationUpperBound;
+            CompensationSaturated = compensationSaturated;
+            CompensationResponseTimeSeconds = compensationResponseTimeSeconds;
+            CadenceIdentity = cadenceIdentity;
             PowerBalanceRelativeError = powerBalanceRelativeError;
             SolverIdentity = solverIdentity;
             SolverIterationCount = solverIterationCount;
@@ -121,13 +167,14 @@ namespace ReactorSim.Game
         public double ReferencePowerWatts { get; }
 
         /// <summary>
-        /// Scalar point-kinetics amplitude P(t), independent of the operator
-        /// setpoint.
+        /// Scalar regulated steady-state practice amplitude, independent of
+        /// the operator setpoint. The active gameplay cadence is identified
+        /// by CadenceIdentity; this is not a sub-second transient claim.
         /// </summary>
         public double PowerAmplitude { get; }
 
         /// <summary>
-        /// Normalized fission power after applying the point-kinetics
+        /// Normalized fission power after applying the regulated steady-state
         /// amplitude and normalized static-eigenmode shape to the operator
         /// setpoint.
         /// </summary>
@@ -144,6 +191,40 @@ namespace ReactorSim.Game
         public double EffectiveK { get; }
 
         public double Reactivity { get; }
+
+        /// <summary>
+        /// Static/core reactivity from the authoritative spatial candidate.
+        /// Reactivity remains the legacy alias for this value.
+        /// </summary>
+        public double CoreReactivity { get; }
+
+        /// <summary>
+        /// Core reactivity plus the bounded scalar compensation state. This
+        /// is the value the practice regulator is driving toward zero.
+        /// </summary>
+        public double CompensatedNetReactivity { get; }
+
+        public double CompensationState { get; }
+
+        /// <summary>
+        /// Compatibility-facing physical-unit alias for CompensationState.
+        /// </summary>
+        public double CompensationReactivity
+        {
+            get { return CompensationState; }
+        }
+
+        public double CompensationCommand { get; }
+
+        public double CompensationLowerBound { get; }
+
+        public double CompensationUpperBound { get; }
+
+        public bool CompensationSaturated { get; }
+
+        public double CompensationResponseTimeSeconds { get; }
+
+        public string CadenceIdentity { get; }
 
         public double PowerBalanceRelativeError { get; }
 

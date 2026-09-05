@@ -26,6 +26,10 @@ const HOURS_TO_SECONDS = 60 * 60;
 const REFERENCE_POWER_WATTS = 1_000_000_000;
 const BUNDLE_HEAVY_METAL_MASS_KG = 19.2;
 const JOULES_PER_MW_DAY_PER_KG = 8.64e10;
+const PRACTICE_REGULATOR_CADENCE_ID = "deterministic-regulated-steady-state-long-step-v1";
+const PRACTICE_REGULATOR_LOWER_BOUND = -0.25;
+const PRACTICE_REGULATOR_UPPER_BOUND = 0.25;
+const PRACTICE_REGULATOR_RESPONSE_TIME_SECONDS = 4;
 const PLAYBACK_FACTORS: Record<PlaybackModeId, number> = {
   pause: 0,
   "1x": BASE_CLOCK_SIMULATION_SECONDS_PER_WALL_SECOND,
@@ -76,6 +80,15 @@ interface FixturePowerProjection {
   meanBundlePowerWatts: number;
   effectiveK: number;
   reactivity: number;
+  coreReactivity: number;
+  compensatedNetReactivity: number;
+  compensationState: number;
+  compensationCommand: number;
+  compensationLowerBound: number;
+  compensationUpperBound: number;
+  compensationSaturated: boolean;
+  compensationResponseTimeSeconds: number;
+  cadenceIdentity: string;
   powerBalanceRelativeError: number;
   channelPowerWatts: number[];
   channelTiltFractions: number[];
@@ -693,6 +706,11 @@ function createFixturePowerProjection(state: FixtureState): FixturePowerProjecti
     1.10,
   );
   const reactivity = (effectiveK - 1) / effectiveK;
+  const compensationCommand = clamp(
+    -reactivity,
+    PRACTICE_REGULATOR_LOWER_BOUND,
+    PRACTICE_REGULATOR_UPPER_BOUND,
+  );
   return {
     referencePowerWatts: REFERENCE_POWER_WATTS,
     powerAmplitude,
@@ -703,6 +721,15 @@ function createFixturePowerProjection(state: FixtureState): FixturePowerProjecti
     meanBundlePowerWatts,
     effectiveK,
     reactivity,
+    coreReactivity: reactivity,
+    compensatedNetReactivity: reactivity + compensationCommand,
+    compensationState: compensationCommand,
+    compensationCommand,
+    compensationLowerBound: PRACTICE_REGULATOR_LOWER_BOUND,
+    compensationUpperBound: PRACTICE_REGULATOR_UPPER_BOUND,
+    compensationSaturated: compensationCommand !== -reactivity,
+    compensationResponseTimeSeconds: PRACTICE_REGULATOR_RESPONSE_TIME_SECONDS,
+    cadenceIdentity: PRACTICE_REGULATOR_CADENCE_ID,
     powerBalanceRelativeError: targetPowerWatts <= 0 ? 0 : Math.abs(totalPowerWatts - targetPowerWatts) / targetPowerWatts,
     channelPowerWatts,
     channelTiltFractions,
@@ -755,6 +782,15 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
     meanBundlePowerWatts: projection.meanBundlePowerWatts,
     effectiveK: projection.effectiveK,
     reactivity: projection.reactivity,
+    coreReactivity: projection.coreReactivity,
+    compensatedNetReactivity: projection.compensatedNetReactivity,
+    compensationState: projection.compensationState,
+    compensationCommand: projection.compensationCommand,
+    compensationLowerBound: projection.compensationLowerBound,
+    compensationUpperBound: projection.compensationUpperBound,
+    compensationSaturated: projection.compensationSaturated,
+    compensationResponseTimeSeconds: projection.compensationResponseTimeSeconds,
+    cadenceIdentity: projection.cadenceIdentity,
     powerBalanceRelativeError: projection.powerBalanceRelativeError,
     solverIdentity: "compatibility-reduced-power-v2",
     solverIterationCount: 0,

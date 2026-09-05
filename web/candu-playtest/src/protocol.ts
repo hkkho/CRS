@@ -82,6 +82,15 @@ export interface CanduPhysicsSnapshot {
   meanBundlePowerWatts: number;
   effectiveK: number;
   reactivity: number;
+  coreReactivity: number;
+  compensatedNetReactivity: number;
+  compensationState: number;
+  compensationCommand: number;
+  compensationLowerBound: number;
+  compensationUpperBound: number;
+  compensationSaturated: boolean;
+  compensationResponseTimeSeconds: number;
+  cadenceIdentity: string;
   powerBalanceRelativeError: number;
   solverIdentity: string;
   solverIterationCount: number;

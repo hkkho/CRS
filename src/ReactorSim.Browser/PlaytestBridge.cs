@@ -805,6 +805,15 @@ namespace ReactorSim.Browser
                     MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
                     EffectiveK = game.Physics.EffectiveK,
                     Reactivity = game.Physics.Reactivity,
+                    CoreReactivity = game.Physics.CoreReactivity,
+                    CompensatedNetReactivity = game.Physics.CompensatedNetReactivity,
+                    CompensationState = game.Physics.CompensationState,
+                    CompensationCommand = game.Physics.CompensationCommand,
+                    CompensationLowerBound = game.Physics.CompensationLowerBound,
+                    CompensationUpperBound = game.Physics.CompensationUpperBound,
+                    CompensationSaturated = game.Physics.CompensationSaturated,
+                    CompensationResponseTimeSeconds = game.Physics.CompensationResponseTimeSeconds,
+                    CadenceIdentity = game.Physics.CadenceIdentity,
                     PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError,
                     SolverIdentity = game.Physics.SolverIdentity,
                     SolverIterationCount = game.Physics.SolverIterationCount,
@@ -1327,6 +1336,24 @@ namespace ReactorSim.Browser
         public double EffectiveK { get; set; }
 
         public double Reactivity { get; set; }
+
+        public double CoreReactivity { get; set; }
+
+        public double CompensatedNetReactivity { get; set; }
+
+        public double CompensationState { get; set; }
+
+        public double CompensationCommand { get; set; }
+
+        public double CompensationLowerBound { get; set; }
+
+        public double CompensationUpperBound { get; set; }
+
+        public bool CompensationSaturated { get; set; }
+
+        public double CompensationResponseTimeSeconds { get; set; }
+
+        public string CadenceIdentity { get; set; } = string.Empty;
 
         public double PowerBalanceRelativeError { get; set; }
 
