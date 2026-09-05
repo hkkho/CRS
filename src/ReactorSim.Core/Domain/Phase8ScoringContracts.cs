@@ -619,6 +619,31 @@ namespace ReactorSim.Core
                 new Phase8ScoredAdvanceResultV1(aggregateAdvance, summary, score));
         }
 
+        /// <summary>
+        /// Runs the exact advance operation against a private copy of the
+        /// scored runtime. Callers can validate dependent immutable state
+        /// before invoking the authoritative advance exactly once.
+        /// </summary>
+        public ContractValidationResult<Phase8ScoredAdvanceResultV1> TryPlanAdvanceWallMilliseconds(
+            ulong wallMilliseconds)
+        {
+            return Clone().TryAdvanceWallMilliseconds(wallMilliseconds);
+        }
+
+        private Phase8ScoredScenarioRuntimeV1 Clone()
+        {
+            var clone = new Phase8ScoredScenarioRuntimeV1(
+                _runtime.Clone(),
+                _parameters);
+            clone._integratedEnergyProxy = _integratedEnergyProxy;
+            clone._integratedStabilityProxy = _integratedStabilityProxy;
+            clone._committedActionCount = _committedActionCount;
+            clone._recordedLossCount = _recordedLossCount;
+            clone._nextTurnId = _nextTurnId;
+            clone._turnSummaries.AddRange(_turnSummaries);
+            return clone;
+        }
+
         private ScoredRuntimeSnapshot CaptureSnapshot()
         {
             return new ScoredRuntimeSnapshot(

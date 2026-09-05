@@ -153,12 +153,48 @@ namespace ReactorSim.Game
 
     public sealed class GameSession
     {
+        private sealed class PracticeTransaction
+        {
+            internal PracticeTransaction(
+                SyntheticGameCoreStateV1 coreState,
+                XenonSpatialStateV1 xenonState,
+                IqsSpatialCandidateV1 spatialCandidate,
+                SyntheticPracticeRegulatorV1 regulator,
+                double lastFullCoreSolveSimulationTime,
+                double syntheticScore,
+                ulong powerProjectionVersion)
+            {
+                CoreState = coreState;
+                XenonState = xenonState;
+                SpatialCandidate = spatialCandidate;
+                Regulator = regulator;
+                LastFullCoreSolveSimulationTime = lastFullCoreSolveSimulationTime;
+                SyntheticScore = syntheticScore;
+                PowerProjectionVersion = powerProjectionVersion;
+            }
+
+            internal SyntheticGameCoreStateV1 CoreState;
+
+            internal XenonSpatialStateV1 XenonState;
+
+            internal IqsSpatialCandidateV1 SpatialCandidate;
+
+            internal SyntheticPracticeRegulatorV1 Regulator;
+
+            internal double LastFullCoreSolveSimulationTime;
+
+            internal double SyntheticScore;
+
+            internal ulong PowerProjectionVersion;
+        }
+
         private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private readonly IqsFullCoreSolver _adiabaticSolver;
         private SyntheticPracticeRegulatorV1 _practiceRegulator;
         private SyntheticGameCoreStateV1 _coreState;
+        private XenonSpatialStateV1 _xenonState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private double _scoreResetBaseline;
@@ -170,6 +206,7 @@ namespace ReactorSim.Game
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
             IqsFullCoreSolver adiabaticSolver,
+            XenonSpatialStateV1 xenonState,
             SyntheticPracticeRegulatorV1 practiceRegulator)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
@@ -177,6 +214,7 @@ namespace ReactorSim.Game
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
             _adiabaticSolver = adiabaticSolver ?? throw new ArgumentNullException(nameof(adiabaticSolver));
+            _xenonState = xenonState ?? throw new ArgumentNullException(nameof(xenonState));
             _practiceRegulator = practiceRegulator ?? throw new ArgumentNullException(nameof(practiceRegulator));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
@@ -191,15 +229,68 @@ namespace ReactorSim.Game
             get { return _coreState; }
         }
 
+        public XenonSpatialStateV1 XenonState
+        {
+            get { return _xenonState; }
+        }
+
+        public IqsSpatialCandidateV1 CurrentSpatialCandidate
+        {
+            get { return _adiabaticSolver.CurrentProjection; }
+        }
+
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
         {
-            ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
-                _runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
-            if (result.IsValid)
+            ContractValidationResult<Phase8ScoredAdvanceResultV1> planned =
+                _runtime.TryPlanAdvanceWallMilliseconds(wallMilliseconds);
+            if (!planned.IsValid)
             {
-                ApplyPracticeAdvance(result.Value.Advance);
+                return Rejected(
+                    planned.FirstDiagnostic.Code,
+                    planned.FirstDiagnostic.Message);
             }
 
+            ContractValidationResult<PracticeTransaction> transaction =
+                TryBuildPracticeAdvance(planned.Value.Advance);
+            if (!transaction.IsValid)
+            {
+                return Rejected(
+                    transaction.FirstDiagnostic.Code,
+                    transaction.FirstDiagnostic.Message);
+            }
+
+            IqsSpatialCandidateV1 previousProjection =
+                _adiabaticSolver.CurrentProjection;
+            bool projectionChanged =
+                !ReferenceEquals(previousProjection, transaction.Value.SpatialCandidate);
+            if (projectionChanged)
+            {
+                ContractValidationResult<bool> projected =
+                    _adiabaticSolver.TryCommitCandidate(
+                        transaction.Value.SpatialCandidate);
+                if (!projected.IsValid)
+                {
+                    return Rejected(
+                        projected.FirstDiagnostic.Code,
+                        projected.FirstDiagnostic.Message);
+                }
+            }
+
+            ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
+                _runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
+            if (!result.IsValid)
+            {
+                if (projectionChanged)
+                {
+                    _adiabaticSolver.TryCommitCandidate(previousProjection);
+                }
+
+                return Rejected(
+                    result.FirstDiagnostic.Code,
+                    result.FirstDiagnostic.Message);
+            }
+
+            ApplyPracticeTransaction(transaction.Value);
             return Complete(result);
         }
 
@@ -300,28 +391,18 @@ namespace ReactorSim.Game
                 return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<IqsSpatialCandidateV1> projected =
-                _adiabaticSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
-            if (!projected.IsValid)
+            ContractValidationResult<PracticeTransaction> transaction =
+                TryBuildRefuellingTransaction(result.Value);
+            if (!transaction.IsValid)
             {
                 return Rejected(
-                    projected.FirstDiagnostic.Code,
-                    projected.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
-                _practiceRegulator.TryBindCoreReactivity(
-                    projected.Value.RelativeReactivity,
-                    _runtime.SimulationTimeSeconds);
-            if (!reboundRegulator.IsValid)
-            {
-                return Rejected(
-                    reboundRegulator.FirstDiagnostic.Code,
-                    reboundRegulator.FirstDiagnostic.Message);
+                    transaction.FirstDiagnostic.Code,
+                    transaction.FirstDiagnostic.Message);
             }
 
             ContractValidationResult<bool> committed =
-                _adiabaticSolver.TryCommitCandidate(projected.Value);
+                _adiabaticSolver.TryCommitCandidate(
+                    transaction.Value.SpatialCandidate);
             if (!committed.IsValid)
             {
                 return Rejected(
@@ -329,11 +410,7 @@ namespace ReactorSim.Game
                     committed.FirstDiagnostic.Message);
             }
 
-            _coreState = result.Value.ResultingState;
-            _practiceRegulator = reboundRegulator.Value;
-            _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
-            ApplyPracticeRefuellingScore(result.Value);
-            _powerProjectionVersion = checked(_powerProjectionVersion + 1);
+            ApplyPracticeTransaction(transaction.Value);
             string message = FormatRefuellingMessage(result.Value, false);
             return new GameSessionCommandResult(
                 true,
@@ -367,24 +444,13 @@ namespace ReactorSim.Game
                 return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<IqsSpatialCandidateV1> projected =
-                _adiabaticSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
-            if (!projected.IsValid)
+            ContractValidationResult<PracticeTransaction> transaction =
+                TryBuildRefuellingTransaction(result.Value);
+            if (!transaction.IsValid)
             {
                 return Rejected(
-                    projected.FirstDiagnostic.Code,
-                    projected.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<SyntheticPracticeRegulatorV1> previewRegulator =
-                _practiceRegulator.TryBindCoreReactivity(
-                    projected.Value.RelativeReactivity,
-                    _runtime.SimulationTimeSeconds);
-            if (!previewRegulator.IsValid)
-            {
-                return Rejected(
-                    previewRegulator.FirstDiagnostic.Code,
-                    previewRegulator.FirstDiagnostic.Message);
+                    transaction.FirstDiagnostic.Code,
+                    transaction.FirstDiagnostic.Message);
             }
 
             return new GameSessionCommandResult(
@@ -394,10 +460,10 @@ namespace ReactorSim.Game
                 FormatRefuellingMessage(result.Value, true),
                 CreateSnapshot(),
                 CreateCorePresentationSnapshot(
-                    result.Value.ResultingState,
-                    CurrentPowerFraction(previewRegulator.Value),
-                    projected.Value,
-                    previewRegulator.Value));
+                    transaction.Value.CoreState,
+                    CurrentPowerFraction(transaction.Value.Regulator),
+                    transaction.Value.SpatialCandidate,
+                    transaction.Value.Regulator));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -500,7 +566,135 @@ namespace ReactorSim.Game
                 _runtime.SimulationTimeSeconds);
         }
 
-        private void ApplyPracticeRefuellingScore(GameRefuellingResultV1 result)
+        private ContractValidationResult<PracticeTransaction> TryBuildRefuellingTransaction(
+            GameRefuellingResultV1 result)
+        {
+            if (result == null)
+            {
+                return InvalidTransaction(
+                    "GameSession.Refuelling.Result.Missing",
+                    "refuelling",
+                    "A refuelling transaction requires a validated inventory candidate.");
+            }
+
+            double simulationTimeSeconds = _runtime.SimulationTimeSeconds;
+            ContractValidationResult<bool> timeBinding =
+                ValidateCommittedTime(simulationTimeSeconds);
+            if (!timeBinding.IsValid)
+            {
+                return InvalidTransaction(
+                    timeBinding.FirstDiagnostic.Code,
+                    timeBinding.FirstDiagnostic.Path,
+                    timeBinding.FirstDiagnostic.Message);
+            }
+
+            if (_xenonState.CoreStateVersion == ulong.MaxValue)
+            {
+                return InvalidTransaction(
+                    "GameSession.Refuelling.XenonVersion.Overflow",
+                    "xenon_state.core_state_version",
+                    "The refuelling transaction cannot advance the spatial xenon core-state version.");
+            }
+
+            ContractValidationResult<XenonSpatialStateV1> reboundXenon =
+                _xenonState.TryRebindInventory(
+                    result.ResultingState.EnumerateBundles(),
+                    _xenonState.CoreStateVersion + 1UL);
+            if (!reboundXenon.IsValid)
+            {
+                return InvalidTransaction(
+                    reboundXenon.FirstDiagnostic.Code,
+                    reboundXenon.FirstDiagnostic.Path,
+                    reboundXenon.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<IqsSpatialCandidateV1> projected =
+                TryBuildPoisonedCandidate(
+                    result.ResultingState,
+                    reboundXenon.Value);
+            if (!projected.IsValid)
+            {
+                return InvalidTransaction(
+                    projected.FirstDiagnostic.Code,
+                    projected.FirstDiagnostic.Path,
+                    projected.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
+                _practiceRegulator.TryBindCoreReactivity(
+                    projected.Value.RelativeReactivity,
+                    simulationTimeSeconds);
+            if (!reboundRegulator.IsValid)
+            {
+                return InvalidTransaction(
+                    reboundRegulator.FirstDiagnostic.Code,
+                    reboundRegulator.FirstDiagnostic.Path,
+                    reboundRegulator.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<ulong> nextProjectionVersion =
+                TryNextPowerProjectionVersion(_powerProjectionVersion);
+            if (!nextProjectionVersion.IsValid)
+            {
+                return InvalidTransaction(
+                    nextProjectionVersion.FirstDiagnostic.Code,
+                    nextProjectionVersion.FirstDiagnostic.Path,
+                    nextProjectionVersion.FirstDiagnostic.Message);
+            }
+
+            double nextScore = _syntheticScore + PracticeRefuellingScore(result);
+            if (!IsFinite(nextScore))
+            {
+                return InvalidTransaction(
+                    "GameSession.Refuelling.Score.NonFinite",
+                    "score",
+                    "The refuelling transaction score must remain finite.");
+            }
+
+            return ContractValidationResult<PracticeTransaction>.Valid(
+                new PracticeTransaction(
+                    result.ResultingState,
+                    reboundXenon.Value,
+                    projected.Value,
+                    reboundRegulator.Value,
+                    simulationTimeSeconds,
+                    nextScore,
+                    nextProjectionVersion.Value));
+        }
+
+        private ContractValidationResult<IqsSpatialCandidateV1> TryBuildPoisonedCandidate(
+            SyntheticGameCoreStateV1 coreState,
+            XenonSpatialStateV1 xenonState,
+            FullCoreDiffusionSolveResultV1? initialSpatialSolve = null)
+        {
+            if (coreState == null || xenonState == null)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    "GameSession.SpatialCandidate.Input.Missing",
+                    "candidate",
+                    "A poisoned spatial candidate requires both inventory and xenon state candidates.");
+            }
+
+            ContractValidationResult<XenonSpatialCouplingResultV1> coupling =
+                xenonState.Model.TryCreateXenonCoupling(
+                    coreState.EnumerateBundles(),
+                    xenonState,
+                    _adiabaticSolver.Amplitude);
+            if (!coupling.IsValid)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    coupling.FirstDiagnostic.Code,
+                    coupling.FirstDiagnostic.Path,
+                    coupling.FirstDiagnostic.Message);
+            }
+
+            return _adiabaticSolver.TrySolveCandidate(
+                coreState.EnumerateBundles(),
+                coupling.Value,
+                initialSpatialSolve ?? _adiabaticSolver.CurrentProjection.SpatialSolve);
+        }
+
+        private static double PracticeRefuellingScore(GameRefuellingResultV1 result)
         {
             double averageDischargedBurnup = result.DischargedBundles.Count == 0
                 ? 0.0
@@ -512,131 +706,308 @@ namespace ReactorSim.Game
             // Scoring observes the operation. It does not modify power,
             // tilt, or reactivity; those are recomputed from the resulting
             // bundle state by the full-core diffusion solve.
-            _syntheticScore +=
+            return
                 6.0 + 10.0 * utilizationQuality - 0.75 * shiftFactor;
         }
 
-        private void ApplyPracticeAdvance(Phase8ScenarioAdvanceResultV1 advance)
+        private ContractValidationResult<PracticeTransaction> TryBuildPracticeAdvance(
+            Phase8ScenarioAdvanceResultV1 advance)
         {
+            if (advance == null)
+            {
+                return InvalidTransaction(
+                    "GameSession.Advance.Result.Missing",
+                    "advance",
+                    "A practice advance transaction requires a validated runtime advance.");
+            }
+
+            ContractValidationResult<bool> timeBinding =
+                ValidateCommittedTime(_runtime.SimulationTimeSeconds);
+            if (!timeBinding.IsValid)
+            {
+                return InvalidTransaction(
+                    timeBinding.FirstDiagnostic.Code,
+                    timeBinding.FirstDiagnostic.Path,
+                    timeBinding.FirstDiagnostic.Message);
+            }
+
+            var transaction = new PracticeTransaction(
+                _coreState,
+                _xenonState,
+                _adiabaticSolver.CurrentProjection,
+                _practiceRegulator,
+                _lastFullCoreSolveSimulationTime,
+                _syntheticScore,
+                _powerProjectionVersion);
+
             foreach (Phase8ScenarioAdvanceSegmentV1 segment in advance.StateSegments)
             {
-                double remainingSeconds = segment.SimulationTimeEndSeconds -
-                                           segment.SimulationTimeStartSeconds;
-                if (remainingSeconds <= 0.0)
+                double segmentStartSeconds = segment.SimulationTimeStartSeconds;
+                double segmentEndSeconds = segment.SimulationTimeEndSeconds;
+                if (!IsFinite(segmentStartSeconds) ||
+                    !IsFinite(segmentEndSeconds) ||
+                    segmentEndSeconds < segmentStartSeconds)
                 {
-                    continue;
+                    return InvalidTransaction(
+                        "GameSession.Advance.Segment.Time.Invalid",
+                        "state_segments",
+                        "A practice transaction requires finite monotone runtime state segments.");
                 }
 
                 double requestedAmplitude = Clamp(segment.NormalizedPowerFraction, 0.0, 1.5);
-                double simulationCursor = segment.SimulationTimeStartSeconds;
-                while (remainingSeconds > 0.0)
+                double simulationCursor = segmentStartSeconds;
+                while (simulationCursor < segmentEndSeconds - 1.0e-9)
                 {
+                    if (!AreSameSimulationTime(
+                            transaction.XenonState.SimulationTimeSeconds,
+                            simulationCursor) ||
+                        !AreSameSimulationTime(
+                            transaction.Regulator.SimulationTimeSeconds,
+                            simulationCursor))
+                    {
+                        return InvalidTransaction(
+                            "GameSession.Advance.State.TimeMismatch",
+                            "state_segments",
+                            "The candidate inventory, xenon state, and regulator must share the segment start time.");
+                    }
+
+                    double elapsedSinceShapeSolve =
+                        simulationCursor - transaction.LastFullCoreSolveSimulationTime;
+                    if (elapsedSinceShapeSolve >=
+                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
+                    {
+                        ContractValidationResult<bool> scheduled =
+                            TryBuildScheduledShape(transaction, simulationCursor);
+                        if (!scheduled.IsValid)
+                        {
+                            return InvalidTransaction(
+                                scheduled.FirstDiagnostic.Code,
+                                scheduled.FirstDiagnostic.Path,
+                                scheduled.FirstDiagnostic.Message);
+                        }
+
+                        if (scheduled.Value)
+                        {
+                            continue;
+                        }
+                    }
+
                     double untilShapeSolve =
                         _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds -
-                        (simulationCursor - _lastFullCoreSolveSimulationTime);
-                    if (untilShapeSolve <= 1e-9)
-                    {
-                        CommitScheduledShape(simulationCursor);
-                        continue;
-                    }
+                        (simulationCursor - transaction.LastFullCoreSolveSimulationTime);
 
                     double stepSeconds = Math.Min(
                         PracticeGameSessionFactory.SteadyStateLongStepSeconds,
-                        Math.Min(remainingSeconds, untilShapeSolve));
+                        Math.Min(segmentEndSeconds - simulationCursor, untilShapeSolve));
+                    if (!IsFinite(stepSeconds) || stepSeconds <= 0.0)
+                    {
+                        return InvalidTransaction(
+                            "GameSession.Advance.Step.Invalid",
+                            "state_segments",
+                            "Every practice integration step must be finite and strictly positive.");
+                    }
+
                     double stepEnd = simulationCursor + stepSeconds;
                     ContractValidationResult<SyntheticPracticeRegulatorV1> regulation =
-                        _practiceRegulator.TryAdvance(
-                            _adiabaticSolver.RelativeReactivity,
+                        transaction.Regulator.TryAdvance(
+                            transaction.SpatialCandidate.RelativeReactivity,
                             stepEnd);
                     if (!regulation.IsValid)
                     {
-                        throw new InvalidOperationException(
-                            "The synthetic steady-state regulation advance failed: " +
-                            regulation.FirstDiagnostic);
+                        return InvalidTransaction(
+                            regulation.FirstDiagnostic.Code,
+                            regulation.FirstDiagnostic.Path,
+                            regulation.FirstDiagnostic.Message);
                     }
 
-                    _practiceRegulator = regulation.Value;
                     double actualAmplitude = PowerAmplitudeFor(
                         requestedAmplitude,
-                        _practiceRegulator);
+                        regulation.Value);
 
                     double physicalShapeScale = actualAmplitude * _adiabaticSolver.Amplitude;
                     var deltaEnergy = new double[
-                        checked((int)(GameCorePresentationConstants.ChannelCount *
-                                     GameCorePresentationConstants.BundlePositionCount))];
+                        transaction.SpatialCandidate.ShapeNodePowerWatts.Count];
                     for (int index = 0; index < deltaEnergy.Length; index++)
                     {
                         deltaEnergy[index] =
-                            _adiabaticSolver.CurrentProjection.ShapeNodePowerWatts[index] *
+                            transaction.SpatialCandidate.ShapeNodePowerWatts[index] *
                             physicalShapeScale *
                             stepSeconds;
                     }
 
                     ContractValidationResult<SyntheticGameCoreStateV1> integrated =
-                        _coreState.TryAddFissionEnergy(deltaEnergy);
+                        transaction.CoreState.TryAddFissionEnergy(deltaEnergy);
                     if (!integrated.IsValid)
                     {
-                        throw new InvalidOperationException(
-                            "The full-core practice burnup integration failed: " +
-                            integrated.FirstDiagnostic);
+                        return InvalidTransaction(
+                            integrated.FirstDiagnostic.Code,
+                            integrated.FirstDiagnostic.Path,
+                            integrated.FirstDiagnostic.Message);
                     }
 
-                    _coreState = integrated.Value;
-                    _powerProjectionVersion = checked(_powerProjectionVersion + 1);
+                    if (transaction.XenonState.CoreStateVersion == ulong.MaxValue)
+                    {
+                        return InvalidTransaction(
+                            "GameSession.Advance.XenonVersion.Overflow",
+                            "xenon_state.core_state_version",
+                            "The practice xenon state cannot advance beyond UInt64.MaxValue.");
+                    }
+
+                    ContractValidationResult<XenonSpatialStateBindingV1> binding =
+                        transaction.XenonState.TryCreateBinding(
+                            _adiabaticSolver.Amplitude);
+                    if (!binding.IsValid)
+                    {
+                        return InvalidTransaction(
+                            binding.FirstDiagnostic.Code,
+                            binding.FirstDiagnostic.Path,
+                            binding.FirstDiagnostic.Message);
+                    }
+
+                    ContractValidationResult<XenonSpatialAdvanceResultV1> xenon =
+                        transaction.XenonState.TryAdvance(
+                            binding.Value,
+                            stepEnd,
+                            _adiabaticSolver.Amplitude,
+                            transaction.SpatialCandidate.SpatialSolve.Coefficients,
+                            transaction.SpatialCandidate.ShapeGroup1,
+                            transaction.SpatialCandidate.ShapeGroup2,
+                            physicalShapeScale,
+                            CreateXenonOwnerEventId(
+                                transaction.XenonState.CoreStateVersion + 1UL));
+                    if (!xenon.IsValid)
+                    {
+                        return InvalidTransaction(
+                            xenon.FirstDiagnostic.Code,
+                            xenon.FirstDiagnostic.Path,
+                            xenon.FirstDiagnostic.Message);
+                    }
+
+                    transaction.CoreState = integrated.Value;
+                    transaction.XenonState = xenon.Value.ResultingState;
+                    transaction.Regulator = regulation.Value;
+                    ContractValidationResult<ulong> nextProjectionVersion =
+                        TryNextPowerProjectionVersion(
+                            transaction.PowerProjectionVersion);
+                    if (!nextProjectionVersion.IsValid)
+                    {
+                        return InvalidTransaction(
+                            nextProjectionVersion.FirstDiagnostic.Code,
+                            nextProjectionVersion.FirstDiagnostic.Path,
+                            nextProjectionVersion.FirstDiagnostic.Message);
+                    }
+
+                    transaction.PowerProjectionVersion = nextProjectionVersion.Value;
                     double actualPowerFraction =
-                        _adiabaticSolver.CurrentProjection.ShapePowerWatts * physicalShapeScale /
+                        transaction.SpatialCandidate.ShapePowerWatts * physicalShapeScale /
                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
                     double powerQuality = 1.0 -
                         Clamp(Math.Abs(actualPowerFraction - 1.0) / 0.02, 0.0, 1.0);
                     double tiltQuality = 1.0 -
                         Clamp(Math.Abs(segment.AbsoluteTiltFraction) / 0.05, 0.0, 1.0);
-                    _syntheticScore += stepSeconds *
+                    transaction.SyntheticScore += stepSeconds *
                         (0.35 * powerQuality + 0.15 * tiltQuality);
-                    remainingSeconds -= stepSeconds;
                     simulationCursor = stepEnd;
-                    if (simulationCursor - _lastFullCoreSolveSimulationTime >=
+                    if (simulationCursor - transaction.LastFullCoreSolveSimulationTime >=
                         _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
                     {
-                        CommitScheduledShape(simulationCursor);
+                        ContractValidationResult<bool> scheduled =
+                            TryBuildScheduledShape(transaction, simulationCursor);
+                        if (!scheduled.IsValid)
+                        {
+                            return InvalidTransaction(
+                                scheduled.FirstDiagnostic.Code,
+                                scheduled.FirstDiagnostic.Path,
+                                scheduled.FirstDiagnostic.Message);
+                        }
                     }
                 }
             }
+
+            if (!AreSameSimulationTime(
+                    transaction.XenonState.SimulationTimeSeconds,
+                    advance.SimulationTimeSeconds) ||
+                !AreSameSimulationTime(
+                    transaction.Regulator.SimulationTimeSeconds,
+                    advance.SimulationTimeSeconds))
+            {
+                return InvalidTransaction(
+                    "GameSession.Advance.Result.TimeMismatch",
+                    "simulation_time_s",
+                    "The candidate state must finish at the exact planned authoritative simulation time.");
+            }
+
+            return ContractValidationResult<PracticeTransaction>.Valid(transaction);
         }
 
-        private void CommitScheduledShape(double simulationTimeSeconds)
+        private ContractValidationResult<bool> TryBuildScheduledShape(
+            PracticeTransaction transaction,
+            double simulationTimeSeconds)
         {
+            if (!AreSameSimulationTime(
+                    transaction.XenonState.SimulationTimeSeconds,
+                    simulationTimeSeconds) ||
+                !AreSameSimulationTime(
+                    transaction.Regulator.SimulationTimeSeconds,
+                    simulationTimeSeconds))
+            {
+                return InvalidTransactionBoolean(
+                    "GameSession.Shape.TimeMismatch",
+                    "simulation_time_s",
+                    "A scheduled poisoned shape must bind the exact candidate simulation time.");
+            }
+
             ContractValidationResult<IqsSpatialCandidateV1> candidate =
-                _adiabaticSolver.TrySolveCandidate(_coreState.EnumerateBundles());
+                TryBuildPoisonedCandidate(
+                    transaction.CoreState,
+                    transaction.XenonState,
+                    transaction.SpatialCandidate.SpatialSolve);
             if (!candidate.IsValid)
             {
-                throw new InvalidOperationException(
-                    "The scheduled static-eigenmode full-core shape solve failed: " +
-                    candidate.FirstDiagnostic);
+                return InvalidTransactionBoolean(
+                    candidate.FirstDiagnostic.Code,
+                    candidate.FirstDiagnostic.Path,
+                    candidate.FirstDiagnostic.Message);
             }
 
             ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
-                _practiceRegulator.TryBindCoreReactivity(
+                transaction.Regulator.TryBindCoreReactivity(
                     candidate.Value.RelativeReactivity,
                     simulationTimeSeconds);
             if (!reboundRegulator.IsValid)
             {
-                throw new InvalidOperationException(
-                    "The scheduled synthetic regulation binding failed: " +
-                    reboundRegulator.FirstDiagnostic);
+                return InvalidTransactionBoolean(
+                    reboundRegulator.FirstDiagnostic.Code,
+                    reboundRegulator.FirstDiagnostic.Path,
+                    reboundRegulator.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<bool> committed =
-                _adiabaticSolver.TryCommitCandidate(candidate.Value);
-            if (!committed.IsValid)
+            ContractValidationResult<ulong> nextProjectionVersion =
+                TryNextPowerProjectionVersion(transaction.PowerProjectionVersion);
+            if (!nextProjectionVersion.IsValid)
             {
-                throw new InvalidOperationException(
-                    "The scheduled static-eigenmode shape commit failed: " +
-                    committed.FirstDiagnostic);
+                return InvalidTransactionBoolean(
+                    nextProjectionVersion.FirstDiagnostic.Code,
+                    nextProjectionVersion.FirstDiagnostic.Path,
+                    nextProjectionVersion.FirstDiagnostic.Message);
             }
 
-            _practiceRegulator = reboundRegulator.Value;
-            _lastFullCoreSolveSimulationTime = simulationTimeSeconds;
-            _powerProjectionVersion = checked(_powerProjectionVersion + 1);
+            transaction.SpatialCandidate = candidate.Value;
+            transaction.Regulator = reboundRegulator.Value;
+            transaction.LastFullCoreSolveSimulationTime = simulationTimeSeconds;
+            transaction.PowerProjectionVersion = nextProjectionVersion.Value;
+            return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private void ApplyPracticeTransaction(PracticeTransaction transaction)
+        {
+            _coreState = transaction.CoreState;
+            _xenonState = transaction.XenonState;
+            _practiceRegulator = transaction.Regulator;
+            _lastFullCoreSolveSimulationTime =
+                transaction.LastFullCoreSolveSimulationTime;
+            _syntheticScore = transaction.SyntheticScore;
+            _powerProjectionVersion = transaction.PowerProjectionVersion;
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
@@ -858,6 +1229,77 @@ namespace ReactorSim.Game
         private static double Clamp(double value, double minimum, double maximum)
         {
             return Math.Max(minimum, Math.Min(maximum, value));
+        }
+
+        private ContractValidationResult<bool> ValidateCommittedTime(
+            double simulationTimeSeconds)
+        {
+            if (!AreSameSimulationTime(
+                    _xenonState.SimulationTimeSeconds,
+                    simulationTimeSeconds) ||
+                !AreSameSimulationTime(
+                    _practiceRegulator.SimulationTimeSeconds,
+                    simulationTimeSeconds))
+            {
+                return ContractValidationResult<bool>.Invalid(
+                    "GameSession.State.TimeMismatch",
+                    "simulation_time_s",
+                    "The committed xenon state, regulator, and scenario runtime must share one authoritative time.");
+            }
+
+            return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private static ContractValidationResult<ulong> TryNextPowerProjectionVersion(
+            ulong currentVersion)
+        {
+            if (currentVersion == ulong.MaxValue)
+            {
+                return ContractValidationResult<ulong>.Invalid(
+                    "GameSession.PowerProjectionVersion.Overflow",
+                    "power_projection_version",
+                    "The practice power projection version cannot increment beyond UInt64.MaxValue.");
+            }
+
+            return ContractValidationResult<ulong>.Valid(currentVersion + 1UL);
+        }
+
+        private static StableId CreateXenonOwnerEventId(ulong sequence)
+        {
+            string hex = sequence.ToString("x16", CultureInfo.InvariantCulture);
+            return StableId.Parse(
+                "00000000-0000-0000-" +
+                hex.Substring(0, 4) + "-" +
+                hex.Substring(4, 12));
+        }
+
+        private static bool AreSameSimulationTime(double first, double second)
+        {
+            return Math.Abs(first - second) <= 1.0e-8;
+        }
+
+        private static bool IsFinite(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value);
+        }
+
+        private static ContractValidationResult<PracticeTransaction> InvalidTransaction(
+            string code,
+            string path,
+            string message)
+        {
+            return ContractValidationResult<PracticeTransaction>.Invalid(
+                code,
+                path,
+                message);
+        }
+
+        private static ContractValidationResult<bool> InvalidTransactionBoolean(
+            string code,
+            string path,
+            string message)
+        {
+            return ContractValidationResult<bool>.Invalid(code, path, message);
         }
 
         private static bool TryParseDirection(

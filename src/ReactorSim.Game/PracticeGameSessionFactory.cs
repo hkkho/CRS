@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ReactorSim.Core;
 
 namespace ReactorSim.Game
@@ -171,6 +172,24 @@ namespace ReactorSim.Game
                     kineticsPack,
                     coreState.EnumerateBundles(),
                     PracticeReferencePowerWatts));
+            NuclideDataV1 nuclideData = Require(
+                NuclideDataV1.TryCreate(
+                    new MaterialVariantId("NAT-U-SYNTHETIC"),
+                    "candu6-practice-xenon-v1",
+                    new Digest32(Enumerable.Repeat((byte)0x71, 32).ToArray()),
+                    0.05,
+                    0.01,
+                    2.91e-5,
+                    2.09e-5,
+                    1.0e-24,
+                    3.0e-24));
+            XenonSpatialStateV1 xenonState = Require(
+                XenonSpatialStateV1.TryCreate(
+                    fullCoreModel,
+                    coreState.EnumerateBundles(),
+                    nuclideData,
+                    runtime.SimulationTimeSeconds,
+                    0UL));
             SyntheticPracticeRegulatorV1 practiceRegulator = Require(
                 SyntheticPracticeRegulatorV1.TryCreate(
                     adiabaticSolver.RelativeReactivity,
@@ -181,6 +200,7 @@ namespace ReactorSim.Game
                 WallControlTickMilliseconds,
                 coreState,
                 adiabaticSolver,
+                xenonState,
                 practiceRegulator);
         }
 

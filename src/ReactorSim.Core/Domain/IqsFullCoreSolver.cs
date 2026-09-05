@@ -940,6 +940,87 @@ namespace ReactorSim.Core
             }
         }
 
+        /// <summary>
+        /// Builds a side-effect-free adiabatic candidate from one validated
+        /// dynamic-Xe coefficient overlay. The owning solver is changed only
+        /// by <see cref="TryCommitCandidate"/> after the caller has accepted
+        /// the complete transaction.
+        /// </summary>
+        public ContractValidationResult<IqsSpatialCandidateV1> TrySolveCandidate(
+            IEnumerable<BundleState> bundles,
+            XenonSpatialCouplingResultV1 xenonCoupling)
+        {
+            return TrySolveCandidate(
+                bundles,
+                xenonCoupling,
+                _current.SpatialSolve);
+        }
+
+        /// <summary>
+        /// Builds a dynamic-Xe candidate using an explicit side-effect-free
+        /// warm start. The caller can carry the last staged candidate through
+        /// several scheduled boundaries without mutating the authoritative
+        /// solver projection before the enclosing transaction commits.
+        /// </summary>
+        public ContractValidationResult<IqsSpatialCandidateV1> TrySolveCandidate(
+            IEnumerable<BundleState> bundles,
+            XenonSpatialCouplingResultV1 xenonCoupling,
+            FullCoreDiffusionSolveResultV1 initialSpatialSolve)
+        {
+            if (bundles == null)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    "IqsFullCoreSolver.Bundles.Missing",
+                    "bundles",
+                    "A dynamic-Xe static-eigenmode shape solve requires a full-core bundle inventory.");
+            }
+
+            if (xenonCoupling == null)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    "IqsFullCoreSolver.XenonCoupling.Missing",
+                    "xenon_coupling",
+                    "A dynamic-Xe static-eigenmode shape solve requires a validated coupling result.");
+            }
+
+            if (initialSpatialSolve == null)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    "IqsFullCoreSolver.InitialSpatialSolve.Missing",
+                    "initial_spatial_solve",
+                    "A dynamic-Xe static-eigenmode shape solve requires an explicit warm-start spatial solve.");
+            }
+
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
+                _spatialModel.TrySolve(
+                    bundles,
+                    xenonCoupling,
+                    _targetPowerWatts,
+                    initialSpatialSolve.EffectiveK,
+                    initialSpatialSolve.Group1Flux,
+                    initialSpatialSolve.Group2Flux);
+            if (!spatial.IsValid)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    spatial.FirstDiagnostic.Code,
+                    spatial.FirstDiagnostic.Path,
+                    spatial.FirstDiagnostic.Message);
+            }
+
+            try
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Valid(
+                    BuildCandidate(spatial.Value));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                    "IqsFullCoreSolver.Candidate.Invalid",
+                    "candidate",
+                    exception.Message);
+            }
+        }
+
         public ContractValidationResult<bool> TryCommitCandidate(IqsSpatialCandidateV1 candidate)
         {
             if (candidate == null)

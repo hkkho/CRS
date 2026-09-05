@@ -40,6 +40,21 @@ public sealed class GameSessionTests
     }
 
     [Fact]
+    public void PracticeSessionInitializesDeterministicFullCoreXenonState()
+    {
+        GameSession first = PracticeGameSessionFactory.Create();
+        GameSession replay = PracticeGameSessionFactory.Create();
+
+        Assert.Equal(4_560, first.XenonState.NodeInputs.Count);
+        Assert.Equal(4_560, first.XenonState.NodeStates.Count);
+        Assert.Equal(0.0, first.XenonState.SimulationTimeSeconds);
+        Assert.Equal(0UL, first.XenonState.CoreStateVersion);
+        Assert.Equal(0.0, first.XenonState.MeanXe135NumberDensityM3);
+        Assert.Equal(first.XenonState.StateDigest, replay.XenonState.StateDigest);
+        Assert.Equal(first.XenonState.StateDigestHex, replay.XenonState.StateDigestHex);
+    }
+
+    [Fact]
     public void PracticeSessionAdvancesAndAppliesPlayerCommands()
     {
         GameSession session = PracticeGameSessionFactory.Create();
@@ -81,6 +96,8 @@ public sealed class GameSessionTests
     {
         GameSession session = PracticeGameSessionFactory.Create();
         var retainedBundleId = session.CoreState.GetBundle(12, 0).BundleId;
+        XenonSpatialStateV1 beforeXenon = session.XenonState;
+        IqsSpatialCandidateV1 beforeCandidate = session.CurrentSpatialCandidate;
 
         GameSessionCommandResult result = session.RefuelChannel(
             12,
@@ -96,6 +113,18 @@ public sealed class GameSessionTests
         Assert.Equal((ushort)4, result.Snapshot.LastRefuellingShiftCount);
         Assert.Contains("Channel 12 refuelled toward End B", result.Message);
         Assert.Equal(retainedBundleId, session.CoreState.GetBundle(12, 4).BundleId);
+        Assert.Equal(beforeXenon.CoreStateVersion + 1UL, session.XenonState.CoreStateVersion);
+        Assert.Equal(beforeXenon.SimulationTimeSeconds, session.XenonState.SimulationTimeSeconds);
+        Assert.NotEqual(beforeXenon.StateDigest, session.XenonState.StateDigest);
+        Assert.NotSame(beforeCandidate, session.CurrentSpatialCandidate);
+        Assert.True(session.CurrentSpatialCandidate.SpatialSolve.HasXenonOverlay);
+        Assert.NotNull(session.CurrentSpatialCandidate.SpatialSolve.XenonStateBinding);
+        Assert.Equal(
+            session.XenonState.CoreStateVersion,
+            session.CurrentSpatialCandidate.SpatialSolve.XenonStateBinding!.CoreStateVersion);
+        Assert.Equal(
+            session.XenonState.StateDigest,
+            session.CurrentSpatialCandidate.SpatialSolve.XenonStateBinding.StateDigest);
     }
 
     [Fact]
@@ -103,6 +132,8 @@ public sealed class GameSessionTests
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
+        XenonSpatialStateV1 beforeXenon = session.XenonState;
+        IqsSpatialCandidateV1 beforeCandidate = session.CurrentSpatialCandidate;
 
         GameSessionCommandResult result = session.PreviewRefuelChannel(
             12,
@@ -117,6 +148,32 @@ public sealed class GameSessionTests
         Assert.Equal(before.ScoreTotal, result.Snapshot.ScoreTotal);
         Assert.False(session.Snapshot.Core.GetChannel(12).Bundles[0].IsFresh);
         Assert.True(result.PreviewCore.GetChannel(12).Bundles[0].IsFresh);
+        Assert.Same(beforeXenon, session.XenonState);
+        Assert.Equal(beforeXenon.StateDigest, session.XenonState.StateDigest);
+        Assert.Same(beforeCandidate, session.CurrentSpatialCandidate);
+    }
+
+    [Fact]
+    public void FailedRefuellingLeavesXenonAndSpatialProjectionUnchanged()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+        GameSessionSnapshot before = session.Snapshot;
+        XenonSpatialStateV1 beforeXenon = session.XenonState;
+        IqsSpatialCandidateV1 beforeCandidate = session.CurrentSpatialCandidate;
+
+        GameSessionCommandResult result = session.RefuelChannel(
+            12,
+            "toward-end-b",
+            4,
+            "UNSUPPORTED-FUEL");
+
+        Assert.False(result.Accepted);
+        Assert.Equal("XenonSpatialState.Rebind.Data.Missing", result.DiagnosticCode);
+        Assert.Equal(before.SimulationTimeSeconds, session.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(before.FreshBundlesAvailable, session.Snapshot.FreshBundlesAvailable);
+        Assert.Same(beforeXenon, session.XenonState);
+        Assert.Equal(beforeXenon.StateDigest, session.XenonState.StateDigest);
+        Assert.Same(beforeCandidate, session.CurrentSpatialCandidate);
     }
 
     [Fact]
@@ -210,6 +267,7 @@ public sealed class GameSessionTests
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
+        XenonSpatialStateV1 beforeXenon = session.XenonState;
         GameBundlePresentationSnapshot beforeBundle = before.Core.GetChannel(0).Bundles[0];
         const double stepSeconds = 1.0;
 
@@ -229,6 +287,11 @@ public sealed class GameSessionTests
             session.CoreState.GetBundle(0, 0).CumulativeFissionEnergyJ,
             6);
         Assert.True(result.Snapshot.Physics.BindingVersion > before.Physics.BindingVersion);
+        Assert.Equal(result.Snapshot.SimulationTimeSeconds, session.XenonState.SimulationTimeSeconds);
+        Assert.Equal(1UL, session.XenonState.CoreStateVersion);
+        Assert.Equal(1UL, session.XenonState.NodeStates[0].NuclideStateVersion);
+        Assert.True(session.XenonState.MeanXe135NumberDensityM3 > 0.0);
+        Assert.NotEqual(beforeXenon.StateDigest, session.XenonState.StateDigest);
     }
 
     [Fact]
@@ -244,7 +307,7 @@ public sealed class GameSessionTests
         double perturbation = refuelled.Snapshot.Physics.CompensatedNetReactivity;
         Assert.True(perturbation > 0.0);
 
-        GameSessionCommandResult result = session.AdvanceWallMilliseconds(48_000);
+        GameSessionCommandResult result = session.AdvanceWallMilliseconds(4_000);
 
         Assert.True(result.Accepted, result.DiagnosticMessage);
         Assert.InRange(
@@ -286,6 +349,12 @@ public sealed class GameSessionTests
             atBoundary.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
             split.Snapshot.Core.GetChannel(189).Bundles[5].PowerWatts,
             9);
+        Assert.Equal(oneCommand.XenonState.StateDigest, splitCommand.XenonState.StateDigest);
+        Assert.Equal(
+            oneCommand.XenonState.NodeStates[0].NuclideStateVersion,
+            splitCommand.XenonState.NodeStates[0].NuclideStateVersion);
+        Assert.True(oneCommand.CurrentSpatialCandidate.SpatialSolve.HasXenonOverlay);
+        Assert.True(splitCommand.CurrentSpatialCandidate.SpatialSolve.HasXenonOverlay);
     }
 
     [Fact]

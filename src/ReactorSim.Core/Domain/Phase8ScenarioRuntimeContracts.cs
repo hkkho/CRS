@@ -1064,6 +1064,18 @@ namespace ReactorSim.Core
                 _lossRecords);
         }
 
+        internal Phase8ScenarioRuntimeV1 Clone()
+        {
+            var clone = new Phase8ScenarioRuntimeV1(
+                _scenario,
+                _profile,
+                _timeModel,
+                _playbackMode,
+                _clock);
+            clone.RestoreSnapshot(CaptureSnapshot());
+            return clone;
+        }
+
         internal void RestoreSnapshot(Phase8ScenarioRuntimeSnapshotV1 snapshot)
         {
             _clock = snapshot.Clock;
