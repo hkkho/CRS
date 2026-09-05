@@ -406,6 +406,109 @@ namespace ReactorSim.Core
                     powerBalanceRelativeError));
         }
 
+        /// <summary>
+        /// Solves the deterministic two-group transpose eigenproblem for the
+        /// supplied full-core reference inventory.  The result is bound to
+        /// both the diffusion and ordered kinetics pack identities so the
+        /// caller cannot accidentally normalize a shape with a stale or
+        /// differently ordered importance field.
+        /// </summary>
+        public ContractValidationResult<FullCoreAdjointImportanceV1> TrySolveReferenceAdjoint(
+            IEnumerable<BundleState> bundles,
+            IqsKineticsDataPackV1 kineticsDataPack,
+            double referenceEigenvalue)
+        {
+            if (bundles == null)
+            {
+                return InvalidAdjoint(
+                    "FullCoreAdjoint.Bundles.Missing",
+                    "bundles",
+                    "A reference adjoint requires one live bundle for every spatial node.");
+            }
+
+            if (kineticsDataPack == null)
+            {
+                return InvalidAdjoint(
+                    "FullCoreAdjoint.KineticsDataPack.Missing",
+                    "kinetics_data_pack",
+                    "A reference adjoint requires a validated ordered kinetics pack.");
+            }
+
+            if (!ContractValidation.IsFinite(referenceEigenvalue) || referenceEigenvalue <= 0.0)
+            {
+                return InvalidAdjoint(
+                    "FullCoreAdjoint.ReferenceEigenvalue.Invalid",
+                    "reference_eigenvalue",
+                    "The reference eigenvalue must be finite and strictly positive.");
+            }
+
+            if (!EnergyGroupsMatch(
+                    _dataPack.EnergyGroupOrder,
+                    kineticsDataPack.EnergyGroupOrder))
+            {
+                return InvalidAdjoint(
+                    "FullCoreAdjoint.EnergyGroupOrder.Mismatch",
+                    "energy_group_order",
+                    "The diffusion and kinetics packs must use the exact canonical [fast, thermal] order.");
+            }
+
+            ContractValidationResult<BundleInventory> inventoryResult =
+                BundleInventory.TryCreate(_topology, bundles);
+            if (!inventoryResult.IsValid)
+            {
+                return InvalidAdjoint(
+                    inventoryResult.FirstDiagnostic.Code,
+                    inventoryResult.FirstDiagnostic.Path,
+                    inventoryResult.FirstDiagnostic.Message);
+            }
+
+            if (inventoryResult.Value.OccupiedCount != _stencil.NodeCount)
+            {
+                return InvalidAdjoint(
+                    "FullCoreAdjoint.Inventory.Incomplete",
+                    "bundles",
+                    "The reference adjoint requires a bundle bound to every canonical spatial node.");
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> coefficientResult =
+                BuildCoefficientSet(inventoryResult.Value);
+            if (!coefficientResult.IsValid)
+            {
+                return InvalidAdjoint(
+                    coefficientResult.FirstDiagnostic.Code,
+                    coefficientResult.FirstDiagnostic.Path,
+                    coefficientResult.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialAdjointSolveResultV1> solveResult =
+                SpatialAdjointEigenSolve.TrySolve(
+                    _stencil,
+                    coefficientResult.Value,
+                    _dataPack.LinearSolvePolicy,
+                    _dataPack.ConvergencePolicy,
+                    referenceEigenvalue,
+                    kineticsDataPack.GroupVelocitiesMPerSecond,
+                    kineticsDataPack.EnergyGroupOrder);
+            if (!solveResult.IsValid)
+            {
+                return InvalidAdjoint(
+                    solveResult.FirstDiagnostic.Code,
+                    solveResult.FirstDiagnostic.Path,
+                    solveResult.FirstDiagnostic.Message);
+            }
+
+            Digest32 referenceStateDigest = FullCoreAdjointImportanceV1.ComputeReferenceStateDigest(
+                _dataPack,
+                inventoryResult.Value);
+            return FullCoreAdjointImportanceV1.TryCreate(
+                _dataPack,
+                kineticsDataPack,
+                _topology,
+                _stencil,
+                referenceStateDigest,
+                solveResult.Value);
+        }
+
         private ContractValidationResult<SpatialCoefficientSet> BuildCoefficientSet(
             BundleInventory inventory)
         {
@@ -554,6 +657,27 @@ namespace ReactorSim.Core
                 diagnostic.Code,
                 diagnostic.Path,
                 diagnostic.Message);
+        }
+
+        private static bool EnergyGroupsMatch(
+            IReadOnlyList<string> left,
+            IReadOnlyList<string> right)
+        {
+            return left.SequenceEqual(right, StringComparer.Ordinal) &&
+                   left.Count == 2 &&
+                   string.Equals(left[0], "fast", StringComparison.Ordinal) &&
+                   string.Equals(left[1], "thermal", StringComparison.Ordinal);
+        }
+
+        private static ContractValidationResult<FullCoreAdjointImportanceV1> InvalidAdjoint(
+            string code,
+            string path,
+            string message)
+        {
+            return ContractValidationResult<FullCoreAdjointImportanceV1>.Invalid(
+                code,
+                path,
+                message);
         }
 
         private static ContractValidationResult<FullCoreDiffusionSolveResultV1> InvalidSolve(

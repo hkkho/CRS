@@ -63,6 +63,15 @@ namespace ReactorSim.Browser.Tests
             Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Contains("spatial-eigen-jacobi-v1", initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Equal(
+                SpatialAdjointEigenSolve.NormalizationIdentity,
+                initialPhysics.GetProperty("adjointNormalizationIdentity").GetString());
+            Assert.Equal(64, initialPhysics.GetProperty("adjointDigestHex").GetString()!.Length);
+            Assert.True(initialPhysics.GetProperty("adjointIterationCount").GetInt32() > 0);
+            Assert.InRange(
+                initialPhysics.GetProperty("adjointTransposeResidualRelativeInfinity").GetDouble(),
+                0.0,
+                2.0e-3);
+            Assert.Equal(
                 initialPhysics.GetProperty("targetPowerWatts").GetDouble(),
                 initialPhysics.GetProperty("totalPowerWatts").GetDouble(),
                 2);

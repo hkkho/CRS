@@ -776,7 +776,11 @@ namespace ReactorSim.Game
                 regulator.UpperBound,
                 regulator.CompensationSaturated,
                 regulator.ResponseTimeSeconds,
-                regulator.CadenceIdentity);
+                regulator.CadenceIdentity,
+                _adiabaticSolver.AdjointNormalizationIdentity,
+                _adiabaticSolver.ReferenceAdjoint.DigestHex,
+                _adiabaticSolver.AdjointIterationCount,
+                _adiabaticSolver.AdjointTransposeResidualRelativeInfinity);
             return new GameCorePresentationSnapshot(channels, physics);
         }
 

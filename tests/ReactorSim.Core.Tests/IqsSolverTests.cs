@@ -22,6 +22,7 @@ public sealed class IqsSolverTests
         { IqsKineticsDataPackV1.FissionGroupFamily, "unknown" };
     private static readonly string[] FissionAndPhotoneutronFamilies =
         { IqsKineticsDataPackV1.FissionGroupFamily, IqsKineticsDataPackV1.PhotoneutronGroupFamily };
+    private static readonly string[] CanonicalTwoGroupOrder = { "fast", "thermal" };
     private static readonly int[] ReversedTwoGroupOrder = { 1, 0 };
 
     [Fact]
@@ -157,6 +158,73 @@ public sealed class IqsSolverTests
             solver.CurrentProjection.ShapePowerWatts,
             6);
         Assert.Equal(solver.ShapeConstraint, solver.CurrentProjection.Constraint, 12);
+    }
+
+    [Fact]
+    public void ReferenceAdjointIsCanonicalDeterministicSpatiallyVaryingAndDigestBound()
+    {
+        SyntheticGameCoreStateV1 state = SyntheticGameCoreStateV1.CreatePractice();
+        IqsFullCoreSolver first = CreateSolver(state);
+        IqsFullCoreSolver second = CreateSolver(state);
+        FullCoreAdjointImportanceV1 firstAdjoint = first.ReferenceAdjoint;
+        FullCoreAdjointImportanceV1 secondAdjoint = second.ReferenceAdjoint;
+
+        Assert.Equal("candu6-two-group-reference-adjoint-v1", FullCoreAdjointImportanceV1.SchemaId);
+        Assert.Equal("candu6-380x12-grid-v1", firstAdjoint.TopologySchemaId);
+        Assert.Equal(380u, firstAdjoint.ChannelCount);
+        Assert.Equal(12u, firstAdjoint.BundlePositionCount);
+        Assert.Equal(4_560, firstAdjoint.NodeCount);
+        Assert.Equal(CanonicalTwoGroupOrder, firstAdjoint.EnergyGroupOrder);
+        Assert.Equal("fast|thermal", firstAdjoint.EnergyGroupOrderIdentity);
+        Assert.Equal(
+            SpatialAdjointEigenSolve.NormalizationIdentity,
+            firstAdjoint.NormalizationIdentity);
+        Assert.Equal(1.0, firstAdjoint.NormalizationValue, 12);
+        Assert.True(firstAdjoint.IterationCount > 0);
+        Assert.InRange(firstAdjoint.TransposeResidualRelativeInfinity, 0.0, 2.0e-3);
+        Assert.True(firstAdjoint.ValidateDigest(firstAdjoint.Digest).IsValid);
+
+        byte[] wrongDigest = new byte[32];
+        wrongDigest[0] = 1;
+        Assert.False(firstAdjoint.ValidateDigest(new Digest32(wrongDigest)).IsValid);
+
+        Assert.Equal(firstAdjoint.Digest, secondAdjoint.Digest);
+        Assert.Equal(
+            firstAdjoint.Group1Importance,
+            secondAdjoint.Group1Importance,
+            new RelativeDoubleComparer(1.0e-14));
+        Assert.Equal(
+            firstAdjoint.Group2Importance,
+            secondAdjoint.Group2Importance,
+            new RelativeDoubleComparer(1.0e-14));
+        Assert.All(
+            firstAdjoint.Group1Importance,
+            value => Assert.True(double.IsFinite(value) && value >= 0.0));
+        Assert.All(
+            firstAdjoint.Group2Importance,
+            value => Assert.True(double.IsFinite(value) && value >= 0.0));
+
+        Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(10, 10, out uint centerChannel));
+        int centerNode = checked((int)centerChannel * (int)firstAdjoint.BundlePositionCount + 6);
+        int edgeNode = 6;
+        Assert.True(
+            firstAdjoint.Group2Importance[centerNode] > firstAdjoint.Group2Importance[edgeNode],
+            "The bounded central channel should carry more reference importance than the edge channel.");
+
+        double expectedConstraint = 0.0;
+        for (int nodeIndex = 0; nodeIndex < first.CurrentSpatialSolve.Group1Flux.Count; nodeIndex++)
+        {
+            expectedConstraint += firstAdjoint.DiffusionDataPack.NodeVolumeM3 * (
+                firstAdjoint.Group1Importance[nodeIndex] *
+                    first.CurrentSpatialSolve.Group1Flux[nodeIndex] / first.DataPack.GroupVelocitiesMPerSecond[0] +
+                firstAdjoint.Group2Importance[nodeIndex] *
+                    first.CurrentSpatialSolve.Group2Flux[nodeIndex] / first.DataPack.GroupVelocitiesMPerSecond[1]);
+        }
+
+        Assert.InRange(
+            Math.Abs(expectedConstraint - first.ShapeConstraint) / first.ShapeConstraint,
+            0.0,
+            1.0e-12);
     }
 
     [Fact]

@@ -814,6 +814,10 @@ namespace ReactorSim.Browser
                     CompensationSaturated = game.Physics.CompensationSaturated,
                     CompensationResponseTimeSeconds = game.Physics.CompensationResponseTimeSeconds,
                     CadenceIdentity = game.Physics.CadenceIdentity,
+                    AdjointNormalizationIdentity = game.Physics.AdjointNormalizationIdentity,
+                    AdjointDigestHex = game.Physics.AdjointDigestHex,
+                    AdjointIterationCount = game.Physics.AdjointIterationCount,
+                    AdjointTransposeResidualRelativeInfinity = game.Physics.AdjointTransposeResidualRelativeInfinity,
                     PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError,
                     SolverIdentity = game.Physics.SolverIdentity,
                     SolverIterationCount = game.Physics.SolverIterationCount,
@@ -1354,6 +1358,14 @@ namespace ReactorSim.Browser
         public double CompensationResponseTimeSeconds { get; set; }
 
         public string CadenceIdentity { get; set; } = string.Empty;
+
+        public string AdjointNormalizationIdentity { get; set; } = string.Empty;
+
+        public string AdjointDigestHex { get; set; } = string.Empty;
+
+        public int AdjointIterationCount { get; set; }
+
+        public double AdjointTransposeResidualRelativeInfinity { get; set; }
 
         public double PowerBalanceRelativeError { get; set; }
 

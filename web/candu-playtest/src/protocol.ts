@@ -95,6 +95,10 @@ export interface CanduPhysicsSnapshot {
   solverIdentity: string;
   solverIterationCount: number;
   solverResidualRelativeInfinity: number;
+  adjointNormalizationIdentity?: string;
+  adjointDigestHex?: string;
+  adjointIterationCount?: number;
+  adjointTransposeResidualRelativeInfinity?: number;
 }
 
 export interface CanduEvent {

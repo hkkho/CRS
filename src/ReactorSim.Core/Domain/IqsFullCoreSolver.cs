@@ -85,7 +85,9 @@ namespace ReactorSim.Core
             IEnumerable<double> groupVelocities,
             double generationTimeSeconds,
             double maximumMicroStepSeconds,
-            double shapeRecomputeIntervalSeconds)
+            double shapeRecomputeIntervalSeconds,
+            Digest32 contentDigest,
+            Digest32 topologyDigest)
         {
             DataPackVersion = dataPackVersion;
             SourceIdentity = sourceIdentity;
@@ -109,12 +111,18 @@ namespace ReactorSim.Core
             ShapeRecomputeIntervalSeconds = shapeRecomputeIntervalSeconds;
             TopologySchemaId = SupportedTopologySchemaId;
             UnitsProfileId = SupportedUnitsProfileId;
+            ContentDigest = contentDigest;
+            TopologyDigest = topologyDigest;
+            EnergyGroupOrderIdentity = string.Join("|", _energyGroupOrder);
         }
 
         public string DataPackVersion { get; }
         public string SourceIdentity { get; }
         public string TopologySchemaId { get; }
         public string UnitsProfileId { get; }
+        public Digest32 ContentDigest { get; }
+        public Digest32 TopologyDigest { get; }
+        public string EnergyGroupOrderIdentity { get; }
         public string ModelId { get; }
         public string SolverId { get; }
         public string FormulationId { get; }
@@ -326,6 +334,12 @@ namespace ReactorSim.Core
                 return Invalid("IqsDataPack.TimeIntegration.Invalid", "time_integration", "Adiabatic point-kinetics time constants must be finite, positive, and ordered micro-step <= shape-recompute interval.");
             }
 
+            Digest32 contentDigest = new Digest32(
+                Phase5CanonicalBytesV1.Sha256(Encoding.UTF8.GetBytes(json)));
+            Digest32 topologyDigest = new Digest32(
+                Phase5CanonicalBytesV1.Sha256(
+                    Encoding.UTF8.GetBytes(Candu6CoreTopologyFactoryV1.GetTopologyIdentity())));
+
             return ContractValidationResult<IqsKineticsDataPackV1>.Valid(
                 new IqsKineticsDataPackV1(
                     dto.DataPackVersion!,
@@ -347,7 +361,9 @@ namespace ReactorSim.Core
                     velocities,
                     dto.TimeIntegration.GenerationTimeSeconds,
                     dto.TimeIntegration.MaximumMicroStepSeconds,
-                    dto.TimeIntegration.ShapeRecomputeIntervalSeconds));
+                    dto.TimeIntegration.ShapeRecomputeIntervalSeconds,
+                    contentDigest,
+                    topologyDigest));
         }
 
         private static string? ReadString(JToken? token)
@@ -666,9 +682,9 @@ namespace ReactorSim.Core
     /// path. The deterministic full-core static k-eigenmode solve supplies the
     /// recomputed shape, while the ordered delayed-source groups advance a
     /// scalar point-kinetics amplitude. It does not solve a time-dependent
-    /// fixed-source IQS shape equation. A fixed flat synthetic adjoint is used
-    /// only for the uniqueness constraint until an admitted adjoint data pack
-    /// exists.
+    /// fixed-source IQS shape equation. The uniqueness constraint is bound to
+    /// the deterministic reference transpose adjoint carried by
+    /// <see cref="ReferenceAdjoint"/>.
     /// </summary>
     public sealed class IqsFullCoreSolver
     {
@@ -679,19 +695,22 @@ namespace ReactorSim.Core
         private IqsSpatialCandidateV1 _current;
         private double _amplitude;
         private readonly double _referenceReactivity;
+        private readonly FullCoreAdjointImportanceV1 _referenceAdjoint;
         private readonly double _shapeConstraint;
 
         private IqsFullCoreSolver(
             FullCoreDiffusionModelV1 spatialModel,
             IqsKineticsDataPackV1 dataPack,
             double targetPowerWatts,
-            FullCoreDiffusionSolveResultV1 initialSpatialSolve)
+            FullCoreDiffusionSolveResultV1 initialSpatialSolve,
+            FullCoreAdjointImportanceV1 referenceAdjoint)
         {
             _spatialModel = spatialModel;
             _dataPack = dataPack;
             _targetPowerWatts = targetPowerWatts;
             _amplitude = 1.0;
             _precursors = new double[_dataPack.DelayedGroupCount];
+            _referenceAdjoint = referenceAdjoint;
             _referenceReactivity = initialSpatialSolve.Reactivity;
             _shapeConstraint = ComputeConstraint(initialSpatialSolve.Group1Flux, initialSpatialSolve.Group2Flux);
             _current = BuildCandidate(initialSpatialSolve);
@@ -707,6 +726,14 @@ namespace ReactorSim.Core
         public IReadOnlyList<double> Precursors { get { return new ReadOnlyCollection<double>((double[])_precursors.Clone()); } }
         public IqsSpatialCandidateV1 CurrentProjection { get { return _current; } }
         public FullCoreDiffusionSolveResultV1 CurrentSpatialSolve { get { return _current.SpatialSolve; } }
+        public FullCoreAdjointImportanceV1 ReferenceAdjoint { get { return _referenceAdjoint; } }
+        public Digest32 ReferenceAdjointDigest { get { return _referenceAdjoint.Digest; } }
+        public string AdjointNormalizationIdentity { get { return _referenceAdjoint.NormalizationIdentity; } }
+        public int AdjointIterationCount { get { return _referenceAdjoint.IterationCount; } }
+        public double AdjointTransposeResidualRelativeInfinity
+        {
+            get { return _referenceAdjoint.TransposeResidualRelativeInfinity; }
+        }
         public double RelativeReactivity { get { return _current.RelativeReactivity; } }
         public double GenerationTimeSeconds { get { return _dataPack.GenerationTimeSeconds; } }
         public double ShapeConstraint { get { return _shapeConstraint; } }
@@ -745,16 +772,45 @@ namespace ReactorSim.Core
                 return Invalid("IqsFullCoreSolver.TargetPower.Invalid", "target_power_w", "The adiabatic reference power must be finite and positive SI watts.");
             }
 
+            BundleState[] bundleRecords = bundles.ToArray();
             ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
-                spatialModel.TrySolve(bundles, targetPowerWatts);
+                spatialModel.TrySolve(bundleRecords, targetPowerWatts);
             if (!spatial.IsValid)
             {
                 return Invalid(spatial.FirstDiagnostic.Code, spatial.FirstDiagnostic.Path, spatial.FirstDiagnostic.Message);
             }
 
+            if (!spatialModel.DataPack.EnergyGroupOrder.SequenceEqual(
+                    dataPack.EnergyGroupOrder,
+                    StringComparer.Ordinal))
+            {
+                return Invalid(
+                    "IqsFullCoreSolver.EnergyGroupOrder.Mismatch",
+                    "energy_group_order",
+                    "The kinetics and diffusion packs must use the exact same ordered energy groups.");
+            }
+
+            ContractValidationResult<FullCoreAdjointImportanceV1> referenceAdjoint =
+                spatialModel.TrySolveReferenceAdjoint(
+                    bundleRecords,
+                    dataPack,
+                    spatial.Value.EffectiveK);
+            if (!referenceAdjoint.IsValid)
+            {
+                return Invalid(
+                    referenceAdjoint.FirstDiagnostic.Code,
+                    referenceAdjoint.FirstDiagnostic.Path,
+                    referenceAdjoint.FirstDiagnostic.Message);
+            }
+
             try
             {
-                var solver = new IqsFullCoreSolver(spatialModel, dataPack, targetPowerWatts, spatial.Value);
+                var solver = new IqsFullCoreSolver(
+                    spatialModel,
+                    dataPack,
+                    targetPowerWatts,
+                    spatial.Value,
+                    referenceAdjoint.Value);
                 if (!ContractValidation.IsFinite(solver.ShapeConstraint) || solver.ShapeConstraint <= 0.0)
                 {
                     return Invalid("IqsFullCoreSolver.Constraint.Invalid", "shape_constraint", "The initial adjoint-weighted shape constraint must be finite and positive.");
@@ -887,7 +943,10 @@ namespace ReactorSim.Core
 
         private double ComputeConstraint(IReadOnlyList<double> group1, IReadOnlyList<double> group2)
         {
-            if (group1.Count != _spatialModel.NodeCount || group2.Count != _spatialModel.NodeCount)
+            if (group1.Count != _spatialModel.NodeCount ||
+                group2.Count != _spatialModel.NodeCount ||
+                _referenceAdjoint.Group1Importance.Count != _spatialModel.NodeCount ||
+                _referenceAdjoint.Group2Importance.Count != _spatialModel.NodeCount)
             {
                 throw new InvalidOperationException("The static-eigenmode shape dimensions do not match the full-core model.");
             }
@@ -898,7 +957,19 @@ namespace ReactorSim.Core
             double constraint = 0.0;
             for (int index = 0; index < group1.Count; index++)
             {
-                constraint += (inverseVelocity1 * group1[index] + inverseVelocity2 * group2[index]) * nodeVolume;
+                double contribution = nodeVolume * (
+                    _referenceAdjoint.Group1Importance[index] * group1[index] * inverseVelocity1 +
+                    _referenceAdjoint.Group2Importance[index] * group2[index] * inverseVelocity2);
+                if (!ContractValidation.IsFinite(contribution) || contribution < 0.0)
+                {
+                    throw new InvalidOperationException("The reference adjoint-weighted shape constraint is invalid.");
+                }
+
+                constraint += contribution;
+                if (!ContractValidation.IsFinite(constraint))
+                {
+                    throw new InvalidOperationException("The reference adjoint-weighted shape constraint became non-finite.");
+                }
             }
 
             return constraint;

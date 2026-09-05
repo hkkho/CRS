@@ -64,6 +64,51 @@ public sealed class P4T02SpatialOperatorTests
     }
 
     [Fact]
+    public void TransposeApplicationMatchesTheBilinearFormAndRejectsInvalidImportance()
+    {
+        SpatialStencil stencil = SpatialStencil.TryCreate(
+            SyntheticFixtures.CreateTwoChannelThreePosition().Topology).Value;
+        SpatialCoefficientSet coefficients = CreateCoefficients(stencil);
+        SpatialOperator spatialOperator = SpatialOperator.TryCreate(stencil, coefficients).Value;
+        double[] primalInput = { 1.0, 0.5, 2.0, 1.5, 0.25, 3.0 };
+        double[] transposeInput = { 0.75, 1.25, 0.5, 2.0, 1.5, 0.25 };
+        double[] primalOutput = new double[stencil.NodeCount];
+        double[] transposeOutput = new double[stencil.NodeCount];
+
+        Assert.True(spatialOperator.TryApply(
+            SpatialEnergyGroup.Group1,
+            primalInput,
+            primalOutput,
+            out ContractDiagnostic primalDiagnostic));
+        Assert.Null(primalDiagnostic);
+        Assert.True(spatialOperator.TryApplyTranspose(
+            SpatialEnergyGroup.Group1,
+            transposeInput,
+            transposeOutput,
+            out ContractDiagnostic transposeDiagnostic));
+        Assert.Null(transposeDiagnostic);
+
+        double primalForm = 0.0;
+        double transposeForm = 0.0;
+        for (int index = 0; index < stencil.NodeCount; index++)
+        {
+            primalForm += transposeInput[index] * primalOutput[index];
+            transposeForm += primalInput[index] * transposeOutput[index];
+        }
+
+        Assert.InRange(Math.Abs(primalForm - transposeForm), 0.0, 1.0e-12);
+
+        double[] invalidDestination = Enumerable.Repeat(9.0, stencil.NodeCount).ToArray();
+        Assert.False(spatialOperator.TryApplyTranspose(
+            SpatialEnergyGroup.Group1,
+            new double[stencil.NodeCount - 1],
+            invalidDestination,
+            out ContractDiagnostic invalidDiagnostic));
+        Assert.Equal("SpatialOperator.TransposeImportance.DimensionMismatch", invalidDiagnostic.Code);
+        Assert.All(invalidDestination, value => Assert.Equal(0.0, value));
+    }
+
+    [Fact]
     public void CoefficientBindingRejectsMissingDuplicateAndInvalidRecords()
     {
         SyntheticCoreFixture fixture = SyntheticFixtures.CreateTwoChannelThreePosition();

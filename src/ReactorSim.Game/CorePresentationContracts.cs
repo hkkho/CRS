@@ -46,7 +46,11 @@ namespace ReactorSim.Game
             double compensationUpperBound,
             bool compensationSaturated,
             double compensationResponseTimeSeconds,
-            string cadenceIdentity)
+            string cadenceIdentity,
+            string adjointNormalizationIdentity,
+            string adjointDigestHex,
+            int adjointIterationCount,
+            double adjointTransposeResidualRelativeInfinity)
         {
             if (string.IsNullOrWhiteSpace(sourceId))
             {
@@ -107,14 +111,36 @@ namespace ReactorSim.Game
                     nameof(cadenceIdentity));
             }
 
+            if (string.IsNullOrWhiteSpace(adjointNormalizationIdentity))
+            {
+                throw new ArgumentException(
+                    "Physics metrics require an adjoint normalization identity.",
+                    nameof(adjointNormalizationIdentity));
+            }
+
+            if (string.IsNullOrWhiteSpace(adjointDigestHex))
+            {
+                throw new ArgumentException(
+                    "Physics metrics require an adjoint digest.",
+                    nameof(adjointDigestHex));
+            }
+
             if (solverIterationCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(solverIterationCount));
             }
 
+            if (adjointIterationCount < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(adjointIterationCount));
+            }
+
             RequireFiniteNonnegative(
                 solverResidualRelativeInfinity,
                 nameof(solverResidualRelativeInfinity));
+            RequireFiniteNonnegative(
+                adjointTransposeResidualRelativeInfinity,
+                nameof(adjointTransposeResidualRelativeInfinity));
 
             SourceId = sourceId;
             FormulationId = formulationId;
@@ -142,6 +168,10 @@ namespace ReactorSim.Game
             CompensationSaturated = compensationSaturated;
             CompensationResponseTimeSeconds = compensationResponseTimeSeconds;
             CadenceIdentity = cadenceIdentity;
+            AdjointNormalizationIdentity = adjointNormalizationIdentity;
+            AdjointDigestHex = adjointDigestHex;
+            AdjointIterationCount = adjointIterationCount;
+            AdjointTransposeResidualRelativeInfinity = adjointTransposeResidualRelativeInfinity;
             PowerBalanceRelativeError = powerBalanceRelativeError;
             SolverIdentity = solverIdentity;
             SolverIterationCount = solverIterationCount;
@@ -225,6 +255,14 @@ namespace ReactorSim.Game
         public double CompensationResponseTimeSeconds { get; }
 
         public string CadenceIdentity { get; }
+
+        public string AdjointNormalizationIdentity { get; }
+
+        public string AdjointDigestHex { get; }
+
+        public int AdjointIterationCount { get; }
+
+        public double AdjointTransposeResidualRelativeInfinity { get; }
 
         public double PowerBalanceRelativeError { get; }
 
