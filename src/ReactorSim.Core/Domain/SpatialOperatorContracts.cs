@@ -987,6 +987,228 @@ namespace ReactorSim.Core
             return true;
         }
 
+        /// <summary>
+        /// Applies the transpose of the removal-plus-leakage operator.  The
+        /// transpose is exposed for the deterministic reference-adjoint solve;
+        /// it is not a fixed-source IQS operator.  The implementation keeps the
+        /// exact row-volume factors used by <see cref="TryApply"/> so this also
+        /// remains correct if a future coefficient pack uses nonuniform node
+        /// volumes.
+        /// </summary>
+        public bool TryApplyTranspose(
+            SpatialEnergyGroup group,
+            double[] flux,
+            double[] destination,
+            out ContractDiagnostic diagnostic)
+        {
+            if (group != SpatialEnergyGroup.Group1 && group != SpatialEnergyGroup.Group2)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Group.Invalid",
+                    "group",
+                    "The energy group must be Group1 or Group2.");
+                return false;
+            }
+
+            if (flux == null)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Flux.Missing",
+                    "flux",
+                    "A flux vector is required.");
+                return false;
+            }
+
+            if (destination == null)
+            {
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.Missing",
+                    "destination",
+                    "A destination vector is required.");
+                return false;
+            }
+
+            if (flux.Length != NodeCount)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Flux.DimensionMismatch",
+                    "flux",
+                    "The flux vector length must equal the stencil node count.");
+                return false;
+            }
+
+            if (destination.Length != NodeCount)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.DimensionMismatch",
+                    "destination",
+                    "The destination vector length must equal the stencil node count.");
+                return false;
+            }
+
+            if (ReferenceEquals(flux, destination))
+            {
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Buffers.Alias",
+                    "destination",
+                    "The input and destination buffers must be distinct for deterministic application.");
+                Array.Clear(destination, 0, destination.Length);
+                return false;
+            }
+
+            for (int nodeIndex = 0; nodeIndex < flux.Length; nodeIndex++)
+            {
+                if (!ContractValidation.IsFinite(flux[nodeIndex]) || flux[nodeIndex] < 0)
+                {
+                    diagnostic = new ContractDiagnostic(
+                        "SpatialOperator.Flux.Invalid",
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".flux"),
+                        "Flux values must be finite and componentwise nonnegative.");
+                    Array.Clear(destination, 0, destination.Length);
+                    return false;
+                }
+            }
+
+            Array.Clear(destination, 0, destination.Length);
+            for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
+            {
+                CompiledNode node = _nodes[nodeIndex];
+                double removal = group == SpatialEnergyGroup.Group1
+                    ? node.Coefficients.AbsorptionGroup1PerM + node.Coefficients.DownscatterGroup1To2PerM
+                    : node.Coefficients.AbsorptionGroup2PerM;
+                double diagonalLeakage = 0.0;
+
+                foreach (CompiledNeighbor neighbor in node.Neighbors)
+                {
+                    double conductance = group == SpatialEnergyGroup.Group1
+                        ? neighbor.Group1
+                        : neighbor.Group2;
+                    diagonalLeakage += conductance;
+                    double transposeTerm = -conductance * flux[nodeIndex] /
+                                           node.Coefficients.VolumeM3;
+                    destination[neighbor.TargetFlatIndex] += transposeTerm;
+                    if (!ContractValidation.IsFinite(transposeTerm) ||
+                        !ContractValidation.IsFinite(destination[neighbor.TargetFlatIndex]))
+                    {
+                        return FailAndClear(
+                            destination,
+                            ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".transpose_operator"),
+                            "SpatialOperator.Transpose.NonFinite",
+                            "The transposed interior leakage contribution became non-finite.",
+                            out diagnostic);
+                    }
+                }
+
+                foreach (CompiledBoundary boundary in node.Boundaries)
+                {
+                    diagonalLeakage += group == SpatialEnergyGroup.Group1
+                        ? boundary.Group1
+                        : boundary.Group2;
+                }
+
+                double diagonal = removal + diagonalLeakage / node.Coefficients.VolumeM3;
+                double diagonalTerm = diagonal * flux[nodeIndex];
+                destination[nodeIndex] += diagonalTerm;
+                if (!ContractValidation.IsFinite(diagonal) ||
+                    !ContractValidation.IsFinite(diagonalTerm) ||
+                    !ContractValidation.IsFinite(destination[nodeIndex]))
+                {
+                    return FailAndClear(
+                        destination,
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".transpose_operator"),
+                        "SpatialOperator.Transpose.NonFinite",
+                        "The transposed diagonal contribution became non-finite.",
+                        out diagnostic);
+                }
+            }
+
+            diagnostic = null!;
+            return true;
+        }
+
+        /// <summary>
+        /// Copies the exact diagonal used by the deterministic Jacobi solve.
+        /// The reference-adjoint iteration uses this with
+        /// <see cref="TryApplyTranspose"/> to solve the transposed static
+        /// removal/leakage systems with the existing numerical machinery.
+        /// </summary>
+        public bool TryGetDiagonal(
+            SpatialEnergyGroup group,
+            double[] destination,
+            out ContractDiagnostic diagnostic)
+        {
+            if (group != SpatialEnergyGroup.Group1 && group != SpatialEnergyGroup.Group2)
+            {
+                ClearIfSupplied(destination);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Group.Invalid",
+                    "group",
+                    "The energy group must be Group1 or Group2.");
+                return false;
+            }
+
+            if (destination == null)
+            {
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.Missing",
+                    "destination",
+                    "A diagonal destination vector is required.");
+                return false;
+            }
+
+            if (destination.Length != NodeCount)
+            {
+                Array.Clear(destination, 0, destination.Length);
+                diagnostic = new ContractDiagnostic(
+                    "SpatialOperator.Destination.DimensionMismatch",
+                    "destination",
+                    "The diagonal destination vector length must equal the stencil node count.");
+                return false;
+            }
+
+            for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
+            {
+                CompiledNode node = _nodes[nodeIndex];
+                double removal = group == SpatialEnergyGroup.Group1
+                    ? node.Coefficients.AbsorptionGroup1PerM + node.Coefficients.DownscatterGroup1To2PerM
+                    : node.Coefficients.AbsorptionGroup2PerM;
+                double conductanceSum = 0.0;
+                foreach (CompiledNeighbor neighbor in node.Neighbors)
+                {
+                    conductanceSum += group == SpatialEnergyGroup.Group1
+                        ? neighbor.Group1
+                        : neighbor.Group2;
+                }
+
+                foreach (CompiledBoundary boundary in node.Boundaries)
+                {
+                    conductanceSum += group == SpatialEnergyGroup.Group1
+                        ? boundary.Group1
+                        : boundary.Group2;
+                }
+
+                double diagonal = removal + conductanceSum / node.Coefficients.VolumeM3;
+                if (!ContractValidation.IsFinite(diagonal) || diagonal <= 0.0)
+                {
+                    Array.Clear(destination, 0, destination.Length);
+                    diagnostic = new ContractDiagnostic(
+                        "SpatialOperator.Diagonal.Invalid",
+                        ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".diagonal"),
+                        "Every operator diagonal must be finite and strictly positive.");
+                    return false;
+                }
+
+                destination[nodeIndex] = diagonal;
+            }
+
+            diagnostic = null!;
+            return true;
+        }
+
         private static bool FailAndClear(
             double[] destination,
             string path,

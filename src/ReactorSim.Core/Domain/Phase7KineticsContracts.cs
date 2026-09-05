@@ -6,19 +6,35 @@ using System.Linq;
 namespace ReactorSim.Core
 {
     /// <summary>
-    /// One caller-supplied delayed-neutron precursor group. The group index is
-    /// part of the serialized order; this type does not supply nuclear data.
+    /// Identifies the source family represented by one delayed-neutron group.
+    /// The explicit family keeps supplied fission and future heavy-water
+    /// photoneutron data distinguishable in a versioned data pack.  The
+    /// current adiabatic adapter admits fission groups only; photoneutron
+    /// source laws remain a schema capability until separately admitted.
+    /// </summary>
+    public enum DelayedNeutronFamilyV1 : byte
+    {
+        Fission = 0,
+        Photoneutron = 1
+    }
+
+    /// <summary>
+    /// One caller-supplied delayed-neutron precursor group. The group index and
+    /// family are part of the serialized order; this type does not supply
+    /// nuclear data.
     /// </summary>
     public sealed class DelayedNeutronGroupV1
     {
         private DelayedNeutronGroupV1(
             int groupIndex,
             double betaFraction,
-            double decayConstantPerSecond)
+            double decayConstantPerSecond,
+            DelayedNeutronFamilyV1 family)
         {
             GroupIndex = groupIndex;
             BetaFraction = betaFraction;
             DecayConstantPerSecond = decayConstantPerSecond;
+            Family = family;
         }
 
         public int GroupIndex { get; }
@@ -27,10 +43,29 @@ namespace ReactorSim.Core
 
         public double DecayConstantPerSecond { get; }
 
+        public DelayedNeutronFamilyV1 Family { get; }
+
+        /// <summary>
+        /// Creates a fission delayed-neutron group for compatibility with the
+        /// original three-argument API.
+        /// </summary>
         public static ContractValidationResult<DelayedNeutronGroupV1> TryCreate(
             int groupIndex,
             double betaFraction,
             double decayConstantPerSecond)
+        {
+            return TryCreate(
+                groupIndex,
+                betaFraction,
+                decayConstantPerSecond,
+                DelayedNeutronFamilyV1.Fission);
+        }
+
+        public static ContractValidationResult<DelayedNeutronGroupV1> TryCreate(
+            int groupIndex,
+            double betaFraction,
+            double decayConstantPerSecond,
+            DelayedNeutronFamilyV1 family)
         {
             if (groupIndex < 0)
             {
@@ -49,6 +84,14 @@ namespace ReactorSim.Core
                     "The delayed-neutron fraction must be finite, canonical, and in [0,1).");
             }
 
+            if (!Enum.IsDefined(typeof(DelayedNeutronFamilyV1), family))
+            {
+                return Invalid(
+                    "DelayedNeutronGroup.Family.Invalid",
+                    "family",
+                    "The delayed-neutron group family must be a supported fission or photoneutron value.");
+            }
+
             if (!KineticContractValidation.IsPositiveFinite(decayConstantPerSecond))
             {
                 return Invalid(
@@ -61,7 +104,8 @@ namespace ReactorSim.Core
                 new DelayedNeutronGroupV1(
                     groupIndex,
                     betaFraction,
-                    decayConstantPerSecond));
+                    decayConstantPerSecond,
+                    family));
         }
 
         private static ContractValidationResult<DelayedNeutronGroupV1> Invalid(
@@ -76,7 +120,8 @@ namespace ReactorSim.Core
     /// <summary>
     /// Versioned, identity-bound delayed-neutron coefficients. All values are
     /// supplied by the caller; no production constants or initial conditions
-    /// are inferred here.
+    /// are inferred here. The ordered collection accepts any positive group
+    /// count, and each group's family remains explicit in the collection.
     /// </summary>
     public sealed class DelayedNeutronDataV1
     {

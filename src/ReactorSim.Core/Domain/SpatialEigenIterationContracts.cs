@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ReactorSim.Core
 {
@@ -979,6 +980,537 @@ namespace ReactorSim.Core
             }
 
             return values;
+        }
+    }
+
+    /// <summary>
+    /// Deterministic reference importance for the two-group static eigenmode.
+    /// It is the positive left eigenvector of the existing static diffusion
+    /// operator, normalized by its largest component.  This is a reference
+    /// adjoint weighting for shape uniqueness and first-order perturbation
+    /// estimates; it is not a dynamic IQS precursor field.
+    /// </summary>
+    public sealed class SpatialAdjointReferenceSolutionV1
+    {
+        private readonly ReadOnlyCollection<double> _group1Importance;
+        private readonly ReadOnlyCollection<double> _group2Importance;
+        private readonly string _identity;
+        private readonly Digest32? _dataPackDigest;
+
+        internal SpatialAdjointReferenceSolutionV1(
+            double eigenvalue,
+            int iterationCount,
+            double residualRelativeInfinity,
+            IEnumerable<double> group1Importance,
+            IEnumerable<double> group2Importance,
+            string? topologySchemaId = null,
+            string? dataPackVersion = null,
+            Digest32? dataPackDigest = null)
+        {
+            Eigenvalue = eigenvalue;
+            IterationCount = iterationCount;
+            ResidualRelativeInfinity = residualRelativeInfinity;
+            _group1Importance = new ReadOnlyCollection<double>(group1Importance.ToArray());
+            _group2Importance = new ReadOnlyCollection<double>(group2Importance.ToArray());
+            _identity = SolverIdentity;
+            TopologySchemaId = topologySchemaId ?? string.Empty;
+            DataPackVersion = dataPackVersion ?? string.Empty;
+            _dataPackDigest = dataPackDigest;
+        }
+
+        public const string SolverIdentity = "static-eigenmode-reference-adjoint-jacobi-v1";
+
+        public string Identity
+        {
+            get { return _identity; }
+        }
+
+        public string TopologySchemaId { get; }
+
+        public string DataPackVersion { get; }
+
+        public Digest32? DataPackDigest
+        {
+            get { return _dataPackDigest; }
+        }
+
+        public double Eigenvalue { get; }
+
+        public int IterationCount { get; }
+
+        public double ResidualRelativeInfinity { get; }
+
+        public IReadOnlyList<double> Group1Importance
+        {
+            get { return _group1Importance; }
+        }
+
+        public IReadOnlyList<double> Group2Importance
+        {
+            get { return _group2Importance; }
+        }
+    }
+
+    /// <summary>
+    /// Solves the transpose of the existing static two-group generalized
+    /// eigenproblem with deterministic Jacobi iterations.  The forward model
+    /// is L phi = (1/k) F phi; this helper solves
+    /// L^T phi* = (1/k) F^T phi* by power iteration, reusing the same
+    /// removal/leakage operator and caller-supplied scalar Jacobi policy.
+    /// </summary>
+    public static class SpatialAdjointReferenceSolverV1
+    {
+        // The reference field is a deterministic weighting field, not the
+        // production convergence gate.  Match the scale of the caller's
+        // synthetic static solve instead of spending an unbounded amount of
+        // time driving a power-iteration tail below the inner Jacobi error.
+        private const int MaximumReferenceIterations = 384;
+        private const double ReferenceShapeTolerance = 1e-5;
+        private const double ReferenceEigenvalueTolerance = 1e-6;
+
+        public static ContractValidationResult<SpatialAdjointReferenceSolutionV1> TrySolve(
+            SpatialStencil stencil,
+            SpatialCoefficientSet coefficients,
+            SpatialLinearSolvePolicy linearSolvePolicy,
+            double forwardEigenvalue,
+            string? topologySchemaId = null,
+            string? dataPackVersion = null,
+            Digest32? dataPackDigest = null)
+        {
+            if (stencil == null)
+            {
+                return Invalid(
+                    "SpatialAdjointReference.Stencil.Missing",
+                    "stencil",
+                    "A reference-adjoint solve requires an assembled stencil.");
+            }
+
+            if (coefficients == null)
+            {
+                return Invalid(
+                    "SpatialAdjointReference.Coefficients.Missing",
+                    "coefficients",
+                    "A reference-adjoint solve requires validated coefficients.");
+            }
+
+            if (!ReferenceEquals(stencil, coefficients.Stencil))
+            {
+                return Invalid(
+                    "SpatialAdjointReference.Binding.Mismatch",
+                    "coefficients",
+                    "Reference-adjoint coefficients must be bound to the exact stencil.");
+            }
+
+            if (linearSolvePolicy == null)
+            {
+                return Invalid(
+                    "SpatialAdjointReference.LinearSolvePolicy.Missing",
+                    "linear_solve_policy",
+                    "A reference-adjoint solve requires the deterministic Jacobi policy.");
+            }
+
+            if (!ContractValidation.IsFinite(forwardEigenvalue) || forwardEigenvalue <= 0.0)
+            {
+                return Invalid(
+                    "SpatialAdjointReference.Eigenvalue.Invalid",
+                    "forward_eigenvalue",
+                    "The forward reference eigenvalue must be finite and strictly positive.");
+            }
+
+            if ((topologySchemaId == null) != (dataPackVersion == null) ||
+                (topologySchemaId == null) != (dataPackDigest == null) ||
+                (topologySchemaId != null && string.IsNullOrWhiteSpace(topologySchemaId)) ||
+                (dataPackVersion != null && string.IsNullOrWhiteSpace(dataPackVersion)))
+            {
+                return Invalid(
+                    "SpatialAdjointReference.Identity.Incomplete",
+                    "reference_adjoint.identity",
+                    "Reference-adjoint topology, data-pack version, and digest metadata must be supplied together.");
+            }
+
+            ContractValidationResult<SpatialOperator> operatorResult =
+                SpatialOperator.TryCreate(stencil, coefficients);
+            if (!operatorResult.IsValid)
+            {
+                return Invalid(
+                    operatorResult.FirstDiagnostic.Code,
+                    operatorResult.FirstDiagnostic.Path,
+                    operatorResult.FirstDiagnostic.Message);
+            }
+
+            int nodeCount = stencil.NodeCount;
+            var group1Diagonal = new double[nodeCount];
+            var group2Diagonal = new double[nodeCount];
+            ContractDiagnostic diagonalDiagnostic;
+            if (!operatorResult.Value.TryGetDiagonal(
+                    SpatialEnergyGroup.Group1,
+                    group1Diagonal,
+                    out diagonalDiagnostic) ||
+                !operatorResult.Value.TryGetDiagonal(
+                    SpatialEnergyGroup.Group2,
+                    group2Diagonal,
+                    out diagonalDiagnostic))
+            {
+                return Invalid(
+                    diagonalDiagnostic.Code,
+                    diagonalDiagnostic.Path,
+                    diagonalDiagnostic.Message);
+            }
+
+            var currentGroup1 = CreateUnitVector(nodeCount);
+            var currentGroup2 = CreateUnitVector(nodeCount);
+            var group1Source = new double[nodeCount];
+            var group2Source = new double[nodeCount];
+            var group1Solution = new double[nodeCount];
+            var group2Solution = new double[nodeCount];
+            var group1Candidate = new double[nodeCount];
+            var group2Candidate = new double[nodeCount];
+            var applied = new double[nodeCount];
+            double previousEigenvalue = double.NaN;
+
+            for (int iteration = 0; iteration < MaximumReferenceIterations; iteration++)
+            {
+                for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+                {
+                    SpatialNodeCoefficients node = coefficients.Nodes[nodeIndex];
+                    double fissionImportance =
+                        node.ChiGroup1 * currentGroup1[nodeIndex] +
+                        node.ChiGroup2 * currentGroup2[nodeIndex];
+                    double source1 = node.NuFissionGroup1PerM * fissionImportance;
+                    double source2 = node.NuFissionGroup2PerM * fissionImportance;
+                    if (!ContractValidation.IsFinite(fissionImportance) ||
+                        fissionImportance < 0.0 ||
+                        !ContractValidation.IsFinite(source1) ||
+                        source1 < 0.0 ||
+                        !ContractValidation.IsFinite(source2) ||
+                        source2 < 0.0)
+                    {
+                        return Invalid(
+                            "SpatialAdjointReference.Source.Invalid",
+                            ContractValidation.NodePath(node.Node, ".source"),
+                            "The transposed fission source must remain finite and nonnegative.");
+                    }
+
+                    group1Source[nodeIndex] = source1;
+                    group2Source[nodeIndex] = source2;
+                }
+
+                ContractDiagnostic solveDiagnostic;
+                if (!TrySolveTransposeLinearSystem(
+                        operatorResult.Value,
+                        SpatialEnergyGroup.Group2,
+                        group2Source,
+                        group2Diagonal,
+                        currentGroup2,
+                        group2Solution,
+                        group2Candidate,
+                        applied,
+                        linearSolvePolicy,
+                        out solveDiagnostic))
+                {
+                    return Invalid(
+                        solveDiagnostic.Code,
+                        solveDiagnostic.Path,
+                        solveDiagnostic.Message);
+                }
+
+                for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+                {
+                    SpatialNodeCoefficients node = coefficients.Nodes[nodeIndex];
+                    double downscatter = node.DownscatterGroup1To2PerM * group2Solution[nodeIndex];
+                    group1Source[nodeIndex] += downscatter;
+                    if (!ContractValidation.IsFinite(downscatter) ||
+                        !ContractValidation.IsFinite(group1Source[nodeIndex]) ||
+                        group1Source[nodeIndex] < 0.0)
+                    {
+                        return Invalid(
+                            "SpatialAdjointReference.Source.Invalid",
+                            ContractValidation.NodePath(node.Node, ".source"),
+                            "The transposed downscatter source must remain finite and nonnegative.");
+                    }
+                }
+
+                if (!TrySolveTransposeLinearSystem(
+                        operatorResult.Value,
+                        SpatialEnergyGroup.Group1,
+                        group1Source,
+                        group1Diagonal,
+                        currentGroup1,
+                        group1Solution,
+                        group1Candidate,
+                        applied,
+                        linearSolvePolicy,
+                        out solveDiagnostic))
+                {
+                    return Invalid(
+                        solveDiagnostic.Code,
+                        solveDiagnostic.Path,
+                        solveDiagnostic.Message);
+                }
+
+                double scale = 0.0;
+                for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+                {
+                    scale = Math.Max(scale, group1Solution[nodeIndex]);
+                    scale = Math.Max(scale, group2Solution[nodeIndex]);
+                }
+
+                if (!ContractValidation.IsFinite(scale) || scale <= 0.0)
+                {
+                    return Invalid(
+                        "SpatialAdjointReference.Normalization.Invalid",
+                        "reference_adjoint",
+                        "The transposed reference importance vector must have a positive finite scale.");
+                }
+
+                double shapeChange = 0.0;
+                for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+                {
+                    double nextGroup1 = group1Solution[nodeIndex] / scale;
+                    double nextGroup2 = group2Solution[nodeIndex] / scale;
+                    if (!IsValidImportance(nextGroup1) || !IsValidImportance(nextGroup2))
+                    {
+                        return Invalid(
+                            "SpatialAdjointReference.Importance.Invalid",
+                            ContractValidation.NodePath(stencil.Nodes[nodeIndex].Node, ".importance"),
+                            "Reference importance must remain finite and componentwise nonnegative.");
+                    }
+
+                    shapeChange = Math.Max(
+                        shapeChange,
+                        Math.Abs(nextGroup1 - currentGroup1[nodeIndex]));
+                    shapeChange = Math.Max(
+                        shapeChange,
+                        Math.Abs(nextGroup2 - currentGroup2[nodeIndex]));
+                    group1Candidate[nodeIndex] = nextGroup1;
+                    group2Candidate[nodeIndex] = nextGroup2;
+                }
+
+                double eigenvalueChange = double.PositiveInfinity;
+                if (ContractValidation.IsFinite(previousEigenvalue))
+                {
+                    eigenvalueChange = Math.Abs(scale - previousEigenvalue) /
+                                       Math.Max(1.0, Math.Abs(scale));
+                }
+
+                Array.Copy(group1Candidate, currentGroup1, nodeCount);
+                Array.Copy(group2Candidate, currentGroup2, nodeCount);
+                if (shapeChange <= ReferenceShapeTolerance &&
+                    eigenvalueChange <= ReferenceEigenvalueTolerance)
+                {
+                    double residual = ComputeAdjointResidualRelativeInfinity(
+                        operatorResult.Value,
+                        coefficients,
+                        currentGroup1,
+                        currentGroup2,
+                        scale,
+                        applied);
+                    if (!ContractValidation.IsFinite(residual))
+                    {
+                        return Invalid(
+                            "SpatialAdjointReference.Residual.Invalid",
+                            "reference_adjoint.residual",
+                            "The transposed reference-adjoint residual became non-finite.");
+                    }
+
+                    return ContractValidationResult<SpatialAdjointReferenceSolutionV1>.Valid(
+                        new SpatialAdjointReferenceSolutionV1(
+                            scale,
+                            iteration + 1,
+                            residual,
+                            currentGroup1,
+                            currentGroup2,
+                            topologySchemaId,
+                            dataPackVersion,
+                            dataPackDigest));
+                }
+
+                previousEigenvalue = scale;
+            }
+
+            return Invalid(
+                "SpatialAdjointReference.Nonconverged",
+                "reference_adjoint",
+                "The deterministic transposed static eigenmode solve exhausted its reference iteration limit.");
+        }
+
+        private static bool TrySolveTransposeLinearSystem(
+            SpatialOperator spatialOperator,
+            SpatialEnergyGroup group,
+            double[] source,
+            double[] diagonal,
+            IReadOnlyList<double> initialGuess,
+            double[] solution,
+            double[] candidate,
+            double[] applied,
+            SpatialLinearSolvePolicy policy,
+            out ContractDiagnostic diagnostic)
+        {
+            Array.Copy(initialGuess.ToArray(), solution, solution.Length);
+            for (int innerIteration = 0;
+                 innerIteration < policy.MaximumInnerIterations;
+                 innerIteration++)
+            {
+                if (!spatialOperator.TryApplyTranspose(
+                        group,
+                        solution,
+                        applied,
+                        out diagnostic))
+                {
+                    return false;
+                }
+
+                for (int nodeIndex = 0; nodeIndex < source.Length; nodeIndex++)
+                {
+                    double correction = (source[nodeIndex] - applied[nodeIndex]) /
+                                        diagonal[nodeIndex];
+                    double next = solution[nodeIndex] + correction;
+                    if (!ContractValidation.IsFinite(correction) ||
+                        !ContractValidation.IsFinite(next) ||
+                        next < 0.0)
+                    {
+                        diagnostic = new ContractDiagnostic(
+                            "SpatialAdjointReference.InnerFlux.Invalid",
+                            "reference_adjoint.inner_flux",
+                            "The deterministic transposed Jacobi update produced an invalid importance value.");
+                        return false;
+                    }
+
+                    candidate[nodeIndex] = next;
+                }
+
+                if (!spatialOperator.TryApplyTranspose(
+                        group,
+                        candidate,
+                        applied,
+                        out diagnostic))
+                {
+                    return false;
+                }
+
+                double absoluteResidual = 0.0;
+                double scale = 0.0;
+                for (int nodeIndex = 0; nodeIndex < source.Length; nodeIndex++)
+                {
+                    double difference = applied[nodeIndex] - source[nodeIndex];
+                    absoluteResidual = Math.Max(absoluteResidual, Math.Abs(difference));
+                    scale = Math.Max(scale, Math.Abs(applied[nodeIndex]) + Math.Abs(source[nodeIndex]));
+                }
+
+                double relativeResidual = scale == 0.0 ? 0.0 : absoluteResidual / scale;
+                if (!ContractValidation.IsFinite(absoluteResidual) ||
+                    !ContractValidation.IsFinite(relativeResidual))
+                {
+                    diagnostic = new ContractDiagnostic(
+                        "SpatialAdjointReference.InnerResidual.NonFinite",
+                        "reference_adjoint.inner_residual",
+                        "The transposed Jacobi residual became non-finite.");
+                    return false;
+                }
+
+                Array.Copy(candidate, solution, solution.Length);
+                if (absoluteResidual <= policy.AbsoluteResidualTolerance ||
+                    relativeResidual <= policy.RelativeResidualTolerance)
+                {
+                    diagnostic = null!;
+                    return true;
+                }
+            }
+
+            diagnostic = new ContractDiagnostic(
+                "SpatialAdjointReference.InnerSolve.Nonconverged",
+                group == SpatialEnergyGroup.Group1
+                    ? "reference_adjoint.linear_solve.group1"
+                    : "reference_adjoint.linear_solve.group2",
+                "The deterministic transposed Jacobi solve exhausted its caller-supplied iteration limit.");
+            return false;
+        }
+
+        private static double ComputeAdjointResidualRelativeInfinity(
+            SpatialOperator spatialOperator,
+            SpatialCoefficientSet coefficients,
+            double[] group1Importance,
+            double[] group2Importance,
+            double eigenvalue,
+            double[] applied)
+        {
+            int nodeCount = coefficients.NodeCount;
+            var rhs1 = new double[nodeCount];
+            var rhs2 = new double[nodeCount];
+            var group1FissionRhs = new double[nodeCount];
+            var group2FissionRhs = new double[nodeCount];
+            var lhs1 = new double[nodeCount];
+            var lhs2 = new double[nodeCount];
+            for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+            {
+                SpatialNodeCoefficients node = coefficients.Nodes[nodeIndex];
+                double fissionImportance =
+                    node.ChiGroup1 * group1Importance[nodeIndex] +
+                    node.ChiGroup2 * group2Importance[nodeIndex];
+                group1FissionRhs[nodeIndex] = node.NuFissionGroup1PerM * fissionImportance;
+                group2FissionRhs[nodeIndex] = node.NuFissionGroup2PerM * fissionImportance;
+                rhs1[nodeIndex] =
+                    group1FissionRhs[nodeIndex] / eigenvalue +
+                    node.DownscatterGroup1To2PerM * group2Importance[nodeIndex];
+                rhs2[nodeIndex] = group2FissionRhs[nodeIndex] / eigenvalue;
+            }
+
+            ContractDiagnostic diagnostic;
+            if (!spatialOperator.TryApplyTranspose(
+                    SpatialEnergyGroup.Group1,
+                    group1Importance.ToArray(),
+                    lhs1,
+                    out diagnostic) ||
+                !spatialOperator.TryApplyTranspose(
+                    SpatialEnergyGroup.Group2,
+                    group2Importance.ToArray(),
+                    lhs2,
+                    out diagnostic))
+            {
+                return double.NaN;
+            }
+
+            double maximumDifference = 0.0;
+            double maximumScale = 0.0;
+            for (int nodeIndex = 0; nodeIndex < nodeCount; nodeIndex++)
+            {
+                double difference1 = lhs1[nodeIndex] - rhs1[nodeIndex];
+                double difference2 = lhs2[nodeIndex] - rhs2[nodeIndex];
+                maximumDifference = Math.Max(maximumDifference, Math.Abs(difference1));
+                maximumDifference = Math.Max(maximumDifference, Math.Abs(difference2));
+                maximumScale = Math.Max(maximumScale, Math.Abs(lhs1[nodeIndex]) + Math.Abs(rhs1[nodeIndex]));
+                maximumScale = Math.Max(maximumScale, Math.Abs(lhs2[nodeIndex]) + Math.Abs(rhs2[nodeIndex]));
+            }
+
+            _ = applied;
+            return maximumScale == 0.0 ? 0.0 : maximumDifference / maximumScale;
+        }
+
+        private static double[] CreateUnitVector(int count)
+        {
+            var values = new double[count];
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = 1.0;
+            }
+
+            return values;
+        }
+
+        private static bool IsValidImportance(double value)
+        {
+            return ContractValidation.IsFinite(value) && value >= 0.0;
+        }
+
+        private static ContractValidationResult<SpatialAdjointReferenceSolutionV1> Invalid(
+            string code,
+            string path,
+            string message)
+        {
+            return ContractValidationResult<SpatialAdjointReferenceSolutionV1>.Invalid(
+                code,
+                path,
+                message);
         }
     }
 }

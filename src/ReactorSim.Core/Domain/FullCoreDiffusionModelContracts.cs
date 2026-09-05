@@ -18,6 +18,7 @@ namespace ReactorSim.Core
 
         internal FullCoreDiffusionSolveResultV1(
             FullCoreDiffusionDataPackV1 dataPack,
+            SpatialCoefficientSet coefficients,
             SpatialSolveResult spatialSolve,
             IEnumerable<double> group1Flux,
             IEnumerable<double> group2Flux,
@@ -28,6 +29,7 @@ namespace ReactorSim.Core
             double powerBalanceRelativeError)
         {
             DataPack = dataPack;
+            Coefficients = coefficients;
             SpatialSolve = spatialSolve;
             _group1Flux = new ReadOnlyCollection<double>(group1Flux.ToArray());
             _group2Flux = new ReadOnlyCollection<double>(group2Flux.ToArray());
@@ -39,6 +41,13 @@ namespace ReactorSim.Core
         }
 
         public FullCoreDiffusionDataPackV1 DataPack { get; }
+
+        /// <summary>
+        /// The validated node coefficient set used by this static solve.  It
+        /// is an engine-neutral composition seam for optional state overlays;
+        /// callers must not mutate it because the set is immutable.
+        /// </summary>
+        internal SpatialCoefficientSet Coefficients { get; }
 
         public SpatialSolveResult SpatialSolve { get; }
 
@@ -288,12 +297,210 @@ namespace ReactorSim.Core
                     coefficientResult.FirstDiagnostic.Message);
             }
 
+            return TrySolveCoefficientSet(
+                coefficientResult.Value,
+                targetPowerWatts,
+                initialEigenvalue,
+                initialGroup1Flux,
+                initialGroup2Flux);
+        }
+
+        /// <summary>
+        /// Solves one already validated coefficient set on this model's exact
+        /// stencil.  The optional dynamic-Xe entry point uses this seam so the
+        /// existing deterministic static solve is reused rather than copied.
+        /// </summary>
+        public ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolveWithCoefficientSet(
+            IEnumerable<BundleState> bundles,
+            SpatialCoefficientSet coefficients,
+            double targetPowerWatts,
+            double initialEigenvalue = 1.0,
+            IReadOnlyList<double>? initialGroup1Flux = null,
+            IReadOnlyList<double>? initialGroup2Flux = null)
+        {
+            if (bundles == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Bundles.Missing",
+                    "bundles",
+                    "A full-core solve requires one live bundle for every spatial node.");
+            }
+
+            if (coefficients == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Coefficients.Missing",
+                    "coefficients",
+                    "A coefficient-bound full-core solve requires a validated coefficient set.");
+            }
+
+            if (!ReferenceEquals(coefficients.Stencil, _stencil))
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Coefficients.StencilMismatch",
+                    "coefficients.stencil",
+                    "The coefficient set must be bound to this model's exact assembled stencil.");
+            }
+
+            BundleState[] bundleRecords = bundles.ToArray();
+            ContractValidationResult<BundleInventory> inventoryResult =
+                BundleInventory.TryCreate(_topology, bundleRecords);
+            if (!inventoryResult.IsValid)
+            {
+                return InvalidSolve(
+                    inventoryResult.FirstDiagnostic.Code,
+                    inventoryResult.FirstDiagnostic.Path,
+                    inventoryResult.FirstDiagnostic.Message);
+            }
+
+            if (!ContractValidation.IsFinite(targetPowerWatts) || targetPowerWatts <= 0.0)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.TargetPower.Invalid",
+                    "target_power_w",
+                    "The full-core target power must be finite and strictly positive SI watts.");
+            }
+
+            if ((initialGroup1Flux == null) != (initialGroup2Flux == null))
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.InitialFlux.Incomplete",
+                    "initial_flux",
+                    "Both warm-start flux vectors must be supplied together or both omitted.");
+            }
+
+            return TrySolveCoefficientSet(
+                coefficients,
+                targetPowerWatts,
+                initialEigenvalue,
+                initialGroup1Flux,
+                initialGroup2Flux);
+        }
+
+        /// <summary>
+        /// Applies a validated dynamic-Xe coupling result through the same
+        /// static eigenmode solve used by the ordinary path.  The coupling is
+        /// checked against the current inventory, so stale overlays fail
+        /// closed before any accepted state can change.
+        /// </summary>
+        public ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolveWithXenonCoupling(
+            IEnumerable<BundleState> bundles,
+            XenonSpatialCouplingResultV1 coupling,
+            double targetPowerWatts,
+            double initialEigenvalue = 1.0,
+            IReadOnlyList<double>? initialGroup1Flux = null,
+            IReadOnlyList<double>? initialGroup2Flux = null)
+        {
+            if (coupling == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.XenonCoupling.Missing",
+                    "coupling",
+                    "A dynamic-Xe solve requires a validated xenon coupling result.");
+            }
+
+            if (bundles == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Bundles.Missing",
+                    "bundles",
+                    "A full-core solve requires one live bundle for every spatial node.");
+            }
+
+            if (coupling.Coefficients == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.XenonCoupling.CoefficientsMissing",
+                    "coupling.coefficients",
+                    "A dynamic-Xe coupling result must carry effective coefficients.");
+            }
+
+            BundleState[] bundleRecords = bundles.ToArray();
+            ContractValidationResult<BundleInventory> inventoryResult =
+                BundleInventory.TryCreate(_topology, bundleRecords);
+            if (!inventoryResult.IsValid)
+            {
+                return InvalidSolve(
+                    inventoryResult.FirstDiagnostic.Code,
+                    inventoryResult.FirstDiagnostic.Path,
+                    inventoryResult.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> baseResult =
+                BuildCoefficientSet(inventoryResult.Value);
+            if (!baseResult.IsValid)
+            {
+                return InvalidSolve(
+                    baseResult.FirstDiagnostic.Code,
+                    baseResult.FirstDiagnostic.Path,
+                    baseResult.FirstDiagnostic.Message);
+            }
+
+            ContractDiagnostic? overlayFailure = ValidateXenonCoefficientBinding(
+                baseResult.Value,
+                coupling.Coefficients);
+            if (overlayFailure != null)
+            {
+                return InvalidSolve(overlayFailure);
+            }
+
+            return TrySolveCoefficientSet(
+                coupling.Coefficients,
+                targetPowerWatts,
+                initialEigenvalue,
+                initialGroup1Flux,
+                initialGroup2Flux);
+        }
+
+        /// <summary>
+        /// Computes the deterministic left eigenvector of the current static
+        /// two-group operator.  The result is intended for the truthful
+        /// adiabatic point-kinetics adapter's reference importance weighting.
+        /// </summary>
+        public ContractValidationResult<SpatialAdjointReferenceSolutionV1> TrySolveReferenceAdjoint(
+            FullCoreDiffusionSolveResultV1 referenceSolve)
+        {
+            if (referenceSolve == null)
+            {
+                return ContractValidationResult<SpatialAdjointReferenceSolutionV1>.Invalid(
+                    "FullCoreDiffusionModel.ReferenceAdjoint.Solve.Missing",
+                    "reference_solve",
+                    "A reference-adjoint solve requires a completed static solve.");
+            }
+
+            if (!ReferenceEquals(referenceSolve.DataPack, _dataPack) ||
+                !ReferenceEquals(referenceSolve.Coefficients.Stencil, _stencil))
+            {
+                return ContractValidationResult<SpatialAdjointReferenceSolutionV1>.Invalid(
+                    "FullCoreDiffusionModel.ReferenceAdjoint.BindingMismatch",
+                    "reference_solve",
+                    "The reference-adjoint solve must use this model's exact data pack and stencil.");
+            }
+
+            return SpatialAdjointReferenceSolverV1.TrySolve(
+                _stencil,
+                referenceSolve.Coefficients,
+                _dataPack.LinearSolvePolicy,
+                referenceSolve.EffectiveK,
+                _dataPack.Descriptor.TopologySchemaId,
+                _dataPack.Descriptor.DataPackVersion,
+                new Digest32(_dataPack.Descriptor.ContentDigest.ToArray()));
+        }
+
+        private ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolveCoefficientSet(
+            SpatialCoefficientSet coefficientSet,
+            double targetPowerWatts,
+            double initialEigenvalue,
+            IReadOnlyList<double>? initialGroup1Flux,
+            IReadOnlyList<double>? initialGroup2Flux)
+        {
             double[]? group1WarmStart = initialGroup1Flux?.ToArray();
             double[]? group2WarmStart = initialGroup2Flux?.ToArray();
+
             ContractValidationResult<SpatialEigenIteration> iterationResult =
                 SpatialEigenIteration.TryCreate(
                     _stencil,
-                    coefficientResult.Value,
+                    coefficientSet,
                     _dataPack.LinearSolvePolicy,
                     targetPowerWatts,
                     initialEigenvalue,
@@ -351,7 +558,7 @@ namespace ReactorSim.Core
             double totalPowerWatts = 0.0;
             for (int nodeIndex = 0; nodeIndex < _stencil.NodeCount; nodeIndex++)
             {
-                SpatialNodeCoefficients coefficients = coefficientResult.Value.Nodes[nodeIndex];
+                SpatialNodeCoefficients coefficients = coefficientSet.Nodes[nodeIndex];
                 double fissionRate =
                     coefficients.FissionGroup1PerM * finalState.Group1Flux[nodeIndex] +
                     coefficients.FissionGroup2PerM * finalState.Group2Flux[nodeIndex];
@@ -396,6 +603,7 @@ namespace ReactorSim.Core
             return ContractValidationResult<FullCoreDiffusionSolveResultV1>.Valid(
                 new FullCoreDiffusionSolveResultV1(
                     _dataPack,
+                    coefficientSet,
                     spatialResult.Value,
                     finalState.Group1Flux,
                     finalState.Group2Flux,
@@ -473,6 +681,75 @@ namespace ReactorSim.Core
                 nodeCoefficients,
                 _edgeConductances,
                 _boundaryConductances);
+        }
+
+        private static ContractDiagnostic? ValidateXenonCoefficientBinding(
+            SpatialCoefficientSet baseCoefficients,
+            SpatialCoefficientSet effectiveCoefficients)
+        {
+            if (effectiveCoefficients == null)
+            {
+                return new ContractDiagnostic(
+                    "FullCoreDiffusionSolve.XenonCoupling.CoefficientsMissing",
+                    "coupling.coefficients",
+                    "A dynamic-Xe coupling result must carry effective coefficients.");
+            }
+
+            if (!ReferenceEquals(baseCoefficients.Stencil, effectiveCoefficients.Stencil))
+            {
+                return new ContractDiagnostic(
+                    "FullCoreDiffusionSolve.XenonCoupling.StencilMismatch",
+                    "coupling.coefficients.stencil",
+                    "The dynamic-Xe coefficient set must be bound to the current model stencil.");
+            }
+
+            if (baseCoefficients.NodeCount != effectiveCoefficients.NodeCount)
+            {
+                return new ContractDiagnostic(
+                    "FullCoreDiffusionSolve.XenonCoupling.NodeCountMismatch",
+                    "coupling.coefficients.nodes",
+                    "The dynamic-Xe coefficient set must contain the current model nodes.");
+            }
+
+            for (int nodeIndex = 0; nodeIndex < baseCoefficients.NodeCount; nodeIndex++)
+            {
+                SpatialNodeCoefficients baseNode = baseCoefficients.Nodes[nodeIndex];
+                SpatialNodeCoefficients effectiveNode = effectiveCoefficients.Nodes[nodeIndex];
+                if (baseNode.Node != effectiveNode.Node)
+                {
+                    return new ContractDiagnostic(
+                        "FullCoreDiffusionSolve.XenonCoupling.NodeMismatch",
+                        ContractValidation.NodePath(baseNode.Node, ".coefficients"),
+                        "The dynamic-Xe coefficient set must preserve canonical node order.");
+                }
+
+                if (baseNode.VolumeM3 != effectiveNode.VolumeM3 ||
+                    baseNode.DownscatterGroup1To2PerM != effectiveNode.DownscatterGroup1To2PerM ||
+                    baseNode.FissionGroup1PerM != effectiveNode.FissionGroup1PerM ||
+                    baseNode.FissionGroup2PerM != effectiveNode.FissionGroup2PerM ||
+                    baseNode.NuFissionGroup1PerM != effectiveNode.NuFissionGroup1PerM ||
+                    baseNode.NuFissionGroup2PerM != effectiveNode.NuFissionGroup2PerM ||
+                    baseNode.ChiGroup1 != effectiveNode.ChiGroup1 ||
+                    baseNode.ChiGroup2 != effectiveNode.ChiGroup2 ||
+                    baseNode.EnergyPerFissionJ != effectiveNode.EnergyPerFissionJ)
+                {
+                    return new ContractDiagnostic(
+                        "FullCoreDiffusionSolve.XenonCoupling.NonAbsorptionMismatch",
+                        ContractValidation.NodePath(baseNode.Node, ".coefficients"),
+                        "A dynamic-Xe overlay may change only node absorption coefficients.");
+                }
+
+                if (effectiveNode.AbsorptionGroup1PerM < baseNode.AbsorptionGroup1PerM ||
+                    effectiveNode.AbsorptionGroup2PerM < baseNode.AbsorptionGroup2PerM)
+                {
+                    return new ContractDiagnostic(
+                        "FullCoreDiffusionSolve.XenonCoupling.AbsorptionDecrease",
+                        ContractValidation.NodePath(baseNode.Node, ".coefficients"),
+                        "A dynamic-Xe overlay may only add nonnegative absorption.");
+                }
+            }
+
+            return null;
         }
 
         private static List<SpatialEdgeConductance> BuildEdgeConductances(
