@@ -17,7 +17,7 @@ namespace ReactorSim.Browser
     {
         private const string DefaultMode = "play";
         private const string DefaultDataPackId =
-            PracticeGameSessionFactory.DiffusionDataPackVersion;
+            PracticeGameSessionFactory.KineticsDataPackVersion;
         private const string LabDataPackId = "lab-2x8-synthetic-v1";
         private const string TowardEndA = "toward-end-a";
         private const string TowardEndB = "toward-end-b";
@@ -789,6 +789,10 @@ namespace ReactorSim.Browser
                 Physics = new PlaytestPhysicsDto
                 {
                     SourceId = game.Physics.SourceId,
+                    FormulationId = game.Physics.FormulationId,
+                    ShapeMethodId = game.Physics.ShapeMethodId,
+                    AmplitudeMethodId = game.Physics.AmplitudeMethodId,
+                    ReactivityMethodId = game.Physics.ReactivityMethodId,
                     SolveState = game.Physics.SolveState,
                     IsAuthoritative = game.Physics.IsAuthoritative,
                     BindingVersion = game.Physics.BindingVersion,
@@ -1291,6 +1295,14 @@ namespace ReactorSim.Browser
     internal sealed class PlaytestPhysicsDto
     {
         public string SourceId { get; set; } = string.Empty;
+
+        public string FormulationId { get; set; } = string.Empty;
+
+        public string ShapeMethodId { get; set; } = string.Empty;
+
+        public string AmplitudeMethodId { get; set; } = string.Empty;
+
+        public string ReactivityMethodId { get; set; } = string.Empty;
 
         public string SolveState { get; set; } = string.Empty;
 

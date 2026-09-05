@@ -71,13 +71,16 @@ the accepted state.
 
 The Play snapshot carries the shared full-core two-group physics contract in
 explicit SI units: reference/target/total/channel/bundle watts, dimensionless
-amplitude, state-level `k`, `rho = (k - 1) / k`, and solver diagnostics. The
-authoritative path assembles the 380 × 12 CANDU-6 stencil and binds each bundle
-to the embedded versioned pack. Bundle power sums are normalized to the
-requested amplitude at the static solve, then exposed as actual fission power
-after the relative criticality response; the setpoint and actual value remain
-separate. Refuelling re-solves the candidate inventory, and burnup advances
-from retained actual bundle watts. The current pack is project-authored
+amplitude, state-level `k`, `rho = (k - 1) / k`, and solver diagnostics. It also
+publishes the active formulation, shape-method, amplitude-method, and
+reactivity-method identities. The authoritative path is an adiabatic model:
+the 380 × 12 CANDU-6 stencil is recomputed as a deterministic static
+`k`-eigenmode, while scalar point kinetics advances amplitude. It does not
+claim a time-dependent fixed-source IQS solve. Bundle power sums are normalized
+to the requested amplitude at the static solve, then exposed as actual fission
+power after the relative criticality response; the setpoint and actual value
+remain separate. Refuelling re-solves the candidate inventory, and burnup
+advances from retained actual bundle watts. The current pack is project-authored
 `synthetic-calibrated` data, not a CANDU plant rating or an external
 DRAGON/DONJON result; the next pass can replace it with an offline admitted
 export without changing the browser contract.

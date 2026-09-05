@@ -25,14 +25,19 @@ public sealed class IqsSolverTests
     private static readonly int[] ReversedTwoGroupOrder = { 1, 0 };
 
     [Fact]
-    public void EmbeddedPackLoadsWithExplicitIqsCadenceAndKinetics()
+    public void EmbeddedPackLoadsWithExplicitAdiabaticIdentityAndKinetics()
     {
         IqsKineticsDataPackV1 pack = Require(IqsKineticsDataPackV1.TryLoadEmbeddedCandu6());
 
-        Assert.Equal("candu6-two-group-iqs-v1-project-authored-synthetic-calibrated", pack.DataPackVersion);
+        Assert.Equal("candu6-two-group-adiabatic-v1-project-authored-synthetic-calibrated", pack.DataPackVersion);
         Assert.Equal("project-authored-synthetic-candu6-kinetics", pack.SourceIdentity);
-        Assert.Equal("candu6-two-group-iqs-full-core-v1", pack.ModelId);
-        Assert.Equal("spatial-eigen-iqs-v1", pack.SolverId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ModelId, pack.ModelId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.SolverId, pack.SolverId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, pack.FormulationId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, pack.ShapeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, pack.AmplitudeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, pack.ReactivityMethodId);
+        Assert.False(pack.UsesLegacyIdentity);
         Assert.Equal(2, pack.EnergyGroupOrder.Count);
         Assert.Equal("fast", pack.EnergyGroupOrder[0]);
         Assert.Equal("thermal", pack.EnergyGroupOrder[1]);
@@ -53,6 +58,26 @@ public sealed class IqsSolverTests
         Assert.Equal(600.0, pack.MaximumMicroStepSeconds);
         Assert.Equal(3600.0, pack.ShapeRecomputeIntervalSeconds);
         Assert.Equal(0.0009, pack.GenerationTimeSeconds, 12);
+    }
+
+    [Fact]
+    public void LegacyV1IdentityLoadsWithoutChangingTheExplicitActiveFormulation()
+    {
+        IqsKineticsDataPackV1 pack = Require(IqsKineticsDataPackV1.TryLoadJson(
+            CreatePackJson(
+                LegacyBetaGroups,
+                LegacyDecayConstants,
+                includeSourceIdentity: true,
+                generationTimeSeconds: 0.0001,
+                thermalVelocity: 2200.0)));
+
+        Assert.Equal(AdiabaticKineticsIdentityV1.LegacyModelId, pack.ModelId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.LegacySolverId, pack.SolverId);
+        Assert.True(pack.UsesLegacyIdentity);
+        Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, pack.FormulationId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, pack.ShapeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, pack.AmplitudeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, pack.ReactivityMethodId);
     }
 
     [Fact]

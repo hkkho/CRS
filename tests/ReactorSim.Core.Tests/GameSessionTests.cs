@@ -141,15 +141,19 @@ public sealed class GameSessionTests
     }
 
     [Fact]
-    public void PracticePhysicsProjectionSeparatesSetpointFromIqsAmplitude()
+    public void PracticePhysicsProjectionSeparatesSetpointFromAdiabaticAmplitude()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot snapshot = session.Snapshot;
 
-        Assert.Equal("candu6-two-group-iqs-full-core-v1", snapshot.Physics.SourceId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ModelId, snapshot.Physics.SourceId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, snapshot.Physics.FormulationId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, snapshot.Physics.ShapeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, snapshot.Physics.AmplitudeMethodId);
+        Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, snapshot.Physics.ReactivityMethodId);
         Assert.Equal("converged", snapshot.Physics.SolveState);
         Assert.True(snapshot.Physics.IsAuthoritative);
-        Assert.Contains("spatial-eigen-iqs-v1", snapshot.Physics.SolverIdentity);
+        Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, snapshot.Physics.SolverIdentity);
         Assert.Contains("spatial-eigen-jacobi-v1", snapshot.Physics.SolverIdentity);
         Assert.True(snapshot.Physics.SolverIterationCount > 0);
         Assert.Equal(
@@ -231,7 +235,7 @@ public sealed class GameSessionTests
     }
 
     [Fact]
-    public void IqsShapeRecomputesAtTheHourlyBoundaryAndIsPartitionDeterministic()
+    public void StaticShapeRecomputesAtTheHourlyBoundaryAndIsPartitionDeterministic()
     {
         GameSession oneCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();
         GameSession splitCommand = PracticeGameSessionFactory.CreateBrowserPlaytest();

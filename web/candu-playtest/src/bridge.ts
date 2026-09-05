@@ -347,6 +347,10 @@ function createUnavailableSnapshot(): CanduSnapshot {
     lastRefuellingShiftCount: 0,
     physics: {
       sourceId: "unavailable",
+      formulationId: "unavailable",
+      shapeMethodId: "unavailable",
+      amplitudeMethodId: "unavailable",
+      reactivityMethodId: "unavailable",
       solveState: "unavailable",
       isAuthoritative: false,
       bindingVersion: 0,

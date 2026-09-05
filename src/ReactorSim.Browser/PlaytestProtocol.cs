@@ -92,6 +92,10 @@ namespace ReactorSim.Browser
                         Ordering = "fast-to-thermal"
                     }
                 },
+                FormulationId = AdiabaticKineticsIdentityV1.FormulationId,
+                ShapeMethodId = AdiabaticKineticsIdentityV1.ShapeMethodId,
+                AmplitudeMethodId = AdiabaticKineticsIdentityV1.AmplitudeMethodId,
+                ReactivityMethodId = AdiabaticKineticsIdentityV1.ReactivityMethodId,
                 StateDigestAlgorithm = StateDigestAlgorithm,
                 ReplayDigestAlgorithm = ReplayDigestAlgorithm
             };
@@ -264,6 +268,14 @@ namespace ReactorSim.Browser
         public Dictionary<string, string> Units { get; set; } = new Dictionary<string, string>();
 
         public List<BridgeEnergyGroupDto> EnergyGroups { get; set; } = new List<BridgeEnergyGroupDto>();
+
+        public string FormulationId { get; set; } = string.Empty;
+
+        public string ShapeMethodId { get; set; } = string.Empty;
+
+        public string AmplitudeMethodId { get; set; } = string.Empty;
+
+        public string ReactivityMethodId { get; set; } = string.Empty;
 
         public string StateDigestAlgorithm { get; set; } = string.Empty;
 

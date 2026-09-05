@@ -338,7 +338,7 @@ export default function App() {
             {uiState.bridgeStatus.title}
           </span>
           <span>{uiState.bridgeStatus.detail}.</span>
-          <span className="source-banner-physics">{snapshot.physics.isAuthoritative ? "SPATIAL SOLVE" : "REDUCED MODEL"} · {snapshot.physics.sourceId} · {snapshot.physics.solverIdentity}</span>
+          <span className="source-banner-physics">{snapshot.physics.isAuthoritative ? "ADIABATIC STATIC SHAPE" : "REDUCED MODEL"} · {snapshot.physics.formulationId} · shape {snapshot.physics.shapeMethodId} · amplitude {snapshot.physics.amplitudeMethodId} · {snapshot.physics.solverIdentity}</span>
           <span className="source-banner-protocol">{snapshot.protocol}</span>
         </div>
 

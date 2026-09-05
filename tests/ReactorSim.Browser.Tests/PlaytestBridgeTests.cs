@@ -1,6 +1,7 @@
 using System;
 using System.Text.Json;
 using ReactorSim.Browser;
+using ReactorSim.Core;
 using Xunit;
 
 namespace ReactorSim.Browser.Tests
@@ -26,6 +27,15 @@ namespace ReactorSim.Browser.Tests
                     .GetProperty("energyGroups")[0]
                     .GetProperty("ordering")
                     .GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.FormulationId,
+                root.GetProperty("metadata").GetProperty("formulationId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.ShapeMethodId,
+                root.GetProperty("metadata").GetProperty("shapeMethodId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.AmplitudeMethodId,
+                root.GetProperty("metadata").GetProperty("amplitudeMethodId").GetString());
         }
 
         [Fact]
@@ -43,10 +53,14 @@ namespace ReactorSim.Browser.Tests
                 "toward-end-a",
                 initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[1].GetProperty("flowDirection").GetString());
             JsonElement initialPhysics = initialized.GetProperty("snapshot").GetProperty("physics");
-            Assert.Equal("candu6-two-group-iqs-full-core-v1", initialPhysics.GetProperty("sourceId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.ModelId, initialPhysics.GetProperty("sourceId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, initialPhysics.GetProperty("formulationId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, initialPhysics.GetProperty("shapeMethodId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, initialPhysics.GetProperty("amplitudeMethodId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, initialPhysics.GetProperty("reactivityMethodId").GetString());
             Assert.Equal("converged", initialPhysics.GetProperty("solveState").GetString());
             Assert.True(initialPhysics.GetProperty("isAuthoritative").GetBoolean());
-            Assert.Contains("spatial-eigen-iqs-v1", initialPhysics.GetProperty("solverIdentity").GetString());
+            Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Contains("spatial-eigen-jacobi-v1", initialPhysics.GetProperty("solverIdentity").GetString());
             Assert.Equal(
                 initialPhysics.GetProperty("targetPowerWatts").GetDouble(),

@@ -156,7 +156,7 @@ namespace ReactorSim.Game
         private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
-        private readonly IqsFullCoreSolver _iqsSolver;
+        private readonly IqsFullCoreSolver _adiabaticSolver;
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
@@ -168,13 +168,13 @@ namespace ReactorSim.Game
             IReadOnlyDictionary<string, Phase8PlaybackModeV1> playbackModes,
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
-            IqsFullCoreSolver iqsSolver)
+            IqsFullCoreSolver adiabaticSolver)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
-            _iqsSolver = iqsSolver ?? throw new ArgumentNullException(nameof(iqsSolver));
+            _adiabaticSolver = adiabaticSolver ?? throw new ArgumentNullException(nameof(adiabaticSolver));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
 
@@ -298,7 +298,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<IqsSpatialCandidateV1> projected =
-                _iqsSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
+                _adiabaticSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
             if (!projected.IsValid)
             {
                 return Rejected(
@@ -307,7 +307,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<bool> committed =
-                _iqsSolver.TryCommitCandidate(projected.Value);
+                _adiabaticSolver.TryCommitCandidate(projected.Value);
             if (!committed.IsValid)
             {
                 return Rejected(
@@ -353,7 +353,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<IqsSpatialCandidateV1> projected =
-                _iqsSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
+                _adiabaticSolver.TrySolveCandidate(result.Value.ResultingState.EnumerateBundles());
             if (!projected.IsValid)
             {
                 return Rejected(
@@ -505,7 +505,7 @@ namespace ReactorSim.Game
                 while (remainingSeconds > 0.0)
                 {
                     double untilShapeSolve =
-                        _iqsSolver.DataPack.ShapeRecomputeIntervalSeconds -
+                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds -
                         (simulationCursor - _lastFullCoreSolveSimulationTime);
                     if (untilShapeSolve <= 1e-9)
                     {
@@ -514,25 +514,25 @@ namespace ReactorSim.Game
                     }
 
                     double stepSeconds = Math.Min(
-                        _iqsSolver.DataPack.MaximumMicroStepSeconds,
+                        _adiabaticSolver.DataPack.MaximumMicroStepSeconds,
                         Math.Min(remainingSeconds, untilShapeSolve));
                     ContractValidationResult<double> kinetics =
-                        _iqsSolver.TryAdvancePointKinetics(stepSeconds);
+                        _adiabaticSolver.TryAdvancePointKinetics(stepSeconds);
                     if (!kinetics.IsValid)
                     {
                         throw new InvalidOperationException(
-                            "The IQS point-kinetics advance failed: " +
+                            "The adiabatic point-kinetics advance failed: " +
                             kinetics.FirstDiagnostic);
                     }
 
-                    double physicalShapeScale = requestedAmplitude * _iqsSolver.Amplitude;
+                    double physicalShapeScale = requestedAmplitude * _adiabaticSolver.Amplitude;
                     var deltaEnergy = new double[
                         checked((int)(GameCorePresentationConstants.ChannelCount *
                                      GameCorePresentationConstants.BundlePositionCount))];
                     for (int index = 0; index < deltaEnergy.Length; index++)
                     {
                         deltaEnergy[index] =
-                            _iqsSolver.CurrentProjection.ShapeNodePowerWatts[index] *
+                            _adiabaticSolver.CurrentProjection.ShapeNodePowerWatts[index] *
                             physicalShapeScale *
                             stepSeconds;
                     }
@@ -549,7 +549,7 @@ namespace ReactorSim.Game
                     _coreState = integrated.Value;
                     _powerProjectionVersion = checked(_powerProjectionVersion + 1);
                     double actualPowerFraction =
-                        _iqsSolver.CurrentProjection.ShapePowerWatts * physicalShapeScale /
+                        _adiabaticSolver.CurrentProjection.ShapePowerWatts * physicalShapeScale /
                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
                     double powerQuality = 1.0 -
                         Clamp(Math.Abs(actualPowerFraction - 1.0) / 0.02, 0.0, 1.0);
@@ -560,7 +560,7 @@ namespace ReactorSim.Game
                     remainingSeconds -= stepSeconds;
                     simulationCursor += stepSeconds;
                     if (simulationCursor - _lastFullCoreSolveSimulationTime >=
-                        _iqsSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
+                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
                     {
                         CommitScheduledShape(simulationCursor);
                     }
@@ -571,20 +571,20 @@ namespace ReactorSim.Game
         private void CommitScheduledShape(double simulationTimeSeconds)
         {
             ContractValidationResult<IqsSpatialCandidateV1> candidate =
-                _iqsSolver.TrySolveCandidate(_coreState.EnumerateBundles());
+                _adiabaticSolver.TrySolveCandidate(_coreState.EnumerateBundles());
             if (!candidate.IsValid)
             {
                 throw new InvalidOperationException(
-                    "The scheduled IQS full-core shape solve failed: " +
+                    "The scheduled static-eigenmode full-core shape solve failed: " +
                     candidate.FirstDiagnostic);
             }
 
             ContractValidationResult<bool> committed =
-                _iqsSolver.TryCommitCandidate(candidate.Value);
+                _adiabaticSolver.TryCommitCandidate(candidate.Value);
             if (!committed.IsValid)
             {
                 throw new InvalidOperationException(
-                    "The scheduled IQS shape commit failed: " +
+                    "The scheduled static-eigenmode shape commit failed: " +
                     committed.FirstDiagnostic);
             }
 
@@ -605,7 +605,7 @@ namespace ReactorSim.Game
             return CreateCorePresentationSnapshot(
                 state,
                 powerAmplitude,
-                _iqsSolver.CurrentProjection);
+                _adiabaticSolver.CurrentProjection);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
@@ -624,7 +624,7 @@ namespace ReactorSim.Game
             }
 
             double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
-            double physicalShapeScale = amplitude * _iqsSolver.Amplitude;
+            double physicalShapeScale = amplitude * _adiabaticSolver.Amplitude;
             double totalPowerWatts = projection.ShapePowerWatts * physicalShapeScale;
             double actualPowerFraction = totalPowerWatts /
                                          PracticeGameSessionFactory.PracticeReferencePowerWatts;
@@ -697,12 +697,16 @@ namespace ReactorSim.Game
 
             FullCoreDiffusionSolveResultV1 spatial = projection.SpatialSolve;
             var physics = new GamePhysicsPresentationSnapshot(
-                _iqsSolver.DataPack.ModelId,
+                _adiabaticSolver.DataPack.ModelId,
+                _adiabaticSolver.FormulationId,
+                _adiabaticSolver.ShapeMethodId,
+                _adiabaticSolver.AmplitudeMethodId,
+                _adiabaticSolver.ReactivityMethodId,
                 "converged",
                 true,
                 _powerProjectionVersion,
                 PracticeGameSessionFactory.PracticeReferencePowerWatts,
-                _iqsSolver.Amplitude,
+                _adiabaticSolver.Amplitude,
                 actualPowerFraction,
                 PracticeGameSessionFactory.PracticeReferencePowerWatts * amplitude,
                 totalPowerWatts,
@@ -713,8 +717,8 @@ namespace ReactorSim.Game
                 spatial.EffectiveK,
                 spatial.Reactivity,
                 spatial.PowerBalanceRelativeError,
-                _iqsSolver.DataPack.SolverId + "/" +
-                    _iqsSolver.DataPack.DataPackVersion + "+" +
+                _adiabaticSolver.DataPack.SolverId + "/" +
+                    _adiabaticSolver.DataPack.DataPackVersion + "+" +
                     spatial.SolverIdentity,
                 spatial.IterationCount,
                 spatial.ResidualRelativeInfinity);

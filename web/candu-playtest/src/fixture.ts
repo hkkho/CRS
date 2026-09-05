@@ -739,6 +739,10 @@ function createSnapshot(state: FixtureState): CanduSnapshot {
   const projection = createFixturePowerProjection(state);
   const physics: CanduPhysicsSnapshot = {
     sourceId: "compatibility-reduced-synthetic-candu6-power-v2",
+    formulationId: "compatibility-reduced-model-v2",
+    shapeMethodId: "compatibility-reduced-power-shape-v2",
+    amplitudeMethodId: "compatibility-reduced-power-amplitude-v2",
+    reactivityMethodId: "compatibility-reduced-effective-k-rho-v2",
     solveState: "accepted-reduced",
     isAuthoritative: false,
     bindingVersion: state.sequence,

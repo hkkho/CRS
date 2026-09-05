@@ -8,13 +8,19 @@ namespace ReactorSim.Game
 {
     /// <summary>
     /// Explicit physics metrics exposed to presentation consumers. The
-    /// current practice path is backed by the shared full-core two-group IQS
-    /// solve; Reactivity remains a state-level value derived from k.
+    /// current practice path is backed by deterministic static k-eigenmode
+    /// shape recomputation plus scalar point kinetics; Reactivity remains a
+    /// state-level value derived from k. The legacy source/solver property
+    /// names remain available for public v1 compatibility.
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
         internal GamePhysicsPresentationSnapshot(
             string sourceId,
+            string formulationId,
+            string shapeMethodId,
+            string amplitudeMethodId,
+            string reactivityMethodId,
             string solveState,
             bool isAuthoritative,
             ulong bindingVersion,
@@ -36,6 +42,11 @@ namespace ReactorSim.Game
             {
                 throw new ArgumentException("Physics metrics require a source identity.", nameof(sourceId));
             }
+
+            RequireIdentity(formulationId, "formulation identity", nameof(formulationId));
+            RequireIdentity(shapeMethodId, "shape method identity", nameof(shapeMethodId));
+            RequireIdentity(amplitudeMethodId, "amplitude method identity", nameof(amplitudeMethodId));
+            RequireIdentity(reactivityMethodId, "reactivity method identity", nameof(reactivityMethodId));
 
             if (string.IsNullOrWhiteSpace(solveState))
             {
@@ -69,6 +80,10 @@ namespace ReactorSim.Game
                 nameof(solverResidualRelativeInfinity));
 
             SourceId = sourceId;
+            FormulationId = formulationId;
+            ShapeMethodId = shapeMethodId;
+            AmplitudeMethodId = amplitudeMethodId;
+            ReactivityMethodId = reactivityMethodId;
             SolveState = solveState;
             IsAuthoritative = isAuthoritative;
             BindingVersion = bindingVersion;
@@ -89,6 +104,14 @@ namespace ReactorSim.Game
 
         public string SourceId { get; }
 
+        public string FormulationId { get; }
+
+        public string ShapeMethodId { get; }
+
+        public string AmplitudeMethodId { get; }
+
+        public string ReactivityMethodId { get; }
+
         public string SolveState { get; }
 
         public bool IsAuthoritative { get; }
@@ -98,13 +121,15 @@ namespace ReactorSim.Game
         public double ReferencePowerWatts { get; }
 
         /// <summary>
-        /// Scalar IQS amplitude P(t), independent of the operator setpoint.
+        /// Scalar point-kinetics amplitude P(t), independent of the operator
+        /// setpoint.
         /// </summary>
         public double PowerAmplitude { get; }
 
         /// <summary>
-        /// Normalized fission power after applying the IQS amplitude and
-        /// normalized spatial shape to the operator setpoint.
+        /// Normalized fission power after applying the point-kinetics
+        /// amplitude and normalized static-eigenmode shape to the operator
+        /// setpoint.
         /// </summary>
         public double ActualPowerFraction { get; }
 
@@ -151,6 +176,19 @@ namespace ReactorSim.Game
             if (value <= 0.0)
             {
                 throw new ArgumentOutOfRangeException(parameterName, "This physics metric must be strictly positive.");
+            }
+        }
+
+        private static void RequireIdentity(
+            string value,
+            string description,
+            string parameterName)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                throw new ArgumentException(
+                    "Physics metrics require a " + description + ".",
+                    parameterName);
             }
         }
     }

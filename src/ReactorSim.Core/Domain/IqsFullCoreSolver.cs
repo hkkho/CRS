@@ -11,16 +11,48 @@ using Newtonsoft.Json.Linq;
 namespace ReactorSim.Core
 {
     /// <summary>
-    /// Validated synthetic kinetics metadata for the full-core IQS adapter.
-    /// The spatial coefficients remain in the separately versioned diffusion pack.
+    /// Explicit identity for the active adiabatic kinetics path. The
+    /// <c>Iqs*</c> type and resource names are retained as legacy API names,
+    /// but the active formulation is a static k-eigenmode shape solve with a
+    /// scalar point-kinetics amplitude; it is not a fixed-source IQS solve.
+    /// </summary>
+    public static class AdiabaticKineticsIdentityV1
+    {
+        public const string FormulationId =
+            "adiabatic-static-k-eigenmode-plus-point-kinetics-v1";
+        public const string ShapeMethodId =
+            "deterministic-static-k-eigenmode-recompute-v1";
+        public const string AmplitudeMethodId =
+            "semi-implicit-point-kinetics-v1";
+        public const string ReactivityMethodId =
+            "static-effective-k-rho-v1";
+        public const string ModelId =
+            "candu6-two-group-adiabatic-point-kinetics-v1";
+        public const string SolverId =
+            "static-k-eigenmode-point-kinetics-v1";
+
+        // These IDs were published by the v1 compatibility surface. They
+        // remain accepted on input so old packs continue to load, but they
+        // are not the identity of the active formulation.
+        public const string LegacyModelId = "candu6-two-group-iqs-full-core-v1";
+        public const string LegacySolverId = "spatial-eigen-iqs-v1";
+    }
+
+    /// <summary>
+    /// Validated synthetic kinetics metadata for the full-core adiabatic
+    /// static-eigenmode/point-kinetics adapter. The spatial coefficients
+    /// remain in the separately versioned diffusion pack. The class name is a
+    /// legacy public API name retained for v1 compatibility.
     /// </summary>
     public sealed class IqsKineticsDataPackV1
     {
         public const uint CurrentSchemaVersion = 1;
         public const string SupportedTopologySchemaId = "candu6-380x12-grid-v1";
         public const string SupportedUnitsProfileId = "SI-v1";
-        public const string SupportedModelId = "candu6-two-group-iqs-full-core-v1";
-        public const string SupportedSolverId = "spatial-eigen-iqs-v1";
+        public const string SupportedModelId = AdiabaticKineticsIdentityV1.ModelId;
+        public const string SupportedSolverId = AdiabaticKineticsIdentityV1.SolverId;
+        public const string LegacyModelId = AdiabaticKineticsIdentityV1.LegacyModelId;
+        public const string LegacySolverId = AdiabaticKineticsIdentityV1.LegacySolverId;
         public const string FissionGroupFamily = "fission";
         public const string PhotoneutronGroupFamily = "photoneutron";
         public const string EmbeddedResourceName =
@@ -38,6 +70,12 @@ namespace ReactorSim.Core
             string sourceIdentity,
             string evidenceClass,
             string sourceProvenance,
+            string modelId,
+            string solverId,
+            string formulationId,
+            string shapeMethodId,
+            string amplitudeMethodId,
+            string reactivityMethodId,
             IEnumerable<string> energyGroupOrder,
             IEnumerable<string> groupFamilies,
             IEnumerable<int> delayedGroupOrder,
@@ -53,6 +91,12 @@ namespace ReactorSim.Core
             SourceIdentity = sourceIdentity;
             EvidenceClass = evidenceClass;
             SourceProvenance = sourceProvenance;
+            ModelId = modelId;
+            SolverId = solverId;
+            FormulationId = formulationId;
+            ShapeMethodId = shapeMethodId;
+            AmplitudeMethodId = amplitudeMethodId;
+            ReactivityMethodId = reactivityMethodId;
             _energyGroupOrder = new ReadOnlyCollection<string>(energyGroupOrder.ToArray());
             _groupFamilies = new ReadOnlyCollection<string>(groupFamilies.ToArray());
             _delayedGroupOrder = new ReadOnlyCollection<int>(delayedGroupOrder.ToArray());
@@ -65,8 +109,6 @@ namespace ReactorSim.Core
             ShapeRecomputeIntervalSeconds = shapeRecomputeIntervalSeconds;
             TopologySchemaId = SupportedTopologySchemaId;
             UnitsProfileId = SupportedUnitsProfileId;
-            ModelId = SupportedModelId;
-            SolverId = SupportedSolverId;
         }
 
         public string DataPackVersion { get; }
@@ -75,6 +117,18 @@ namespace ReactorSim.Core
         public string UnitsProfileId { get; }
         public string ModelId { get; }
         public string SolverId { get; }
+        public string FormulationId { get; }
+        public string ShapeMethodId { get; }
+        public string AmplitudeMethodId { get; }
+        public string ReactivityMethodId { get; }
+        public bool UsesLegacyIdentity
+        {
+            get
+            {
+                return string.Equals(ModelId, LegacyModelId, StringComparison.Ordinal) ||
+                       string.Equals(SolverId, LegacySolverId, StringComparison.Ordinal);
+            }
+        }
         public string EvidenceClass { get; }
         public string SourceProvenance { get; }
         public IReadOnlyList<string> EnergyGroupOrder { get { return _energyGroupOrder; } }
@@ -100,7 +154,7 @@ namespace ReactorSim.Core
                     return Invalid(
                         "IqsDataPack.EmbeddedResource.Missing",
                         "resource",
-                        "The embedded CANDU-6 IQS pack could not be found in ReactorSim.Core.");
+                        "The embedded CANDU-6 adiabatic kinetics pack could not be found in ReactorSim.Core.");
                 }
 
                 using (var reader = new StreamReader(stream, Encoding.UTF8, true))
@@ -114,7 +168,7 @@ namespace ReactorSim.Core
         {
             if (string.IsNullOrWhiteSpace(json))
             {
-                return Invalid("IqsDataPack.Json.Empty", "json", "An IQS data pack JSON document is required.");
+                return Invalid("IqsDataPack.Json.Empty", "json", "An adiabatic kinetics data-pack JSON document is required.");
             }
 
             JObject root;
@@ -124,7 +178,7 @@ namespace ReactorSim.Core
             }
             catch (JsonException exception)
             {
-                return Invalid("IqsDataPack.Json.Invalid", "json", "The IQS data pack is not valid JSON: " + exception.Message);
+                return Invalid("IqsDataPack.Json.Invalid", "json", "The adiabatic kinetics data pack is not valid JSON: " + exception.Message);
             }
 
             // Parse through JObject rather than Newtonsoft's reflection-based
@@ -140,6 +194,14 @@ namespace ReactorSim.Core
                 UnitsProfileId = ReadString(root["units_profile_id"]),
                 ModelId = ReadString(root["model_id"]),
                 SolverId = ReadString(root["solver_id"]),
+                FormulationId = ReadString(root["formulation_id"]),
+                FormulationIdSpecified = root["formulation_id"] != null,
+                ShapeMethodId = ReadString(root["shape_method_id"]),
+                ShapeMethodIdSpecified = root["shape_method_id"] != null,
+                AmplitudeMethodId = ReadString(root["amplitude_method_id"]),
+                AmplitudeMethodIdSpecified = root["amplitude_method_id"] != null,
+                ReactivityMethodId = ReadString(root["reactivity_method_id"]),
+                ReactivityMethodIdSpecified = root["reactivity_method_id"] != null,
                 EnergyGroupOrder = ReadStringArray(root["energy_group_order"]),
                 EvidenceClass = ReadString(root["evidence_class"]),
                 SourceProvenance = ReadString(root["source_provenance"]),
@@ -149,7 +211,7 @@ namespace ReactorSim.Core
 
             if (dto.SchemaVersion != CurrentSchemaVersion)
             {
-                return Invalid("IqsDataPack.SchemaVersion.Unsupported", "schema_version", "Only IQS schema version 1 is supported.");
+                return Invalid("IqsDataPack.SchemaVersion.Unsupported", "schema_version", "Only adiabatic kinetics schema version 1 is supported.");
             }
 
             ContractValidationResult<bool> identity = ValidateIdentity(dto);
@@ -261,7 +323,7 @@ namespace ReactorSim.Core
                 !IsFinitePositive(dto.TimeIntegration.ShapeRecomputeIntervalSeconds) ||
                 dto.TimeIntegration.MaximumMicroStepSeconds > dto.TimeIntegration.ShapeRecomputeIntervalSeconds)
             {
-                return Invalid("IqsDataPack.TimeIntegration.Invalid", "time_integration", "IQS time constants must be finite, positive, and ordered micro-step <= macro-step.");
+                return Invalid("IqsDataPack.TimeIntegration.Invalid", "time_integration", "Adiabatic point-kinetics time constants must be finite, positive, and ordered micro-step <= shape-recompute interval.");
             }
 
             return ContractValidationResult<IqsKineticsDataPackV1>.Valid(
@@ -270,6 +332,12 @@ namespace ReactorSim.Core
                     dto.SourceIdentity ?? dto.DataPackVersion!,
                     dto.EvidenceClass!,
                     dto.SourceProvenance!,
+                    dto.ModelId!,
+                    dto.SolverId!,
+                    dto.FormulationId ?? AdiabaticKineticsIdentityV1.FormulationId,
+                    dto.ShapeMethodId ?? AdiabaticKineticsIdentityV1.ShapeMethodId,
+                    dto.AmplitudeMethodId ?? AdiabaticKineticsIdentityV1.AmplitudeMethodId,
+                    dto.ReactivityMethodId ?? AdiabaticKineticsIdentityV1.ReactivityMethodId,
                     dto.EnergyGroupOrder!,
                     groupFamilies,
                     delayedGroupOrder,
@@ -452,10 +520,27 @@ namespace ReactorSim.Core
 
             if (!string.Equals(dto.TopologySchemaId, SupportedTopologySchemaId, StringComparison.Ordinal) ||
                 !string.Equals(dto.UnitsProfileId, SupportedUnitsProfileId, StringComparison.Ordinal) ||
-                !string.Equals(dto.ModelId, SupportedModelId, StringComparison.Ordinal) ||
-                !string.Equals(dto.SolverId, SupportedSolverId, StringComparison.Ordinal))
+                (!string.Equals(dto.ModelId, SupportedModelId, StringComparison.Ordinal) &&
+                 !string.Equals(dto.ModelId, LegacyModelId, StringComparison.Ordinal)) ||
+                (!string.Equals(dto.SolverId, SupportedSolverId, StringComparison.Ordinal) &&
+                 !string.Equals(dto.SolverId, LegacySolverId, StringComparison.Ordinal)))
             {
-                return ContractValidationResult<bool>.Invalid("IqsDataPack.Identity.Unsupported", "identity", "The IQS topology, units, model, or solver identity is unsupported.");
+                return ContractValidationResult<bool>.Invalid("IqsDataPack.Identity.Unsupported", "identity", "The adiabatic kinetics topology, units, model, or solver identity is unsupported.");
+            }
+
+            if ((dto.FormulationIdSpecified &&
+                 !string.Equals(dto.FormulationId, AdiabaticKineticsIdentityV1.FormulationId, StringComparison.Ordinal)) ||
+                (dto.ShapeMethodIdSpecified &&
+                 !string.Equals(dto.ShapeMethodId, AdiabaticKineticsIdentityV1.ShapeMethodId, StringComparison.Ordinal)) ||
+                (dto.AmplitudeMethodIdSpecified &&
+                 !string.Equals(dto.AmplitudeMethodId, AdiabaticKineticsIdentityV1.AmplitudeMethodId, StringComparison.Ordinal)) ||
+                (dto.ReactivityMethodIdSpecified &&
+                 !string.Equals(dto.ReactivityMethodId, AdiabaticKineticsIdentityV1.ReactivityMethodId, StringComparison.Ordinal)))
+            {
+                return ContractValidationResult<bool>.Invalid(
+                    "IqsDataPack.Formulation.Unsupported",
+                    "formulation_id",
+                    "The active pack must identify the adiabatic static-k-eigenmode shape and point-kinetics amplitude methods.");
             }
 
             if (dto.EnergyGroupOrder == null || dto.EnergyGroupOrder.Length != 2 ||
@@ -499,6 +584,14 @@ namespace ReactorSim.Core
             [JsonProperty("units_profile_id")] public string? UnitsProfileId { get; set; }
             [JsonProperty("model_id")] public string? ModelId { get; set; }
             [JsonProperty("solver_id")] public string? SolverId { get; set; }
+            [JsonProperty("formulation_id")] public string? FormulationId { get; set; }
+            public bool FormulationIdSpecified { get; set; }
+            [JsonProperty("shape_method_id")] public string? ShapeMethodId { get; set; }
+            public bool ShapeMethodIdSpecified { get; set; }
+            [JsonProperty("amplitude_method_id")] public string? AmplitudeMethodId { get; set; }
+            public bool AmplitudeMethodIdSpecified { get; set; }
+            [JsonProperty("reactivity_method_id")] public string? ReactivityMethodId { get; set; }
+            public bool ReactivityMethodIdSpecified { get; set; }
             [JsonProperty("energy_group_order")] public string[]? EnergyGroupOrder { get; set; }
             [JsonProperty("evidence_class")] public string? EvidenceClass { get; set; }
             [JsonProperty("source_provenance")] public string? SourceProvenance { get; set; }
@@ -527,9 +620,10 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
-    /// Immutable normalized IQS shape candidate. Candidate construction never
-    /// mutates the owning solver, allowing previews and failed refuelling solves
-    /// to remain atomic.
+    /// Immutable normalized static-eigenmode shape candidate. Candidate
+    /// construction never mutates the owning solver, allowing previews and
+    /// failed refuelling solves to remain atomic. The type name is retained as
+    /// a legacy public API name.
     /// </summary>
     public sealed class IqsSpatialCandidateV1
     {
@@ -568,11 +662,13 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
-    /// Improved quasi-static adapter: the existing deterministic full-core
-    /// diffusion solve supplies the slow shape, while the ordered delayed-source
-    /// groups in the pack advance the scalar amplitude. A fixed flat synthetic
-    /// adjoint is used only for the uniqueness constraint until an admitted
-    /// adjoint data pack exists.
+    /// Legacy <c>IqsFullCoreSolver</c> API entry point for the active adiabatic
+    /// path. The deterministic full-core static k-eigenmode solve supplies the
+    /// recomputed shape, while the ordered delayed-source groups advance a
+    /// scalar point-kinetics amplitude. It does not solve a time-dependent
+    /// fixed-source IQS shape equation. A fixed flat synthetic adjoint is used
+    /// only for the uniqueness constraint until an admitted adjoint data pack
+    /// exists.
     /// </summary>
     public sealed class IqsFullCoreSolver
     {
@@ -614,6 +710,10 @@ namespace ReactorSim.Core
         public double RelativeReactivity { get { return _current.RelativeReactivity; } }
         public double GenerationTimeSeconds { get { return _dataPack.GenerationTimeSeconds; } }
         public double ShapeConstraint { get { return _shapeConstraint; } }
+        public string FormulationId { get { return _dataPack.FormulationId; } }
+        public string ShapeMethodId { get { return _dataPack.ShapeMethodId; } }
+        public string AmplitudeMethodId { get { return _dataPack.AmplitudeMethodId; } }
+        public string ReactivityMethodId { get { return _dataPack.ReactivityMethodId; } }
         public string SolverIdentity
         {
             get { return _dataPack.SolverId + "/" + _dataPack.DataPackVersion + "+" + _current.SpatialSolve.SolverIdentity; }
@@ -627,22 +727,22 @@ namespace ReactorSim.Core
         {
             if (spatialModel == null)
             {
-                return Invalid("IqsFullCoreSolver.SpatialModel.Missing", "spatial_model", "An IQS solver requires a full-core spatial model.");
+                return Invalid("IqsFullCoreSolver.SpatialModel.Missing", "spatial_model", "An adiabatic solver requires a full-core spatial model.");
             }
 
             if (dataPack == null)
             {
-                return Invalid("IqsFullCoreSolver.DataPack.Missing", "data_pack", "An IQS solver requires a validated kinetics pack.");
+                return Invalid("IqsFullCoreSolver.DataPack.Missing", "data_pack", "An adiabatic solver requires a validated kinetics pack.");
             }
 
             if (bundles == null)
             {
-                return Invalid("IqsFullCoreSolver.Bundles.Missing", "bundles", "An IQS solver requires a full-core bundle inventory.");
+                return Invalid("IqsFullCoreSolver.Bundles.Missing", "bundles", "An adiabatic solver requires a full-core bundle inventory.");
             }
 
             if (!ContractValidation.IsFinite(targetPowerWatts) || targetPowerWatts <= 0.0)
             {
-                return Invalid("IqsFullCoreSolver.TargetPower.Invalid", "target_power_w", "The IQS reference power must be finite and positive SI watts.");
+                return Invalid("IqsFullCoreSolver.TargetPower.Invalid", "target_power_w", "The adiabatic reference power must be finite and positive SI watts.");
             }
 
             ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
@@ -672,7 +772,7 @@ namespace ReactorSim.Core
         {
             if (bundles == null)
             {
-                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid("IqsFullCoreSolver.Bundles.Missing", "bundles", "A shape solve requires a full-core bundle inventory.");
+                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid("IqsFullCoreSolver.Bundles.Missing", "bundles", "A static-eigenmode shape solve requires a full-core bundle inventory.");
             }
 
             ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
@@ -718,7 +818,7 @@ namespace ReactorSim.Core
             if (!ContractValidation.IsFinite(dtSeconds) || dtSeconds <= 0.0 ||
                 dtSeconds > _dataPack.MaximumMicroStepSeconds)
             {
-                return ContractValidationResult<double>.Invalid("IqsFullCoreSolver.TimeStep.Invalid", "dt_seconds", "The point-kinetics step must be finite, positive, and no greater than the pack micro-step limit.");
+                return ContractValidationResult<double>.Invalid("IqsFullCoreSolver.TimeStep.Invalid", "dt_seconds", "The adiabatic point-kinetics step must be finite, positive, and no greater than the pack micro-step limit.");
             }
 
             var nextPrecursors = new double[_precursors.Length];
@@ -789,7 +889,7 @@ namespace ReactorSim.Core
         {
             if (group1.Count != _spatialModel.NodeCount || group2.Count != _spatialModel.NodeCount)
             {
-                throw new InvalidOperationException("The IQS shape dimensions do not match the full-core model.");
+                throw new InvalidOperationException("The static-eigenmode shape dimensions do not match the full-core model.");
             }
 
             double inverseVelocity1 = 1.0 / _dataPack.GroupVelocitiesMPerSecond[0];

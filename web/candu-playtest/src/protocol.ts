@@ -66,6 +66,10 @@ export interface CanduDiagnostics {
 
 export interface CanduPhysicsSnapshot {
   sourceId: string;
+  formulationId: string;
+  shapeMethodId: string;
+  amplitudeMethodId: string;
+  reactivityMethodId: string;
   solveState: string;
   isAuthoritative: boolean;
   bindingVersion: number;
