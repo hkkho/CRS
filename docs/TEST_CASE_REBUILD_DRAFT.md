@@ -1,7 +1,12 @@
-# Test-case rebuild draft
+# Behavioral test rebuild plan
 
-Status: draft for independent LLM review. No existing test has been deleted or
-rewritten as part of this draft.
+Status: active rebuild. The legacy cases are archived under
+`archive/test-cases/legacy/2026-09-07/`. The first vertical Game replacement
+suite is implemented in `tests/ReactorSim.Game.Tests`. The Core topology,
+inventory, refuelling, and stale-binding slice is implemented in
+`tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs`; Core
+power/burnup/spatial/kinetics, browser, web, and Unity replacement cases remain
+pending.
 
 ## Intent
 
@@ -89,9 +94,9 @@ Unity owns presentation wiring.
 
 ## P0: essential cases
 
-These cases should exist before the old suite is removed from the build. Each
-case below is intentionally narrow enough to be implemented and reviewed on
-its own.
+These cases define the replacement safety net as the archived suite is rebuilt.
+Each case below is intentionally narrow enough for one bounded implementation
+task.
 
 ### Core topology, inventory, and refuelling
 
@@ -106,6 +111,11 @@ its own.
 | CORE-REFUEL-004 | Invalid channel, direction, shift count, fuel type, partial channel, and insufficient fresh inventory. | Each rejection returns a stable diagnostic category and leaves the complete source state unchanged. Split into separate tests if a failure has a different contract. | Core |
 | CORE-REFUEL-005 | Preview the same request that will later be committed. | Preview returns projected bundle identities and physics-facing deltas without changing inventory, bundle state, score, xenon, lifecycle version, or digest; commit then applies the intended transition once. | Core/Game |
 | CORE-REFUEL-006 | Attempt a refuelling operation after a stale spatial/lifecycle binding. | The candidate is rejected before partial movement; the previously accepted projection and lifecycle binding remain authoritative. | Core |
+
+Implementation status: `CORE-TOPO-001/002`, `CORE-INV-001`,
+`CORE-REFUEL-001..004`, and `CORE-REFUEL-006` are covered by the Core behavioral
+suite. `CORE-REFUEL-005` is covered by the Game campaign suite because preview
+is a public GameSession operation rather than a Core transition.
 
 ### Core power, burnup, and spatial solve
 
@@ -223,16 +233,17 @@ Existing data files should only survive the rebuild when a new case names the
 specific contract they prove. A file should not be retained merely because an
 old test referenced it.
 
-## Suggested implementation order after review
+## Implementation order
 
-1. Agree on the P0 case wording and fixture contracts.
-2. Add the new test projects/files while the current suite is still available
-   for comparison; do not copy assertions mechanically.
-3. Implement the P0 Core and Game cases first, then the browser/Unity seams.
-4. Run the new focused suite and one real Unity PlayMode smoke.
-5. Delete the old test cases and obsolete test-only fixtures in one explicit
-   cleanup change.
-6. Add P1 cases only when a P0 contract is stable; keep P2 cases opt-in.
+1. Run and stabilize the new vertical Game campaign suite. It deliberately
+   covers `GAME-SESSION-003..006` through preview, commit, rejection atomicity,
+   and partition-deterministic burnup/xenon evolution.
+2. Implement the P0 Core cases, then the browser/Unity seams. Do not copy
+   archived assertions mechanically.
+3. Run the new focused suite and one real Unity PlayMode smoke.
+4. Restore an archived fixture only when a new behavioral case names the exact
+   contract it proves.
+5. Add P1 cases only when a P0 contract is stable; keep P2 cases opt-in.
 
 ## Questions for independent LLM reviewers
 
