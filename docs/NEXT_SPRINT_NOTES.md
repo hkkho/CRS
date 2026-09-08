@@ -134,10 +134,14 @@ integrated result.
    Completed 2026-09-08 with nine cases in
    `tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs`; preview
    non-mutation remains covered at the Game boundary where preview is public.
-3. **Rebuild power/burnup/spatial coverage.** Implement `CORE-BURN-001/002`,
+3. **Complete — rebuild power/burnup/spatial coverage.** Implement `CORE-BURN-001/002`,
    `CORE-SPATIAL-001..004`, and `CORE-POWER-001/002`. Acceptance: SI energy
    accounting, normalized power, symmetry, explicit boundaries, record-order
    independence, and nonconvergence are proven without plant-value goldens.
+   Completed 2026-09-08 with eight cases in
+   `tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs` and
+   `tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`; the focused slice and the
+   full current Core suite pass.
 4. **Rebuild kinetics/xenon deterministic coverage.** Implement the P1 kinetics,
    xenon, control, and determinism cases. Acceptance: equilibrium, partitioned
    time, localized xenon, regulator bounds, and digest/order contracts pass.

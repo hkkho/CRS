@@ -4,9 +4,11 @@ Status: active rebuild. The legacy cases are archived under
 `archive/test-cases/legacy/2026-09-07/`. The first vertical Game replacement
 suite is implemented in `tests/ReactorSim.Game.Tests`. The Core topology,
 inventory, refuelling, and stale-binding slice is implemented in
-`tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs`; Core
-power/burnup/spatial/kinetics, browser, web, and Unity replacement cases remain
-pending.
+`tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs`. The Core
+power, burnup, and spatial slice is implemented in
+`tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs` and
+`tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`; Core kinetics, browser, web,
+and Unity replacement cases remain pending.
 
 ## Intent
 
@@ -123,12 +125,17 @@ is a public GameSession operation rather than a Core transition.
 | --- | --- | --- | --- |
 | CORE-BURN-001 | One bundle with a known power, mass, and elapsed interval. | Apply one burnup interval and assert the defined energy-to-burnup conversion, monotone cumulative burnup, and exactly one history sample. | Core |
 | CORE-BURN-002 | A multi-bundle interval with zero, positive, and invalid powers. | Positive finite power advances burnup; zero power leaves burnup and cumulative energy unchanged; negative, non-finite, stale, or incomplete inputs reject atomically. | Core |
-| CORE-SPATIAL-001 | One-node and symmetric two-/three-node manufactured two-group fixtures. | Solve with a known boundary condition and assert convergence, nonnegative finite flux/power, expected symmetry, power normalization, and relative balance error. | Core |
+| CORE-SPATIAL-001 | The smallest supported two-node and a symmetric three-node manufactured two-group fixture. | Solve with known boundary conditions and assert convergence, nonnegative finite flux/power, expected symmetry, power normalization, and relative balance error. The public topology contract requires at least two axial positions, so it cannot represent a one-node fixture. | Core |
 | CORE-SPATIAL-002 | The same coefficient records supplied in different input orders. | Assert identical assembled operators, solve status, diagnostics, and digest. | Core |
 | CORE-SPATIAL-003 | Invalid flux, missing/duplicate coefficients, invalid boundary, and exhausted iteration budget. | Assert fail-closed diagnostics, cleared/unusable candidate state, and no replacement of the last accepted solve. | Core |
 | CORE-SPATIAL-004 | The embedded 380-channel × 12-bundle synthetic pack. | Assert topology/data-pack identity binding, 4,560 node coverage, converged authoritative solve, finite nonnegative node powers, and total bundle/channel/total-power sums. | Core |
 | CORE-POWER-001 | A solved projection at a requested SI watt setpoint. | Assert reference power, target power, amplitude, shape, total/channel/bundle watts, `k`, and `rho = (k - 1) / k` remain separate and internally consistent; do not expose per-bundle reactivity as a substitute. | Core |
 | CORE-POWER-002 | Replace one representative bundle with fresh and then with burned state. | Assert the response direction is observable (fresh and burned do not produce the same state), while the normalized shape and total-power accounting remain valid. | Core |
+
+Implementation status: `CORE-BURN-001/002`, `CORE-SPATIAL-001..004`, and
+`CORE-POWER-001/002` are covered by the Core behavioral suite using manufactured
+fixtures for local operator behavior and the embedded 4,560-node practice pack
+for full-core binding and power accounting.
 
 ### Game session and playable loop
 
