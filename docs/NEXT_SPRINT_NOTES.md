@@ -142,9 +142,12 @@ integrated result.
    `tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs` and
    `tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`; the focused slice and the
    full current Core suite pass.
-4. **Rebuild kinetics/xenon deterministic coverage.** Implement the P1 kinetics,
-   xenon, control, and determinism cases. Acceptance: equilibrium, partitioned
-   time, localized xenon, regulator bounds, and digest/order contracts pass.
+4. **Complete — rebuild kinetics/xenon deterministic coverage.** Implement the
+   P1 kinetics, xenon, control, and determinism cases. Acceptance: equilibrium,
+   partitioned time, localized xenon, regulator bounds, and digest/order
+   contracts pass. Completed 2026-09-08 with seven cases in
+   `tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`; the
+   focused slice and the full current Core suite pass.
 5. **Rebuild browser and web seam tests.** Add the bridge protocol/parity cases
    and reducer tests, including fail-closed WASM unavailability. Do not make the
    TypeScript compatibility fixture authoritative.

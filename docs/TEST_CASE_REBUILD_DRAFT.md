@@ -7,8 +7,10 @@ inventory, refuelling, and stale-binding slice is implemented in
 `tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs`. The Core
 power, burnup, and spatial slice is implemented in
 `tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs` and
-`tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`; Core kinetics, browser, web,
-and Unity replacement cases remain pending.
+`tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`. The Core kinetics, xenon,
+control, and determinism slice is implemented in
+`tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`;
+serialization, CLI, browser, web, and Unity replacement cases remain pending.
 
 ## Intent
 
@@ -181,6 +183,11 @@ turning routine development into a historical physics gate.
 | CORE-CONTROL-001 | Give the practice regulator a positive/negative perturbation and an over-range perturbation. | Compensated net reactivity moves toward the target; command/state stay within bounds; saturation is explicit; invalid input fails closed. |
 | CORE-DETERMINISM-001 | Replay one refuel-plus-time command stream with different wall-time partitions. | Final canonical digest and all player-visible observables match. |
 | CORE-DETERMINISM-002 | Shuffle only input collections whose order is declared non-semantic. | Result identity, diagnostics, and digest are unchanged; order-sensitive collections remain explicitly tested as order-sensitive. |
+
+Implementation status: complete as of 2026-09-08. The seven facts in
+`tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs` cover
+`CORE-KIN-001/002`, `CORE-XE-001/002`, `CORE-CONTROL-001`, and
+`CORE-DETERMINISM-001/002` through public Core and Game session seams.
 
 ### Serialization and CLI wiring
 
