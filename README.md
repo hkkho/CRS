@@ -89,9 +89,23 @@ four- or eight-bundle shifts. Use the Core Map page to inspect the 380 channels,
 preview a shift, and commit it; press F1 or backquote for the debug overlay.
 
 Automated tests are intentionally limited to focused checks for code being
-changed. The primary acceptance path is a playable build exercised through the
-in-game debug menu. Historical task, gate, approval, and review language in
-supporting research is not an active development requirement.
+changed. The minimal runners are:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/Test-DotNet.ps1
+powershell -ExecutionPolicy Bypass -File tools/Test-Browser.ps1
+powershell -ExecutionPolicy Bypass -File tools/Test-UnityImport.ps1
+```
+
+`Test-DotNet.ps1` runs all suites by default; use `-Suite Core`, `-Suite Game`,
+`-Suite Browser`, or `-Suite All` to select one. `Test-Browser.ps1` expects
+browser dependencies to already be installed and runs the Browser .NET bridge
+suite, Vitest, and the production build. `Test-UnityImport.ps1` discovers the
+pinned editor or accepts `-UnityEditorPath`, prepares the simulation DLLs, and runs
+the Unity import/compile/Bootstrap smoke. The primary acceptance path remains
+a playable build exercised through the in-game debug menu. Historical task,
+gate, approval, and review language in supporting research is not an active
+development requirement.
 
 ### Browser playtest pivot
 

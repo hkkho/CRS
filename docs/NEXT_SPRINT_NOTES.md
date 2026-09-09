@@ -163,9 +163,14 @@ integrated result.
    covering `UNITY-003/004`. Verification: Prepare-UnityCore build 0
    warnings/errors; Unity `6000.3.21f1` EditMode 2/2 pass; PlayMode 1/1 pass.
    Completed 2026-09-09.
-7. **Replace only the useful test runners.** Add minimal focused .NET, browser,
-   and Unity import commands. Do not restore phase gates, approval scripts,
-   long routine soaks, or test-evidence generation.
+7. **Complete — replace only the useful test runners.** Added minimal focused
+   .NET, browser, and Unity import commands. Verification completed 2026-09-09:
+   Test-DotNet All passed Core 24/24, Game 3/3, and Browser 6/6;
+   Test-Browser passed Browser 6/6, Vitest 4/4, and the production build (the
+   existing Vite chunk-size warning is non-fatal); Test-UnityImport passed with
+   the Prepare-UnityCore build at 0 warnings/errors and the Unity 6000.3.21f1
+   import/compile smoke. No phase gates, approvals, evidence generation, or
+   routine soaks were restored.
 
 ### Wave 1 — fix the reported playable surfaces
 
