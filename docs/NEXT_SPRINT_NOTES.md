@@ -174,12 +174,24 @@ integrated result.
 
 ### Wave 1 — fix the reported playable surfaces
 
-8. **Reproduce and fix the deployed browser clock.** Build the production WASM
-   artifact, serve the exact deployment output, and observe snapshot time over
-   multiple worker dispatches. Check worker asset paths, initialization,
-   pending-command scheduling, visibility throttling, and deployment headers.
-   Acceptance: production-shaped smoke proves monotone simulation time and
-   visible burnup/state updates after pause/resume.
+8. **Complete — reproduce and fix the deployed browser clock.** Reproduction
+   (2026-09-09): the live Vercel deployment and exact local Release WASM/Vite
+   dist both loaded the authoritative bridge with no console/page errors, but
+   the old fixed interval reached only `D01 01:00` after 287 visible wall
+   seconds because worker latency dropped intervening one-second intervals.
+   Fix: extracted a monotonic visible-time `LiveClockScheduler` with 100 ms
+   control-tick alignment and remainder retention, no overlapping background
+   dispatch, foreground command blocking without elapsed-time loss, one-second
+   command chunks, a bounded 60-second backlog, pause/hidden-time exclusion,
+   clean lifecycle rebasing, and failed-dispatch recovery. Verification:
+   `tools/Test-Browser.ps1` passed Browser .NET 6/6, Vitest 10/10, and the
+   production build; an exact Release WASM production-artifact probe advanced
+   `00:00` → `00:03`, pause settled at `00:33`, and resume advanced to `00:36`
+   in 82 seconds with no browser errors. `scripts/smoke.mjs` intentionally
+   remains unchanged: its direct deterministic full-core call is already
+   long-running, Vite preview SPA fallback makes its missing-asset 404
+   assertion unsuitable locally, and short pause/resume deadlines would be
+   flaky. Scheduler tests are the stable latency-regression proof.
 9. **Add the paired burnup profile.** Reuse the power-profile layout and render
    all 12 bundle burnups immediately below it with clear units, fresh-fuel
    treatment, and accessible text. Acceptance: reducer/component test plus a

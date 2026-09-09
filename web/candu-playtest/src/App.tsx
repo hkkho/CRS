@@ -52,9 +52,12 @@ import {
   formatPowerWatts,
   formatReactivity,
 } from "./visuals";
+import {
+  LiveClockScheduler,
+  type LiveClockSchedulerOptions,
+} from "./liveClock";
 
 const bridge = createCanduPlaytestBridge();
-const LIVE_CLOCK_WALL_INTERVAL_MS = 1_000;
 
 export default function App() {
   const [uiState, uiDispatch] = useReducer(
@@ -67,7 +70,8 @@ export default function App() {
   const [copyStatus, setCopyStatus] = useState("");
   const [isCommandPending, setIsCommandPending] = useState(false);
   const pendingCountRef = useRef(0);
-  const backgroundCommandInFlightRef = useRef(false);
+  const bridgeInteractiveRef = useRef(false);
+  const liveClockRef = useRef<LiveClockScheduler | null>(null);
 
   useEffect(() => {
     const lifecycle = bridge as CanduPlaytestBridgeLifecycle;
@@ -105,7 +109,12 @@ export default function App() {
   );
 
   const sendCommand = useCallback(
-    async (command: CanduCommand, record = true, showPending = true): Promise<CanduCommandResponse | null> => {
+    async (
+      command: CanduCommand,
+      record = true,
+      showPending = true,
+      throwOnError = false,
+    ): Promise<CanduCommandResponse | null> => {
       if (showPending) {
         pendingCountRef.current += 1;
         setIsCommandPending(true);
@@ -117,8 +126,11 @@ export default function App() {
         return response;
       } catch (error) {
         const message = error instanceof Error ? error.message : "The browser bridge returned an unknown error.";
-        if (showPending) {
+        if (showPending || throwOnError) {
           setCommandError(message);
+        }
+        if (throwOnError) {
+          throw error;
         }
         return null;
       } finally {
@@ -126,6 +138,7 @@ export default function App() {
           pendingCountRef.current -= 1;
           if (pendingCountRef.current === 0) {
             setIsCommandPending(false);
+            liveClockRef.current?.wake();
           }
         }
       }
@@ -133,22 +146,54 @@ export default function App() {
     [],
   );
 
-  useEffect(() => {
-    if (snapshot.isPaused || snapshot.playbackModeId === "pause") {
-      return;
-    }
+  bridgeInteractiveRef.current = isBridgeInteractive(uiState.bridgeStatus);
+  const liveClock = useMemo<LiveClockScheduler>(() => {
+    const options: LiveClockSchedulerOptions = {
+      dispatch: (wallMilliseconds) =>
+        sendCommand({ type: "advance", wallMilliseconds }, false, false, true),
+      canDispatch: () => {
+        if (pendingCountRef.current !== 0 || !bridgeInteractiveRef.current) {
+          return false;
+        }
+        try {
+          const authoritativeSnapshot = bridge.getSnapshot();
+          return !authoritativeSnapshot.isPaused && authoritativeSnapshot.playbackModeId !== "pause";
+        } catch {
+          return false;
+        }
+      },
+      onDispatchError: (error) => {
+        setCommandError(error instanceof Error ? error.message : "The live clock could not advance the browser bridge.");
+      },
+    };
+    return new LiveClockScheduler(options);
+  }, [sendCommand]);
+  liveClockRef.current = liveClock;
 
-    const timer = window.setInterval(() => {
-      if (pendingCountRef.current === 0 && !backgroundCommandInFlightRef.current) {
-        backgroundCommandInFlightRef.current = true;
-        void sendCommand({ type: "advance", wallMilliseconds: LIVE_CLOCK_WALL_INTERVAL_MS }, false, false)
-          .finally(() => {
-            backgroundCommandInFlightRef.current = false;
-          });
-      }
-    }, LIVE_CLOCK_WALL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [sendCommand, snapshot.isPaused, snapshot.playbackModeId]);
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      liveClock.setVisible(document.visibilityState === "visible");
+    };
+    onVisibilityChange();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      // Stop the timer on an actual unmount while keeping the scheduler
+      // reusable across React StrictMode's development effect replay.
+      liveClock.setPlaybackState(false, "component-unmounted");
+    };
+  }, [liveClock]);
+
+  useEffect(() => {
+    const isPlaying =
+      bridgeInteractiveRef.current &&
+      !snapshot.isPaused &&
+      snapshot.playbackModeId !== "pause";
+    liveClock.setPlaybackState(
+      isPlaying,
+      `${uiState.bridgeStatus.source}:${snapshot.playbackModeId}:${snapshot.isPaused ? "paused" : "playing"}`,
+    );
+  }, [liveClock, snapshot.isPaused, snapshot.playbackModeId, uiState.bridgeStatus.source]);
 
   useEffect(() => {
     saveNote(feedbackNote);
@@ -185,12 +230,22 @@ export default function App() {
 
   const changeMode = useCallback((mode: ConsoleMode) => {
     uiDispatch({ type: "set-mode", mode });
+    pendingCountRef.current += 1;
+    setIsCommandPending(true);
+    setCommandError("");
     void bridge.initializeMode(mode)
       .then((nextSnapshot) => {
         uiDispatch({ type: "bridge-state", bridgeStatus: bridge.status, snapshot: nextSnapshot });
       })
       .catch((error: unknown) => {
         setCommandError(error instanceof Error ? error.message : "The browser bridge could not change modes.");
+      })
+      .finally(() => {
+        pendingCountRef.current -= 1;
+        if (pendingCountRef.current === 0) {
+          setIsCommandPending(false);
+          liveClockRef.current?.wake();
+        }
       });
   }, []);
 
@@ -223,6 +278,7 @@ export default function App() {
       return;
     }
 
+    pendingCountRef.current += 1;
     setIsCommandPending(true);
     setCommandError("");
     try {
@@ -236,7 +292,11 @@ export default function App() {
       const message = error instanceof Error ? error.message : "Replay failed in the browser bridge.";
       setCommandError(message);
     } finally {
-      setIsCommandPending(false);
+      pendingCountRef.current -= 1;
+      if (pendingCountRef.current === 0) {
+        setIsCommandPending(false);
+        liveClockRef.current?.wake();
+      }
     }
   }, []);
 
