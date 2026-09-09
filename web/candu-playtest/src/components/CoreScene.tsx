@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { PointerEvent } from "react";
-import * as THREE from "three";
+import Phaser from "phaser";
 import type { CanduChannelSnapshot } from "../protocol";
 import { getFlowArrow, getFlowDirectionLabel, getHeatColor } from "../visuals";
 
@@ -10,6 +9,14 @@ const CORE_GRID_SPACING = 0.83;
 const CORE_GRID_OFFSET = 10.5;
 const CORE_GRID_HALF_EXTENT = 9.2;
 const CORE_VIEW_HALF_EXTENT = 10.25;
+const CORE_CHANNEL_RADIUS = 0.31;
+
+const CORE_FLOOR_COLOR = 0x0b1c2b;
+const CORE_GRID_COLOR = 0x31556a;
+const CORE_OUTLINE_COLOR = 0x5ed7c5;
+const CORE_CHANNEL_EDGE_COLOR = 0x07131f;
+const CORE_FLOW_COLOR = 0xd7fff1;
+const CORE_MARKER_COLOR = 0xf9e4ac;
 
 interface CoreSceneProps {
   channels: readonly CanduChannelSnapshot[];
@@ -17,6 +24,184 @@ interface CoreSceneProps {
   viewMode: "engine2d" | "grid";
   onSelectChannel: (channelIndex: number) => void;
   onChangeViewMode: (viewMode: "engine2d" | "grid") => void;
+}
+
+interface CorePoint {
+  x: number;
+  y: number;
+}
+
+interface CoreLayout {
+  centerX: number;
+  centerY: number;
+  scale: number;
+}
+
+class PhaserCoreScene extends Phaser.Scene {
+  private channels: readonly CanduChannelSnapshot[];
+  private selectedChannelIndex: number;
+  private readonly onSelectChannel: (channelIndex: number) => void;
+  private readonly reducedMotion: boolean;
+  private layout: CoreLayout = createCoreLayout(1, 1);
+  private staticGraphics: Phaser.GameObjects.Graphics | null = null;
+  private channelGraphics: Phaser.GameObjects.Graphics | null = null;
+  private flowGraphics: Phaser.GameObjects.Graphics | null = null;
+  private markerGraphics: Phaser.GameObjects.Graphics | null = null;
+  private animationTime = 0;
+
+  constructor(
+    channels: readonly CanduChannelSnapshot[],
+    selectedChannelIndex: number,
+    onSelectChannel: (channelIndex: number) => void,
+    reducedMotion: boolean,
+  ) {
+    super({ key: "candu-core-surface" });
+    this.channels = channels;
+    this.selectedChannelIndex = selectedChannelIndex;
+    this.onSelectChannel = onSelectChannel;
+    this.reducedMotion = reducedMotion;
+  }
+
+  create(): void {
+    this.staticGraphics = this.add.graphics().setDepth(0);
+    this.channelGraphics = this.add.graphics().setDepth(1);
+    this.flowGraphics = this.add.graphics().setDepth(2);
+    this.markerGraphics = this.add.graphics().setDepth(3);
+    this.input.on("pointerdown", this.handlePointerDown, this);
+
+    this.resize(this.scale.width, this.scale.height);
+  }
+
+  update(time: number): void {
+    if (!this.reducedMotion) {
+      this.animationTime = time;
+      this.drawMarker();
+    }
+  }
+
+  resize(width: number, height: number): void {
+    this.layout = createCoreLayout(width, height);
+    this.drawCore();
+  }
+
+  setChannels(channels: readonly CanduChannelSnapshot[], selectedChannelIndex: number): void {
+    this.channels = channels;
+    this.selectedChannelIndex = selectedChannelIndex;
+    this.drawCore();
+  }
+
+  private drawCore(): void {
+    if (
+      this.staticGraphics === null ||
+      this.channelGraphics === null ||
+      this.flowGraphics === null ||
+      this.markerGraphics === null
+    ) {
+      return;
+    }
+
+    this.drawStaticSurface(this.staticGraphics);
+    this.drawChannels(this.channelGraphics);
+    this.drawFlowCues(this.flowGraphics);
+    this.drawMarker();
+  }
+
+  private drawStaticSurface(graphics: Phaser.GameObjects.Graphics): void {
+    graphics.clear();
+    graphics.fillStyle(CORE_FLOOR_COLOR, 0.84);
+    const gridExtent = (CORE_GRID_SIZE / 2) * CORE_GRID_SPACING;
+    const corners = [
+      getIsoPoint(-gridExtent, -gridExtent, this.layout),
+      getIsoPoint(gridExtent, -gridExtent, this.layout),
+      getIsoPoint(gridExtent, gridExtent, this.layout),
+      getIsoPoint(-gridExtent, gridExtent, this.layout),
+    ];
+    graphics.fillPoints(corners, true);
+
+    graphics.lineStyle(Math.max(1, this.layout.scale * 0.025), CORE_GRID_COLOR, 0.3);
+    for (let index = 0; index <= CORE_GRID_SIZE; index += 1) {
+      const coordinate = -gridExtent + index * CORE_GRID_SPACING;
+      const columnStart = getIsoPoint(coordinate, -gridExtent, this.layout);
+      const columnEnd = getIsoPoint(coordinate, gridExtent, this.layout);
+      const rowStart = getIsoPoint(-gridExtent, coordinate, this.layout);
+      const rowEnd = getIsoPoint(gridExtent, coordinate, this.layout);
+      graphics.lineBetween(columnStart.x, columnStart.y, columnEnd.x, columnEnd.y);
+      graphics.lineBetween(rowStart.x, rowStart.y, rowEnd.x, rowEnd.y);
+    }
+
+    graphics.lineStyle(Math.max(1, this.layout.scale * 0.035), CORE_OUTLINE_COLOR, 0.7);
+    graphics.strokePoints(corners, true);
+  }
+
+  private drawChannels(graphics: Phaser.GameObjects.Graphics): void {
+    graphics.clear();
+    const edgeWidth = Math.max(0.75, this.layout.scale * 0.025);
+    for (const channel of this.channels) {
+      const position = getCanvasChannelPosition(channel, this.layout);
+      const width = CORE_CHANNEL_RADIUS * 2.1 * this.layout.scale;
+      const height = width * (0.56 + channel.localPowerFraction * 0.1);
+      const points = diamondPoints(position, width, height);
+      graphics.fillStyle(parseRgbColor(getHeatColor(channel.localPowerFraction)), 0.94);
+      graphics.fillPoints(points, true);
+      graphics.lineStyle(edgeWidth, CORE_CHANNEL_EDGE_COLOR, 0.55);
+      graphics.strokePoints(points, true);
+    }
+  }
+
+  private drawFlowCues(graphics: Phaser.GameObjects.Graphics): void {
+    graphics.clear();
+    graphics.fillStyle(CORE_FLOW_COLOR, 0.72);
+    for (const channel of this.channels) {
+      const position = getCanvasChannelPosition(channel, this.layout);
+      const pointsTowardEndB = channel.flowDirection === "toward-end-b";
+      const direction = pointsTowardEndB ? 1 : -1;
+      const centerX = position.x + direction * 0.14 * this.layout.scale;
+      const centerY = position.y + 0.16 * this.layout.scale;
+      const tipX = centerX + direction * 0.11 * this.layout.scale;
+      const baseX = centerX - direction * 0.07 * this.layout.scale;
+      const halfWidth = Math.max(1.5, this.layout.scale * 0.075);
+      graphics.fillTriangle(tipX, centerY, baseX, centerY - halfWidth, baseX, centerY + halfWidth);
+    }
+  }
+
+  private drawMarker(): void {
+    if (this.markerGraphics === null) {
+      return;
+    }
+
+    this.markerGraphics.clear();
+    const selected = this.channels[this.selectedChannelIndex];
+    if (selected === undefined) {
+      return;
+    }
+
+    const position = getCanvasChannelPosition(selected, this.layout);
+    const pulse = this.reducedMotion ? 1 : 1 + Math.sin(this.animationTime * 0.004) * 0.05;
+    this.markerGraphics.lineStyle(Math.max(1.5, this.layout.scale * 0.06), CORE_MARKER_COLOR, 0.98);
+    this.markerGraphics.strokeCircle(position.x, position.y, this.layout.scale * 0.43 * pulse);
+  }
+
+  private handlePointerDown(pointer: Phaser.Input.Pointer): void {
+    const point = pointer.positionToCamera(this.cameras.main) as Phaser.Math.Vector2;
+    const hitRadius = Math.max(this.layout.scale * 0.38, 9);
+    let closestIndex = -1;
+    let closestDistanceSquared = hitRadius * hitRadius;
+
+    this.channels.forEach((channel, index) => {
+      const position = getCanvasChannelPosition(channel, this.layout);
+      const deltaX = point.x - position.x;
+      const deltaY = point.y - position.y;
+      const distanceSquared = deltaX * deltaX + deltaY * deltaY;
+      if (distanceSquared <= closestDistanceSquared) {
+        closestDistanceSquared = distanceSquared;
+        closestIndex = index;
+      }
+    });
+
+    if (closestIndex >= 0) {
+      this.onSelectChannel(closestIndex);
+    }
+  }
 }
 
 export function CoreScene({
@@ -27,16 +212,10 @@ export function CoreScene({
   onChangeViewMode,
 }: CoreSceneProps) {
   const mountRef = useRef<HTMLDivElement>(null);
-  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
-  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
-  const meshRef = useRef<THREE.InstancedMesh | null>(null);
-  const flowMeshRef = useRef<THREE.InstancedMesh | null>(null);
-  const markerRef = useRef<THREE.Mesh | null>(null);
+  const sceneRef = useRef<PhaserCoreScene | null>(null);
   const channelsRef = useRef(channels);
   const selectRef = useRef(onSelectChannel);
   const changeViewRef = useRef(onChangeViewMode);
-  const raycasterRef = useRef(new THREE.Raycaster());
-  const pointerRef = useRef(new THREE.Vector2());
 
   useEffect(() => {
     channelsRef.current = channels;
@@ -56,224 +235,89 @@ export function CoreScene({
     }
 
     const mount = mountRef.current;
-    let renderer: THREE.WebGLRenderer;
+    const initialWidth = Math.max(1, mount.clientWidth);
+    const initialHeight = Math.max(1, mount.clientHeight);
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const scene = new PhaserCoreScene(
+      channelsRef.current,
+      selectedChannelIndex,
+      (channelIndex) => selectRef.current(channelIndex),
+      reducedMotion,
+    );
+    sceneRef.current = scene;
+
+    let game: Phaser.Game;
     try {
-      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+      game = new Phaser.Game({
+        type: Phaser.CANVAS,
+        parent: mount,
+        width: initialWidth,
+        height: initialHeight,
+        scene,
+        transparent: true,
+        backgroundColor: "rgba(0,0,0,0)",
+        canvasStyle: "display:block;width:100%;height:100%;touch-action:none;",
+        antialias: true,
+        pixelArt: false,
+        roundPixels: false,
+        banner: false,
+        scale: {
+          mode: Phaser.Scale.RESIZE,
+          width: initialWidth,
+          height: initialHeight,
+        },
+      });
     } catch {
+      sceneRef.current = null;
       changeViewRef.current("grid");
       return;
     }
 
-    rendererRef.current = renderer;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    renderer.setClearColor(0x07131f, 0);
-    renderer.domElement.className = "core-canvas";
-    renderer.domElement.setAttribute("role", "img");
-    renderer.domElement.setAttribute(
+    game.canvas.className = "core-phaser-canvas";
+    game.canvas.setAttribute("role", "img");
+    game.canvas.setAttribute(
       "aria-label",
-      "Interactive engine-rendered 2D CANDU 6 channel heat map. Use Grid Map for keyboard channel selection.",
+      "Interactive Phaser-rendered isometric CANDU 6 channel heat map. Use Grid Map for keyboard channel selection.",
     );
-    mount.appendChild(renderer.domElement);
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
-    cameraRef.current = camera;
-
-    const ambient = new THREE.AmbientLight(0x9adbd2, 1.85);
-    const key = new THREE.DirectionalLight(0xffdf9a, 2.8);
-    key.position.set(-4, 7, 10);
-    scene.add(ambient, key);
-
-    const group = new THREE.Group();
-    scene.add(group);
-
-    const floor = new THREE.Mesh(
-      new THREE.PlaneGeometry(CORE_VIEW_HALF_EXTENT * 2, CORE_VIEW_HALF_EXTENT * 2),
-      new THREE.MeshBasicMaterial({ color: 0x0b1c2b, transparent: true, opacity: 0.84 }),
-    );
-    floor.position.z = -0.28;
-    group.add(floor);
-
-    const grid = createCoreGrid();
-    group.add(grid);
-
-    const outline = new THREE.LineLoop(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-CORE_GRID_HALF_EXTENT, -CORE_GRID_HALF_EXTENT, 0),
-        new THREE.Vector3(CORE_GRID_HALF_EXTENT, -CORE_GRID_HALF_EXTENT, 0),
-        new THREE.Vector3(CORE_GRID_HALF_EXTENT, CORE_GRID_HALF_EXTENT, 0),
-        new THREE.Vector3(-CORE_GRID_HALF_EXTENT, CORE_GRID_HALF_EXTENT, 0),
-      ]),
-      new THREE.LineBasicMaterial({ color: 0x5ed7c5, transparent: true, opacity: 0.7 }),
-    );
-    outline.position.z = -0.02;
-    group.add(outline);
-
-    const geometry = new THREE.CylinderGeometry(0.23, 0.31, 0.16, 6);
-    const material = new THREE.MeshStandardMaterial({
-      roughness: 0.38,
-      metalness: 0.2,
-      vertexColors: true,
-      emissive: 0x07131f,
-      emissiveIntensity: 0.44,
-    });
-    const initialChannels = channelsRef.current;
-    const mesh = new THREE.InstancedMesh(geometry, material, initialChannels.length);
-    mesh.frustumCulled = false;
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    const dummy = new THREE.Object3D();
-    initialChannels.forEach((channel, index) => {
-      setInstanceTransform(dummy, channel);
-      mesh.setMatrixAt(index, dummy.matrix);
-      mesh.setColorAt(index, new THREE.Color(getHeatColor(channel.localPowerFraction)));
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor !== null) {
-      mesh.instanceColor.needsUpdate = true;
-    }
-    meshRef.current = mesh;
-    group.add(mesh);
-
-    const flowGeometry = new THREE.ConeGeometry(0.075, 0.18, 3);
-    const flowMaterial = new THREE.MeshBasicMaterial({ color: 0xd7fff1, transparent: true, opacity: 0.72 });
-    const flowMesh = new THREE.InstancedMesh(flowGeometry, flowMaterial, initialChannels.length);
-    flowMesh.frustumCulled = false;
-    flowMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    initialChannels.forEach((channel, index) => {
-      setFlowArrowTransform(dummy, channel);
-      flowMesh.setMatrixAt(index, dummy.matrix);
-    });
-    flowMesh.instanceMatrix.needsUpdate = true;
-    flowMeshRef.current = flowMesh;
-    group.add(flowMesh);
-
-    const marker = new THREE.Mesh(
-      new THREE.RingGeometry(0.37, 0.43, 32),
-      new THREE.MeshBasicMaterial({ color: 0xf9e4ac, transparent: true, opacity: 0.98 }),
-    );
-    markerRef.current = marker;
-    group.add(marker);
 
     const resize = () => {
       const width = Math.max(1, mount.clientWidth);
       const height = Math.max(1, mount.clientHeight);
-      const aspect = width / height;
-      const halfWidth = Math.max(CORE_VIEW_HALF_EXTENT, CORE_VIEW_HALF_EXTENT * aspect);
-      const halfHeight = Math.max(CORE_VIEW_HALF_EXTENT, CORE_VIEW_HALF_EXTENT / aspect);
-      renderer.setSize(width, height, false);
-      camera.left = -halfWidth;
-      camera.right = halfWidth;
-      camera.top = halfHeight;
-      camera.bottom = -halfHeight;
-      camera.updateProjectionMatrix();
+      game.scale.resize(width, height);
+      scene.resize(width, height);
     };
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(mount);
 
-    let animationFrame = 0;
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    const render = (time: number) => {
-      animationFrame = window.requestAnimationFrame(render);
-      if (!reducedMotion) {
-        const pulse = 1 + Math.sin(time * 0.004) * 0.05;
-        marker.scale.setScalar(pulse);
-      }
-      renderer.render(scene, camera);
-    };
-    animationFrame = window.requestAnimationFrame(render);
-
     return () => {
-      window.cancelAnimationFrame(animationFrame);
       observer.disconnect();
-      renderer.dispose();
-      geometry.dispose();
-      material.dispose();
-      flowGeometry.dispose();
-      flowMaterial.dispose();
-      floor.geometry.dispose();
-      (floor.material as THREE.Material).dispose();
-      grid.geometry.dispose();
-      (grid.material as THREE.Material).dispose();
-      outline.geometry.dispose();
-      (outline.material as THREE.Material).dispose();
-      marker.geometry.dispose();
-      (marker.material as THREE.Material).dispose();
-      renderer.domElement.remove();
-      rendererRef.current = null;
-      cameraRef.current = null;
-      meshRef.current = null;
-      flowMeshRef.current = null;
-      markerRef.current = null;
+      game.destroy(true);
+      sceneRef.current = null;
     };
   }, [viewMode]);
 
   useEffect(() => {
-    const mesh = meshRef.current;
-    const flowMesh = flowMeshRef.current;
-    const marker = markerRef.current;
-    if (mesh === null || flowMesh === null || marker === null) {
-      return;
-    }
-
-    const dummy = new THREE.Object3D();
-    channels.forEach((channel, index) => {
-      setInstanceTransform(dummy, channel);
-      mesh.setMatrixAt(index, dummy.matrix);
-      mesh.setColorAt(index, new THREE.Color(getHeatColor(channel.localPowerFraction)));
-      setFlowArrowTransform(dummy, channel);
-      flowMesh.setMatrixAt(index, dummy.matrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    flowMesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor !== null) {
-      mesh.instanceColor.needsUpdate = true;
-    }
-    const selected = channels[selectedChannelIndex];
-    if (selected !== undefined) {
-      const markerPosition = getChannelPosition(selected);
-      marker.position.set(markerPosition.x, markerPosition.y, 0.34);
-    }
+    sceneRef.current?.setChannels(channels, selectedChannelIndex);
   }, [channels, selectedChannelIndex]);
-
-  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    const renderer = rendererRef.current;
-    const camera = cameraRef.current;
-    const mesh = meshRef.current;
-    if (renderer === null || camera === null || mesh === null) {
-      return;
-    }
-    const bounds = renderer.domElement.getBoundingClientRect();
-    pointerRef.current.set(
-      ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
-      -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
-    );
-    raycasterRef.current.setFromCamera(pointerRef.current, camera);
-    const hit = raycasterRef.current.intersectObject(mesh, false)[0];
-    if (hit !== undefined && hit.instanceId !== undefined) {
-      selectRef.current(hit.instanceId);
-    }
-  };
 
   return (
     <div className="core-scene-shell">
       <div className="core-scene-toolbar">
         <div>
-          <p className="panel-kicker">Core surface</p>
-          <p className="scene-caption">CANDU 6 · engine-rendered 2D · 380 channels · alternating coolant / fuelling flow</p>
+          <p className="panel-kicker">Tactical core board</p>
+          <p className="scene-caption">CANDU 6 · PHASER 2D · 380 CHANNELS · ANGLED CORE / FUELLING FLOW</p>
         </div>
         <div className="view-toggle" role="group" aria-label="Core rendering mode">
           <button
             className={viewMode === "engine2d" ? "view-toggle-button is-active" : "view-toggle-button"}
             type="button"
             aria-pressed={viewMode === "engine2d"}
-            aria-label="Use engine-rendered 2D view"
-            title="GPU-rendered 2D core view"
+            aria-label="Use Phaser-rendered tactical core map"
+            title="Phaser-rendered tactical core map"
             onClick={() => onChangeViewMode("engine2d")}
           >
-            ENGINE 2D
+            PHASER MAP
           </button>
           <button
             className={viewMode === "grid" ? "view-toggle-button is-active" : "view-toggle-button"}
@@ -291,8 +335,7 @@ export function CoreScene({
         <div
           ref={mountRef}
           className="core-canvas-mount"
-          onPointerDown={handlePointerDown}
-          title="Select a reactor channel in the engine-rendered 2D view"
+          title="Select a reactor channel in the Phaser tactical map"
         />
       ) : (
         <CoreMapGrid channels={channels} selectedChannelIndex={selectedChannelIndex} onSelectChannel={onSelectChannel} />
@@ -338,43 +381,45 @@ function CoreMapGrid({
   );
 }
 
-function createCoreGrid(): THREE.LineSegments {
-  const positions: number[] = [];
-  const edge = CORE_GRID_HALF_EXTENT - 0.07;
-  for (let index = 0; index <= CORE_GRID_SIZE; index += 1) {
-    const coordinate = -edge + index * ((edge * 2) / CORE_GRID_SIZE);
-    positions.push(coordinate, -edge, -0.12, coordinate, edge, -0.12);
-    positions.push(-edge, coordinate, -0.12, edge, coordinate, -0.12);
+function createCoreLayout(width: number, height: number): CoreLayout {
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  return {
+    centerX: safeWidth / 2,
+    centerY: safeHeight / 2,
+    scale: Math.min(safeWidth, safeHeight) / (CORE_VIEW_HALF_EXTENT * 2),
+  };
+}
+
+function getCanvasChannelPosition(channel: CanduChannelSnapshot, layout: CoreLayout): CorePoint {
+    const worldX = (channel.gridColumn - channel.gridRow) * CORE_GRID_SPACING * 0.5;
+    const worldY = (channel.gridColumn + channel.gridRow - CORE_GRID_SIZE + 1) * CORE_GRID_SPACING * 0.5;
+    return {
+      x: layout.centerX + worldX * layout.scale,
+      y: layout.centerY + worldY * layout.scale,
+    };
+}
+
+function getIsoPoint(worldColumn: number, worldRow: number, layout: CoreLayout): CorePoint {
+  return {
+    x: layout.centerX + (worldColumn - worldRow) * layout.scale * 0.5,
+    y: layout.centerY + (worldColumn + worldRow) * layout.scale * 0.5,
+  };
+}
+
+function diamondPoints(center: CorePoint, width: number, height: number): CorePoint[] {
+  return [
+    { x: center.x, y: center.y - height / 2 },
+    { x: center.x + width / 2, y: center.y },
+    { x: center.x, y: center.y + height / 2 },
+    { x: center.x - width / 2, y: center.y },
+  ];
+}
+
+function parseRgbColor(color: string): number {
+  const channels = color.match(/\d+/g);
+  if (channels === null || channels.length < 3) {
+    return CORE_FLOOR_COLOR;
   }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-  return new THREE.LineSegments(
-    geometry,
-    new THREE.LineBasicMaterial({ color: 0x31556a, transparent: true, opacity: 0.3 }),
-  );
-}
-
-function getChannelPosition(channel: CanduChannelSnapshot): THREE.Vector3 {
-  return new THREE.Vector3(
-    (channel.gridColumn - CORE_GRID_OFFSET) * CORE_GRID_SPACING,
-    (CORE_GRID_OFFSET - channel.gridRow) * CORE_GRID_SPACING,
-    0,
-  );
-}
-
-function setInstanceTransform(dummy: THREE.Object3D, channel: CanduChannelSnapshot): void {
-  const position = getChannelPosition(channel);
-  dummy.position.set(position.x, position.y, 0.1);
-  dummy.rotation.set(Math.PI / 2, 0, 0);
-  dummy.scale.set(1, 0.88 + channel.localPowerFraction * 0.24, 1);
-  dummy.updateMatrix();
-}
-
-function setFlowArrowTransform(dummy: THREE.Object3D, channel: CanduChannelSnapshot): void {
-  const position = getChannelPosition(channel);
-  const pointsTowardEndB = channel.flowDirection === "toward-end-b";
-  dummy.position.set(position.x + (pointsTowardEndB ? 0.14 : -0.14), position.y - 0.16, 0.27);
-  dummy.rotation.set(0, 0, pointsTowardEndB ? -Math.PI / 2 : Math.PI / 2);
-  dummy.scale.setScalar(0.78);
-  dummy.updateMatrix();
+  return (Number(channels[0]) << 16) | (Number(channels[1]) << 8) | Number(channels[2]);
 }

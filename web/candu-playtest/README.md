@@ -7,6 +7,12 @@ called from a dedicated Web Worker. The UI fails closed with
 `Authoritative WASM bridge unavailable` and disables simulation controls if the
 bridge cannot load.
 
+The presentation is an original tactical command deck: Phaser 3 renders the
+selectable 380-channel isometric-feeling core surface, while React owns the
+operator panels, command flow, replay controls, and responsive layout. The
+keyboard-accessible HTML Grid Map is always available as a semantic fallback.
+The interface uses no copied game assets, logos, or external reactor imagery.
+
 ## Local run
 
 ```text
@@ -59,6 +65,10 @@ frontend remains a static Vite deployment with no backend or authentication.
 
 For local staging, run `./tools/Build-BrowserWasm.ps1` from the repository root,
 then `npm ci`, `npm test`, and `npm run build` from `web/candu-playtest`.
+
+The focused browser checks cover the reducer/replay seam, the deterministic
+fixture, the live clock, and the presentation color/label helpers. `npm run
+build` type-checks the Phaser scene and produces the static Vite bundle.
 
 ## Playtest contract
 

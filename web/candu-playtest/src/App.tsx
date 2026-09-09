@@ -328,17 +328,23 @@ export default function App() {
   const commandControlsDisabled = isCommandPending || !bridgeInteractive;
 
   return (
-    <div className="app-shell" data-bridge-status={uiState.bridgeStatus.source}>
+    <div className="app-shell" data-interface="tactical-jrpg" data-bridge-status={uiState.bridgeStatus.source}>
       <Sidebar mode={uiState.mode} onChangeMode={changeMode} snapshot={snapshot} bridgeInteractive={bridgeInteractive} />
       <main className="console-main">
         <TopBar bridgeStatus={uiState.bridgeStatus} snapshot={snapshot} overallStatus={overallStatus} />
         <section className="hero-row" aria-labelledby="page-title">
           <div>
-            <p className="eyebrow">STEADY-STATE CANDU / MILESTONE 0.5</p>
+            <p className="eyebrow">STEADY-STATE CANDU / TACTICAL OPERATIONS</p>
             <h1 id="page-title">Keep the core in balance.</h1>
             <p className="hero-copy">
               Inspect the flux surface, choose a channel, and use on-power refuelling to keep the operating envelope quiet.
             </p>
+            <div className="command-ribbon" aria-label="Core command loop">
+              <span className="command-ribbon-label">COMMAND LOOP</span>
+              <strong>INSPECT</strong><span aria-hidden="true">›</span>
+              <strong>PREVIEW</strong><span aria-hidden="true">›</span>
+              <strong>COMMIT</strong>
+            </div>
           </div>
           <div className="hero-session-card">
             <div className="hero-session-line">
@@ -486,13 +492,13 @@ function Sidebar({ mode, snapshot, bridgeInteractive, onChangeMode }: SidebarPro
         </div>
         <div>
           <div className="brand-name">CANDU</div>
-          <div className="brand-subtitle">PLAYTEST CONSOLE</div>
+          <div className="brand-subtitle">VANGUARD OPERATIONS</div>
         </div>
       </div>
 
       <div className="sidebar-rule" />
       <nav className="mode-nav" aria-label="Console mode">
-        <p className="sidebar-label">Workspace</p>
+        <p className="sidebar-label">Command deck</p>
         <button className={mode === "play" ? "nav-button is-active" : "nav-button"} type="button" onClick={() => onChangeMode("play")} aria-current={mode === "play" ? "page" : undefined} disabled={!bridgeInteractive}>
           <span className="nav-icon" aria-hidden="true">◈</span>
           <span>
@@ -549,7 +555,7 @@ function TopBar({ bridgeStatus, snapshot, overallStatus }: TopBarProps) {
   const sourceCopy = bridgeStatus.source === "wasm" ? "WASM LINK" : bridgeStatus.source === "loading" ? "BRIDGE LOADING" : "BRIDGE OFFLINE";
   return (
     <header className="topbar">
-      <div className="breadcrumb"><span>WORKSPACE</span><span className="breadcrumb-slash">/</span><strong>LIVE PLAYTEST</strong></div>
+      <div className="breadcrumb"><span>COMMAND DECK</span><span className="breadcrumb-slash">/</span><strong>LIVE REACTOR</strong></div>
       <div className="topbar-actions">
         <span className={`envelope-status is-${overallStatus}`}><span className="status-dot" aria-hidden="true" />{statusCopy}</span>
         <span className="topbar-divider" aria-hidden="true" />
@@ -571,7 +577,7 @@ interface MetricCardProps {
 function MetricCard({ label, value, detail, indicator, tone }: MetricCardProps) {
   return (
     <article className={`metric-card tone-${tone}`}>
-      <div className="metric-card-top"><span>{label}</span><span className="metric-card-symbol" aria-hidden="true">↗</span></div>
+      <div className="metric-card-top"><span>{label}</span><span className="metric-card-symbol" aria-hidden="true">◇</span></div>
       <div className="metric-card-value">{value}</div>
       <div className="metric-card-detail">{detail}</div>
       <div className="metric-card-indicator"><span className="metric-track"><span className="metric-track-fill" /></span>{indicator}</div>
@@ -724,15 +730,12 @@ function BundlePowerChart({ channel }: { channel: CanduChannelSnapshot }) {
       <div className="bundle-power-chart-header"><span>Bundle power profile</span><span>relative to mean</span></div>
       <div className="bundle-power-bars" role="img" aria-label={`Bundle power across channel ${channel.channelIndex}, from End A to End B`}>
         {channel.bundles.map((bundle) => {
-          const height = Math.min(100, Math.max(4, (bundle.localPowerFraction / displayMaximum) * 100));
+          const width = Math.min(100, Math.max(4, (bundle.localPowerFraction / displayMaximum) * 100));
           return (
-            <div
-              className={bundle.isFresh ? "bundle-power-column is-fresh" : "bundle-power-column"}
-              key={bundle.bundleId}
-              title={`Bundle ${bundle.position + 1}: ${formatPowerWatts(bundle.powerWatts)} · ${getPowerLabel(bundle.localPowerFraction)} of mean`}
-            >
-              <div className="bundle-power-bar-track"><span className="bundle-power-bar-fill" style={{ height: `${height}%`, background: getHeatColor(bundle.localPowerFraction) }} /></div>
+            <div className={bundle.isFresh ? "bundle-power-row is-fresh" : "bundle-power-row"} key={bundle.bundleId} title={`Bundle ${bundle.position + 1}: ${formatPowerWatts(bundle.powerWatts)} · ${getPowerLabel(bundle.localPowerFraction)} of mean`}>
               <span className="bundle-power-position">{String(bundle.position + 1).padStart(2, "0")}</span>
+              <div className="bundle-power-bar-track"><span className="bundle-power-bar-fill" style={{ width: `${width}%`, background: getHeatColor(bundle.localPowerFraction) }} /></div>
+              <span className="bundle-power-value">{getPowerLabel(bundle.localPowerFraction)}</span>
             </div>
           );
         })}
@@ -777,7 +780,7 @@ function RefuelPlanner({ selectedChannel, preview, freshBundlesAvailable, isComm
   return (
     <section className="panel refuel-panel" aria-labelledby="refuel-heading">
       <div className="refuel-title-row">
-        <div><p className="panel-kicker">On-power operation</p><h2 id="refuel-heading">Refuelling planner</h2></div>
+        <div><p className="panel-kicker">On-power command</p><h2 id="refuel-heading">Refuelling planner</h2></div>
         <span className="inventory-chip"><span className="status-dot is-live" aria-hidden="true" />{freshBundlesAvailable} fresh</span>
       </div>
       <form className="refuel-form" onSubmit={submitPreview}>
@@ -848,7 +851,7 @@ function ControlDeck({ snapshot, isCommandPending, onSetPlayback, onStepSimulati
 
   return (
     <section className="panel controls-panel" aria-labelledby="controls-heading">
-      <PanelHeader kicker="Operator controls" title="Control deck" id="controls-heading" action={<span className="control-lock"><span className="status-dot is-live" aria-hidden="true" />AUTO-REGULATION</span>} />
+      <PanelHeader kicker="Operator controls" title="Command desk" id="controls-heading" action={<span className="control-lock"><span className="status-dot is-live" aria-hidden="true" />AUTO-REGULATION</span>} />
       <div className="control-sections">
         <div className="playback-section">
           <div className="control-label-row"><span>Playback</span><strong>{snapshot.isPaused ? "PAUSED" : snapshot.playbackModeId}</strong></div>
