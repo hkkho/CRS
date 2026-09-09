@@ -124,9 +124,26 @@ namespace ReactorSim.Browser
                 JsonDocument parsedDocument = document!;
                 using (parsedDocument)
                 {
+                    JsonElement root = parsedDocument.RootElement;
+                    if (!PlaytestInput.TryGetProperty(root, out JsonElement protocol, "protocol") ||
+                        protocol.ValueKind != JsonValueKind.String ||
+                        !string.Equals(
+                            protocol.GetString(),
+                            PlaytestProtocolV1.ProtocolId,
+                            StringComparison.Ordinal))
+                    {
+                        return SerializeError(
+                            "initialize",
+                            PlaytestProtocolV1.Diagnostic(
+                                "Browser.Initialize.Protocol.Unsupported",
+                                "protocol",
+                                "Initialization must use candu-playtest-v1."),
+                            _runtime);
+                    }
+
                     string mode = DefaultMode;
                     if (PlaytestInput.TryGetProperty(
-                            parsedDocument.RootElement,
+                            root,
                             out JsonElement modeValue,
                             "mode"))
                     {
@@ -218,12 +235,12 @@ namespace ReactorSim.Browser
                 using (parsedDocument)
                 {
                     JsonElement root = parsedDocument.RootElement;
-                    if (PlaytestInput.TryGetProperty(root, out JsonElement protocol, "protocol") &&
-                        (protocol.ValueKind != JsonValueKind.String ||
-                         !string.Equals(
-                             protocol.GetString(),
-                             PlaytestProtocolV1.ProtocolId,
-                             StringComparison.Ordinal)))
+                    if (!PlaytestInput.TryGetProperty(root, out JsonElement protocol, "protocol") ||
+                        protocol.ValueKind != JsonValueKind.String ||
+                        !string.Equals(
+                            protocol.GetString(),
+                            PlaytestProtocolV1.ProtocolId,
+                            StringComparison.Ordinal))
                     {
                         return SerializeError(
                             "dispatch",
@@ -1107,6 +1124,7 @@ namespace ReactorSim.Browser
         {
             result = 0.0;
             if (!PlaytestInput.TryGetProperty(value, out JsonElement property, names) ||
+                property.ValueKind != JsonValueKind.Number ||
                 !property.TryGetDouble(out result))
             {
                 return false;
@@ -1122,6 +1140,7 @@ namespace ReactorSim.Browser
         {
             result = 0;
             return PlaytestInput.TryGetProperty(value, out JsonElement property, names) &&
+                property.ValueKind == JsonValueKind.Number &&
                 property.TryGetUInt16(out result);
         }
 
@@ -1132,6 +1151,7 @@ namespace ReactorSim.Browser
         {
             result = 0;
             return PlaytestInput.TryGetProperty(value, out JsonElement property, names) &&
+                property.ValueKind == JsonValueKind.Number &&
                 property.TryGetUInt32(out result);
         }
 
@@ -1142,6 +1162,7 @@ namespace ReactorSim.Browser
         {
             result = 0;
             return PlaytestInput.TryGetProperty(value, out JsonElement property, names) &&
+                property.ValueKind == JsonValueKind.Number &&
                 property.TryGetUInt64(out result);
         }
 

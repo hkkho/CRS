@@ -412,13 +412,45 @@ function assertProtocol(value: unknown): asserts value is Record<string, unknown
   }
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function isInteger(value: unknown): value is number {
+  return isFiniteNumber(value) && Number.isInteger(value);
+}
+
+export function isProtocolSnapshot(value: unknown): value is CanduSnapshot {
+  if (!isRecord(value) || value.protocol !== PROTOCOL_VERSION ||
+      (value.source !== "wasm" && value.source !== "synthetic-fixture") ||
+      !isInteger(value.sequence) || !isFiniteNumber(value.simulationTimeSeconds) ||
+      !isInteger(value.lastRefuelledChannel) || !isRecord(value.core)) {
+    return false;
+  }
+
+  const core = value.core;
+  if (core.channelCount !== CORE_CHANNEL_COUNT ||
+      core.bundlePositionCount !== CORE_BUNDLE_POSITION_COUNT ||
+      core.gridWidth !== CORE_GRID_WIDTH || core.gridHeight !== CORE_GRID_HEIGHT ||
+      !Array.isArray(core.channels) || core.channels.length !== CORE_CHANNEL_COUNT) {
+    return false;
+  }
+
+  if (value.lastRefuelledChannel < -1 || value.lastRefuelledChannel >= core.channels.length) {
+    return false;
+  }
+
+  return core.channels.every((channel, channelIndex) =>
+    isRecord(channel) && channel.channelIndex === channelIndex &&
+    Array.isArray(channel.bundles) && channel.bundles.length === CORE_BUNDLE_POSITION_COUNT);
+}
+
 export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {
   const value = unwrapPayload(parseJson(raw), "snapshot");
-  assertProtocol(value);
-  if (!isRecord(value.core) || !Array.isArray(value.core.channels)) {
-    throw new Error("candu-playtest-v1 snapshot is missing core channels.");
+  if (!isProtocolSnapshot(value)) {
+    throw new Error("candu-playtest-v1 snapshot is malformed or incomplete.");
   }
-  return value as unknown as CanduSnapshot;
+  return value;
 }
 
 export function parseProtocolResponse(raw: string | unknown): CanduCommandResponse {
@@ -427,6 +459,7 @@ export function parseProtocolResponse(raw: string | unknown): CanduCommandRespon
   if (!isRecord(value.snapshot)) {
     throw new Error("candu-playtest-v1 response is missing a snapshot.");
   }
+  parseProtocolSnapshot(value.snapshot);
   return value as unknown as CanduCommandResponse;
 }
 

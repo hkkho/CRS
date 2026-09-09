@@ -6,6 +6,7 @@ import type {
   CanduSnapshot,
   RefuelPreview,
 } from "./protocol";
+import { isProtocolSnapshot } from "./protocol";
 
 export type ConsoleMode = "play" | "lab";
 export type CoreViewMode = "engine2d" | "grid";
@@ -43,10 +44,15 @@ export type UiAction =
   | { type: "clear-history" };
 
 export function createInitialUiState(snapshot: CanduSnapshot, bridgeStatus: BridgeStatus): PlaytestUiState {
+  const selectedChannelIndex = snapshot.core.channels.length === 0
+    ? -1
+    : snapshot.lastRefuelledChannel >= 0
+      ? snapshot.lastRefuelledChannel
+      : Math.min(189, snapshot.core.channels.length - 1);
   return {
     mode: "play",
     coreViewMode: "engine2d",
-    selectedChannelIndex: snapshot.lastRefuelledChannel >= 0 ? snapshot.lastRefuelledChannel : 189,
+    selectedChannelIndex,
     snapshot,
     bridgeStatus,
     preview: null,
@@ -73,6 +79,9 @@ export function playtestUiReducer(state: PlaytestUiState, action: UiAction): Pla
         replayStatus: "Mode changed; command history reset for the new bridge session.",
       };
     case "bridge-state":
+      if (!isProtocolSnapshot(action.snapshot)) {
+        return { ...state, bridgeStatus: action.bridgeStatus };
+      }
       return {
         ...state,
         snapshot: action.snapshot,
@@ -102,6 +111,10 @@ function applyCommandResult(
   response: CanduCommandResponse,
   record: boolean,
 ): PlaytestUiState {
+  if (!isProtocolSnapshot(response.snapshot)) {
+    return state;
+  }
+
   const history = record
     ? [
         ...state.history,
@@ -136,6 +149,10 @@ function applyCommandResult(
         ? response.snapshot.lastRefuelledChannel
         : state.selectedChannelIndex,
   };
+}
+
+export function isBridgeInteractive(bridgeStatus: BridgeStatus): boolean {
+  return bridgeStatus.source === "wasm" && bridgeStatus.isWasmAvailable;
 }
 
 export function replayRecordsFromUiState(state: PlaytestUiState): CanduReplayArchive["commands"] {

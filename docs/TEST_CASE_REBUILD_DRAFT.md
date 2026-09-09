@@ -10,7 +10,10 @@ power, burnup, and spatial slice is implemented in
 `tests/ReactorSim.Core.Tests/SpatialSolveTests.cs`. The Core kinetics, xenon,
 control, and determinism slice is implemented in
 `tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`;
-serialization, CLI, browser, web, and Unity replacement cases remain pending.
+the Browser bridge and web UI seam slices are implemented in
+`tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and
+`web/candu-playtest/src/uiSlice.test.ts`; serialization, CLI, browser smoke, and
+Unity replacement cases remain pending.
 
 ## Intent
 
@@ -167,6 +170,10 @@ for full-core binding and power accounting.
 | UNITY-003 | Load Bootstrap in PlayMode. | Assert a real session is initialized, the Core Map has 380 selectable channels and 12 bundle details, the debug menu is bound and hidden, and the initial snapshot is authoritative and finite. | Unity PlayMode |
 | UNITY-004 | Select a channel, preview, commit toward each end, pause/resume, and open the debug overlay. | Assert player-visible status/result updates and state changes through the actual views; one smoke path should cover the primary loop rather than asserting every label/layout detail. | Unity PlayMode |
 
+Implementation status: `BRIDGE-001..006` are complete as of 2026-09-08 in the
+six facts in `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs`. Unity seam
+replacement cases remain pending.
+
 ## P1: important confidence cases
 
 These should follow the P0 slice and protect the simulation seam without
@@ -207,6 +214,10 @@ Implementation status: complete as of 2026-09-08. The seven facts in
 | WEB-UI-003 | Mark the authoritative WASM bridge unavailable. | Simulation controls are disabled, the unavailable bridge is identified, and no compatibility fixture is presented as authoritative. |
 | WEB-UI-004 | Export/import a local command history and replay metadata. | Local-only archive preserves protocol identity and commands; malformed or different-version archives are rejected. |
 | WEB-SMOKE-001 | Start the dev server and exercise initialize, inspect, preview, commit, pause, and resume in a real browser. | Page loads without console errors, controls remain responsive, the core surface is visible, and the visible result matches the bridge response. |
+
+Implementation status: `WEB-UI-001..004` are complete as of 2026-09-08 in
+`web/candu-playtest/src/uiSlice.test.ts`. `WEB-SMOKE-001` remains pending for the
+production-shaped deployed-browser clock slice.
 
 ## P2: opt-in or future data-pack cases
 

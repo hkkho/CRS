@@ -148,9 +148,13 @@ integrated result.
    contracts pass. Completed 2026-09-08 with seven cases in
    `tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`; the
    focused slice and the full current Core suite pass.
-5. **Rebuild browser and web seam tests.** Add the bridge protocol/parity cases
-   and reducer tests, including fail-closed WASM unavailability. Do not make the
-   TypeScript compatibility fixture authoritative.
+5. **Complete — rebuild browser and web seam tests.** Added the bridge
+   protocol/parity cases and reducer tests, including fail-closed WASM
+   unavailability without making the TypeScript compatibility fixture
+   authoritative. Completed 2026-09-08 with six Browser facts in
+   `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and four Vitest cases
+   in `web/candu-playtest/src/uiSlice.test.ts`; both focused suites and the web
+   production build pass.
 6. **Rebuild Unity seam smoke tests.** Add one EditMode runtime-port/fixed-tick
    group and one PlayMode primary-loop smoke. Keep assertions behavioral and
    avoid hierarchy/button-count snapshots.

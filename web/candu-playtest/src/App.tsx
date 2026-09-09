@@ -19,6 +19,7 @@ import {
 } from "./protocol";
 import {
   createInitialUiState,
+  isBridgeInteractive,
   playtestUiReducer,
   type ConsoleMode,
   type CoreViewMode,
@@ -263,7 +264,7 @@ export default function App() {
     );
   }
 
-  const bridgeInteractive = uiState.bridgeStatus.source === "wasm";
+  const bridgeInteractive = isBridgeInteractive(uiState.bridgeStatus);
   const commandControlsDisabled = isCommandPending || !bridgeInteractive;
 
   return (
@@ -330,7 +331,7 @@ export default function App() {
         <div
           className="source-banner"
           data-bridge-source={uiState.bridgeStatus.source}
-          data-authoritative-bridge={uiState.bridgeStatus.source === "wasm" ? "active" : "inactive"}
+          data-authoritative-bridge={bridgeInteractive ? "active" : "inactive"}
           role="status"
         >
           <span className="source-banner-label">
