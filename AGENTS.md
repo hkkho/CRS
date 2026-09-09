@@ -29,6 +29,11 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
   effort to `medium`.
 - Do not substitute Terra or Sol for ordinary coding work when Luna can handle
   the bounded task.
+- If the primary agent cannot stage or commit because `.git` access is blocked,
+  delegate only the final staging and commit operation to the existing
+  `Publisher` chat as a subagent. Give it the exact file allowlist, commit
+  message, and completed checks; it must preserve unrelated changes and return
+  the commit hash.
 - Work autonomously within the requested scope and preserve unrelated user
   changes.
 - Keep `unity/ReactorGame` runnable after each implementation slice.
