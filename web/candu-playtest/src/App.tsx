@@ -606,52 +606,55 @@ function PlayWorkspace(props: PlayWorkspaceProps) {
   return (
     <>
       <div className="workspace-grid">
-        <section className="panel core-panel" aria-labelledby="core-heading">
-          <PanelHeader kicker="Spatial overview" title="Core heat map" id="core-heading" action={<span className="panel-live"><span className="status-dot is-live" aria-hidden="true" />LIVE</span>} />
-          <CoreScene
-            channels={props.snapshot.core.channels}
-            selectedChannelIndex={props.selectedChannelIndex}
-            viewMode={props.coreViewMode}
-            onSelectChannel={props.onSelectChannel}
-            onChangeViewMode={props.onChangeCoreView}
-          />
-          <HeatLegend />
-          <div className="core-panel-footer">
-            <span><strong>{props.snapshot.core.channelCount}</strong> channels</span>
-            <span><strong>{props.snapshot.core.bundlePositionCount}</strong> bundles / channel</span>
-            <span><strong>{props.snapshot.diagnostics.convergence.state}</strong> response</span>
-          </div>
-        </section>
+        <div className="workspace-main-column">
+          <section className="panel core-panel" aria-labelledby="core-heading">
+            <PanelHeader kicker="Spatial overview" title="Core heat map" id="core-heading" action={<span className="panel-live"><span className="status-dot is-live" aria-hidden="true" />LIVE</span>} />
+            <CoreScene
+              channels={props.snapshot.core.channels}
+              selectedChannelIndex={props.selectedChannelIndex}
+              viewMode={props.coreViewMode}
+              onSelectChannel={props.onSelectChannel}
+              onChangeViewMode={props.onChangeCoreView}
+            />
+            <HeatLegend />
+            <div className="core-panel-footer">
+              <span><strong>{props.snapshot.core.channelCount}</strong> channels</span>
+              <span><strong>{props.snapshot.core.bundlePositionCount}</strong> bundles / channel</span>
+              <span><strong>{props.snapshot.diagnostics.convergence.state}</strong> response</span>
+            </div>
+          </section>
 
-        <aside className="detail-column">
-          <ChannelDetail channel={props.selectedChannel} />
-          <RefuelPlanner
-            selectedChannel={props.selectedChannel}
-            preview={props.preview}
-            freshBundlesAvailable={props.snapshot.freshBundlesAvailable}
+          <ControlDeck
+            snapshot={props.snapshot}
             isCommandPending={props.isCommandPending}
-            onPreview={props.onPreviewRefuel}
-            onCommit={props.onCommitRefuel}
+            onSetPlayback={props.onSetPlayback}
+            onStepSimulation={props.onStepSimulation}
+            onQueuePowerTarget={props.onQueuePowerTarget}
+            onQueueTiltTarget={props.onQueueTiltTarget}
           />
-        </aside>
-      </div>
+        </div>
 
-      <div className="lower-grid">
-        <ControlDeck
-          snapshot={props.snapshot}
-          isCommandPending={props.isCommandPending}
-          onSetPlayback={props.onSetPlayback}
-          onStepSimulation={props.onStepSimulation}
-          onQueuePowerTarget={props.onQueuePowerTarget}
-          onQueueTiltTarget={props.onQueueTiltTarget}
-        />
-        <FeedbackPanel
-          snapshot={props.snapshot}
-          history={props.history}
-          feedbackNote={props.feedbackNote}
-          commandError={props.commandError}
-          onChangeNote={props.onChangeNote}
-        />
+        <div className="workspace-side-column">
+          <aside className="detail-column">
+            <ChannelDetail channel={props.selectedChannel} />
+            <RefuelPlanner
+              selectedChannel={props.selectedChannel}
+              preview={props.preview}
+              freshBundlesAvailable={props.snapshot.freshBundlesAvailable}
+              isCommandPending={props.isCommandPending}
+              onPreview={props.onPreviewRefuel}
+              onCommit={props.onCommitRefuel}
+            />
+          </aside>
+
+          <FeedbackPanel
+            snapshot={props.snapshot}
+            history={props.history}
+            feedbackNote={props.feedbackNote}
+            commandError={props.commandError}
+            onChangeNote={props.onChangeNote}
+          />
+        </div>
       </div>
     </>
   );
