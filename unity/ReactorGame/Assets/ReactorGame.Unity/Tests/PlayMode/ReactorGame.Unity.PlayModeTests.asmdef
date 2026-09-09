@@ -1,0 +1,22 @@
+{
+  "name": "ReactorGame.Unity.PlayModeTests",
+  "rootNamespace": "ReactorGame.Unity.PlayModeTests",
+  "references": [
+    "ReactorGame.Unity"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "ReactorSim.Core.dll",
+    "ReactorSim.Game.dll"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

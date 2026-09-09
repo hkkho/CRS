@@ -1,6 +1,6 @@
 # Next orchestrator handoff
 
-Status: canonical implementation handoff, refreshed 2026-09-08.
+Status: canonical implementation handoff, refreshed 2026-09-09.
 
 Use this document to start the next orchestrator chat. `README.md` and
 `docs/IMPLEMENTATION_GUIDE.md` remain useful architecture references, while
@@ -155,9 +155,14 @@ integrated result.
    `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and four Vitest cases
    in `web/candu-playtest/src/uiSlice.test.ts`; both focused suites and the web
    production build pass.
-6. **Rebuild Unity seam smoke tests.** Add one EditMode runtime-port/fixed-tick
-   group and one PlayMode primary-loop smoke. Keep assertions behavioral and
-   avoid hierarchy/button-count snapshots.
+6. **Complete — rebuild Unity seam smoke tests.** Added the deliberately small
+   replacement seam: two EditMode facts in
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Tests/Editor/RuntimeSeamAndPacing.EditModeTests.cs`
+   covering `UNITY-001/002`, and one PlayMode smoke in
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Tests/PlayMode/PrimaryLoopPlayModeSmokeTests.cs`
+   covering `UNITY-003/004`. Verification: Prepare-UnityCore build 0
+   warnings/errors; Unity `6000.3.21f1` EditMode 2/2 pass; PlayMode 1/1 pass.
+   Completed 2026-09-09.
 7. **Replace only the useful test runners.** Add minimal focused .NET, browser,
    and Unity import commands. Do not restore phase gates, approval scripts,
    long routine soaks, or test-evidence generation.

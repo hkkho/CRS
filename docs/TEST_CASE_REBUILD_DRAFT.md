@@ -12,8 +12,8 @@ control, and determinism slice is implemented in
 `tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`;
 the Browser bridge and web UI seam slices are implemented in
 `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and
-`web/candu-playtest/src/uiSlice.test.ts`; serialization, CLI, browser smoke, and
-Unity replacement cases remain pending.
+`web/candu-playtest/src/uiSlice.test.ts`; serialization, CLI, and browser smoke
+remain pending, while the Unity replacement seam is complete as of 2026-09-09.
 
 ## Intent
 
@@ -171,8 +171,15 @@ for full-core binding and power accounting.
 | UNITY-004 | Select a channel, preview, commit toward each end, pause/resume, and open the debug overlay. | Assert player-visible status/result updates and state changes through the actual views; one smoke path should cover the primary loop rather than asserting every label/layout detail. | Unity PlayMode |
 
 Implementation status: `BRIDGE-001..006` are complete as of 2026-09-08 in the
-six facts in `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs`. Unity seam
-replacement cases remain pending.
+six facts in `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs`. The Unity
+replacement seam is complete as of 2026-09-09: two deliberately small EditMode
+facts in
+`unity/ReactorGame/Assets/ReactorGame.Unity/Tests/Editor/RuntimeSeamAndPacing.EditModeTests.cs`
+cover `UNITY-001/002`, and one PlayMode smoke in
+`unity/ReactorGame/Assets/ReactorGame.Unity/Tests/PlayMode/PrimaryLoopPlayModeSmokeTests.cs`
+covers `UNITY-003/004`. Verification: Prepare-UnityCore build 0
+warnings/errors; Unity `6000.3.21f1` EditMode 2/2 pass; PlayMode 1/1 pass.
+Serialization, CLI, and browser smoke cases remain pending.
 
 ## P1: important confidence cases
 
