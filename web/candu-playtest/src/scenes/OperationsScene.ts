@@ -31,11 +31,13 @@ import type {
   RefuelPreview,
   RefuelRequest,
 } from "../protocol";
-import { createIsoCoreLayout, diamondPoints, findAdjacentChannelIndex, getFlowVector, gridCoordinateLabel, projectChannelToIso, type IsoCoreLayout, type IsoPoint } from "../projection";
+import { createCoreFaceLayout, findAdjacentChannelIndex, getFlowVector, gridCoordinateLabel, projectChannelToFace, type CoreFaceLayout, type CorePoint } from "../projection";
 import {
   formatReactivity,
+  formatEffectiveK,
   formatSignedNumber,
   formatSimulationTime,
+  formatSolveHealth,
   getFlowArrow,
   getHeatColor,
   getOverallStatus,
@@ -57,7 +59,6 @@ interface ChannelTile {
   channel: CanduChannelSnapshot;
   container: Phaser.GameObjects.Container;
   graphics: Phaser.GameObjects.Graphics;
-  label: Phaser.GameObjects.Text;
 }
 
 interface RefuelMotion {
@@ -65,7 +66,7 @@ interface RefuelMotion {
   response: CanduCommandResponse;
   elapsed: number;
   duration: number;
-  origin: IsoPoint;
+  origin: CorePoint;
 }
 
 type ModalKind = "refuel" | "control";
@@ -82,7 +83,7 @@ export class OperationsScene extends Phaser.Scene {
   private snapshot: CanduSnapshot = this.session.snapshot;
   private selectedChannelIndex = -1;
   private hoveredChannelIndex = -1;
-  private layout: IsoCoreLayout = createIsoCoreLayout(MAP.x, MAP.y, MAP.width, MAP.height);
+  private layout: CoreFaceLayout = createCoreFaceLayout(MAP.x, MAP.y, MAP.width, MAP.height);
   private unsubscribe: (() => void) | null = null;
   private pending = false;
   private modalKind: ModalKind | null = null;
@@ -129,6 +130,11 @@ export class OperationsScene extends Phaser.Scene {
   private sideTilt: Phaser.GameObjects.Text | null = null;
   private sideBurnup: Phaser.GameObjects.Text | null = null;
   private sideFlow: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsCore: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsStatic: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsNet: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsK: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsSolve: Phaser.GameObjects.Text | null = null;
   private sideEvent: Phaser.GameObjects.Text | null = null;
   private sideProfileGraphics: Phaser.GameObjects.Graphics | null = null;
   private sideProfileLegend: Phaser.GameObjects.Text | null = null;
@@ -210,7 +216,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private createMap(): void {
-    this.layout = createIsoCoreLayout(MAP.x + 8, MAP.y + 10, MAP.width - 16, MAP.height - 28);
+    this.layout = createCoreFaceLayout(MAP.x + 8, MAP.y + 10, MAP.width - 16, MAP.height - 28);
     this.mapGraphics = this.add.graphics().setDepth(0);
     this.ambientGraphics = this.add.graphics().setDepth(12);
     this.selectionGraphics = this.add.graphics().setDepth(13);
@@ -237,28 +243,19 @@ export class OperationsScene extends Phaser.Scene {
       lineWidth: 1.2,
     });
 
-    const corners = [
-      projectChannelToIso({ gridColumn: 0, gridRow: 0 }, this.layout),
-      projectChannelToIso({ gridColumn: 21, gridRow: 0 }, this.layout),
-      projectChannelToIso({ gridColumn: 21, gridRow: 21 }, this.layout),
-      projectChannelToIso({ gridColumn: 0, gridRow: 21 }, this.layout),
-    ];
-    graphics.fillStyle(COLORS.ink, 0.5);
-    graphics.fillPoints(corners, true);
-    graphics.lineStyle(1.5, COLORS.cyan, 0.36);
-    graphics.strokePoints(corners, true);
+    graphics.fillStyle(COLORS.ink, 0.58);
+    graphics.fillRect(this.layout.gridX, this.layout.gridY, this.layout.gridPixelWidth, this.layout.gridPixelHeight);
+    graphics.lineStyle(1.5, COLORS.cyan, 0.42);
+    graphics.strokeRect(this.layout.gridX, this.layout.gridY, this.layout.gridPixelWidth, this.layout.gridPixelHeight);
     graphics.lineStyle(1, COLORS.grid, 0.25);
-    for (let index = 0; index < 22; index += 1) {
-      const verticalStart = projectChannelToIso({ gridColumn: index, gridRow: 0 }, this.layout);
-      const verticalEnd = projectChannelToIso({ gridColumn: index, gridRow: 21 }, this.layout);
-      const horizontalStart = projectChannelToIso({ gridColumn: 0, gridRow: index }, this.layout);
-      const horizontalEnd = projectChannelToIso({ gridColumn: 21, gridRow: index }, this.layout);
-      graphics.lineBetween(verticalStart.x, verticalStart.y, verticalEnd.x, verticalEnd.y);
-      graphics.lineBetween(horizontalStart.x, horizontalStart.y, horizontalEnd.x, horizontalEnd.y);
+    for (let index = 0; index <= 22; index += 1) {
+      const x = this.layout.gridX + index * this.layout.stepX;
+      const y = this.layout.gridY + index * this.layout.stepY;
+      graphics.lineBetween(x, this.layout.gridY, x, this.layout.gridY + this.layout.gridPixelHeight);
+      graphics.lineBetween(this.layout.gridX, y, this.layout.gridX + this.layout.gridPixelWidth, y);
     }
-    graphics.lineStyle(1, COLORS.gold, 0.28);
-    graphics.strokeEllipse(this.layout.centerX, this.layout.centerY, 630, 330);
-    graphics.strokeEllipse(this.layout.centerX, this.layout.centerY, 470, 250);
+    graphics.lineStyle(1, COLORS.gold, 0.22);
+    graphics.strokeRect(this.layout.gridX + this.layout.stepX * 7, this.layout.gridY + this.layout.stepY * 7, this.layout.stepX * 8, this.layout.stepY * 8);
     graphics.fillStyle(COLORS.cyan, 0.26);
     graphics.fillCircle(this.layout.centerX, this.layout.centerY, 3);
 
@@ -268,13 +265,13 @@ export class OperationsScene extends Phaser.Scene {
       color: colorString(COLORS.cyan),
       letterSpacing: 1.8,
     }).setDepth(20);
-    makeText(this, MAP.x + 22, MAP.y + 38, "CANDU 6 / 22 × 22 STEPPED TOPOLOGY", {
+    makeText(this, MAP.x + 22, MAP.y + 38, "CANDU 6 / 380 CHANNEL FACE / 22 × 22 STEPPED TOPOLOGY", {
       fontFamily: FONTS.mono,
       fontSize: "10px",
       color: colorString(COLORS.ivoryMuted),
       letterSpacing: 1,
     }).setDepth(20);
-    makeText(this, MAP.x + MAP.width - 20, MAP.y + 22, "POWER FIELD", {
+    makeText(this, MAP.x + MAP.width - 20, MAP.y + 22, "POWER / HEAT FIELD", {
       fontFamily: FONTS.mono,
       fontSize: "10px",
       color: colorString(COLORS.gold),
@@ -282,8 +279,8 @@ export class OperationsScene extends Phaser.Scene {
     }).setOrigin(1, 0).setDepth(20);
 
     for (let row = 0; row < 22; row += 1) {
-      const left = projectChannelToIso({ gridColumn: 0, gridRow: row }, this.layout);
-      makeText(this, left.x - 27, left.y - 5, ROW_LABELS[row] ?? "?", {
+      const left = projectChannelToFace({ gridColumn: 0, gridRow: row }, this.layout);
+      makeText(this, this.layout.gridX - 14, left.y - 5, ROW_LABELS[row] ?? "?", {
         fontFamily: FONTS.mono,
         fontSize: "9px",
         color: colorString(COLORS.ivoryMuted),
@@ -291,8 +288,8 @@ export class OperationsScene extends Phaser.Scene {
       }).setOrigin(1, 0).setDepth(20);
     }
     for (let column = 0; column < 22; column += 1) {
-      const top = projectChannelToIso({ gridColumn: column, gridRow: 0 }, this.layout);
-      makeText(this, top.x + 2, top.y - 24, String(column + 1).padStart(2, "0"), {
+      const top = projectChannelToFace({ gridColumn: column, gridRow: 0 }, this.layout);
+      makeText(this, top.x, this.layout.gridY - 18, String(column + 1).padStart(2, "0"), {
         fontFamily: FONTS.mono,
         fontSize: "8px",
         color: colorString(COLORS.ivoryMuted),
@@ -321,16 +318,12 @@ export class OperationsScene extends Phaser.Scene {
   private createChannelTile(channel: CanduChannelSnapshot): ChannelTile {
     const container = this.add.container(0, 0).setDepth(40);
     const graphics = this.add.graphics();
-    const label = makeText(this, 0, 0, String(channel.channelIndex), {
-      fontFamily: FONTS.mono,
-      fontSize: "8px",
-      color: colorString(COLORS.ivory),
-      fontStyle: "bold",
-    }).setOrigin(0.5);
-    container.add([graphics, label]);
-    container.setSize(this.layout.tileWidth + 8, this.layout.tileHeight + 8);
-    const hitArea = new Phaser.Geom.Polygon(diamondPoints({ x: 0, y: 0 }, this.layout.tileWidth + 8, this.layout.tileHeight + 8));
-    container.setInteractive(hitArea, Phaser.Geom.Polygon.Contains);
+    container.add(graphics);
+    // Use the full orthographic cell as the hit target. The painted channel
+    // face stays inset, keeping neighbors clear while selection stays easy.
+    container.setSize(this.layout.stepX, this.layout.stepY);
+    const hitArea = new Phaser.Geom.Rectangle(-this.layout.stepX / 2, -this.layout.stepY / 2, this.layout.stepX, this.layout.stepY);
+    container.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
     container.on("pointerover", () => {
       this.hoveredChannelIndex = channel.channelIndex;
       this.refreshCore();
@@ -342,7 +335,7 @@ export class OperationsScene extends Phaser.Scene {
       }
     });
     container.on("pointerdown", () => this.selectChannel(channel.channelIndex));
-    return { channel, container, graphics, label };
+    return { channel, container, graphics };
   }
 
   private drawSelection(): void {
@@ -355,15 +348,20 @@ export class OperationsScene extends Phaser.Scene {
     if (selected === undefined) {
       return;
     }
-    const position = projectChannelToIso(selected, this.layout);
+    const position = projectChannelToFace(selected, this.layout);
     const pulse = this.reducedMotion ? 1 : 1 + Math.sin(this.scene.systems.game.loop.time * 0.005) * 0.06;
+    const outerWidth = this.layout.tileWidth + 12 * pulse;
+    const outerHeight = this.layout.tileHeight + 10 * pulse;
     graphics.lineStyle(2.5, COLORS.gold, 0.96);
-    graphics.strokePoints(diamondPoints({ x: position.x, y: position.y - 5 }, this.layout.tileWidth + 17 * pulse, this.layout.tileHeight + 13 * pulse), true);
-    graphics.lineStyle(1, COLORS.cyan, 0.74);
-    graphics.strokeCircle(position.x, position.y - 5, 24 * pulse);
+    graphics.strokeRoundedRect(position.x - outerWidth / 2, position.y - outerHeight / 2, outerWidth, outerHeight, 4);
+    graphics.lineStyle(1, COLORS.cyan, 0.86);
+    graphics.strokeRoundedRect(position.x - outerWidth / 2 - 4, position.y - outerHeight / 2 - 4, outerWidth + 8, outerHeight + 8, 6);
+    graphics.lineBetween(position.x - outerWidth / 2 - 13, position.y, position.x - outerWidth / 2 - 5, position.y);
+    graphics.lineBetween(position.x + outerWidth / 2 + 5, position.y, position.x + outerWidth / 2 + 13, position.y);
+    graphics.lineBetween(position.x, position.y - outerHeight / 2 - 13, position.x, position.y - outerHeight / 2 - 5);
+    graphics.lineBetween(position.x, position.y + outerHeight / 2 + 5, position.x, position.y + outerHeight / 2 + 13);
     graphics.fillStyle(COLORS.gold, 0.96);
-    graphics.fillTriangle(position.x - 30, position.y - 5, position.x - 42, position.y - 11, position.x - 42, position.y + 1);
-    graphics.fillTriangle(position.x + 30, position.y - 5, position.x + 42, position.y - 11, position.x + 42, position.y + 1);
+    graphics.fillCircle(position.x, position.y, 2.5);
   }
 
   private drawPreviewVisual(): void {
@@ -379,7 +377,7 @@ export class OperationsScene extends Phaser.Scene {
     if (selected === undefined) {
       return;
     }
-    const position = projectChannelToIso(selected, this.layout);
+    const position = projectChannelToFace(selected, this.layout);
     const vector = getFlowVector(this.refuelDraft.directionId);
     const magnitude = Math.hypot(vector.x, vector.y);
     const vx = vector.x / magnitude;
@@ -391,19 +389,19 @@ export class OperationsScene extends Phaser.Scene {
     for (let index = 0; index < 12; index += 1) {
       const offset = -60 + index * 11;
       const tokenX = position.x + vx * offset;
-      const tokenY = position.y + vy * offset - 7;
+      const tokenY = position.y + vy * offset;
       const tokenColor = index < this.refuelDraft.shiftCount ? COLORS.cyan : COLORS.magenta;
       graphics.fillStyle(tokenColor, index < this.refuelDraft.shiftCount ? 0.94 : 0.36);
-      graphics.fillPoints(diamondPoints({ x: tokenX, y: tokenY }, 8, 5), true);
+      graphics.fillRoundedRect(tokenX - 4, tokenY - 3, 8, 6, 2);
     }
     graphics.fillStyle(COLORS.gold, 0.95);
     graphics.fillTriangle(
       position.x + vx * 85,
-      position.y + vy * 85 - 7,
+      position.y + vy * 85,
       position.x + vx * 73 - vy * 6,
-      position.y + vy * 73 - 7 + vx * 6,
+      position.y + vy * 73 + vx * 6,
       position.x + vx * 73 + vy * 6,
-      position.y + vy * 73 - 7 - vx * 6,
+      position.y + vy * 73 - vx * 6,
     );
   }
 
@@ -422,7 +420,7 @@ export class OperationsScene extends Phaser.Scene {
       if (channel === undefined) {
         continue;
       }
-      const position = projectChannelToIso(channel, this.layout);
+      const position = projectChannelToFace(channel, this.layout);
       const alpha = 0.16 + (Math.sin(seconds * 1.6 + index * 0.9) + 1) * 0.1;
       graphics.fillStyle(index % 2 === 0 ? COLORS.cyan : COLORS.gold, alpha);
       graphics.fillCircle(position.x + Math.sin(seconds * 0.8 + index) * 3, position.y - 7, 1.2);
@@ -517,25 +515,37 @@ export class OperationsScene extends Phaser.Scene {
     makeText(this, SIDE.x + 30, SIDE.y + 181, "POWER FIELD", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
     this.sideBurnup = makeText(this, SIDE.x + 196, SIDE.y + 181, "AVG BURNUP —", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
 
-    makeText(this, SIDE.x + 24, SIDE.y + 218, "AXIAL BUNDLE PROFILE", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1 }).setDepth(170);
-    this.sideProfileLegend = makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 218, "END A  →  END B", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setOrigin(1, 0).setDepth(170);
+    graphics.fillStyle(COLORS.indigo, 0.78);
+    graphics.fillRoundedRect(SIDE.x + 18, SIDE.y + 208, SIDE.width - 36, 132, 6);
+    graphics.lineStyle(1, COLORS.gold, 0.38);
+    graphics.strokeRoundedRect(SIDE.x + 18, SIDE.y + 208, SIDE.width - 36, 132, 6);
+    makeText(this, SIDE.x + 30, SIDE.y + 219, "REACTOR PHYSICS", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1.1 }).setDepth(170);
+    makeText(this, SIDE.x + SIDE.width - 30, SIDE.y + 219, "LIVE SOLVE", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
+    this.sidePhysicsCore = makeText(this, SIDE.x + 30, SIDE.y + 243, "CORE REACTIVITY   —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(170);
+    this.sidePhysicsStatic = makeText(this, SIDE.x + 30, SIDE.y + 264, "STATIC            —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
+    this.sidePhysicsNet = makeText(this, SIDE.x + 30, SIDE.y + 285, "NET COMP          —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.cyan), fontStyle: "bold" }).setDepth(170);
+    this.sidePhysicsK = makeText(this, SIDE.x + 30, SIDE.y + 306, "EFFECTIVE K       —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), fontStyle: "bold" }).setDepth(170);
+    this.sidePhysicsSolve = makeText(this, SIDE.x + 30, SIDE.y + 322, "SOLVE —", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.green) }).setDepth(170);
+
+    makeText(this, SIDE.x + 24, SIDE.y + 358, "AXIAL BUNDLE PROFILE", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1 }).setDepth(170);
+    this.sideProfileLegend = makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 358, "END A  →  END B", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setOrigin(1, 0).setDepth(170);
     this.sideProfileGraphics = this.add.graphics().setDepth(170);
     for (let index = 0; index < 12; index += 1) {
-      const y = SIDE.y + 245 + index * 13.5;
+      const y = SIDE.y + 383 + index * 11.5;
       this.sideProfileNumbers.push(makeText(this, SIDE.x + 24, y - 1, String(index + 1).padStart(2, "0"), { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(172));
       this.sideProfileValues.push(makeText(this, SIDE.x + 281, y - 1, "—", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(172));
     }
     graphics.lineStyle(1, COLORS.ivory, 0.14);
-    graphics.lineBetween(SIDE.x + 24, SIDE.y + 411, SIDE.x + SIDE.width - 24, SIDE.y + 411);
-    makeText(this, SIDE.x + 24, SIDE.y + 426, "SELECTED PATH", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.8 }).setDepth(170);
-    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 426, "ENTER / R  REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
-    this.sideEvent = makeText(this, SIDE.x + 24, SIDE.y + 452, "No shift committed yet.", { fontFamily: FONTS.body, fontSize: "12px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: SIDE.width - 48 }, lineSpacing: 3 }).setDepth(170);
+    graphics.lineBetween(SIDE.x + 24, SIDE.y + 535, SIDE.x + SIDE.width - 24, SIDE.y + 535);
+    makeText(this, SIDE.x + 24, SIDE.y + 548, "SELECTED CHANNEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.8 }).setDepth(170);
+    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 548, "ENTER / R  REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
+    this.sideEvent = makeText(this, SIDE.x + 24, SIDE.y + 571, "Ready for an on-power shift.", { fontFamily: FONTS.body, fontSize: "11px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: SIDE.width - 48 }, lineSpacing: 3 }).setDepth(170);
 
-    this.refuelButton = makeButton(this, SIDE.x + 98, SIDE.y + 594, 150, 42, "REFUEL  ↗", () => this.openRefuelModal(), { tone: "gold", fontSize: 12 });
+    this.refuelButton = makeButton(this, SIDE.x + 98, SIDE.y + 604, 150, 42, "REFUEL  ↗", () => this.openRefuelModal(), { tone: "gold", fontSize: 12 });
     this.refuelButton.gameObject.setDepth(180);
-    this.controlButton = makeButton(this, SIDE.x + 258, SIDE.y + 594, 92, 42, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 11, compact: true });
+    this.controlButton = makeButton(this, SIDE.x + 258, SIDE.y + 604, 92, 42, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 11, compact: true });
     this.controlButton.gameObject.setDepth(180);
-    makeText(this, SIDE.x + 24, SIDE.y + 650, "ARROWS / WASD  MOVE CHANNEL   ·   ESC  CLOSE", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.3 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 660, "ARROWS / WASD  MOVE   ·   ESC  CLOSE", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.3 }).setDepth(170);
   }
 
   private createMotionLayer(): void {
@@ -582,36 +592,31 @@ export class OperationsScene extends Phaser.Scene {
       }
     }
     for (const tile of this.tiles.values()) {
-      const position = projectChannelToIso(tile.channel, this.layout);
+      const position = projectChannelToFace(tile.channel, this.layout);
       const isSelected = tile.channel.channelIndex === this.selectedChannelIndex;
       const isHovered = tile.channel.channelIndex === this.hoveredChannelIndex;
-      const elevation = isSelected ? -5 : isHovered ? -4 : 0;
-      tile.container.setPosition(position.x, position.y + elevation);
-      tile.container.setDepth(40 + position.y / 1000);
-      const width = this.layout.tileWidth + (isSelected ? 5 : isHovered ? 3 : 0);
-      const height = this.layout.tileHeight + (isSelected ? 4 : isHovered ? 2 : 0);
-      const points = diamondPoints({ x: 0, y: 0 }, width, height);
+      tile.container.setPosition(position.x, position.y);
+      tile.container.setDepth(40 + tile.channel.gridRow / 1000);
+      const width = this.layout.tileWidth + (isSelected ? 4 : isHovered ? 3 : 0);
+      const height = this.layout.tileHeight + (isSelected ? 3 : isHovered ? 2 : 0);
       const heat = colorFromRgb(getHeatColor(tile.channel.localPowerFraction));
       tile.graphics.clear();
       tile.graphics.fillStyle(COLORS.ink, isSelected || isHovered ? 0.82 : 0.6);
-      tile.graphics.fillPoints(diamondPoints({ x: 2, y: 4 }, width + 2, height + 2), true);
+      tile.graphics.fillRoundedRect(-width / 2 + 2, -height / 2 + 3, width + 2, height + 2, 3);
       tile.graphics.fillStyle(mixColor(heat, COLORS.white, isHovered ? 0.16 : 0), 0.98);
-      tile.graphics.fillPoints(points, true);
+      tile.graphics.fillRoundedRect(-width / 2, -height / 2, width, height, 3);
       tile.graphics.fillStyle(COLORS.white, 0.08);
-      tile.graphics.fillPoints([points[0], points[1], { x: 0, y: 0 }], true);
-      tile.graphics.fillStyle(COLORS.ink, 0.18);
-      tile.graphics.fillPoints([{ x: 0, y: 0 }, points[2], points[3]], true);
+      tile.graphics.fillRoundedRect(-width / 2 + 1, -height / 2 + 1, width - 2, Math.max(2, height * 0.34), 2);
       tile.graphics.lineStyle(isSelected ? 2 : 0.8, isSelected ? COLORS.gold : COLORS.ink, isSelected ? 1 : 0.68);
-      tile.graphics.strokePoints(points, true);
+      tile.graphics.strokeRoundedRect(-width / 2, -height / 2, width, height, 3);
       drawTileArrow(tile.graphics, tile.channel.flowDirection, width, height, isSelected ? COLORS.ink : COLORS.ivoryMuted);
-      tile.label.setText(String(tile.channel.channelIndex).padStart(3, "0"));
-      tile.label.setColor(colorString(isSelected ? COLORS.ink : COLORS.ivory));
     }
     this.drawSelection();
     this.drawPreviewVisual();
   }
 
   private refreshSidePanel(): void {
+    this.refreshPhysicsReadout();
     const channel = this.getSelectedChannel();
     if (channel === undefined) {
       this.sideChannelId?.setText("NO CHANNEL");
@@ -620,7 +625,7 @@ export class OperationsScene extends Phaser.Scene {
       this.sideTilt?.setText("—");
       this.sideBurnup?.setText("AVG BURNUP —");
       this.sideFlow?.setText("—");
-      this.sideEvent?.setText(this.session.status.detail);
+      this.sideEvent?.setText("CHANNEL DATA UNAVAILABLE");
       return;
     }
     this.sideChannelId?.setText(`CH ${String(channel.channelIndex).padStart(3, "0")}`);
@@ -629,13 +634,17 @@ export class OperationsScene extends Phaser.Scene {
     this.sidePower?.setText(getPowerLabel(channel.localPowerFraction));
     this.sideTilt?.setText(getTiltLabel(channel.localTiltFraction));
     this.sideBurnup?.setText(`${channel.averageBurnupMwdPerKg.toFixed(1)} MWd/kg`);
-    this.sideEvent?.setText(this.resultMessage || this.snapshot.lastEvent?.detail || "Use REFUEL to stage an on-power shift.");
+    const lastEventDetail = this.snapshot.lastEvent?.detail;
+    const contextualEvent = lastEventDetail !== undefined && !/select a channel/i.test(lastEventDetail)
+      ? lastEventDetail
+      : "Ready for an on-power shift.";
+    this.sideEvent?.setText(this.resultMessage || contextualEvent);
     if (this.sideProfileGraphics !== null) {
       const graphics = this.sideProfileGraphics;
       graphics.clear();
       const maxPower = Math.max(1, ...channel.bundles.map((bundle) => bundle.powerWatts));
       channel.bundles.forEach((bundle, index) => {
-        const y = SIDE.y + 245 + index * 13.5;
+        const y = SIDE.y + 383 + index * 11.5;
         const width = 198;
         const barWidth = Math.max(4, width * Math.max(0, bundle.powerWatts) / maxPower);
         const color = bundle.isFresh ? COLORS.cyan : mixColor(COLORS.magentaDark, COLORS.gold, Math.min(1, bundle.currentBurnupMwdPerKg / 8_000));
@@ -651,6 +660,16 @@ export class OperationsScene extends Phaser.Scene {
     }
     this.refuelButton?.setEnabled(!this.pending && this.snapshot.core.channels.length === 380 && this.snapshot.freshBundlesAvailable >= 4);
     this.controlButton?.setEnabled(!this.pending && this.snapshot.core.channels.length === 380);
+  }
+
+  private refreshPhysicsReadout(): void {
+    const physics = this.snapshot.physics;
+    this.sidePhysicsCore?.setText(`CORE REACTIVITY   ${formatReactivity(physics.coreReactivity)}`);
+    this.sidePhysicsStatic?.setText(`STATIC            ${formatReactivity(physics.staticReactivity)}`);
+    this.sidePhysicsNet?.setText(`NET COMP          ${formatReactivity(physics.compensatedNetReactivity)}`);
+    this.sidePhysicsK?.setText(`EFFECTIVE K       ${formatEffectiveK(physics.effectiveK)}`);
+    const solveColor = this.snapshot.diagnostics.convergence.state === "converged" ? COLORS.green : COLORS.gold;
+    this.sidePhysicsSolve?.setText(`SOLVE ${formatSolveHealth(this.snapshot)}`).setColor(colorString(solveColor));
   }
 
   private refreshUnavailableState(): void {
@@ -704,7 +723,7 @@ export class OperationsScene extends Phaser.Scene {
     }
     if (response.command.type === "commit-refuel") {
       const request = response.command.request;
-      const origin = projectChannelToIso({ gridColumn: this.getSelectedChannel()?.gridColumn ?? 0, gridRow: this.getSelectedChannel()?.gridRow ?? 0 }, this.layout);
+      const origin = projectChannelToFace({ gridColumn: this.getSelectedChannel()?.gridColumn ?? 0, gridRow: this.getSelectedChannel()?.gridRow ?? 0 }, this.layout);
       this.modalKind = null;
       this.destroyModal();
       this.motion = { request, response, elapsed: 0, duration: this.reducedMotion ? 1 : 920, origin };
@@ -899,7 +918,7 @@ export class OperationsScene extends Phaser.Scene {
       const offset = -93 + index * 17;
       const tokenColor = index < this.refuelDraft.shiftCount ? COLORS.cyan : COLORS.magenta;
       this.modalPreviewGraphics.fillStyle(tokenColor, index < this.refuelDraft.shiftCount ? 0.94 : 0.35);
-      this.modalPreviewGraphics.fillPoints(diamondPoints({ x: centerX + vx * offset, y: centerY + vy * offset }, 20, 13), true);
+      this.modalPreviewGraphics.fillRoundedRect(centerX + vx * offset - 10, centerY + vy * offset - 6.5, 20, 13, 3);
     }
     this.modalPreviewGraphics.fillStyle(COLORS.gold, 0.95);
     this.modalPreviewGraphics.fillTriangle(centerX + vx * 132, centerY + vy * 132, centerX + vx * 112 - vy * 11, centerY + vy * 112 + vx * 11, centerX + vx * 112 + vy * 11, centerY + vy * 112 - vx * 11);
@@ -978,23 +997,25 @@ export class OperationsScene extends Phaser.Scene {
     const progress = Phaser.Math.Clamp(motion.elapsed / motion.duration, 0, 1);
     const eased = progress * progress * (3 - 2 * progress);
     graphics.fillStyle(COLORS.magenta, 0.14);
-    graphics.fillCircle(motion.origin.x, motion.origin.y - 5, 46 + eased * 18);
+    graphics.fillCircle(motion.origin.x, motion.origin.y, 46 + eased * 18);
     graphics.lineStyle(5, COLORS.cyan, 0.82);
-    graphics.lineBetween(motion.origin.x - vx * 86, motion.origin.y - vy * 86 - 5, motion.origin.x + vx * 86, motion.origin.y + vy * 86 - 5);
+    graphics.lineBetween(motion.origin.x - vx * 86, motion.origin.y - vy * 86, motion.origin.x + vx * 86, motion.origin.y + vy * 86);
     for (let index = 0; index < motion.request.shiftCount; index += 1) {
       const stagger = (index - (motion.request.shiftCount - 1) / 2) * 18;
       const offset = (eased - 0.5) * 160 + stagger;
       const x = motion.origin.x + vx * offset;
-      const y = motion.origin.y + vy * offset - 5;
+      const y = motion.origin.y + vy * offset;
       graphics.fillStyle(index % 2 === 0 ? COLORS.cyan : COLORS.gold, 0.96);
-      graphics.fillPoints(diamondPoints({ x, y }, 15, 10), true);
+      graphics.fillRoundedRect(x - 7.5, y - 5, 15, 10, 3);
       graphics.lineStyle(1, COLORS.ivory, 0.68);
-      graphics.strokePoints(diamondPoints({ x, y }, 15, 10), true);
+      graphics.strokeRoundedRect(x - 7.5, y - 5, 15, 10, 3);
     }
     graphics.fillStyle(COLORS.magenta, 0.92);
     for (let index = 0; index < motion.request.shiftCount; index += 1) {
       const offset = (0.5 - eased) * 150 + (index - (motion.request.shiftCount - 1) / 2) * 18;
-      graphics.fillPoints(diamondPoints({ x: motion.origin.x + vx * offset, y: motion.origin.y + vy * offset + 8 }, 9, 6), true);
+      const x = motion.origin.x + vx * offset;
+      const y = motion.origin.y + vy * offset + 8;
+      graphics.fillRoundedRect(x - 4.5, y - 3, 9, 6, 2);
     }
     this.motionText?.setPosition(motion.origin.x, motion.origin.y - 44).setVisible(true);
   }

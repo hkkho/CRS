@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatEffectiveK,
   formatPowerWatts,
   formatReactivity,
+  formatSolveHealth,
+  formatSolveResidual,
   getFlowArrow,
   getFlowDirectionLabel,
   getHeatColor,
@@ -21,6 +24,17 @@ describe("tactical playtest display helpers", () => {
     expect(getFlowDirectionLabel("toward-end-a")).toBe("END B → END A");
     expect(formatPowerWatts(2.5e6)).toBe("2.5 MW");
     expect(formatReactivity(-0.0012)).toBe("-1.200 mk");
+    expect(formatEffectiveK(1.0023456)).toBe("1.002346");
+    expect(formatSolveResidual(0.0000123)).toBe("1.2e-5");
+  });
+
+  it("summarizes solve health without exposing verbose solver identity", () => {
+    const snapshot = {
+      physics: { solverIterationCount: 14, solverResidualRelativeInfinity: 0.00000042, solveState: "converged" },
+      diagnostics: { convergence: { state: "converged", iterations: 12, residual: 0.2 } },
+    } as CanduSnapshot;
+
+    expect(formatSolveHealth(snapshot)).toBe("CONVERGED · 14 IT · RES 4.2e-7");
   });
 
   it("uses the same operating-envelope thresholds as the command deck", () => {

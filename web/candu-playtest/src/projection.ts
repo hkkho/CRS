@@ -5,7 +5,17 @@ export const CANDU6_ROW_LABELS = [
   "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
 ] as const;
 
-export interface IsoCoreLayout {
+/**
+ * Layout for the reactor face. Coordinates are deliberately orthographic:
+ * one grid column is always one horizontal screen step and one grid row is
+ * always one vertical screen step. The snapshot owns which of the 22 × 22
+ * cells are populated, so the stepped 380-channel topology remains visible.
+ */
+export interface CoreFaceLayout {
+  gridX: number;
+  gridY: number;
+  gridPixelWidth: number;
+  gridPixelHeight: number;
   centerX: number;
   centerY: number;
   stepX: number;
@@ -16,33 +26,46 @@ export interface IsoCoreLayout {
   gridHeight: number;
 }
 
-export interface IsoPoint {
+export interface CorePoint {
   x: number;
   y: number;
 }
 
-export function createIsoCoreLayout(
+export interface CoreGridCell {
+  gridColumn: number;
+  gridRow: number;
+}
+
+export function createCoreFaceLayout(
   x: number,
   y: number,
   width: number,
   height: number,
   gridWidth = 22,
   gridHeight = 22,
-): IsoCoreLayout {
+): CoreFaceLayout {
   const safeWidth = Math.max(1, width);
   const safeHeight = Math.max(1, height);
-  const tileWidth = Math.min(34, Math.max(20, safeWidth / 34));
-  const tileHeight = Math.min(22, Math.max(14, safeHeight / 31));
-  const stepX = Math.min(28, Math.max(16, (safeWidth - tileWidth - 16) / Math.max(1, (gridWidth - 1) * 2)));
-  const stepY = Math.min(15, Math.max(9, (safeHeight - tileHeight - 16) / Math.max(1, (gridHeight - 1) * 2)));
+  const leftGutter = 48;
+  const rightGutter = 28;
+  const topGutter = 66;
+  const bottomGutter = 58;
+  const gridPixelWidth = Math.max(gridWidth, safeWidth - leftGutter - rightGutter);
+  const gridPixelHeight = Math.max(gridHeight, safeHeight - topGutter - bottomGutter);
+  const stepX = gridPixelWidth / Math.max(1, gridWidth);
+  const stepY = gridPixelHeight / Math.max(1, gridHeight);
 
   return {
-    centerX: x + safeWidth / 2,
-    centerY: y + safeHeight / 2,
+    gridX: x + leftGutter,
+    gridY: y + topGutter,
+    gridPixelWidth,
+    gridPixelHeight,
+    centerX: x + leftGutter + gridPixelWidth / 2,
+    centerY: y + topGutter + gridPixelHeight / 2,
     stepX,
     stepY,
-    tileWidth,
-    tileHeight,
+    tileWidth: Math.max(14, stepX - 4),
+    tileHeight: Math.max(10, stepY - 4),
     gridWidth,
     gridHeight,
   };
@@ -51,25 +74,30 @@ export function createIsoCoreLayout(
 export function projectGridPoint(
   gridColumn: number,
   gridRow: number,
-  layout: IsoCoreLayout,
-): IsoPoint {
+  layout: CoreFaceLayout,
+): CorePoint {
   return {
-    x: layout.centerX + (gridColumn - gridRow) * layout.stepX,
-    y: layout.centerY + (gridColumn + gridRow - (layout.gridWidth - 1)) * layout.stepY,
+    x: layout.gridX + (gridColumn + 0.5) * layout.stepX,
+    y: layout.gridY + (gridRow + 0.5) * layout.stepY,
   };
 }
 
-export function projectChannelToIso(channel: Pick<CanduChannelSnapshot, "gridColumn" | "gridRow">, layout: IsoCoreLayout): IsoPoint {
+export function projectChannelToFace(
+  channel: Pick<CanduChannelSnapshot, "gridColumn" | "gridRow">,
+  layout: CoreFaceLayout,
+): CorePoint {
   return projectGridPoint(channel.gridColumn, channel.gridRow, layout);
 }
 
-export function diamondPoints(center: IsoPoint, width: number, height: number): IsoPoint[] {
-  return [
-    { x: center.x, y: center.y - height / 2 },
-    { x: center.x + width / 2, y: center.y },
-    { x: center.x, y: center.y + height / 2 },
-    { x: center.x - width / 2, y: center.y },
-  ];
+export function gridCellFromPoint(x: number, y: number, layout: CoreFaceLayout): CoreGridCell | null {
+  if (x < layout.gridX || y < layout.gridY ||
+    x >= layout.gridX + layout.gridPixelWidth || y >= layout.gridY + layout.gridPixelHeight) {
+    return null;
+  }
+  return {
+    gridColumn: Math.floor((x - layout.gridX) / layout.stepX),
+    gridRow: Math.floor((y - layout.gridY) / layout.stepY),
+  };
 }
 
 export function gridCoordinateLabel(channel: Pick<CanduChannelSnapshot, "gridColumn" | "gridRow">): string {
@@ -119,6 +147,7 @@ export function findAdjacentChannelIndex(
   return candidates[0]?.channelIndex ?? selectedChannelIndex;
 }
 
-export function getFlowVector(direction: "toward-end-a" | "toward-end-b"): IsoPoint {
-  return direction === "toward-end-b" ? { x: 1, y: 0.46 } : { x: -1, y: -0.46 };
+/** Refuelling moves along the horizontal pressure-tube axis on the face map. */
+export function getFlowVector(direction: "toward-end-a" | "toward-end-b"): CorePoint {
+  return direction === "toward-end-b" ? { x: 1, y: 0 } : { x: -1, y: 0 };
 }

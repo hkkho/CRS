@@ -44,8 +44,39 @@ export function formatPowerWatts(powerWatts: number): string {
 }
 
 export function formatReactivity(reactivity: number): string {
+  if (!Number.isFinite(reactivity)) {
+    return "—";
+  }
   const milliK = reactivity * 1000;
   return `${milliK >= 0 ? "+" : ""}${milliK.toFixed(3)} mk`;
+}
+
+export function formatEffectiveK(effectiveK: number): string {
+  return Number.isFinite(effectiveK) ? effectiveK.toFixed(6) : "—";
+}
+
+export function formatSolveResidual(residual: number): string {
+  if (!Number.isFinite(residual)) {
+    return "—";
+  }
+  if (residual === 0) {
+    return "0";
+  }
+  return residual.toExponential(1).replace("e+", "e");
+}
+
+export function formatSolveHealth(snapshot: Pick<CanduSnapshot, "physics" | "diagnostics">): string {
+  const convergence = snapshot.diagnostics.convergence;
+  const state = convergence.state !== "unavailable"
+    ? convergence.state
+    : snapshot.physics.solveState || "unavailable";
+  const iterations = Number.isFinite(snapshot.physics.solverIterationCount) && snapshot.physics.solverIterationCount > 0
+    ? snapshot.physics.solverIterationCount
+    : convergence.iterations;
+  const residual = Number.isFinite(snapshot.physics.solverResidualRelativeInfinity)
+    ? snapshot.physics.solverResidualRelativeInfinity
+    : convergence.residual;
+  return `${state.toUpperCase()} · ${Math.max(0, Math.round(iterations))} IT · RES ${formatSolveResidual(residual)}`;
 }
 
 export function getTiltLabel(tiltFraction: number): string {

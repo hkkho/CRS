@@ -44,9 +44,10 @@ DRAGON5, DONJON5, or any analysis executable.
   and queue targets with P/T. Time steps are available while paused.
 - Escape closes an active command window.
 
-The HUD, channel dossier, axial profile, projected path, transfer animation,
-and result card are all rendered inside Phaser. HTML only hosts and sizes the
-canvas plus a hidden live status mirror for assistive technology.
+The HUD, front-facing orthographic channel face, selected-channel dossier,
+live reactor-physics readout, axial profile, projected path, transfer
+animation, and result card are all rendered inside Phaser. HTML only hosts and
+sizes the canvas plus a hidden live status mirror for assistive technology.
 
 ## Checks
 
@@ -56,7 +57,7 @@ npm run build
 npm run smoke -- http://localhost:4173
 ```
 
-Focused Vitest coverage protects the pure isometric projection, selection,
+Focused Vitest coverage protects the pure orthographic face projection, selection,
 refuelling command state, scheduler, display helpers, and bridge-session
 transitions. The owner acceptance path is a browser playthrough at 1600 × 900
 and 390 × 844: load the title, enter a shift, select a channel, pause, preview,
