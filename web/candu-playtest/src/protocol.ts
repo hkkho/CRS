@@ -13,6 +13,12 @@ export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
 export type DiagnosticLevel = "info" | "warning" | "error";
 export type EventTone = "info" | "positive" | "warning";
+export type ResponseKind = "full" | "compact";
+
+export interface CanduDispatchOptions {
+  responseMode?: ResponseKind;
+  baseSequence?: number;
+}
 
 export interface BridgeStatus {
   source: BridgeAvailability;
@@ -244,6 +250,32 @@ export interface CanduSnapshot {
   lab?: CanduLabSnapshot;
 }
 
+export type CanduSnapshotPatch = Pick<CanduSnapshot,
+  | "scenarioId"
+  | "dataPackId"
+  | "simulationTimeSeconds"
+  | "wallElapsedSeconds"
+  | "normalizedPowerFraction"
+  | "targetPowerFraction"
+  | "absoluteTiltFraction"
+  | "targetTiltFraction"
+  | "controlMarginFraction"
+  | "deviceAvailableFraction"
+  | "pendingActionCount"
+  | "scoreTotal"
+  | "scoreDelta"
+  | "isPaused"
+  | "playbackModeId"
+  | "freshBundlesAvailable"
+  | "refuellingOperationCount"
+  | "lastRefuelledChannel"
+  | "lastRefuellingDirectionId"
+  | "lastRefuellingShiftCount"
+  | "physics"
+  | "xenon"
+  | "diagnostics"
+  | "lastEvent">;
+
 export interface RefuelRequest {
   channelIndex: number;
   directionId: RefuellingDirection;
@@ -282,6 +314,13 @@ export interface CanduCommandResponse {
   sequence: number;
   command: CanduCommand;
   message: string;
+  responseKind?: ResponseKind;
+  baseSequence?: number;
+  requiresResync?: boolean;
+  snapshotPatch?: CanduSnapshotPatch | null;
+  coreReplacement?: CanduCoreSnapshot | null;
+  stateDigest?: string;
+  replayDigest?: string;
   diagnostics: Array<{
     level: DiagnosticLevel;
     code: string;
@@ -305,7 +344,7 @@ export type BridgeResult<T> = T | Promise<T>;
 export interface CanduPlaytestBridge {
   readonly status: BridgeStatus;
   getSnapshot(): CanduSnapshot;
-  dispatch(command: CanduCommand): BridgeResult<CanduCommandResponse>;
+  dispatch(command: CanduCommand, options?: CanduDispatchOptions): BridgeResult<CanduCommandResponse>;
 }
 
 export interface ReplayCommandRecord {
@@ -369,10 +408,15 @@ export function canonicalJson(value: unknown): string {
   return result;
 }
 
-export function serializeProtocolCommand(command: CanduCommand): string {
+export function serializeProtocolCommand(
+  command: CanduCommand,
+  options: CanduDispatchOptions = {},
+): string {
   return canonicalJson({
     protocol: PROTOCOL_VERSION,
     type: "command",
+    ...(options.responseMode !== undefined ? { responseMode: options.responseMode } : {}),
+    ...(options.baseSequence !== undefined ? { baseSequence: options.baseSequence } : {}),
     payload: command,
   });
 }
@@ -409,6 +453,16 @@ function unwrapPayload(value: unknown, expectedType: "snapshot" | "response"): u
 function assertProtocol(value: unknown): asserts value is Record<string, unknown> {
   if (!isRecord(value) || value.protocol !== PROTOCOL_VERSION) {
     throw new Error(`Expected ${PROTOCOL_VERSION} protocol payload.`);
+  }
+}
+
+export class ProtocolResyncRequiredError extends Error {
+  public readonly response: Record<string, unknown>;
+
+  public constructor(response: Record<string, unknown>) {
+    super("The compact protocol response requires an authoritative full snapshot.");
+    this.name = "ProtocolResyncRequiredError";
+    this.response = response;
   }
 }
 
@@ -453,14 +507,134 @@ export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {
   return value;
 }
 
-export function parseProtocolResponse(raw: string | unknown): CanduCommandResponse {
+export function parseProtocolResponse(
+  raw: string | unknown,
+  previousSnapshot?: CanduSnapshot,
+  resyncSnapshot?: CanduSnapshot,
+): CanduCommandResponse {
+  return parseProtocolResponseWithBase(raw, previousSnapshot, resyncSnapshot);
+}
+
+function parseProtocolResponseWithBase(
+  raw: string | unknown,
+  previousSnapshot?: CanduSnapshot,
+  resyncSnapshot?: CanduSnapshot,
+): CanduCommandResponse {
   const value = unwrapPayload(parseJson(raw), "response");
   assertProtocol(value);
+
+  const isCompact = value.responseKind === "compact" ||
+    "snapshotPatch" in value ||
+    "coreReplacement" in value;
+  if (isCompact) {
+    if (value.requiresResync === true ||
+        !isInteger(value.baseSequence) ||
+        previousSnapshot === undefined ||
+        value.baseSequence !== previousSnapshot.sequence) {
+      if (resyncSnapshot !== undefined) {
+        return {
+          ...value,
+          responseKind: "compact",
+          snapshot: resyncSnapshot,
+        } as unknown as CanduCommandResponse;
+      }
+      throw new ProtocolResyncRequiredError(value);
+    }
+
+    const patch = value.snapshotPatch;
+    if (!isRecord(patch)) {
+      throw new Error("candu-playtest-v1 compact response is missing snapshotPatch.");
+    }
+
+    const snapshot = materializeCompactSnapshot(
+      previousSnapshot,
+      value,
+      patch,
+    );
+    return {
+      ...value,
+      responseKind: "compact",
+      snapshot,
+    } as unknown as CanduCommandResponse;
+  }
+
   if (!isRecord(value.snapshot)) {
     throw new Error("candu-playtest-v1 response is missing a snapshot.");
   }
   parseProtocolSnapshot(value.snapshot);
   return value as unknown as CanduCommandResponse;
+}
+
+export function parseProtocolResponseWithSnapshot(
+  raw: string | unknown,
+  previousSnapshot: CanduSnapshot | undefined,
+  resyncSnapshot: CanduSnapshot,
+): CanduCommandResponse {
+  return parseProtocolResponseWithBase(raw, previousSnapshot, resyncSnapshot);
+}
+
+export function materializeCompactSnapshot(
+  base: CanduSnapshot,
+  response: Record<string, unknown>,
+  patchValue: Record<string, unknown>,
+): CanduSnapshot {
+  if (!isInteger(response.sequence) ||
+      !isRecord(patchValue.physics) ||
+      !isRecord(patchValue.xenon) ||
+      !isRecord(patchValue.diagnostics) ||
+      !isFiniteNumber(patchValue.simulationTimeSeconds) ||
+      !isFiniteNumber(patchValue.wallElapsedSeconds) ||
+      typeof patchValue.scenarioId !== "string" ||
+      typeof patchValue.dataPackId !== "string" ||
+      typeof patchValue.playbackModeId !== "string" ||
+      ("coreReplacement" in response &&
+        response.coreReplacement !== null &&
+        !isRecord(response.coreReplacement))) {
+    throw new Error("candu-playtest-v1 compact snapshot patch is malformed.");
+  }
+
+  const replacement = response.coreReplacement;
+  const core = replacement === undefined || replacement === null
+    ? base.core
+    : replacement as CanduCoreSnapshot;
+  const snapshot: CanduSnapshot = {
+    ...base,
+    sequence: response.sequence,
+    scenarioId: patchValue.scenarioId as string,
+    dataPackId: patchValue.dataPackId as string,
+    simulationTimeSeconds: patchValue.simulationTimeSeconds as number,
+    wallElapsedSeconds: patchValue.wallElapsedSeconds as number,
+    normalizedPowerFraction: patchValue.normalizedPowerFraction as number,
+    targetPowerFraction: patchValue.targetPowerFraction as number,
+    absoluteTiltFraction: patchValue.absoluteTiltFraction as number,
+    targetTiltFraction: patchValue.targetTiltFraction as number,
+    controlMarginFraction: patchValue.controlMarginFraction as number,
+    deviceAvailableFraction: patchValue.deviceAvailableFraction as number,
+    pendingActionCount: patchValue.pendingActionCount as number,
+    scoreTotal: patchValue.scoreTotal as number,
+    scoreDelta: patchValue.scoreDelta as number,
+    isPaused: patchValue.isPaused as boolean,
+    playbackModeId: patchValue.playbackModeId as PlaybackModeId,
+    freshBundlesAvailable: patchValue.freshBundlesAvailable as number,
+    refuellingOperationCount: patchValue.refuellingOperationCount as number,
+    lastRefuelledChannel: patchValue.lastRefuelledChannel as number,
+    lastRefuellingDirectionId: "lastRefuellingDirectionId" in patchValue
+      ? patchValue.lastRefuellingDirectionId as RefuellingDirection | null
+      : base.lastRefuellingDirectionId,
+    lastRefuellingShiftCount: patchValue.lastRefuellingShiftCount as number,
+    physics: patchValue.physics as unknown as CanduPhysicsSnapshot,
+    xenon: patchValue.xenon as unknown as CanduXenonSnapshot,
+    core,
+    diagnostics: patchValue.diagnostics as unknown as CanduDiagnostics,
+    lastEvent: "lastEvent" in patchValue
+      ? patchValue.lastEvent as CanduEvent | null
+      : base.lastEvent,
+  };
+
+  if (!isProtocolSnapshot(snapshot)) {
+    throw new Error("candu-playtest-v1 compact snapshot patch produced an invalid snapshot.");
+  }
+  return snapshot;
 }
 
 export function parseReplayArchive(raw: string | unknown): CanduReplayArchive {

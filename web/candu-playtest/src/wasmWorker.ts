@@ -12,7 +12,13 @@ type WorkerRequest =
 type WorkerResponse =
   | { type: "ready" }
   | { type: "load-error"; error: string }
-  | { type: "result"; id: number; resultJson: string }
+  | {
+      type: "result";
+      id: number;
+      resultJson: string;
+      wasmCallDurationMs: number;
+      returnedUtf8PayloadBytes: number;
+    }
   | { type: "error"; id: number; error: string };
 
 interface WorkerScope {
@@ -29,8 +35,19 @@ scope.addEventListener("message", (event) => {
   requestQueue = requestQueue.then(async () => {
     try {
       const api = await getWasmExports();
+      const callStarted = typeof performance === "undefined" ? Date.now() : performance.now();
       const resultJson = await dispatchRequest(api, event.data);
-      scope.postMessage({ type: "result", id: event.data.id, resultJson });
+      const callDuration = (typeof performance === "undefined" ? Date.now() : performance.now()) - callStarted;
+      const returnedUtf8PayloadBytes = typeof TextEncoder === "undefined"
+        ? resultJson.length
+        : new TextEncoder().encode(resultJson).byteLength;
+      scope.postMessage({
+        type: "result",
+        id: event.data.id,
+        resultJson,
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes,
+      });
     } catch (error) {
       scope.postMessage({ type: "error", id: event.data.id, error: formatError(error) });
     }

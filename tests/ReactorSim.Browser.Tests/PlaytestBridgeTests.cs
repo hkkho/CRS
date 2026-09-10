@@ -294,6 +294,124 @@ namespace ReactorSim.Browser.Tests
         }
 
         [Fact]
+        public void CompactPlayResponsesCarryPatchWithoutCoreAndCommitCarriesReplacement()
+        {
+            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            AssertAccepted(initialized);
+            int legacyBytes = initialized.GetRawText().Length;
+            Assert.True(legacyBytes > 1_000_000);
+
+            JsonElement paused = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(0, "pause")));
+            AssertCompactPatch(paused, 0, 1);
+            Assert.True(paused.GetProperty("snapshotPatch").GetProperty("isPaused").GetBoolean());
+            Assert.DoesNotContain("channels", paused.GetRawText(), StringComparison.Ordinal);
+            Assert.True(paused.GetRawText().Length <= 32_768);
+            Assert.True(paused.GetRawText().Length <= legacyBytes * 0.05);
+
+            JsonElement preview = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(
+                        1,
+                        "preview-refuel",
+                        "\"request\":" + PlayRefuelRequest)));
+            AssertCompactPatch(preview, 1, 2);
+            Assert.True(preview.TryGetProperty("preview", out _));
+            Assert.DoesNotContain("channels", preview.GetRawText(), StringComparison.Ordinal);
+
+            JsonElement resumed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(2, "resume")));
+            AssertCompactPatch(resumed, 2, 3);
+
+            JsonElement advanced = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(3, "advance", "\"wallMilliseconds\":100")));
+            AssertCompactPatch(advanced, 3, 4);
+            Assert.DoesNotContain("channels", advanced.GetRawText(), StringComparison.Ordinal);
+            JsonElement exactAfterAdvance = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            JsonElement advancePatch = advanced.GetProperty("snapshotPatch");
+            Assert.Equal(advancePatch.GetProperty("simulationTimeSeconds").GetDouble(), exactAfterAdvance.GetProperty("simulationTimeSeconds").GetDouble(), 12);
+            Assert.Equal(advancePatch.GetProperty("wallElapsedSeconds").GetDouble(), exactAfterAdvance.GetProperty("wallElapsedSeconds").GetDouble(), 12);
+            Assert.Equal(advancePatch.GetProperty("scoreTotal").GetDouble(), exactAfterAdvance.GetProperty("scoreTotal").GetDouble(), 12);
+            Assert.Equal(advancePatch.GetProperty("physics").GetRawText(), exactAfterAdvance.GetProperty("physics").GetRawText());
+            Assert.Equal(advancePatch.GetProperty("xenon").GetRawText(), exactAfterAdvance.GetProperty("xenon").GetRawText());
+            Assert.Equal(advancePatch.GetProperty("diagnostics").GetRawText(), exactAfterAdvance.GetProperty("diagnostics").GetRawText());
+            Assert.Equal(advancePatch.GetProperty("lastEvent").GetRawText(), exactAfterAdvance.GetProperty("lastEvent").GetRawText());
+
+            JsonElement committed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(
+                        4,
+                        "commit-refuel",
+                        "\"request\":" + PlayRefuelRequest)));
+            AssertCompactPatch(committed, 4, 5);
+            Assert.True(committed.TryGetProperty("coreReplacement", out JsonElement replacement));
+            Assert.Equal(380, replacement.GetProperty("channels").GetArrayLength());
+            Assert.True(committed.GetProperty("snapshotPatch").GetProperty("refuellingOperationCount").GetUInt32() > 0);
+            JsonElement exact = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            Assert.Equal(
+                replacement.GetRawText(),
+                exact.GetProperty("core").GetRawText());
+        }
+
+        [Fact]
+        public void OrdinaryCompactCommandsDoNotMaterializeBrowserCoreDto()
+        {
+            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+
+            JsonElement paused = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(0, "pause")));
+            AssertCompactPatch(paused, 0, 1);
+            Assert.Equal(0, PlaytestBridgeV1.CoreSnapshotMaterializationCount);
+
+            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+            JsonElement resumed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(1, "resume")));
+            AssertCompactPatch(resumed, 1, 2);
+            Assert.Equal(0, PlaytestBridgeV1.CoreSnapshotMaterializationCount);
+
+            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+            JsonElement committed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(
+                        2,
+                        "commit-refuel",
+                        "\"request\":" + PlayRefuelRequest)));
+            AssertCompactPatch(committed, 2, 3);
+            Assert.True(PlaytestBridgeV1.CoreSnapshotMaterializationCount > 0);
+        }
+
+        [Fact]
+        public void CompactWrongBaseSequenceRequestsResyncWithoutMutatingAuthority()
+        {
+            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement paused = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(0, "pause")));
+            AssertCompactPatch(paused, 0, 1);
+
+            JsonElement mismatch = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    CompactCommand(0, "resume")));
+            Assert.Equal("compact", mismatch.GetProperty("responseKind").GetString());
+            Assert.True(mismatch.GetProperty("requiresResync").GetBoolean());
+            Assert.False(mismatch.GetProperty("accepted").GetBoolean());
+            Assert.Equal(1UL, mismatch.GetProperty("sequence").GetUInt64());
+            Assert.False(mismatch.TryGetProperty("snapshot", out _));
+            Assert.False(mismatch.TryGetProperty("snapshotPatch", out _));
+
+            JsonElement exact = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            Assert.Equal(1UL, exact.GetProperty("sequence").GetUInt64());
+            Assert.True(exact.GetProperty("isPaused").GetBoolean());
+            Assert.Equal(380, exact.GetProperty("core").GetProperty("channels").GetArrayLength());
+        }
+
+        [Fact]
         public void LabRefuelCommitsThenFailedSolvePreservesInventoryCoreSolveAndDigest()
         {
             JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(LabRequest));
@@ -356,6 +474,17 @@ namespace ReactorSim.Browser.Tests
                     "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
         }
 
+        private static string CompactCommand(
+            ulong baseSequence,
+            string commandType,
+            string fields = "")
+        {
+            string suffix = string.IsNullOrWhiteSpace(fields) ? string.Empty : "," + fields;
+            return "{\"protocol\":\"candu-playtest-v1\",\"type\":\"command\",\"responseMode\":\"compact\",\"baseSequence\":" +
+                baseSequence +
+                ",\"payload\":{\"type\":\"" + commandType + "\"" + suffix + "}}";
+        }
+
         private static JsonElement FindMode(JsonElement capabilities, string modeId)
         {
             foreach (JsonElement mode in capabilities.GetProperty("modes").EnumerateArray())
@@ -387,6 +516,26 @@ namespace ReactorSim.Browser.Tests
         {
             Assert.True(response.GetProperty("ok").GetBoolean());
             Assert.True(response.GetProperty("accepted").GetBoolean());
+            Assert.Empty(response.GetProperty("diagnostics").EnumerateArray());
+        }
+
+        private static void AssertCompactPatch(
+            JsonElement response,
+            ulong expectedBaseSequence,
+            ulong expectedSequence)
+        {
+            Assert.True(response.GetProperty("ok").GetBoolean());
+            Assert.True(response.GetProperty("accepted").GetBoolean());
+            Assert.Equal("compact", response.GetProperty("responseKind").GetString());
+            Assert.Equal(expectedBaseSequence, response.GetProperty("baseSequence").GetUInt64());
+            Assert.Equal(expectedSequence, response.GetProperty("sequence").GetUInt64());
+            Assert.False(response.TryGetProperty("snapshot", out _));
+            Assert.True(response.TryGetProperty("snapshotPatch", out JsonElement patch));
+            Assert.True(patch.TryGetProperty("physics", out _));
+            Assert.True(patch.TryGetProperty("xenon", out _));
+            Assert.True(patch.TryGetProperty("diagnostics", out _));
+            Assert.False(response.TryGetProperty("requiresResync", out JsonElement requiresResync) &&
+                requiresResync.GetBoolean());
             Assert.Empty(response.GetProperty("diagnostics").EnumerateArray());
         }
 

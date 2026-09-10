@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ReactorSim.Core;
+using ReactorSim.Game;
 
 namespace ReactorSim.Browser
 {
@@ -16,6 +17,7 @@ namespace ReactorSim.Browser
         public const uint SchemaVersion = 1;
         public const ulong PracticeSeed = 1001;
         public const string StateDigestAlgorithm = "sha256-canonical-state-v1";
+        public const string CompactStateDigestAlgorithm = "sha256-canonical-compact-state-v1";
         public const string ReplayDigestAlgorithm = "sha256-canonical-replay-v1";
 
         internal static string Serialize(object value)
@@ -26,6 +28,8 @@ namespace ReactorSim.Browser
                     JsonSerializer.Serialize(capabilities, PlaytestJsonContext.Default.BridgeCapabilitiesDto),
                 PlaytestResponseDto response =>
                     JsonSerializer.Serialize(response, PlaytestJsonContext.Default.PlaytestResponseDto),
+                PlaytestSnapshotPatchDto patch =>
+                    JsonSerializer.Serialize(patch, PlaytestJsonContext.Default.PlaytestSnapshotPatchDto),
                 PlaytestSnapshotDto snapshot =>
                     JsonSerializer.Serialize(snapshot, PlaytestJsonContext.Default.PlaytestSnapshotDto),
                 JsonElement element =>
@@ -99,6 +103,7 @@ namespace ReactorSim.Browser
                 AmplitudeMethodId = AdiabaticKineticsIdentityV1.AmplitudeMethodId,
                 ReactivityMethodId = AdiabaticKineticsIdentityV1.ReactivityMethodId,
                 StateDigestAlgorithm = StateDigestAlgorithm,
+                CompactStateDigestAlgorithm = CompactStateDigestAlgorithm,
                 ReplayDigestAlgorithm = ReplayDigestAlgorithm
             };
         }
@@ -281,6 +286,8 @@ namespace ReactorSim.Browser
 
         public string StateDigestAlgorithm { get; set; } = string.Empty;
 
+        public string CompactStateDigestAlgorithm { get; set; } = string.Empty;
+
         public string ReplayDigestAlgorithm { get; set; } = string.Empty;
     }
 
@@ -418,27 +425,34 @@ namespace ReactorSim.Browser
 
         public object? SpatialSolve { get; init; }
 
+        public GameSessionSnapshot? Snapshot { get; init; }
+
         public static BridgeCommandExecution Success(
             string message = "",
             object? previewSnapshot = null,
-            object? spatialSolve = null)
+            object? spatialSolve = null,
+            GameSessionSnapshot? snapshot = null)
         {
             return new BridgeCommandExecution
             {
                 Accepted = true,
                 Message = message,
                 PreviewSnapshot = previewSnapshot,
-                SpatialSolve = spatialSolve
+                SpatialSolve = spatialSolve,
+                Snapshot = snapshot
             };
         }
 
-        public static BridgeCommandExecution Failure(BridgeDiagnosticDto diagnostic)
+        public static BridgeCommandExecution Failure(
+            BridgeDiagnosticDto diagnostic,
+            GameSessionSnapshot? snapshot = null)
         {
             return new BridgeCommandExecution
             {
                 Accepted = false,
                 Message = diagnostic.Message,
-                Diagnostics = new List<BridgeDiagnosticDto> { diagnostic }
+                Diagnostics = new List<BridgeDiagnosticDto> { diagnostic },
+                Snapshot = snapshot
             };
         }
     }

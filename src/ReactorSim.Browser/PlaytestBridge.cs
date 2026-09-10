@@ -2,10 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using ReactorSim.Core;
 using ReactorSim.Game;
+
+[assembly: InternalsVisibleTo("ReactorSim.Browser.Tests")]
 
 namespace ReactorSim.Browser
 {
@@ -25,6 +30,17 @@ namespace ReactorSim.Browser
 
         private static readonly object Sync = new object();
         private static BridgeRuntime? _runtimeInstance;
+        private static int _coreSnapshotMaterializationCount;
+
+        internal static int CoreSnapshotMaterializationCount
+        {
+            get { return Volatile.Read(ref _coreSnapshotMaterializationCount); }
+        }
+
+        internal static void ResetCoreSnapshotMaterializationCount()
+        {
+            Interlocked.Exchange(ref _coreSnapshotMaterializationCount, 0);
+        }
 
         // Do not construct the full browser session as a type initializer.
         // A failure there is surfaced by the WASM runtime only as the generic
@@ -183,7 +199,9 @@ namespace ReactorSim.Browser
                     }
 
                     _runtime = candidate;
-                    PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, 0.0);
+                    GameSessionSnapshot game = _runtime.PlaySession.Snapshot;
+                    PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
+                    CacheGameSnapshot(_runtime, game);
                     string stateDigest = ComputeStateDigest(_runtime, snapshot);
                     return PlaytestProtocolV1.Serialize(
                         new PlaytestResponseDto
@@ -213,7 +231,8 @@ namespace ReactorSim.Browser
         {
             lock (Sync)
             {
-                PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, 0.0);
+                GameSessionSnapshot game = GetCurrentGameSnapshot(_runtime);
+                PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
                 return PlaytestProtocolV1.Serialize(snapshot);
             }
         }
@@ -257,6 +276,31 @@ namespace ReactorSim.Browser
                         payload = envelopePayload;
                     }
 
+                    bool compactRequested = IsCompactResponseRequested(root) &&
+                        _runtime.Mode == DefaultMode;
+                    bool hasBaseSequence = PlaytestInput.TryGetProperty(
+                        root,
+                        out JsonElement baseSequenceValue,
+                        "baseSequence",
+                        "base_sequence");
+                    ulong? requestedBaseSequence = null;
+                    if (hasBaseSequence)
+                    {
+                        if (baseSequenceValue.ValueKind != JsonValueKind.Number ||
+                            !baseSequenceValue.TryGetUInt64(out ulong parsedBaseSequence))
+                        {
+                            return SerializeError(
+                                "dispatch",
+                                PlaytestProtocolV1.Diagnostic(
+                                    "Browser.Dispatch.BaseSequence.Invalid",
+                                    "baseSequence",
+                                    "baseSequence must be a nonnegative integer."),
+                                _runtime);
+                        }
+
+                        requestedBaseSequence = parsedBaseSequence;
+                    }
+
                     if (payload.ValueKind != JsonValueKind.Object ||
                         !PlaytestInput.TryGetProperty(payload, out JsonElement typeValue, "type") ||
                         typeValue.ValueKind != JsonValueKind.String ||
@@ -273,10 +317,25 @@ namespace ReactorSim.Browser
 
                     string commandType = PlaytestInput.NormalizeType(typeValue.GetString()!);
                     string canonicalCommand = PlaytestProtocolV1.CanonicalizeJson(payload);
+
+                    if (compactRequested &&
+                        commandType != "reset" &&
+                        requestedBaseSequence.HasValue &&
+                        requestedBaseSequence.Value != _runtime.Sequence)
+                    {
+                        return SerializeCompactResync(
+                            payload,
+                            requestedBaseSequence.Value,
+                            _runtime);
+                    }
+
                     BridgeCommandExecution execution;
                     PlaytestPreviewDto? preview;
                     LabSnapshotDto? labPreview = null;
-                    PlaytestSnapshotDto beforeSnapshot = CreateSnapshot(_runtime, 0.0);
+                    double previousScore = _runtime.LastScore;
+                    object? previousDetailedProjection = _runtime.Mode == DefaultMode
+                        ? _runtime.LastDetailedProjection
+                        : null;
                     if (commandType == "reset")
                     {
                         BridgeRuntime candidate = CreateRuntime(_runtime.Mode, _runtime.InitializationJson);
@@ -315,14 +374,52 @@ namespace ReactorSim.Browser
                     }
 
                     _runtime.Sequence = checked(_runtime.Sequence + 1);
-                    PlaytestSnapshotDto snapshot = CreateSnapshot(
-                        _runtime,
-                        commandType == "reset" && execution.Accepted
-                            ? _runtime.PlaySession.Snapshot.ScoreTotal
-                            : execution.Accepted
-                                ? beforeSnapshot.ScoreTotal
-                                : 0.0);
-                    string stateDigest = ComputeStateDigest(_runtime, snapshot);
+                    GameSessionSnapshot game = execution.Snapshot ?? GetCurrentGameSnapshot(_runtime);
+                    bool detailedProjectionChanged = _runtime.Mode == DefaultMode &&
+                        previousDetailedProjection != null &&
+                        !ReferenceEquals(
+                            previousDetailedProjection,
+                            _runtime.PlaySession.CurrentSpatialCandidate);
+                    double previousScoreForResponse = commandType == "reset" && execution.Accepted
+                        ? game.ScoreTotal
+                        : execution.Accepted
+                            ? previousScore
+                            : 0.0;
+                    bool returnCompact = compactRequested &&
+                        commandType != "reset" &&
+                        _runtime.Mode == DefaultMode;
+                    PlaytestSnapshotDto? snapshot = null;
+                    PlaytestSnapshotPatchDto? snapshotPatch = null;
+                    PlaytestCoreDto? coreReplacement = null;
+                    string stateDigest;
+                    if (returnCompact)
+                    {
+                        snapshotPatch = CreateSnapshotPatch(
+                            _runtime,
+                            game,
+                            previousScoreForResponse);
+                        if (execution.Accepted &&
+                            (commandType == "commit-refuel" || detailedProjectionChanged))
+                        {
+                            coreReplacement = CreateCoreSnapshot(
+                                game.Core,
+                                game.Physics.MeanBundlePowerWatts);
+                        }
+
+                        stateDigest = ComputeCompactStateDigest(
+                            _runtime,
+                            game,
+                            snapshotPatch);
+                    }
+                    else
+                    {
+                        snapshot = CreateSnapshot(
+                            _runtime,
+                            game,
+                            previousScoreForResponse);
+                        stateDigest = ComputeStateDigest(_runtime, snapshot);
+                    }
+                    CacheGameSnapshot(_runtime, game);
                     _runtime.CommandJson.Add(canonicalCommand);
                     _runtime.History.Add(
                         new BridgeHistoryEntry
@@ -345,6 +442,30 @@ namespace ReactorSim.Browser
                             : "Command rejected; authoritative state was unchanged.";
                     }
 
+                    if (!returnCompact)
+                    {
+                        return PlaytestProtocolV1.Serialize(
+                            new PlaytestResponseDto
+                            {
+                                Operation = "dispatch",
+                                Ok = execution.Accepted,
+                                Accepted = execution.Accepted,
+                                Mode = _runtime.Mode,
+                                Message = message,
+                                Sequence = _runtime.Sequence,
+                                Command = payload.Clone(),
+                                Snapshot = snapshot!,
+                                Preview = preview,
+                                LabPreview = labPreview,
+                                Lab = CreateLabSnapshot(_runtime),
+                                StateDigest = stateDigest,
+                                ReplayDigest = ComputeReplayDigest(_runtime),
+                                Diagnostics = execution.Diagnostics
+                                    .Select(ToWireDiagnostic)
+                                    .ToList()
+                            });
+                    }
+
                     return PlaytestProtocolV1.Serialize(
                         new PlaytestResponseDto
                         {
@@ -354,11 +475,13 @@ namespace ReactorSim.Browser
                             Mode = _runtime.Mode,
                             Message = message,
                             Sequence = _runtime.Sequence,
+                            ResponseKind = "compact",
+                            BaseSequence = requestedBaseSequence ?? _runtime.Sequence - 1UL,
+                            RequiresResync = false,
                             Command = payload.Clone(),
-                            Snapshot = snapshot,
+                            SnapshotPatch = snapshotPatch!,
+                            CoreReplacement = coreReplacement,
                             Preview = preview,
-                            LabPreview = labPreview,
-                            Lab = CreateLabSnapshot(_runtime),
                             StateDigest = stateDigest,
                             ReplayDigest = ComputeReplayDigest(_runtime),
                             Diagnostics = execution.Diagnostics
@@ -479,13 +602,14 @@ namespace ReactorSim.Browser
                             "simulationSeconds must be a finite positive value.");
                     }
 
-                    bool wasPaused = session.Snapshot.IsPaused;
+                    GameSessionSnapshot beforeStep = GetCurrentGameSnapshot(runtime);
+                    bool wasPaused = beforeStep.IsPaused;
                     if (wasPaused)
                     {
                         session.Resume();
                     }
 
-                    double acceleration = Math.Max(session.Snapshot.AccelerationFactor, 1.0);
+                    double acceleration = Math.Max(beforeStep.AccelerationFactor, 1.0);
                     double wallMillisecondsDouble = simulationSeconds * 1000.0 / acceleration;
                     if (!double.IsFinite(wallMillisecondsDouble) ||
                         wallMillisecondsDouble > ulong.MaxValue)
@@ -500,7 +624,8 @@ namespace ReactorSim.Browser
                         checked((ulong)Math.Ceiling(wallMillisecondsDouble)));
                     if (wasPaused)
                     {
-                        session.Pause();
+                        GameSessionCommandResult pauseResult = session.Pause();
+                        return WithSnapshot(ToExecution(stepResult), pauseResult.Snapshot);
                     }
 
                     return ToExecution(stepResult);
@@ -547,13 +672,16 @@ namespace ReactorSim.Browser
                     return QueueTiltTarget(session, payload);
 
                 case "preview-refuel":
-                    return Refuel(session, payload, true, out preview);
+                    return Refuel(runtime, payload, true, out preview);
 
                 case "commit-refuel":
-                    return Refuel(session, payload, false, out preview);
+                    return Refuel(runtime, payload, false, out preview);
 
                 case "reset":
                     runtime.PlaySession = PracticeGameSessionFactory.CreateBrowserPlaytest();
+                    runtime.LastGameSnapshot = null;
+                    runtime.LastScore = 0.0;
+                    runtime.LastDetailedProjection = runtime.PlaySession.CurrentSpatialCandidate;
                     runtime.LastEvent = new PlaytestEventDto
                     {
                         EventId = "wasm-event-reset",
@@ -603,12 +731,13 @@ namespace ReactorSim.Browser
         }
 
         private static BridgeCommandExecution Refuel(
-            GameSession session,
+            BridgeRuntime runtime,
             JsonElement payload,
             bool isPreview,
             out PlaytestPreviewDto? preview)
         {
             preview = null;
+            GameSession session = runtime.PlaySession;
             JsonElement request = payload;
             if (PlaytestInput.TryGetProperty(payload, out JsonElement nested, "request"))
             {
@@ -626,7 +755,7 @@ namespace ReactorSim.Browser
                     "channelIndex, directionId, shiftCount, and fuelTypeId are required.");
             }
 
-            GameSessionSnapshot before = session.Snapshot;
+            GameSessionSnapshot before = GetCurrentGameSnapshot(runtime);
             GameSessionCommandResult result = isPreview
                 ? session.PreviewRefuelChannel(channelIndex, direction, shiftCount, fuelType)
                 : session.RefuelChannel(channelIndex, direction, shiftCount, fuelType);
@@ -708,14 +837,32 @@ namespace ReactorSim.Browser
         {
             if (result.Accepted)
             {
-                return BridgeCommandExecution.Success(result.Message);
+                return BridgeCommandExecution.Success(
+                    result.Message,
+                    snapshot: result.Snapshot);
             }
 
             return BridgeCommandExecution.Failure(
                 PlaytestProtocolV1.Diagnostic(
                     result.DiagnosticCode,
                     "command",
-                    result.DiagnosticMessage));
+                    result.DiagnosticMessage),
+                result.Snapshot);
+        }
+
+        private static BridgeCommandExecution WithSnapshot(
+            BridgeCommandExecution execution,
+            GameSessionSnapshot snapshot)
+        {
+            return new BridgeCommandExecution
+            {
+                Accepted = execution.Accepted,
+                Message = execution.Message,
+                Diagnostics = execution.Diagnostics,
+                PreviewSnapshot = execution.PreviewSnapshot,
+                SpatialSolve = execution.SpatialSolve,
+                Snapshot = snapshot
+            };
         }
 
         private static BridgeCommandExecution InvalidCommand(
@@ -727,51 +874,49 @@ namespace ReactorSim.Browser
                 PlaytestProtocolV1.Diagnostic(code, path, message));
         }
 
+        private static GameSessionSnapshot GetCurrentGameSnapshot(BridgeRuntime runtime)
+        {
+            if (runtime.LastGameSnapshot != null)
+            {
+                return runtime.LastGameSnapshot;
+            }
+
+            GameSessionSnapshot snapshot = runtime.PlaySession.Snapshot;
+            CacheGameSnapshot(runtime, snapshot);
+            return snapshot;
+        }
+
+        private static void CacheGameSnapshot(
+            BridgeRuntime runtime,
+            GameSessionSnapshot snapshot)
+        {
+            runtime.LastGameSnapshot = snapshot;
+            runtime.LastScore = snapshot.ScoreTotal;
+            runtime.LastDetailedProjection = runtime.Mode == DefaultMode
+                ? runtime.PlaySession.CurrentSpatialCandidate
+                : null;
+        }
+
         private static PlaytestSnapshotDto CreateSnapshot(
             BridgeRuntime runtime,
             double previousScore)
         {
-            GameSessionSnapshot game = runtime.PlaySession.Snapshot;
+            return CreateSnapshot(runtime, GetCurrentGameSnapshot(runtime), previousScore);
+        }
+
+        private static PlaytestSnapshotDto CreateSnapshot(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game,
+            double previousScore)
+        {
             double scoreDelta = game.ScoreTotal - previousScore;
             if (previousScore == 0.0 && runtime.Sequence == 0)
             {
                 scoreDelta = 0.0;
             }
 
-            string playback = game.IsPaused
-                ? "pause"
-                : game.PlaybackModeId == PracticeGameSessionFactory.RealTimePlaybackModeId
-                    ? "1x"
-                    : game.PlaybackModeId == PracticeGameSessionFactory.DebugPlaybackModeId
-                        ? "60x"
-                        : "10x";
+            string playback = GetPlaybackMode(game);
             LabSnapshotDto? labSnapshot = runtime.LabSession?.CreateSnapshot();
-            LabSpatialSolveSnapshotDto? solve = labSnapshot?.SpatialSolve;
-            double relativePowerError = game.Physics.TargetPowerWatts <= 0.0
-                ? 0.0
-                : Math.Abs(game.Physics.TotalPowerWatts - game.Physics.TargetPowerWatts) /
-                  game.Physics.TargetPowerWatts;
-            PlaytestConvergenceDto convergence = solve == null
-                ? new PlaytestConvergenceDto
-                {
-                    State = game.Physics.SolveState,
-                    Iterations = game.Physics.SolverIterationCount,
-                    Residual = game.Physics.SolverResidualRelativeInfinity,
-                    RelativePowerError = relativePowerError,
-                    LastSolveMilliseconds = 0.0,
-                    SolverLabel = game.Physics.SolverIdentity
-                }
-                : new PlaytestConvergenceDto
-                {
-                    State = solve.HasUsableState ? "converged" : "pending",
-                    Iterations = solve.Diagnostics.IterationCount,
-                    Residual = solve.Diagnostics.ResidualRelativeInfinity ?? 0.0,
-                    RelativePowerError = solve.FinalState == null
-                        ? relativePowerError
-                        : Math.Abs(solve.FinalState.TotalPowerW - 0.4) / 0.4,
-                    LastSolveMilliseconds = 0.0,
-                    SolverLabel = "Core SpatialEigenSolve / " + LabPlaytestSession.FixtureId
-                };
 
             return new PlaytestSnapshotDto
             {
@@ -804,87 +949,11 @@ namespace ReactorSim.Browser
                 LastRefuellingShiftCount = game.RefuellingOperationCount == 0
                     ? (ushort)0
                     : game.LastRefuellingShiftCount,
-                Physics = new PlaytestPhysicsDto
-                {
-                    SourceId = game.Physics.SourceId,
-                    FormulationId = game.Physics.FormulationId,
-                    ShapeMethodId = game.Physics.ShapeMethodId,
-                    AmplitudeMethodId = game.Physics.AmplitudeMethodId,
-                    ReactivityMethodId = game.Physics.ReactivityMethodId,
-                    SolveState = game.Physics.SolveState,
-                    IsAuthoritative = game.Physics.IsAuthoritative,
-                    BindingVersion = game.Physics.BindingVersion,
-                    ReferencePowerWatts = game.Physics.ReferencePowerWatts,
-                    PowerAmplitude = game.Physics.PowerAmplitude,
-                    ActualPowerFraction = game.Physics.ActualPowerFraction,
-                    TargetPowerWatts = game.Physics.TargetPowerWatts,
-                    TotalPowerWatts = game.Physics.TotalPowerWatts,
-                    MeanChannelPowerWatts = game.Physics.MeanChannelPowerWatts,
-                    MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
-                    EffectiveK = game.Physics.EffectiveK,
-                    Reactivity = game.Physics.Reactivity,
-                    StaticReactivity = game.Physics.StaticReactivity,
-                    StaticReactivityMethodId = game.Physics.StaticReactivityMethodId,
-                    WeightedPerturbationReactivity = game.Physics.WeightedPerturbationReactivity,
-                    ReactivityNumerator = game.Physics.ReactivityNumerator,
-                    ReactivityDenominator = game.Physics.ReactivityDenominator,
-                    ReactivityIdentity = game.Physics.ReactivityIdentity,
-                    ReactivityBindingDigestHex = game.Physics.ReactivityBindingDigestHex,
-                    CoreReactivity = game.Physics.CoreReactivity,
-                    CompensatedNetReactivity = game.Physics.CompensatedNetReactivity,
-                    CompensationState = game.Physics.CompensationState,
-                    CompensationCommand = game.Physics.CompensationCommand,
-                    CompensationLowerBound = game.Physics.CompensationLowerBound,
-                    CompensationUpperBound = game.Physics.CompensationUpperBound,
-                    CompensationSaturated = game.Physics.CompensationSaturated,
-                    CompensationResponseTimeSeconds = game.Physics.CompensationResponseTimeSeconds,
-                    CadenceIdentity = game.Physics.CadenceIdentity,
-                    AdjointNormalizationIdentity = game.Physics.AdjointNormalizationIdentity,
-                    AdjointDigestHex = game.Physics.AdjointDigestHex,
-                    AdjointIterationCount = game.Physics.AdjointIterationCount,
-                    AdjointTransposeResidualRelativeInfinity = game.Physics.AdjointTransposeResidualRelativeInfinity,
-                    PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError,
-                    SolverIdentity = game.Physics.SolverIdentity,
-                    SolverIterationCount = game.Physics.SolverIterationCount,
-                    SolverResidualRelativeInfinity = game.Physics.SolverResidualRelativeInfinity
-                },
+                Physics = CreatePhysicsSnapshot(game),
                 Xenon = CreateXenonSnapshot(game),
                 Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
-                Diagnostics = new PlaytestDiagnosticsDto
-                {
-                    Convergence = convergence,
-                    Checks = new List<PlaytestCheckDto>
-                    {
-                        new PlaytestCheckDto
-                        {
-                            Label = "Topology",
-                            Value = "380 × 12",
-                            Status = "pass"
-                        },
-                        new PlaytestCheckDto
-                        {
-                            Label = "Control margin",
-                            Value = FormatPercent(game.ControlMarginFraction),
-                            Status = game.ControlMarginFraction > 0.65 ? "pass" : "watch"
-                        },
-                        new PlaytestCheckDto
-                        {
-                            Label = "Data provenance",
-                            Value = runtime.Mode == "lab"
-                                ? "synthetic Lab fixture"
-                                : "synthetic-calibrated full-core pack",
-                            Status = "info"
-                        }
-                    }
-                },
-                LastEvent = runtime.LastEvent ?? new PlaytestEventDto
-                {
-                    EventId = "wasm-event-ready",
-                    TimeSeconds = game.SimulationTimeSeconds,
-                    Title = "Practice session online",
-                    Detail = "Select a channel to inspect the 12-position bundle stack.",
-                    Tone = "info"
-                },
+                Diagnostics = CreateDiagnosticsSnapshot(runtime, game, labSnapshot),
+                LastEvent = CreateLastEvent(runtime, game),
                 Lab = labSnapshot
             };
         }
@@ -893,6 +962,7 @@ namespace ReactorSim.Browser
             GameCorePresentationSnapshot core,
             double meanBundlePowerWatts)
         {
+            Interlocked.Increment(ref _coreSnapshotMaterializationCount);
             return new PlaytestCoreDto
             {
                 ChannelCount = GameCorePresentationConstants.ChannelCount,
@@ -942,6 +1012,186 @@ namespace ReactorSim.Browser
                             .ToList()
                     })
                     .ToList()
+            };
+        }
+
+        private static PlaytestSnapshotPatchDto CreateSnapshotPatch(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game,
+            double previousScore)
+        {
+            double scoreDelta = game.ScoreTotal - previousScore;
+            if (previousScore == 0.0 && runtime.Sequence == 0)
+            {
+                scoreDelta = 0.0;
+            }
+
+            return new PlaytestSnapshotPatchDto
+            {
+                ScenarioId = game.ScenarioId,
+                DataPackId = runtime.Mode == "lab" ? LabDataPackId : DefaultDataPackId,
+                SimulationTimeSeconds = game.SimulationTimeSeconds,
+                WallElapsedSeconds = game.WallElapsedSeconds,
+                NormalizedPowerFraction = game.NormalizedPowerFraction,
+                TargetPowerFraction = 1.0,
+                AbsoluteTiltFraction = game.AbsoluteTiltFraction,
+                TargetTiltFraction = 0.0,
+                ControlMarginFraction = game.ControlMarginFraction,
+                DeviceAvailableFraction = game.DeviceAvailableFraction,
+                PendingActionCount = game.PendingActionCount,
+                ScoreTotal = game.ScoreTotal,
+                ScoreDelta = scoreDelta,
+                IsPaused = game.IsPaused,
+                PlaybackModeId = GetPlaybackMode(game),
+                FreshBundlesAvailable = game.FreshBundlesAvailable,
+                RefuellingOperationCount = game.RefuellingOperationCount,
+                LastRefuelledChannel = game.RefuellingOperationCount == 0
+                    ? -1
+                    : game.LastRefuelledChannel,
+                LastRefuellingDirectionId = game.RefuellingOperationCount == 0
+                    ? null
+                    : game.LastRefuellingDirectionId,
+                LastRefuellingShiftCount = game.RefuellingOperationCount == 0
+                    ? (ushort)0
+                    : game.LastRefuellingShiftCount,
+                Physics = CreatePhysicsSnapshot(game),
+                Xenon = CreateXenonSnapshot(game),
+                Diagnostics = CreateDiagnosticsSnapshot(runtime, game, null),
+                LastEvent = CreateLastEvent(runtime, game)
+            };
+        }
+
+        private static string GetPlaybackMode(GameSessionSnapshot game)
+        {
+            return game.IsPaused
+                ? "pause"
+                : game.PlaybackModeId == PracticeGameSessionFactory.RealTimePlaybackModeId
+                    ? "1x"
+                    : game.PlaybackModeId == PracticeGameSessionFactory.DebugPlaybackModeId
+                        ? "60x"
+                        : "10x";
+        }
+
+        private static PlaytestPhysicsDto CreatePhysicsSnapshot(GameSessionSnapshot game)
+        {
+            return new PlaytestPhysicsDto
+            {
+                SourceId = game.Physics.SourceId,
+                FormulationId = game.Physics.FormulationId,
+                ShapeMethodId = game.Physics.ShapeMethodId,
+                AmplitudeMethodId = game.Physics.AmplitudeMethodId,
+                ReactivityMethodId = game.Physics.ReactivityMethodId,
+                SolveState = game.Physics.SolveState,
+                IsAuthoritative = game.Physics.IsAuthoritative,
+                BindingVersion = game.Physics.BindingVersion,
+                ReferencePowerWatts = game.Physics.ReferencePowerWatts,
+                PowerAmplitude = game.Physics.PowerAmplitude,
+                ActualPowerFraction = game.Physics.ActualPowerFraction,
+                TargetPowerWatts = game.Physics.TargetPowerWatts,
+                TotalPowerWatts = game.Physics.TotalPowerWatts,
+                MeanChannelPowerWatts = game.Physics.MeanChannelPowerWatts,
+                MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
+                EffectiveK = game.Physics.EffectiveK,
+                Reactivity = game.Physics.Reactivity,
+                StaticReactivity = game.Physics.StaticReactivity,
+                StaticReactivityMethodId = game.Physics.StaticReactivityMethodId,
+                WeightedPerturbationReactivity = game.Physics.WeightedPerturbationReactivity,
+                ReactivityNumerator = game.Physics.ReactivityNumerator,
+                ReactivityDenominator = game.Physics.ReactivityDenominator,
+                ReactivityIdentity = game.Physics.ReactivityIdentity,
+                ReactivityBindingDigestHex = game.Physics.ReactivityBindingDigestHex,
+                CoreReactivity = game.Physics.CoreReactivity,
+                CompensatedNetReactivity = game.Physics.CompensatedNetReactivity,
+                CompensationState = game.Physics.CompensationState,
+                CompensationCommand = game.Physics.CompensationCommand,
+                CompensationLowerBound = game.Physics.CompensationLowerBound,
+                CompensationUpperBound = game.Physics.CompensationUpperBound,
+                CompensationSaturated = game.Physics.CompensationSaturated,
+                CompensationResponseTimeSeconds = game.Physics.CompensationResponseTimeSeconds,
+                CadenceIdentity = game.Physics.CadenceIdentity,
+                AdjointNormalizationIdentity = game.Physics.AdjointNormalizationIdentity,
+                AdjointDigestHex = game.Physics.AdjointDigestHex,
+                AdjointIterationCount = game.Physics.AdjointIterationCount,
+                AdjointTransposeResidualRelativeInfinity = game.Physics.AdjointTransposeResidualRelativeInfinity,
+                PowerBalanceRelativeError = game.Physics.PowerBalanceRelativeError,
+                SolverIdentity = game.Physics.SolverIdentity,
+                SolverIterationCount = game.Physics.SolverIterationCount,
+                SolverResidualRelativeInfinity = game.Physics.SolverResidualRelativeInfinity
+            };
+        }
+
+        private static PlaytestDiagnosticsDto CreateDiagnosticsSnapshot(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game,
+            LabSnapshotDto? labSnapshot)
+        {
+            LabSpatialSolveSnapshotDto? solve = labSnapshot?.SpatialSolve;
+            double relativePowerError = game.Physics.TargetPowerWatts <= 0.0
+                ? 0.0
+                : Math.Abs(game.Physics.TotalPowerWatts - game.Physics.TargetPowerWatts) /
+                  game.Physics.TargetPowerWatts;
+            PlaytestConvergenceDto convergence = solve == null
+                ? new PlaytestConvergenceDto
+                {
+                    State = game.Physics.SolveState,
+                    Iterations = game.Physics.SolverIterationCount,
+                    Residual = game.Physics.SolverResidualRelativeInfinity,
+                    RelativePowerError = relativePowerError,
+                    LastSolveMilliseconds = 0.0,
+                    SolverLabel = game.Physics.SolverIdentity
+                }
+                : new PlaytestConvergenceDto
+                {
+                    State = solve.HasUsableState ? "converged" : "pending",
+                    Iterations = solve.Diagnostics.IterationCount,
+                    Residual = solve.Diagnostics.ResidualRelativeInfinity ?? 0.0,
+                    RelativePowerError = solve.FinalState == null
+                        ? relativePowerError
+                        : Math.Abs(solve.FinalState.TotalPowerW - 0.4) / 0.4,
+                    LastSolveMilliseconds = 0.0,
+                    SolverLabel = "Core SpatialEigenSolve / " + LabPlaytestSession.FixtureId
+                };
+
+            return new PlaytestDiagnosticsDto
+            {
+                Convergence = convergence,
+                Checks = new List<PlaytestCheckDto>
+                {
+                    new PlaytestCheckDto
+                    {
+                        Label = "Topology",
+                        Value = "380 × 12",
+                        Status = "pass"
+                    },
+                    new PlaytestCheckDto
+                    {
+                        Label = "Control margin",
+                        Value = FormatPercent(game.ControlMarginFraction),
+                        Status = game.ControlMarginFraction > 0.65 ? "pass" : "watch"
+                    },
+                    new PlaytestCheckDto
+                    {
+                        Label = "Data provenance",
+                        Value = runtime.Mode == "lab"
+                            ? "synthetic Lab fixture"
+                            : "synthetic-calibrated full-core pack",
+                        Status = "info"
+                    }
+                }
+            };
+        }
+
+        private static PlaytestEventDto CreateLastEvent(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game)
+        {
+            return runtime.LastEvent ?? new PlaytestEventDto
+            {
+                EventId = "wasm-event-ready",
+                TimeSeconds = game.SimulationTimeSeconds,
+                Title = "Practice session online",
+                Detail = "Select a channel to inspect the 12-position bundle stack.",
+                Tone = "info"
             };
         }
 
@@ -1013,11 +1263,142 @@ namespace ReactorSim.Browser
             return PlaytestProtocolV1.ComputeDigest(canonical);
         }
 
+        private static string ComputeCompactStateDigest(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game,
+            PlaytestSnapshotPatchDto patch)
+        {
+            string patchJson = PlaytestProtocolV1.Serialize(patch);
+            using JsonDocument document = JsonDocument.Parse(patchJson);
+            string canonical = PlaytestProtocolV1.CompactStateDigestAlgorithm +
+                "|sequence=" + runtime.Sequence.ToString(CultureInfo.InvariantCulture) +
+                "|mode=" + runtime.Mode +
+                "|patch=" + PlaytestProtocolV1.CanonicalizeJson(document.RootElement) +
+                "|core=" + ComputeCompactCoreIdentity(runtime, game);
+            return PlaytestProtocolV1.ComputeDigest(canonical);
+        }
+
+        private static string ComputeCompactCoreIdentity(
+            BridgeRuntime runtime,
+            GameSessionSnapshot game)
+        {
+            IqsSpatialCandidateV1 candidate = runtime.PlaySession.CurrentSpatialCandidate;
+            StringBuilder identity = new StringBuilder();
+            identity.Append("binding-version=")
+                .Append(game.Physics.BindingVersion.ToString(CultureInfo.InvariantCulture))
+                .Append("|physics-binding=")
+                .Append(game.Physics.ReactivityBindingDigestHex)
+                .Append("|xenon-version=")
+                .Append(game.Xenon.StateVersion.ToString(CultureInfo.InvariantCulture))
+                .Append("|xenon=")
+                .Append(game.Xenon.StateDigestHex)
+                .Append("|inventory=")
+                .Append(FormatDigest(candidate.SpatialSolve.InventoryBindingDigest))
+                .Append("|coefficients=")
+                .Append(FormatDigest(candidate.SpatialSolve.CoefficientBindingDigest))
+                .Append("|candidate-reactivity=")
+                .Append(candidate.ReactivityBindingDigestHex);
+            return identity.ToString();
+        }
+
+        private static string FormatDigest(Digest32 digest)
+        {
+            StringBuilder result = new StringBuilder(digest.Bytes.Count * 2);
+            foreach (byte value in digest.Bytes)
+            {
+                result.Append(value.ToString("x2", CultureInfo.InvariantCulture));
+            }
+
+            return result.ToString();
+        }
+
         private static string ComputeReplayDigest(BridgeRuntime runtime)
         {
             string canonical = runtime.Mode + "|" + runtime.InitializationJson + "|" +
                 string.Join("|", runtime.CommandJson);
             return PlaytestProtocolV1.ComputeDigest(canonical);
+        }
+
+        private static bool IsCompactResponseRequested(JsonElement root)
+        {
+            if (TryGetResponseMode(root, out string responseMode) &&
+                string.Equals(
+                    PlaytestInput.NormalizeType(responseMode),
+                    "compact",
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (PlaytestInput.TryGetProperty(root, out JsonElement compact, "compact") &&
+                compact.ValueKind == JsonValueKind.True)
+            {
+                return true;
+            }
+
+            if (PlaytestInput.TryGetProperty(root, out JsonElement options, "options") &&
+                options.ValueKind == JsonValueKind.Object &&
+                TryGetResponseMode(options, out responseMode) &&
+                string.Equals(
+                    PlaytestInput.NormalizeType(responseMode),
+                    "compact",
+                    StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetResponseMode(JsonElement value, out string responseMode)
+        {
+            responseMode = string.Empty;
+            if (!PlaytestInput.TryGetProperty(
+                    value,
+                    out JsonElement mode,
+                    "responseMode",
+                    "response_mode",
+                    "response") ||
+                mode.ValueKind != JsonValueKind.String ||
+                string.IsNullOrWhiteSpace(mode.GetString()))
+            {
+                return false;
+            }
+
+            responseMode = mode.GetString()!;
+            return true;
+        }
+
+        private static string SerializeCompactResync(
+            JsonElement payload,
+            ulong requestedBaseSequence,
+            BridgeRuntime runtime)
+        {
+            PlaytestSnapshotDto snapshot = CreateSnapshot(runtime, 0.0);
+            BridgeDiagnosticDto diagnostic = PlaytestProtocolV1.Diagnostic(
+                "Browser.Dispatch.BaseSequence.Mismatch",
+                "baseSequence",
+                "The compact command baseSequence does not match the authoritative sequence; request a full snapshot before retrying.");
+            return PlaytestProtocolV1.Serialize(
+                new PlaytestResponseDto
+                {
+                    Operation = "dispatch",
+                    Ok = false,
+                    Accepted = false,
+                    Mode = runtime.Mode,
+                    Message = diagnostic.Message,
+                    Sequence = runtime.Sequence,
+                    ResponseKind = "compact",
+                    BaseSequence = requestedBaseSequence,
+                    RequiresResync = true,
+                    Command = payload.Clone(),
+                    StateDigest = ComputeStateDigest(runtime, snapshot),
+                    ReplayDigest = ComputeReplayDigest(runtime),
+                    Diagnostics = new List<PlaytestDiagnosticDto>
+                    {
+                        ToWireDiagnostic(diagnostic)
+                    }
+                });
         }
 
         private static string SerializeError(
@@ -1190,6 +1571,9 @@ namespace ReactorSim.Browser
                 PlaySession = playSession;
                 LabSession = labSession;
                 InitializationFailure = initializationFailure;
+                LastDetailedProjection = mode == DefaultMode
+                    ? playSession.CurrentSpatialCandidate
+                    : null;
             }
 
             public string Mode { get; }
@@ -1205,6 +1589,10 @@ namespace ReactorSim.Browser
             public ulong Sequence { get; set; }
 
             public double LastScore { get; set; }
+
+            public GameSessionSnapshot? LastGameSnapshot { get; set; }
+
+            public IqsSpatialCandidateV1? LastDetailedProjection { get; set; }
 
             public List<string> CommandJson { get; } = new List<string>();
 
@@ -1232,9 +1620,19 @@ namespace ReactorSim.Browser
 
         public ulong Sequence { get; set; }
 
+        public string? ResponseKind { get; set; }
+
+        public ulong? BaseSequence { get; set; }
+
+        public bool? RequiresResync { get; set; }
+
         public JsonElement? Command { get; set; }
 
-        public PlaytestSnapshotDto Snapshot { get; set; } = new PlaytestSnapshotDto();
+        public PlaytestSnapshotDto? Snapshot { get; set; }
+
+        public PlaytestSnapshotPatchDto? SnapshotPatch { get; set; }
+
+        public PlaytestCoreDto? CoreReplacement { get; set; }
 
         public PlaytestPreviewDto? Preview { get; set; }
 
@@ -1248,6 +1646,64 @@ namespace ReactorSim.Browser
 
         public List<PlaytestDiagnosticDto> Diagnostics { get; set; } =
             new List<PlaytestDiagnosticDto>();
+    }
+
+    /// <summary>
+    /// Compact authoritative projection carried by an opt-in dispatch
+    /// response. The detailed core remains separate so the browser can merge
+    /// ordinary commands without transferring the 380-channel array.
+    /// </summary>
+    internal sealed class PlaytestSnapshotPatchDto
+    {
+        public string ScenarioId { get; set; } = string.Empty;
+
+        public string DataPackId { get; set; } = string.Empty;
+
+        public double SimulationTimeSeconds { get; set; }
+
+        public double WallElapsedSeconds { get; set; }
+
+        public double NormalizedPowerFraction { get; set; }
+
+        public double TargetPowerFraction { get; set; }
+
+        public double AbsoluteTiltFraction { get; set; }
+
+        public double TargetTiltFraction { get; set; }
+
+        public double ControlMarginFraction { get; set; }
+
+        public double DeviceAvailableFraction { get; set; }
+
+        public uint PendingActionCount { get; set; }
+
+        public double ScoreTotal { get; set; }
+
+        public double ScoreDelta { get; set; }
+
+        public bool IsPaused { get; set; }
+
+        public string PlaybackModeId { get; set; } = "1x";
+
+        public uint FreshBundlesAvailable { get; set; }
+
+        public uint RefuellingOperationCount { get; set; }
+
+        public int LastRefuelledChannel { get; set; } = -1;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public string? LastRefuellingDirectionId { get; set; }
+
+        public ushort LastRefuellingShiftCount { get; set; }
+
+        public PlaytestPhysicsDto Physics { get; set; } = new PlaytestPhysicsDto();
+
+        public PlaytestXenonDto Xenon { get; set; } = new PlaytestXenonDto();
+
+        public PlaytestDiagnosticsDto Diagnostics { get; set; } = new PlaytestDiagnosticsDto();
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        public PlaytestEventDto? LastEvent { get; set; }
     }
 
     internal sealed class PlaytestDiagnosticDto

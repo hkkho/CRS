@@ -11,6 +11,7 @@ import type {
   BridgeStatus,
   CanduCommand,
   CanduCommandResponse,
+  CanduDispatchOptions,
   CanduSnapshot,
 } from "./protocol";
 
@@ -106,7 +107,10 @@ export class BridgeSessionController {
     this.scheduler.setVisible(visible);
   }
 
-  public async dispatch(command: CanduCommand): Promise<CanduCommandResponse> {
+  public async dispatch(
+    command: CanduCommand,
+    options?: CanduDispatchOptions,
+  ): Promise<CanduCommandResponse> {
     if (!this.statusValue.isWasmAvailable) {
       throw new Error(
         this.statusValue.source === "loading"
@@ -123,7 +127,13 @@ export class BridgeSessionController {
     this.lastError = null;
     this.emit();
     try {
-      const response = await this.bridge.dispatch(command);
+      const responseOptions = options ?? (command.type === "reset"
+        ? { responseMode: "full" as const }
+        : {
+            responseMode: "compact" as const,
+            baseSequence: this.snapshotValue.sequence,
+          });
+      const response = await this.bridge.dispatch(command, responseOptions);
       this.lastResponse = response;
       this.snapshotValue = response.snapshot;
       this.emit(response);

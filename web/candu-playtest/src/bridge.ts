@@ -6,12 +6,15 @@ import {
   type BridgeStatus,
   type CanduCommand,
   type CanduCommandResponse,
+  type CanduDispatchOptions,
   type CanduPlaytestBridge,
   type CanduPlaytestWasmExports,
   type CanduSnapshot,
   findWasmExports,
+  parseProtocolResponseWithSnapshot,
   parseProtocolResponse,
   parseProtocolSnapshot,
+  ProtocolResyncRequiredError,
   PROTOCOL_VERSION,
   serializeProtocolCommand,
 } from "./protocol";
@@ -45,32 +48,175 @@ const unavailableStatus: BridgeStatus = {
 export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
   initializeMode: (mode: "play") => Promise<CanduSnapshot>;
   subscribe: (listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void) => () => void;
+  getTransportMetrics?: () => readonly TransportMetric[];
+}
+
+export interface TransportMetric {
+  commandType: string;
+  responseKind: "full" | "compact" | "error";
+  wasmCallDurationMs: number;
+  returnedUtf8PayloadBytes: number;
+  jsonParseMaterializationDurationMs: number;
+  coreReplacementIncluded: boolean;
+}
+
+const metricLimit = 256;
+
+function nowMs(): number {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
+}
+
+function utf8ByteLength(value: string): number {
+  return typeof TextEncoder === "undefined"
+    ? value.length
+    : new TextEncoder().encode(value).byteLength;
+}
+
+function recordMetric(
+  metrics: TransportMetric[],
+  metric: TransportMetric,
+): void {
+  metrics.push(metric);
+  if (metrics.length > metricLimit) {
+    metrics.splice(0, metrics.length - metricLimit);
+  }
+}
+
+function responseKindOf(response: CanduCommandResponse): "full" | "compact" {
+  return response.responseKind === "compact" ? "compact" : "full";
+}
+
+function coreReplacementIncluded(response: CanduCommandResponse): boolean {
+  return response.coreReplacement !== undefined && response.coreReplacement !== null;
 }
 
 export class WasmProtocolBridge implements CanduPlaytestBridge {
   readonly status = authoritativeWasmStatus;
+  private readonly metrics: TransportMetric[] = [];
+  private lastSnapshot: CanduSnapshot | null = null;
 
   constructor(private readonly exports: CanduPlaytestWasmExports) {}
+
+  getTransportMetrics(): readonly TransportMetric[] {
+    return this.metrics.slice();
+  }
 
   async initialize(mode: "play"): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
 
+    const callStarted = nowMs();
     const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode }));
-    return parseProtocolResponse(raw).snapshot;
+    const callDuration = nowMs() - callStarted;
+    const parseStarted = nowMs();
+    try {
+      const response = parseProtocolResponse(raw);
+      recordMetric(this.metrics, {
+        commandType: "initialize",
+        responseKind: responseKindOf(response),
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: coreReplacementIncluded(response),
+      });
+      this.lastSnapshot = response.snapshot;
+      return response.snapshot;
+    } catch (error) {
+      recordMetric(this.metrics, {
+        commandType: "initialize",
+        responseKind: "error",
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: false,
+      });
+      throw error;
+    }
   }
 
   getSnapshot(): CanduSnapshot {
-    return parseProtocolSnapshot(this.exports.getSnapshotJson());
+    const callStarted = nowMs();
+    const raw = this.exports.getSnapshotJson();
+    const callDuration = nowMs() - callStarted;
+    const parseStarted = nowMs();
+    try {
+      const snapshot = parseProtocolSnapshot(raw);
+      recordMetric(this.metrics, {
+        commandType: "snapshot",
+        responseKind: "full",
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: false,
+      });
+      this.lastSnapshot = snapshot;
+      return snapshot;
+    } catch (error) {
+      recordMetric(this.metrics, {
+        commandType: "snapshot",
+        responseKind: "error",
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: false,
+      });
+      throw error;
+    }
   }
 
-  dispatch(command: CanduCommand): CanduCommandResponse | Promise<CanduCommandResponse> {
-    const raw = this.exports.dispatchJson(serializeProtocolCommand(command));
-    if (raw instanceof Promise) {
-      return raw.then(parseProtocolResponse);
+  async dispatch(command: CanduCommand, options: CanduDispatchOptions = {}): Promise<CanduCommandResponse> {
+    const commandJson = serializeProtocolCommand(command, options);
+    const callStarted = nowMs();
+    const raw = await this.exports.dispatchJson(commandJson);
+    const callDuration = nowMs() - callStarted;
+    const parseStarted = nowMs();
+    try {
+      let response: CanduCommandResponse;
+      try {
+        response = parseProtocolResponse(raw, this.lastSnapshot ?? undefined);
+      } catch (error) {
+        if (!(error instanceof ProtocolResyncRequiredError)) {
+          throw error;
+        }
+        const snapshotRaw = this.exports.getSnapshotJson();
+        const snapshotParseStarted = nowMs();
+        const snapshot = parseProtocolSnapshot(snapshotRaw);
+        response = parseProtocolResponseWithSnapshot(raw, this.lastSnapshot ?? undefined, snapshot);
+        recordMetric(this.metrics, {
+          commandType: "snapshot",
+          responseKind: "full",
+          wasmCallDurationMs: 0,
+          returnedUtf8PayloadBytes: utf8ByteLength(snapshotRaw),
+          jsonParseMaterializationDurationMs: nowMs() - snapshotParseStarted,
+          coreReplacementIncluded: false,
+        });
+      }
+      // Direct callers can use compact mode only when they provide the base
+      // snapshot through the bridge instance. The authoritative lifecycle
+      // bridge supplies that state; direct bridges retain the last materialized
+      // snapshot below through their normal dispatch path.
+      this.lastSnapshot = response.snapshot;
+      recordMetric(this.metrics, {
+        commandType: command.type,
+        responseKind: responseKindOf(response),
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: coreReplacementIncluded(response),
+      });
+      return response;
+    } catch (error) {
+      recordMetric(this.metrics, {
+        commandType: command.type,
+        responseKind: "error",
+        wasmCallDurationMs: callDuration,
+        returnedUtf8PayloadBytes: utf8ByteLength(raw),
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: false,
+      });
+      throw error;
     }
-    return parseProtocolResponse(raw);
   }
 }
 
@@ -85,6 +231,8 @@ interface WorkerResultMessage {
   type: "result";
   id: number;
   resultJson: string;
+  wasmCallDurationMs: number;
+  returnedUtf8PayloadBytes: number;
 }
 
 interface WorkerErrorMessage {
@@ -101,7 +249,7 @@ interface WorkerReadyMessage {
 type WorkerMessage = WorkerResultMessage | WorkerErrorMessage | WorkerReadyMessage;
 
 interface PendingWorkerRequest {
-  resolve: (value: string) => void;
+  resolve: (value: WorkerResultMessage) => void;
   reject: (reason: unknown) => void;
 }
 
@@ -121,6 +269,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   private resolveReady!: () => void;
   private rejectReady!: (reason: unknown) => void;
   private readySettled = false;
+  private readonly metrics: TransportMetric[] = [];
 
   constructor() {
     this.ready = new Promise<void>((resolve, reject) => {
@@ -141,25 +290,111 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     return this.lastSnapshot;
   }
 
+  getTransportMetrics(): readonly TransportMetric[] {
+    return this.metrics.slice();
+  }
+
   initialize(mode: "play"): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
-      const raw = await this.request({ id: 0, type: "initialize", mode });
-      const snapshot = parseProtocolResponse(raw).snapshot;
+      const result = await this.request({ id: 0, type: "initialize", mode });
+      const parseStarted = nowMs();
+      let snapshot: CanduSnapshot;
+      let response: CanduCommandResponse;
+      try {
+        try {
+          response = parseProtocolResponse(result.resultJson);
+          snapshot = response.snapshot;
+        } catch {
+          // Older compatible hosts may expose only GetSnapshotJson and
+          // DispatchJson. Treat that exact snapshot as a full initialization
+          // result rather than inventing a browser-side state.
+          snapshot = parseProtocolSnapshot(result.resultJson);
+          response = {
+            protocol: PROTOCOL_VERSION,
+            accepted: true,
+            sequence: snapshot.sequence,
+            command: { type: "reset" },
+            message: "Authoritative snapshot initialized.",
+            diagnostics: [],
+            snapshot,
+            preview: null,
+          };
+        }
+      } catch (error) {
+        recordMetric(this.metrics, {
+          commandType: "initialize",
+          responseKind: "error",
+          wasmCallDurationMs: result.wasmCallDurationMs,
+          returnedUtf8PayloadBytes: result.returnedUtf8PayloadBytes,
+          jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+          coreReplacementIncluded: false,
+        });
+        throw error;
+      }
+      recordMetric(this.metrics, {
+        commandType: "initialize",
+        responseKind: responseKindOf(response),
+        wasmCallDurationMs: result.wasmCallDurationMs,
+        returnedUtf8PayloadBytes: result.returnedUtf8PayloadBytes,
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: coreReplacementIncluded(response),
+      });
       this.lastSnapshot = snapshot;
       return snapshot;
     });
   }
 
-  dispatch(command: CanduCommand): Promise<CanduCommandResponse> {
+  dispatch(command: CanduCommand, options: CanduDispatchOptions = {}): Promise<CanduCommandResponse> {
     return this.enqueue(async () => {
       await this.ready;
-      const raw = await this.request({
+      const result = await this.request({
         id: 0,
         type: "dispatch",
-        commandJson: serializeProtocolCommand(command),
+        commandJson: serializeProtocolCommand(command, options),
       });
-      const response = parseProtocolResponse(raw);
+      const parseStarted = nowMs();
+      let response: CanduCommandResponse;
+      try {
+        response = parseProtocolResponse(result.resultJson, this.lastSnapshot ?? undefined);
+      } catch (error) {
+        if (!(error instanceof ProtocolResyncRequiredError)) {
+          recordMetric(this.metrics, {
+            commandType: command.type,
+            responseKind: "error",
+            wasmCallDurationMs: result.wasmCallDurationMs,
+            returnedUtf8PayloadBytes: result.returnedUtf8PayloadBytes,
+            jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+            coreReplacementIncluded: false,
+          });
+          throw error;
+        }
+
+        const snapshotResult = await this.request({ id: 0, type: "get-snapshot" });
+        const snapshotParseStarted = nowMs();
+        const snapshot = parseProtocolSnapshot(snapshotResult.resultJson);
+        response = parseProtocolResponseWithSnapshot(
+          result.resultJson,
+          this.lastSnapshot ?? undefined,
+          snapshot,
+        );
+        recordMetric(this.metrics, {
+          commandType: "snapshot",
+          responseKind: "full",
+          wasmCallDurationMs: snapshotResult.wasmCallDurationMs,
+          returnedUtf8PayloadBytes: snapshotResult.returnedUtf8PayloadBytes,
+          jsonParseMaterializationDurationMs: nowMs() - snapshotParseStarted,
+          coreReplacementIncluded: false,
+        });
+      }
+      recordMetric(this.metrics, {
+        commandType: command.type,
+        responseKind: responseKindOf(response),
+        wasmCallDurationMs: result.wasmCallDurationMs,
+        returnedUtf8PayloadBytes: result.returnedUtf8PayloadBytes,
+        jsonParseMaterializationDurationMs: nowMs() - parseStarted,
+        coreReplacementIncluded: coreReplacementIncluded(response),
+      });
       this.lastSnapshot = response.snapshot;
       return response;
     });
@@ -171,9 +406,9 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     return result;
   }
 
-  private request(request: WorkerRequest): Promise<string> {
+  private request(request: WorkerRequest): Promise<WorkerResultMessage> {
     const id = this.nextRequestId++;
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<WorkerResultMessage>((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
       this.worker.postMessage({ ...request, id });
     });
@@ -205,7 +440,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     if (message.type === "error") {
       pending.reject(new Error(message.error));
     } else {
-      pending.resolve(message.resultJson);
+      pending.resolve(message);
     }
   }
 
@@ -277,9 +512,13 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     return this.active.getSnapshot();
   }
 
-  async dispatch(command: CanduCommand): Promise<CanduCommandResponse> {
+  async dispatch(command: CanduCommand, options: CanduDispatchOptions = {}): Promise<CanduCommandResponse> {
     await this.settled;
-    return await this.active.dispatch(command);
+    return await this.active.dispatch(command, options);
+  }
+
+  getTransportMetrics(): readonly TransportMetric[] {
+    return this.wasm?.getTransportMetrics() ?? [];
   }
 
   async initializeMode(mode: "play"): Promise<CanduSnapshot> {

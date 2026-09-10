@@ -12,6 +12,7 @@ namespace ReactorSim.Browser
     [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(BridgeCapabilitiesDto))]
     [JsonSerializable(typeof(PlaytestResponseDto))]
+    [JsonSerializable(typeof(PlaytestSnapshotPatchDto))]
     [JsonSerializable(typeof(PlaytestSnapshotDto))]
     [JsonSerializable(typeof(PlaytestXenonDto))]
     [JsonSerializable(typeof(PlaytestXenonChannelDto))]
