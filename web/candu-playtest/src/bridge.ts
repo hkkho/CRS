@@ -90,6 +90,29 @@ function coreReplacementIncluded(response: CanduCommandResponse): boolean {
   return response.coreReplacement !== undefined && response.coreReplacement !== null;
 }
 
+function resolveDispatchOptions(
+  options: CanduDispatchOptions,
+  lastSnapshot: CanduSnapshot | null,
+): CanduDispatchOptions {
+  if (
+    options.responseMode !== "compact" ||
+    options.baseSequence !== undefined ||
+    lastSnapshot === null
+  ) {
+    return options;
+  }
+
+  // Compact commands issued by the session controller intentionally omit the
+  // base while they wait in the serialized queue. Resolve it only when the
+  // operation is about to be sent, after any preceding command has materialized
+  // its authoritative response. An explicit base remains an explicit caller
+  // assertion and must continue through unchanged for mismatch detection.
+  return {
+    ...options,
+    baseSequence: lastSnapshot.sequence,
+  };
+}
+
 export class WasmProtocolBridge implements CanduPlaytestBridge {
   readonly status = authoritativeWasmStatus;
   private readonly metrics: TransportMetric[] = [];
@@ -166,7 +189,10 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
   }
 
   async dispatch(command: CanduCommand, options: CanduDispatchOptions = {}): Promise<CanduCommandResponse> {
-    const commandJson = serializeProtocolCommand(command, options);
+    const commandJson = serializeProtocolCommand(
+      command,
+      resolveDispatchOptions(options, this.lastSnapshot),
+    );
     const callStarted = nowMs();
     const raw = await this.exports.dispatchJson(commandJson);
     const callDuration = nowMs() - callStarted;
@@ -351,7 +377,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       const result = await this.request({
         id: 0,
         type: "dispatch",
-        commandJson: serializeProtocolCommand(command, options),
+        commandJson: serializeProtocolCommand(
+          command,
+          resolveDispatchOptions(options, this.lastSnapshot),
+        ),
       });
       const parseStarted = nowMs();
       let response: CanduCommandResponse;

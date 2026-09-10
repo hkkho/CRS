@@ -14,14 +14,27 @@ export interface LiveClockSchedulerOptions {
   clearTimer?: (handle: TimerHandle) => void;
   timerIntervalMs?: number;
   wallTickMs?: number;
+  /**
+   * Retained for source compatibility with the previous scheduler. The live
+   * clock now deliberately coalesces to one control quantum instead of
+   * retaining a catch-up backlog.
+   */
   maxDispatchMs?: number;
+  /** @deprecated Pending time is always capped at one wall-time quantum. */
   maxBacklogMs?: number;
 }
 
 /**
- * Drives authoritative wall-time advances without treating timer callbacks as
- * elapsed time. The browser timer is only a wake-up hint; the monotonic clock
- * and the bounded backlog are the source of scheduling truth.
+ * Drives authoritative wall-time advances from a monotonic clock.
+ *
+ * The scheduler has two important invariants:
+ *
+ * - only one advance operation can be in flight;
+ * - pending wall time is coalesced to at most one control quantum.
+ *
+ * A slow WASM call therefore loses wall time that elapsed while it was
+ * executing instead of replaying stale catch-up work. Simulation time remains
+ * whatever the authoritative response reports.
  */
 export class LiveClockScheduler {
   private readonly dispatch: LiveClockSchedulerOptions["dispatch"];
@@ -33,15 +46,16 @@ export class LiveClockScheduler {
   private readonly timerIntervalMs: number;
   private readonly wallTickMs: number;
   private readonly maxDispatchMs: number;
-  private readonly maxBacklogMs: number;
 
   private running = false;
   private visible = true;
   private disposed = false;
   private timerHandle: TimerHandle | null = null;
   private lastSampleMs: number | null = null;
-  private backlogMs = 0;
+  private pendingWallMs = 0;
   private dispatchInFlight = false;
+  private foregroundSuppressionCount = 0;
+  private lifecycleKey: string | null = null;
 
   public constructor(options: LiveClockSchedulerOptions) {
     this.dispatch = options.dispatch;
@@ -53,18 +67,22 @@ export class LiveClockScheduler {
     this.timerIntervalMs = positiveOption(options.timerIntervalMs, LIVE_CLOCK_TIMER_INTERVAL_MS, "timerIntervalMs");
     this.wallTickMs = positiveOption(options.wallTickMs, LIVE_CLOCK_WALL_TICK_MS, "wallTickMs");
     this.maxDispatchMs = positiveOption(options.maxDispatchMs, LIVE_CLOCK_MAX_DISPATCH_MS, "maxDispatchMs");
-    this.maxBacklogMs = positiveOption(options.maxBacklogMs, LIVE_CLOCK_MAX_BACKLOG_MS, "maxBacklogMs");
 
     if (this.maxDispatchMs < this.wallTickMs) {
       throw new RangeError("maxDispatchMs must be at least one wall-time control tick.");
     }
-    if (this.maxBacklogMs < this.maxDispatchMs) {
-      throw new RangeError("maxBacklogMs must be at least one dispatch chunk.");
+
+    // Validate the legacy option when supplied, but do not use it to permit a
+    // second pending quantum. Keeping this validation makes accidental invalid
+    // callers fail in the same place as before while preserving the new cap.
+    if (options.maxBacklogMs !== undefined) {
+      positiveOption(options.maxBacklogMs, LIVE_CLOCK_MAX_BACKLOG_MS, "maxBacklogMs");
     }
   }
 
+  /** Pending wall time is always in [0, wallTickMs]. */
   public get pendingWallMilliseconds(): number {
-    return this.backlogMs;
+    return this.pendingWallMs;
   }
 
   public get isDispatchInFlight(): boolean {
@@ -72,9 +90,11 @@ export class LiveClockScheduler {
   }
 
   /**
-   * Applies an authoritative playback lifecycle state. A changed active mode
-   * rebases the wall clock but keeps already accrued work. Pausing clears the
-   * pending wall-time work so paused time cannot be replayed on resume.
+   * Applies the current authoritative playback/lifecycle state.
+   *
+   * Any transition into a stopped state discards pending clock time. A
+   * transition into a running state starts a fresh monotonic interval; it does
+   * not replay time spent paused, hidden, inactive, or in a foreground command.
    */
   public setPlaybackState(running: boolean, lifecycleKey: string): void {
     if (this.disposed) {
@@ -82,61 +102,93 @@ export class LiveClockScheduler {
     }
 
     const lifecycleChanged = this.lifecycleKey !== lifecycleKey;
-    if (!lifecycleChanged && this.running === running) {
-      if (running) {
-        this.wake();
-      }
-      return;
-    }
-
-    if (this.running) {
-      this.captureVisibleElapsed();
-    }
-
+    const runningChanged = this.running !== running;
     this.lifecycleKey = lifecycleKey;
-    this.running = running;
+
     if (!running) {
-      this.backlogMs = 0;
-      this.lastSampleMs = null;
+      this.running = false;
+      this.discardPendingTime();
       this.clearScheduledTimer();
       return;
     }
 
+    this.running = true;
+    if (runningChanged || lifecycleChanged || this.lastSampleMs === null) {
+      // Playback changes are foreground state changes. Start a new interval
+      // instead of allowing time from the previous state to become a tick.
+      this.pendingWallMs = 0;
+      this.rebaseVisibleClock();
+    }
+
+    this.wake();
+  }
+
+  /**
+   * Suppresses the next clock advance for a foreground command.
+   *
+   * The caller invokes this before submitting pause/resume, control-target,
+   * preview, commit, or other interactive commands. It clears any pending
+   * clock quantum and prevents a timer callback from submitting work while the
+   * command waits behind the currently executing serialized WASM operation.
+   * Calls are counted so multiple foreground commands remain safe.
+   */
+  public suppressNextAdvance(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.foregroundSuppressionCount += 1;
+    this.pendingWallMs = 0;
+    this.rebaseVisibleClock();
+    this.clearScheduledTimer();
+  }
+
+  /**
+   * Releases one foreground-command suppression token. The final release
+   * rebases the clock and arms one fresh timer interval if playback is still
+   * active. No wall time from the command's wait is replayed.
+   */
+  public releaseForegroundCommand(): void {
+    if (this.disposed || this.foregroundSuppressionCount === 0) {
+      return;
+    }
+
+    this.foregroundSuppressionCount -= 1;
+    if (this.foregroundSuppressionCount !== 0) {
+      return;
+    }
+
+    this.pendingWallMs = 0;
     this.rebaseVisibleClock();
     this.wake();
   }
 
   /**
-   * Visibility transitions explicitly stop accumulation while hidden and
-   * rebase on the first visible timestamp, excluding the hidden interval.
+   * Visibility transitions discard pending wall time and exclude the hidden
+   * interval. An already executing WASM call is allowed to finish.
    */
   public setVisible(visible: boolean): void {
     if (this.disposed || this.visible === visible) {
       return;
     }
 
-    if (!visible) {
-      if (this.running) {
-        this.captureVisibleElapsed();
-      }
-      this.visible = false;
-      this.lastSampleMs = null;
-      this.clearScheduledTimer();
-      return;
-    }
+    this.visible = visible;
+    this.discardPendingTime();
+    this.clearScheduledTimer();
 
-    this.visible = true;
-    this.rebaseVisibleClock();
-    this.wake();
+    if (visible) {
+      this.rebaseVisibleClock();
+      this.wake();
+    }
   }
 
   /**
-   * Samples elapsed visible time and retries scheduling. App commands call
-   * this when foreground work finishes so retained time is not delayed until
-   * the next browser timer callback.
+   * Samples visible elapsed time and attempts one dispatch. Timer callbacks
+   * are only wake-up hints; they never accumulate time while an authoritative
+   * advance is executing.
    */
   public wake(): void {
-    if (this.disposed || !this.running || !this.visible) {
+    if (this.disposed || !this.running || !this.visible || this.dispatchInFlight) {
       return;
     }
 
@@ -149,13 +201,13 @@ export class LiveClockScheduler {
     if (this.disposed) {
       return;
     }
+
     this.disposed = true;
     this.running = false;
-    this.lastSampleMs = null;
+    this.foregroundSuppressionCount = 0;
+    this.discardPendingTime();
     this.clearScheduledTimer();
   }
-
-  private lifecycleKey: string | null = null;
 
   private handleTimer = (): void => {
     this.timerHandle = null;
@@ -163,9 +215,18 @@ export class LiveClockScheduler {
   };
 
   private ensureScheduledTimer(): void {
-    if (this.timerHandle !== null || this.disposed || !this.running || !this.visible) {
+    if (
+      this.timerHandle !== null ||
+      this.disposed ||
+      !this.running ||
+      !this.visible ||
+      this.dispatchInFlight ||
+      this.foregroundSuppressionCount !== 0 ||
+      !this.canDispatch()
+    ) {
       return;
     }
+
     this.timerHandle = this.setTimer(this.handleTimer, this.timerIntervalMs);
   }
 
@@ -173,6 +234,7 @@ export class LiveClockScheduler {
     if (this.timerHandle === null) {
       return;
     }
+
     this.clearTimer(this.timerHandle);
     this.timerHandle = null;
   }
@@ -181,8 +243,13 @@ export class LiveClockScheduler {
     this.lastSampleMs = this.visible ? readFiniteNow(this.now) : null;
   }
 
+  private discardPendingTime(): void {
+    this.pendingWallMs = 0;
+    this.lastSampleMs = null;
+  }
+
   private captureVisibleElapsed(): void {
-    if (!this.running || !this.visible) {
+    if (!this.running || !this.visible || this.dispatchInFlight || this.foregroundSuppressionCount !== 0) {
       return;
     }
 
@@ -194,21 +261,28 @@ export class LiveClockScheduler {
 
     const elapsedMs = Math.max(0, currentMs - this.lastSampleMs);
     this.lastSampleMs = currentMs;
-    this.backlogMs = Math.min(this.maxBacklogMs, this.backlogMs + elapsedMs);
+    this.pendingWallMs = Math.min(this.wallTickMs, this.pendingWallMs + elapsedMs);
   }
 
   private pump(): void {
-    if (this.disposed || !this.running || !this.visible || this.dispatchInFlight || !this.canDispatch()) {
+    if (
+      this.disposed ||
+      !this.running ||
+      !this.visible ||
+      this.dispatchInFlight ||
+      this.foregroundSuppressionCount !== 0 ||
+      !this.canDispatch() ||
+      this.pendingWallMs < this.wallTickMs
+    ) {
       return;
     }
 
-    const alignedAvailableMs = Math.floor(this.backlogMs / this.wallTickMs) * this.wallTickMs;
-    if (alignedAvailableMs < this.wallTickMs) {
-      return;
-    }
-
-    const chunkMs = Math.min(alignedAvailableMs, this.maxDispatchMs);
-    this.backlogMs -= chunkMs;
+    // Keep every normal live-clock request deterministic. maxDispatchMs is a
+    // compatibility bound, but it cannot turn one scheduler tick into a
+    // catch-up batch.
+    const chunkMs = Math.min(this.wallTickMs, this.maxDispatchMs);
+    this.pendingWallMs = 0;
+    this.clearScheduledTimer();
     this.dispatchInFlight = true;
 
     let operation: Promise<unknown> | unknown;
@@ -227,22 +301,30 @@ export class LiveClockScheduler {
 
   private finishSuccessfulDispatch(): void {
     this.dispatchInFlight = false;
-    if (!this.disposed) {
-      this.wake();
+    if (this.disposed) {
+      return;
+    }
+
+    // The operation may have taken seconds. That interval is intentionally
+    // excluded from wall-time accounting; the next timer starts a fresh one.
+    this.rebaseVisibleClock();
+    if (this.running && this.visible && this.foregroundSuppressionCount === 0) {
+      this.ensureScheduledTimer();
     }
   }
 
   private finishFailedDispatch(chunkMs: number, error: unknown): void {
     this.dispatchInFlight = false;
-    this.backlogMs = Math.min(this.maxBacklogMs, this.backlogMs + chunkMs);
+    // Retry exactly one lost control quantum, never the elapsed duration of
+    // the failed operation or a larger accumulated backlog.
+    this.pendingWallMs = Math.min(this.wallTickMs, Math.max(this.pendingWallMs, chunkMs));
+    this.rebaseVisibleClock();
     try {
       this.onDispatchError(error);
     } catch {
       // Error reporting must not disable future clock retries.
     }
     if (!this.disposed) {
-      // The existing timer supplies a bounded retry cadence. Do not spin on a
-      // synchronously failing bridge and starve the rest of the UI thread.
       this.ensureScheduledTimer();
     }
   }

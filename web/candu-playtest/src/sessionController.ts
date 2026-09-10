@@ -123,16 +123,14 @@ export class BridgeSessionController {
     this.pendingCount += 1;
     if (!isClockTick) {
       this.foregroundPendingCount += 1;
+      this.scheduler.suppressNextAdvance();
     }
     this.lastError = null;
     this.emit();
     try {
       const responseOptions = options ?? (command.type === "reset"
         ? { responseMode: "full" as const }
-        : {
-            responseMode: "compact" as const,
-            baseSequence: this.snapshotValue.sequence,
-          });
+        : { responseMode: "compact" as const });
       const response = await this.bridge.dispatch(command, responseOptions);
       this.lastResponse = response;
       this.snapshotValue = response.snapshot;
@@ -146,6 +144,7 @@ export class BridgeSessionController {
       this.pendingCount = Math.max(0, this.pendingCount - 1);
       if (!isClockTick) {
         this.foregroundPendingCount = Math.max(0, this.foregroundPendingCount - 1);
+        this.scheduler.releaseForegroundCommand();
       }
       this.syncScheduler();
       this.emit();
