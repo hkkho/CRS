@@ -5,7 +5,7 @@ import {
 } from "./protocol";
 
 type WorkerRequest =
-  | { id: number; type: "initialize"; mode: "play" | "lab" }
+  | { id: number; type: "initialize"; mode: "play" }
   | { id: number; type: "get-snapshot" }
   | { id: number; type: "dispatch"; commandJson: string };
 

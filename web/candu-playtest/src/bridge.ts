@@ -43,7 +43,7 @@ const unavailableStatus: BridgeStatus = {
 };
 
 export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
-  initializeMode: (mode: "play" | "lab") => Promise<CanduSnapshot>;
+  initializeMode: (mode: "play") => Promise<CanduSnapshot>;
   subscribe: (listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void) => () => void;
 }
 
@@ -52,7 +52,7 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
 
   constructor(private readonly exports: CanduPlaytestWasmExports) {}
 
-  async initialize(mode: "play" | "lab"): Promise<CanduSnapshot> {
+  async initialize(mode: "play"): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
@@ -77,7 +77,7 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
 interface WorkerRequest {
   id: number;
   type: "initialize" | "get-snapshot" | "dispatch";
-  mode?: "play" | "lab";
+  mode?: "play";
   commandJson?: string;
 }
 
@@ -141,7 +141,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     return this.lastSnapshot;
   }
 
-  initialize(mode: "play" | "lab"): Promise<CanduSnapshot> {
+  initialize(mode: "play"): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
       const raw = await this.request({ id: 0, type: "initialize", mode });
@@ -228,7 +228,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private readonly unavailable: CanduPlaytestBridge;
   private active: CanduPlaytestBridge;
   private activeStatus: BridgeStatus;
-  private selectedMode: "play" | "lab" = "play";
+  private selectedMode: "play" = "play";
   private readonly settled: Promise<void>;
 
   constructor() {
@@ -282,7 +282,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     return await this.active.dispatch(command);
   }
 
-  async initializeMode(mode: "play" | "lab"): Promise<CanduSnapshot> {
+  async initializeMode(mode: "play"): Promise<CanduSnapshot> {
     this.selectedMode = mode;
     await this.settled;
     if (this.active === this.wasm && this.wasm !== null) {
