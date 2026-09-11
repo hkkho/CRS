@@ -271,4 +271,3 @@ namespace ReactorSim.Core
         }
     }
 }
-
