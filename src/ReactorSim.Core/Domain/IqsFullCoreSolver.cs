@@ -653,7 +653,7 @@ namespace ReactorSim.Core
         private readonly ReadOnlyCollection<double> _shapeNodePowerWatts;
 
         internal IqsSpatialCandidateV1(
-            IqsFullCoreSolver owner,
+            object owner,
             FullCoreDiffusionSolveResultV1 spatialSolve,
             IEnumerable<double> shapeGroup1,
             IEnumerable<double> shapeGroup2,
@@ -674,7 +674,7 @@ namespace ReactorSim.Core
             WeightedReactivity = weightedReactivity;
         }
 
-        internal IqsFullCoreSolver Owner { get; }
+        internal object Owner { get; }
         public FullCoreDiffusionSolveResultV1 SpatialSolve { get; }
         public IReadOnlyList<double> ShapeGroup1 { get { return _shapeGroup1; } }
         public IReadOnlyList<double> ShapeGroup2 { get { return _shapeGroup2; } }

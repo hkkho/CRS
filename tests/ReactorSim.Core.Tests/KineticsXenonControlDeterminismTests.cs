@@ -404,9 +404,10 @@ public sealed class KineticsXenonControlDeterminismTests
         Assert.Equal(3_600.0, whole.Snapshot.SimulationTimeSeconds, 12);
         Assert.Equal(whole.Snapshot.SimulationTimeSeconds, split.Snapshot.SimulationTimeSeconds, 12);
         Assert.Equal(whole.Snapshot.WallElapsedSeconds, split.Snapshot.WallElapsedSeconds, 12);
-        Assert.Equal(whole.XenonState.StateDigest, split.XenonState.StateDigest);
-        Assert.Equal(whole.XenonState.TopologyDigest, split.XenonState.TopologyDigest);
-        Assert.Equal(whole.XenonState.DataPackDigest, split.XenonState.DataPackDigest);
+        Assert.Equal(0UL, whole.Snapshot.Xenon.StateVersion);
+        Assert.Equal(0UL, split.Snapshot.Xenon.StateVersion);
+        Assert.False(whole.Snapshot.Xenon.HasCoupling);
+        Assert.False(split.Snapshot.Xenon.HasCoupling);
 
         FullCoreDiffusionSolveResultV1 wholeSolve = whole.CurrentSpatialCandidate.SpatialSolve;
         FullCoreDiffusionSolveResultV1 splitSolve = split.CurrentSpatialCandidate.SpatialSolve;

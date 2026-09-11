@@ -74,17 +74,17 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal("group-2", groups[1].GetProperty("id").GetString());
             Assert.Equal(2, groups[1].GetProperty("ordinal").GetInt32());
             Assert.Equal("fast-to-thermal", groups[1].GetProperty("ordering").GetString());
-            Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, metadata.GetProperty("formulationId").GetString());
-            Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, metadata.GetProperty("shapeMethodId").GetString());
-            Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, metadata.GetProperty("amplitudeMethodId").GetString());
-            Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, metadata.GetProperty("reactivityMethodId").GetString());
+            Assert.Equal(EquilibriumCoreSolverIdentityV1.FormulationId, metadata.GetProperty("formulationId").GetString());
+            Assert.Equal(EquilibriumCoreSolverIdentityV1.ShapeMethodId, metadata.GetProperty("shapeMethodId").GetString());
+            Assert.Equal(EquilibriumCoreSolverIdentityV1.AmplitudeMethodId, metadata.GetProperty("amplitudeMethodId").GetString());
+            Assert.Equal(EquilibriumCoreSolverIdentityV1.ReactivityMethodId, metadata.GetProperty("reactivityMethodId").GetString());
 
             JsonElement play = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
             AssertAccepted(play);
             Assert.Equal("play", play.GetProperty("mode").GetString());
             AssertPlaySnapshot(play.GetProperty("snapshot"));
             Assert.Equal(PracticeGameSessionFactory.KineticsDataPackVersion, play.GetProperty("snapshot").GetProperty("dataPackId").GetString());
-            Assert.Equal(AdiabaticKineticsIdentityV1.ModelId, play.GetProperty("snapshot").GetProperty("physics").GetProperty("sourceId").GetString());
+            Assert.Equal(EquilibriumCoreSolverIdentityV1.ModelId, play.GetProperty("snapshot").GetProperty("physics").GetProperty("sourceId").GetString());
             Assert.True(play.GetProperty("snapshot").GetProperty("physics").GetProperty("isAuthoritative").GetBoolean());
 
             JsonElement lab = Parse(PlaytestBridgeV1.Initialize(LabRequest));

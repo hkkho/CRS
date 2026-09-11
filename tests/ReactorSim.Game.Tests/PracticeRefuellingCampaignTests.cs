@@ -15,7 +15,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
         SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
-        XenonSpatialStateV1 beforeXenonState = session.XenonState;
+        EquilibriumCoreProjectionV1 beforeEquilibrium = session.CurrentEquilibriumProjection;
         IqsSpatialCandidateV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
         GameChannelPresentationSnapshot beforeChannel = before.Core.GetChannel(CampaignChannel);
 
@@ -29,7 +29,7 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.NotNull(preview.PreviewCore);
         AssertAcceptedStateEqual(before, session.Snapshot);
         Assert.Same(beforeCoreState, session.CoreState);
-        Assert.Same(beforeXenonState, session.XenonState);
+        Assert.Same(beforeEquilibrium, session.CurrentEquilibriumProjection);
         Assert.Same(beforeSpatialCandidate, session.CurrentSpatialCandidate);
 
         GameChannelPresentationSnapshot previewChannel =
@@ -66,9 +66,10 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.True(
             committed.Snapshot.Physics.WeightedPerturbationReactivity >
             before.Physics.WeightedPerturbationReactivity);
-        Assert.NotEqual(before.Xenon.StateDigestHex, committed.Snapshot.Xenon.StateDigestHex);
+        Assert.Equal(0UL, committed.Snapshot.Xenon.StateVersion);
+        Assert.Equal(0.0, committed.Snapshot.Xenon.MeanXe135NumberDensityM3);
         Assert.NotSame(beforeCoreState, session.CoreState);
-        Assert.NotSame(beforeXenonState, session.XenonState);
+        Assert.NotSame(beforeEquilibrium, session.CurrentEquilibriumProjection);
         Assert.NotSame(beforeSpatialCandidate, session.CurrentSpatialCandidate);
         AssertCoreEqual(
             preview.PreviewCore,
@@ -82,7 +83,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
         SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
-        XenonSpatialStateV1 beforeXenonState = session.XenonState;
+        EquilibriumCoreProjectionV1 beforeEquilibrium = session.CurrentEquilibriumProjection;
         IqsSpatialCandidateV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
 
         GameSessionCommandResult rejected = session.RefuelChannel(
@@ -98,12 +99,30 @@ public sealed class PracticeRefuellingCampaignTests
         AssertAcceptedStateEqual(before, rejected.Snapshot);
         AssertAcceptedStateEqual(before, session.Snapshot);
         Assert.Same(beforeCoreState, session.CoreState);
-        Assert.Same(beforeXenonState, session.XenonState);
+        Assert.Same(beforeEquilibrium, session.CurrentEquilibriumProjection);
         Assert.Same(beforeSpatialCandidate, session.CurrentSpatialCandidate);
     }
 
     [Fact]
-    public void RefuelledHourProducesTheSameBurnupAndXenonStateAcrossWallTimePartitions()
+    public void BrowserAdvanceBeforeHourlyBoundaryReusesStaticEquilibriumProjection()
+    {
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        EquilibriumCoreProjectionV1 before = session.CurrentEquilibriumProjection;
+
+        GameSessionCommandResult advanced = session.AdvanceWallMilliseconds(100);
+
+        Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
+        Assert.Equal(180.0, advanced.Snapshot.SimulationTimeSeconds);
+        Assert.Same(before, session.CurrentEquilibriumProjection);
+        Assert.Equal(
+            EquilibriumCoreSolverIdentityV1.ModelId,
+            advanced.Snapshot.Physics.SourceId);
+        Assert.Equal(0UL, advanced.Snapshot.Xenon.StateVersion);
+        Assert.Equal(0.0, advanced.Snapshot.Xenon.MeanXe135NumberDensityM3);
+    }
+
+    [Fact]
+    public void RefuelledHourProducesTheSameBurnupAndEquilibriumAcrossWallTimePartitions()
     {
         GameSession oneAdvance = PracticeGameSessionFactory.CreateBrowserPlaytest();
         GameSession twoAdvances = PracticeGameSessionFactory.CreateBrowserPlaytest();
@@ -122,7 +141,7 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.True(splitRefuel.Accepted, splitRefuel.DiagnosticMessage);
         AssertAcceptedStateEqual(oneRefuel.Snapshot, splitRefuel.Snapshot);
 
-        string initialXenonDigest = oneRefuel.Snapshot.Xenon.StateDigestHex;
+        EquilibriumCoreProjectionV1 initialProjection = oneAdvance.CurrentEquilibriumProjection;
         double initialBurnup = oneRefuel.Snapshot.Core
             .GetChannel(CampaignChannel)
             .Bundles[0]
@@ -139,13 +158,16 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.True(
             whole.Snapshot.Core.GetChannel(CampaignChannel)
                 .Bundles[0].CurrentBurnupMwDayPerKg > initialBurnup);
-        Assert.NotEqual(initialXenonDigest, whole.Snapshot.Xenon.StateDigestHex);
-        Assert.True(whole.Snapshot.Xenon.MeanXe135NumberDensityM3 > 0.0);
+        Assert.NotSame(initialProjection, oneAdvance.CurrentEquilibriumProjection);
+        Assert.Equal(0UL, whole.Snapshot.Xenon.StateVersion);
+        Assert.Equal(0.0, whole.Snapshot.Xenon.MeanXe135NumberDensityM3);
         AssertAcceptedStateEqual(
             whole.Snapshot,
             secondHalf.Snapshot,
             compareTurnSummaryCount: false);
-        Assert.Equal(oneAdvance.XenonState.StateDigest, twoAdvances.XenonState.StateDigest);
+        Assert.Equal(
+            oneAdvance.CurrentEquilibriumProjection.ReactivityBindingDigest,
+            twoAdvances.CurrentEquilibriumProjection.ReactivityBindingDigest);
     }
 
     private static void AssertAcceptedStateEqual(

@@ -161,15 +161,13 @@ namespace ReactorSim.Game
         {
             internal PracticeTransaction(
                 SyntheticGameCoreStateV1 coreState,
-                XenonSpatialStateV1 xenonState,
-                IqsSpatialCandidateV1 spatialCandidate,
+                EquilibriumCoreProjectionV1 spatialCandidate,
                 SyntheticPracticeRegulatorV1 regulator,
                 double lastFullCoreSolveSimulationTime,
                 double syntheticScore,
                 ulong powerProjectionVersion)
             {
                 CoreState = coreState;
-                XenonState = xenonState;
                 SpatialCandidate = spatialCandidate;
                 Regulator = regulator;
                 LastFullCoreSolveSimulationTime = lastFullCoreSolveSimulationTime;
@@ -179,9 +177,7 @@ namespace ReactorSim.Game
 
             internal SyntheticGameCoreStateV1 CoreState;
 
-            internal XenonSpatialStateV1 XenonState;
-
-            internal IqsSpatialCandidateV1 SpatialCandidate;
+            internal EquilibriumCoreProjectionV1 SpatialCandidate;
 
             internal SyntheticPracticeRegulatorV1 Regulator;
 
@@ -195,10 +191,9 @@ namespace ReactorSim.Game
         private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
-        private readonly IqsFullCoreSolver _adiabaticSolver;
+        private readonly EquilibriumCoreSolverV1 _equilibriumSolver;
         private SyntheticPracticeRegulatorV1 _practiceRegulator;
         private SyntheticGameCoreStateV1 _coreState;
-        private XenonSpatialStateV1 _xenonState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private double _scoreResetBaseline;
@@ -209,16 +204,14 @@ namespace ReactorSim.Game
             IReadOnlyDictionary<string, Phase8PlaybackModeV1> playbackModes,
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
-            IqsFullCoreSolver adiabaticSolver,
-            XenonSpatialStateV1 xenonState,
+            EquilibriumCoreSolverV1 equilibriumSolver,
             SyntheticPracticeRegulatorV1 practiceRegulator)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
-            _adiabaticSolver = adiabaticSolver ?? throw new ArgumentNullException(nameof(adiabaticSolver));
-            _xenonState = xenonState ?? throw new ArgumentNullException(nameof(xenonState));
+            _equilibriumSolver = equilibriumSolver ?? throw new ArgumentNullException(nameof(equilibriumSolver));
             _practiceRegulator = practiceRegulator ?? throw new ArgumentNullException(nameof(practiceRegulator));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
@@ -233,14 +226,14 @@ namespace ReactorSim.Game
             get { return _coreState; }
         }
 
-        public XenonSpatialStateV1 XenonState
-        {
-            get { return _xenonState; }
-        }
-
         public IqsSpatialCandidateV1 CurrentSpatialCandidate
         {
-            get { return _adiabaticSolver.CurrentProjection; }
+            get { return _equilibriumSolver.CurrentProjection.LegacyPresentationProjection; }
+        }
+
+        public EquilibriumCoreProjectionV1 CurrentEquilibriumProjection
+        {
+            get { return _equilibriumSolver.CurrentProjection; }
         }
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
@@ -263,14 +256,14 @@ namespace ReactorSim.Game
                     transaction.FirstDiagnostic.Message);
             }
 
-            IqsSpatialCandidateV1 previousProjection =
-                _adiabaticSolver.CurrentProjection;
+            EquilibriumCoreProjectionV1 previousProjection =
+                _equilibriumSolver.CurrentProjection;
             bool projectionChanged =
                 !ReferenceEquals(previousProjection, transaction.Value.SpatialCandidate);
             if (projectionChanged)
             {
                 ContractValidationResult<bool> projected =
-                    _adiabaticSolver.TryCommitCandidate(
+                    _equilibriumSolver.TryCommitCandidate(
                         transaction.Value.SpatialCandidate);
                 if (!projected.IsValid)
                 {
@@ -286,7 +279,7 @@ namespace ReactorSim.Game
             {
                 if (projectionChanged)
                 {
-                    _adiabaticSolver.TryCommitCandidate(previousProjection);
+                    _equilibriumSolver.TryCommitCandidate(previousProjection);
                 }
 
                 return Rejected(
@@ -405,7 +398,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<bool> committed =
-                _adiabaticSolver.TryCommitCandidate(
+                _equilibriumSolver.TryCommitCandidate(
                     transaction.Value.SpatialCandidate);
             if (!committed.IsValid)
             {
@@ -467,8 +460,7 @@ namespace ReactorSim.Game
                     transaction.Value.CoreState,
                     CurrentPowerFraction(transaction.Value.Regulator),
                     transaction.Value.SpatialCandidate,
-                    transaction.Value.Regulator,
-                    transaction.Value.XenonState));
+                    transaction.Value.Regulator));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -593,30 +585,8 @@ namespace ReactorSim.Game
                     timeBinding.FirstDiagnostic.Message);
             }
 
-            if (_xenonState.CoreStateVersion == ulong.MaxValue)
-            {
-                return InvalidTransaction(
-                    "GameSession.Refuelling.XenonVersion.Overflow",
-                    "xenon_state.core_state_version",
-                    "The refuelling transaction cannot advance the spatial xenon core-state version.");
-            }
-
-            ContractValidationResult<XenonSpatialStateV1> reboundXenon =
-                _xenonState.TryRebindInventory(
-                    result.ResultingState.EnumerateBundles(),
-                    _xenonState.CoreStateVersion + 1UL);
-            if (!reboundXenon.IsValid)
-            {
-                return InvalidTransaction(
-                    reboundXenon.FirstDiagnostic.Code,
-                    reboundXenon.FirstDiagnostic.Path,
-                    reboundXenon.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<IqsSpatialCandidateV1> projected =
-                TryBuildPoisonedCandidate(
-                    result.ResultingState,
-                    reboundXenon.Value);
+            ContractValidationResult<EquilibriumCoreProjectionV1> projected =
+                TryBuildEquilibriumCandidate(result.ResultingState);
             if (!projected.IsValid)
             {
                 return InvalidTransaction(
@@ -659,7 +629,6 @@ namespace ReactorSim.Game
             return ContractValidationResult<PracticeTransaction>.Valid(
                 new PracticeTransaction(
                     result.ResultingState,
-                    reboundXenon.Value,
                     projected.Value,
                     reboundRegulator.Value,
                     simulationTimeSeconds,
@@ -667,36 +636,24 @@ namespace ReactorSim.Game
                     nextProjectionVersion.Value));
         }
 
-        private ContractValidationResult<IqsSpatialCandidateV1> TryBuildPoisonedCandidate(
+        private ContractValidationResult<EquilibriumCoreProjectionV1> TryBuildEquilibriumCandidate(
             SyntheticGameCoreStateV1 coreState,
-            XenonSpatialStateV1 xenonState,
             FullCoreDiffusionSolveResultV1? initialSpatialSolve = null)
         {
-            if (coreState == null || xenonState == null)
+            if (coreState == null)
             {
-                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
+                return ContractValidationResult<EquilibriumCoreProjectionV1>.Invalid(
                     "GameSession.SpatialCandidate.Input.Missing",
                     "candidate",
-                    "A poisoned spatial candidate requires both inventory and xenon state candidates.");
+                    "An equilibrium spatial candidate requires a validated inventory candidate.");
             }
 
-            ContractValidationResult<XenonSpatialCouplingResultV1> coupling =
-                xenonState.Model.TryCreateXenonCoupling(
-                    coreState.EnumerateBundles(),
-                    xenonState,
-                    _adiabaticSolver.Amplitude);
-            if (!coupling.IsValid)
-            {
-                return ContractValidationResult<IqsSpatialCandidateV1>.Invalid(
-                    coupling.FirstDiagnostic.Code,
-                    coupling.FirstDiagnostic.Path,
-                    coupling.FirstDiagnostic.Message);
-            }
-
-            return _adiabaticSolver.TrySolveCandidate(
+            return initialSpatialSolve == null
+                ? _equilibriumSolver.TrySolveCandidate(
+                    coreState.EnumerateBundles())
+                : _equilibriumSolver.TrySolveCandidate(
                 coreState.EnumerateBundles(),
-                coupling.Value,
-                initialSpatialSolve ?? _adiabaticSolver.CurrentProjection.SpatialSolve);
+                initialSpatialSolve);
         }
 
         private static double PracticeRefuellingScore(GameRefuellingResultV1 result)
@@ -738,8 +695,7 @@ namespace ReactorSim.Game
 
             var transaction = new PracticeTransaction(
                 _coreState,
-                _xenonState,
-                _adiabaticSolver.CurrentProjection,
+                _equilibriumSolver.CurrentProjection,
                 _practiceRegulator,
                 _lastFullCoreSolveSimulationTime,
                 _syntheticScore,
@@ -764,22 +720,19 @@ namespace ReactorSim.Game
                 while (simulationCursor < segmentEndSeconds - 1.0e-9)
                 {
                     if (!AreSameSimulationTime(
-                            transaction.XenonState.SimulationTimeSeconds,
-                            simulationCursor) ||
-                        !AreSameSimulationTime(
                             transaction.Regulator.SimulationTimeSeconds,
                             simulationCursor))
                     {
                         return InvalidTransaction(
                             "GameSession.Advance.State.TimeMismatch",
                             "state_segments",
-                            "The candidate inventory, xenon state, and regulator must share the segment start time.");
+                            "The candidate inventory, equilibrium projection, and regulator must share the segment start time.");
                     }
 
                     double elapsedSinceShapeSolve =
                         simulationCursor - transaction.LastFullCoreSolveSimulationTime;
                     if (elapsedSinceShapeSolve >=
-                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
+                        PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds - 1e-9)
                     {
                         ContractValidationResult<bool> scheduled =
                             TryBuildScheduledShape(transaction, simulationCursor);
@@ -798,12 +751,12 @@ namespace ReactorSim.Game
                     }
 
                     double untilShapeSolve =
-                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds -
+                        PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds -
                         (simulationCursor - transaction.LastFullCoreSolveSimulationTime);
 
                     double stepSeconds = Math.Min(
-                        PracticeGameSessionFactory.SteadyStateLongStepSeconds,
-                        Math.Min(segmentEndSeconds - simulationCursor, untilShapeSolve));
+                        segmentEndSeconds - simulationCursor,
+                        untilShapeSolve);
                     if (!IsFinite(stepSeconds) || stepSeconds <= 0.0)
                     {
                         return InvalidTransaction(
@@ -813,6 +766,7 @@ namespace ReactorSim.Game
                     }
 
                     double stepEnd = simulationCursor + stepSeconds;
+                    SyntheticPracticeRegulatorV1 regulatorAtStart = transaction.Regulator;
                     ContractValidationResult<SyntheticPracticeRegulatorV1> regulation =
                         transaction.Regulator.TryAdvance(
                             transaction.SpatialCandidate.RelativeReactivity,
@@ -825,19 +779,18 @@ namespace ReactorSim.Game
                             regulation.FirstDiagnostic.Message);
                     }
 
-                    double actualAmplitude = PowerAmplitudeFor(
+                    double integratedPowerScale = IntegratedPowerScaleFor(
                         requestedAmplitude,
-                        regulation.Value);
+                        regulatorAtStart,
+                        stepSeconds);
 
-                    double physicalShapeScale = actualAmplitude * _adiabaticSolver.Amplitude;
                     var deltaEnergy = new double[
                         transaction.SpatialCandidate.ShapeNodePowerWatts.Count];
                     for (int index = 0; index < deltaEnergy.Length; index++)
                     {
                         deltaEnergy[index] =
                             transaction.SpatialCandidate.ShapeNodePowerWatts[index] *
-                            physicalShapeScale *
-                            stepSeconds;
+                            integratedPowerScale;
                     }
 
                     ContractValidationResult<SyntheticGameCoreStateV1> integrated =
@@ -850,46 +803,7 @@ namespace ReactorSim.Game
                             integrated.FirstDiagnostic.Message);
                     }
 
-                    if (transaction.XenonState.CoreStateVersion == ulong.MaxValue)
-                    {
-                        return InvalidTransaction(
-                            "GameSession.Advance.XenonVersion.Overflow",
-                            "xenon_state.core_state_version",
-                            "The practice xenon state cannot advance beyond UInt64.MaxValue.");
-                    }
-
-                    ContractValidationResult<XenonSpatialStateBindingV1> binding =
-                        transaction.XenonState.TryCreateBinding(
-                            _adiabaticSolver.Amplitude);
-                    if (!binding.IsValid)
-                    {
-                        return InvalidTransaction(
-                            binding.FirstDiagnostic.Code,
-                            binding.FirstDiagnostic.Path,
-                            binding.FirstDiagnostic.Message);
-                    }
-
-                    ContractValidationResult<XenonSpatialAdvanceResultV1> xenon =
-                        transaction.XenonState.TryAdvance(
-                            binding.Value,
-                            stepEnd,
-                            _adiabaticSolver.Amplitude,
-                            transaction.SpatialCandidate.SpatialSolve.Coefficients,
-                            transaction.SpatialCandidate.ShapeGroup1,
-                            transaction.SpatialCandidate.ShapeGroup2,
-                            physicalShapeScale,
-                            CreateXenonOwnerEventId(
-                                transaction.XenonState.CoreStateVersion + 1UL));
-                    if (!xenon.IsValid)
-                    {
-                        return InvalidTransaction(
-                            xenon.FirstDiagnostic.Code,
-                            xenon.FirstDiagnostic.Path,
-                            xenon.FirstDiagnostic.Message);
-                    }
-
                     transaction.CoreState = integrated.Value;
-                    transaction.XenonState = xenon.Value.ResultingState;
                     transaction.Regulator = regulation.Value;
                     ContractValidationResult<ulong> nextProjectionVersion =
                         TryNextPowerProjectionVersion(
@@ -903,8 +817,9 @@ namespace ReactorSim.Game
                     }
 
                     transaction.PowerProjectionVersion = nextProjectionVersion.Value;
+                    double averagePowerScale = integratedPowerScale / stepSeconds;
                     double actualPowerFraction =
-                        transaction.SpatialCandidate.ShapePowerWatts * physicalShapeScale /
+                        transaction.SpatialCandidate.ShapePowerWatts * averagePowerScale /
                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
                     double powerQuality = 1.0 -
                         Clamp(Math.Abs(actualPowerFraction - 1.0) / 0.02, 0.0, 1.0);
@@ -914,7 +829,7 @@ namespace ReactorSim.Game
                         (0.35 * powerQuality + 0.15 * tiltQuality);
                     simulationCursor = stepEnd;
                     if (simulationCursor - transaction.LastFullCoreSolveSimulationTime >=
-                        _adiabaticSolver.DataPack.ShapeRecomputeIntervalSeconds - 1e-9)
+                        PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds - 1e-9)
                     {
                         ContractValidationResult<bool> scheduled =
                             TryBuildScheduledShape(transaction, simulationCursor);
@@ -930,9 +845,6 @@ namespace ReactorSim.Game
             }
 
             if (!AreSameSimulationTime(
-                    transaction.XenonState.SimulationTimeSeconds,
-                    advance.SimulationTimeSeconds) ||
-                !AreSameSimulationTime(
                     transaction.Regulator.SimulationTimeSeconds,
                     advance.SimulationTimeSeconds))
             {
@@ -950,22 +862,18 @@ namespace ReactorSim.Game
             double simulationTimeSeconds)
         {
             if (!AreSameSimulationTime(
-                    transaction.XenonState.SimulationTimeSeconds,
-                    simulationTimeSeconds) ||
-                !AreSameSimulationTime(
                     transaction.Regulator.SimulationTimeSeconds,
                     simulationTimeSeconds))
             {
                 return InvalidTransactionBoolean(
                     "GameSession.Shape.TimeMismatch",
                     "simulation_time_s",
-                    "A scheduled poisoned shape must bind the exact candidate simulation time.");
+                    "A scheduled equilibrium shape must bind the exact candidate simulation time.");
             }
 
-            ContractValidationResult<IqsSpatialCandidateV1> candidate =
-                TryBuildPoisonedCandidate(
+            ContractValidationResult<EquilibriumCoreProjectionV1> candidate =
+                TryBuildEquilibriumCandidate(
                     transaction.CoreState,
-                    transaction.XenonState,
                     transaction.SpatialCandidate.SpatialSolve);
             if (!candidate.IsValid)
             {
@@ -1007,7 +915,6 @@ namespace ReactorSim.Game
         private void ApplyPracticeTransaction(PracticeTransaction transaction)
         {
             _coreState = transaction.CoreState;
-            _xenonState = transaction.XenonState;
             _practiceRegulator = transaction.Regulator;
             _lastFullCoreSolveSimulationTime =
                 transaction.LastFullCoreSolveSimulationTime;
@@ -1021,25 +928,22 @@ namespace ReactorSim.Game
             return CreateCorePresentationSnapshot(
                 state,
                 CurrentPowerFraction(),
-                _adiabaticSolver.CurrentProjection,
-                _practiceRegulator,
-                _xenonState);
+                _equilibriumSolver.CurrentProjection,
+                _practiceRegulator);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state,
             double powerAmplitude,
-            IqsSpatialCandidateV1 projection,
-            SyntheticPracticeRegulatorV1 regulator,
-            XenonSpatialStateV1 xenonState)
+            EquilibriumCoreProjectionV1 projection,
+            SyntheticPracticeRegulatorV1 regulator)
         {
             GameXenonPresentationSnapshot xenon =
                 CreateXenonPresentationSnapshot(
-                    xenonState,
-                    projection,
                     state.RefuellingOperationCount == 0
                         ? -1
-                        : state.LastRefuelledChannel);
+                        : state.LastRefuelledChannel,
+                    _runtime.SimulationTimeSeconds);
             var channelStates = new IReadOnlyList<BundleState>[
                 (int)GameCorePresentationConstants.ChannelCount];
             for (uint channelIndex = 0;
@@ -1051,7 +955,7 @@ namespace ReactorSim.Game
             }
 
             double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
-            double physicalShapeScale = amplitude * _adiabaticSolver.Amplitude;
+            double physicalShapeScale = amplitude;
             double totalPowerWatts = projection.ShapePowerWatts * physicalShapeScale;
             double actualPowerFraction = totalPowerWatts /
                                          PracticeGameSessionFactory.PracticeReferencePowerWatts;
@@ -1129,11 +1033,11 @@ namespace ReactorSim.Game
                 0.0,
                 1.5);
             var physics = new GamePhysicsPresentationSnapshot(
-                _adiabaticSolver.DataPack.ModelId,
-                _adiabaticSolver.FormulationId,
-                _adiabaticSolver.ShapeMethodId,
-                _adiabaticSolver.AmplitudeMethodId,
-                _adiabaticSolver.ReactivityMethodId,
+                EquilibriumCoreSolverIdentityV1.ModelId,
+                EquilibriumCoreSolverIdentityV1.FormulationId,
+                EquilibriumCoreSolverIdentityV1.ShapeMethodId,
+                EquilibriumCoreSolverIdentityV1.AmplitudeMethodId,
+                EquilibriumCoreSolverIdentityV1.ReactivityMethodId,
                 "converged",
                 true,
                 _powerProjectionVersion,
@@ -1154,9 +1058,7 @@ namespace ReactorSim.Game
                 projection.ReactivityIdentity,
                 projection.ReactivityBindingDigestHex,
                 spatial.PowerBalanceRelativeError,
-                _adiabaticSolver.DataPack.SolverId + "/" +
-                    _adiabaticSolver.DataPack.DataPackVersion + "+" +
-                    spatial.SolverIdentity,
+                projection.SolverIdentity,
                 spatial.IterationCount,
                 spatial.ResidualRelativeInfinity,
                 regulator.CoreReactivity,
@@ -1168,136 +1070,57 @@ namespace ReactorSim.Game
                 regulator.CompensationSaturated,
                 regulator.ResponseTimeSeconds,
                 regulator.CadenceIdentity,
-                _adiabaticSolver.AdjointNormalizationIdentity,
-                _adiabaticSolver.ReferenceAdjoint.DigestHex,
-                _adiabaticSolver.AdjointIterationCount,
-                _adiabaticSolver.AdjointTransposeResidualRelativeInfinity);
+                "equilibrium-static-only-v1",
+                projection.ReactivityBindingDigestHex,
+                0,
+                0.0);
             return new GameCorePresentationSnapshot(channels, physics, xenon);
         }
 
         private static GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(
-            XenonSpatialStateV1 xenonState,
-            IqsSpatialCandidateV1 projection,
-            int selectedChannelIndex)
+            int selectedChannelIndex,
+            double simulationTimeSeconds)
         {
-            XenonSpatialCouplingResultV1? coupling =
-                projection.SpatialSolve.XenonCoupling;
-            var overlaysByNode = coupling == null
-                ? new Dictionary<NodeKey, XenonSpatialOverlayValueV1>()
-                : coupling.Overlays.ToDictionary(overlay => overlay.Node);
             var channelDiagnostics = new List<GameXenonChannelPresentationSnapshot>(
                 (int)GameCorePresentationConstants.ChannelCount);
-
-            double totalI135NumberDensity = 0.0;
-            double maxI135NumberDensity = 0.0;
-            double totalXe135NumberDensity = 0.0;
-            double maxXe135NumberDensity = 0.0;
-            double totalAbsorptionGroup1 = 0.0;
-            double maxAbsorptionGroup1 = 0.0;
-            double totalAbsorptionGroup2 = 0.0;
-            double maxAbsorptionGroup2 = 0.0;
 
             for (uint channelIndex = 0;
                  channelIndex < GameCorePresentationConstants.ChannelCount;
                  channelIndex++)
             {
-                double channelI135Total = 0.0;
-                double channelI135Max = 0.0;
-                double channelXe135Total = 0.0;
-                double channelXe135Max = 0.0;
-                double channelAbsorptionGroup1Total = 0.0;
-                double channelAbsorptionGroup1Max = 0.0;
-                double channelAbsorptionGroup2Total = 0.0;
-                double channelAbsorptionGroup2Max = 0.0;
-
-                for (uint position = 0;
-                     position < GameCorePresentationConstants.BundlePositionCount;
-                     position++)
-                {
-                    NodeKey node = new NodeKey(
-                        new ChannelId(channelIndex),
-                        new BundlePosition(position));
-                    if (!xenonState.TryGetNodeState(node, out NuclideStateEnvelopeV1? nodeState) ||
-                        nodeState == null)
-                    {
-                        throw new InvalidOperationException(
-                            "The Game snapshot could not bind xenon diagnostics to a live node.");
-                    }
-
-                    double iodine = nodeState.I135NumberDensity;
-                    double xenon = nodeState.Xe135NumberDensity;
-                    channelI135Total += iodine;
-                    channelI135Max = Math.Max(channelI135Max, iodine);
-                    channelXe135Total += xenon;
-                    channelXe135Max = Math.Max(channelXe135Max, xenon);
-                    totalI135NumberDensity += iodine;
-                    maxI135NumberDensity = Math.Max(maxI135NumberDensity, iodine);
-                    totalXe135NumberDensity += xenon;
-                    maxXe135NumberDensity = Math.Max(maxXe135NumberDensity, xenon);
-
-                    double absorptionGroup1;
-                    double absorptionGroup2;
-                    if (coupling != null &&
-                        overlaysByNode.TryGetValue(node, out XenonSpatialOverlayValueV1 overlay))
-                    {
-                        absorptionGroup1 = overlay.DynamicAbsorptionGroup1PerM;
-                        absorptionGroup2 = overlay.DynamicAbsorptionGroup2PerM;
-                    }
-                    else
-                    {
-                        absorptionGroup1 = 0.0;
-                        absorptionGroup2 = 0.0;
-                    }
-
-                    channelAbsorptionGroup1Total += absorptionGroup1;
-                    channelAbsorptionGroup1Max = Math.Max(
-                        channelAbsorptionGroup1Max,
-                        absorptionGroup1);
-                    channelAbsorptionGroup2Total += absorptionGroup2;
-                    channelAbsorptionGroup2Max = Math.Max(
-                        channelAbsorptionGroup2Max,
-                        absorptionGroup2);
-                    totalAbsorptionGroup1 += absorptionGroup1;
-                    maxAbsorptionGroup1 = Math.Max(maxAbsorptionGroup1, absorptionGroup1);
-                    totalAbsorptionGroup2 += absorptionGroup2;
-                    maxAbsorptionGroup2 = Math.Max(maxAbsorptionGroup2, absorptionGroup2);
-                }
-
                 channelDiagnostics.Add(
                     new GameXenonChannelPresentationSnapshot(
                         channelIndex,
-                        channelI135Total / GameCorePresentationConstants.BundlePositionCount,
-                        channelI135Max,
-                        channelXe135Total / GameCorePresentationConstants.BundlePositionCount,
-                        channelXe135Max,
-                        channelAbsorptionGroup1Total /
-                            GameCorePresentationConstants.BundlePositionCount,
-                        channelAbsorptionGroup1Max,
-                        channelAbsorptionGroup2Total /
-                            GameCorePresentationConstants.BundlePositionCount,
-                        channelAbsorptionGroup2Max));
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0));
             }
 
-            int nodeCount = xenonState.NodeStates.Count;
             return new GameXenonPresentationSnapshot(
-                XenonSpatialStateV1.Identity,
-                xenonState.StateDigestHex,
-                xenonState.CoreStateVersion,
-                xenonState.SimulationTimeSeconds,
-                xenonState.NodeStates.Count,
-                XenonSpatialCouplingV1.Identity,
-                coupling != null,
-                coupling == null ? string.Empty : DigestHex(coupling.BaseCoefficientDigest),
-                coupling == null ? string.Empty : DigestHex(coupling.DynamicXenonDigest),
-                coupling == null ? string.Empty : DigestHex(coupling.EffectiveCoefficientDigest),
-                totalI135NumberDensity / nodeCount,
-                maxI135NumberDensity,
-                totalXe135NumberDensity / nodeCount,
-                maxXe135NumberDensity,
-                totalAbsorptionGroup1 / nodeCount,
-                maxAbsorptionGroup1,
-                totalAbsorptionGroup2 / nodeCount,
-                maxAbsorptionGroup2,
+                "xenon-unavailable-static-compatibility-v1",
+                "sha256:" + new string('0', 64),
+                0UL,
+                simulationTimeSeconds,
+                checked((int)(GameCorePresentationConstants.ChannelCount *
+                    GameCorePresentationConstants.BundlePositionCount)),
+                "xenon-unavailable-static-compatibility-v1",
+                false,
+                string.Empty,
+                string.Empty,
+                string.Empty,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
                 channelDiagnostics,
                 selectedChannelIndex);
         }
@@ -1385,20 +1208,122 @@ namespace ReactorSim.Game
             return Math.Max(minimum, Math.Min(maximum, value));
         }
 
+        private static double IntegratedPowerScaleFor(
+            double requestedAmplitude,
+            SyntheticPracticeRegulatorV1 regulator,
+            double deltaTimeSeconds)
+        {
+            double target = Clamp(requestedAmplitude, 0.0, 1.5);
+            if (target <= 0.0 || deltaTimeSeconds <= 0.0)
+            {
+                return 0.0;
+            }
+
+            double command = Clamp(
+                -regulator.CoreReactivity,
+                regulator.LowerBound,
+                regulator.UpperBound);
+            double startState = regulator.CompensationState;
+            double responseTime = regulator.ResponseTimeSeconds;
+            double constant = 1.0 + regulator.CoreReactivity + command;
+            double exponential = startState - command;
+            double upperResponse = 1.5 / target;
+            double decayAtEnd = Math.Exp(-deltaTimeSeconds / responseTime);
+            var boundaries = new List<double> { 0.0, deltaTimeSeconds };
+            AddClampCrossing(
+                boundaries,
+                0.0,
+                constant,
+                exponential,
+                responseTime,
+                deltaTimeSeconds);
+            AddClampCrossing(
+                boundaries,
+                upperResponse,
+                constant,
+                exponential,
+                responseTime,
+                deltaTimeSeconds);
+            boundaries.Sort();
+
+            double integral = 0.0;
+            for (int index = 0; index + 1 < boundaries.Count; index++)
+            {
+                double start = boundaries[index];
+                double end = boundaries[index + 1];
+                if (end - start <= 1.0e-12)
+                {
+                    continue;
+                }
+
+                double midpoint = (start + end) * 0.5;
+                double response = constant + exponential *
+                    Math.Exp(-midpoint / responseTime);
+                if (response <= 0.0)
+                {
+                    continue;
+                }
+
+                if (response >= upperResponse)
+                {
+                    integral += upperResponse * (end - start);
+                    continue;
+                }
+
+                integral += constant * (end - start) + exponential * responseTime *
+                    (Math.Exp(-start / responseTime) -
+                     Math.Exp(-end / responseTime));
+            }
+
+            // Keep the explicit end-point decay in the calculation path so a
+            // compiler cannot change the intended analytic interval into a
+            // fixed-step approximation, and guard against round-off outside
+            // the declared response bounds.
+            if (!IsFinite(decayAtEnd) || !IsFinite(integral))
+            {
+                return PowerAmplitudeFor(requestedAmplitude, regulator) * deltaTimeSeconds;
+            }
+
+            return target * Math.Max(0.0, Math.Min(upperResponse * deltaTimeSeconds, integral));
+        }
+
+        private static void AddClampCrossing(
+            List<double> boundaries,
+            double threshold,
+            double constant,
+            double exponential,
+            double responseTime,
+            double deltaTimeSeconds)
+        {
+            if (Math.Abs(exponential) <= 1.0e-15)
+            {
+                return;
+            }
+
+            double ratio = (threshold - constant) / exponential;
+            if (!IsFinite(ratio) || ratio <= 0.0 || ratio >= 1.0)
+            {
+                return;
+            }
+
+            double crossing = -responseTime * Math.Log(ratio);
+            if (crossing > 1.0e-12 && crossing < deltaTimeSeconds - 1.0e-12)
+            {
+                boundaries.Add(crossing);
+            }
+        }
+
         private ContractValidationResult<bool> ValidateCommittedTime(
             double simulationTimeSeconds)
         {
             if (!AreSameSimulationTime(
-                    _xenonState.SimulationTimeSeconds,
-                    simulationTimeSeconds) ||
-                !AreSameSimulationTime(
                     _practiceRegulator.SimulationTimeSeconds,
                     simulationTimeSeconds))
             {
                 return ContractValidationResult<bool>.Invalid(
                     "GameSession.State.TimeMismatch",
                     "simulation_time_s",
-                    "The committed xenon state, regulator, and scenario runtime must share one authoritative time.");
+                    "The committed equilibrium projection, regulator, and scenario runtime must share one authoritative time.");
             }
 
             return ContractValidationResult<bool>.Valid(true);
@@ -1416,15 +1341,6 @@ namespace ReactorSim.Game
             }
 
             return ContractValidationResult<ulong>.Valid(currentVersion + 1UL);
-        }
-
-        private static StableId CreateXenonOwnerEventId(ulong sequence)
-        {
-            string hex = sequence.ToString("x16", CultureInfo.InvariantCulture);
-            return StableId.Parse(
-                "00000000-0000-0000-" +
-                hex.Substring(0, 4) + "-" +
-                hex.Substring(4, 12));
         }
 
         private static bool AreSameSimulationTime(double first, double second)

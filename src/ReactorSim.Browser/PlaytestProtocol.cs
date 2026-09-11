@@ -98,10 +98,10 @@ namespace ReactorSim.Browser
                         Ordering = "fast-to-thermal"
                     }
                 },
-                FormulationId = AdiabaticKineticsIdentityV1.FormulationId,
-                ShapeMethodId = AdiabaticKineticsIdentityV1.ShapeMethodId,
-                AmplitudeMethodId = AdiabaticKineticsIdentityV1.AmplitudeMethodId,
-                ReactivityMethodId = AdiabaticKineticsIdentityV1.ReactivityMethodId,
+                FormulationId = EquilibriumCoreSolverIdentityV1.FormulationId,
+                ShapeMethodId = EquilibriumCoreSolverIdentityV1.ShapeMethodId,
+                AmplitudeMethodId = EquilibriumCoreSolverIdentityV1.AmplitudeMethodId,
+                ReactivityMethodId = EquilibriumCoreSolverIdentityV1.ReactivityMethodId,
                 StateDigestAlgorithm = StateDigestAlgorithm,
                 CompactStateDigestAlgorithm = CompactStateDigestAlgorithm,
                 ReplayDigestAlgorithm = ReplayDigestAlgorithm

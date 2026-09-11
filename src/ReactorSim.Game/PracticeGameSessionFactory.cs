@@ -17,15 +17,11 @@ namespace ReactorSim.Game
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
             "candu6-two-group-diffusion-v1-infinite-cell-calibrated";
+        // Kept as a source-compatible browser/Unity metadata alias. The live
+        // practice composition no longer loads a kinetics data pack.
         public const string KineticsDataPackVersion =
-            "candu6-two-group-adiabatic-v1-project-authored-synthetic-calibrated";
+            DiffusionDataPackVersion;
         public const double FullCoreDiffusionRecomputeIntervalSeconds = 3_600.0;
-        /// <summary>
-        /// Explicit steady-state gameplay partition. It is a long-step
-        /// treatment for regulation and burnup, not a claim of sub-second
-        /// point-kinetics transient fidelity.
-        /// </summary>
-        public const double SteadyStateLongStepSeconds = 600.0;
         // The target is the practice display scale. It is not a plant rating;
         // the solver's energy balance remains in SI watts.
         public const double PracticeReferencePowerWatts = 1_000_000_000.0;
@@ -163,44 +159,22 @@ namespace ReactorSim.Game
                 FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
             FullCoreDiffusionModelV1 fullCoreModel = Require(
                 FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
-            IqsKineticsDataPackV1 kineticsPack = Require(
-                IqsKineticsDataPackV1.TryLoadEmbeddedCandu6());
             SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreatePractice();
-            IqsFullCoreSolver adiabaticSolver = Require(
-                IqsFullCoreSolver.TryCreate(
+            EquilibriumCoreSolverV1 equilibriumSolver = Require(
+                EquilibriumCoreSolverV1.TryCreate(
                     fullCoreModel,
-                    kineticsPack,
                     coreState.EnumerateBundles(),
                     PracticeReferencePowerWatts));
-            NuclideDataV1 nuclideData = Require(
-                NuclideDataV1.TryCreate(
-                    new MaterialVariantId("NAT-U-SYNTHETIC"),
-                    "candu6-practice-xenon-v1",
-                    new Digest32(Enumerable.Repeat((byte)0x71, 32).ToArray()),
-                    0.05,
-                    0.01,
-                    2.91e-5,
-                    2.09e-5,
-                    1.0e-24,
-                    3.0e-24));
-            XenonSpatialStateV1 xenonState = Require(
-                XenonSpatialStateV1.TryCreate(
-                    fullCoreModel,
-                    coreState.EnumerateBundles(),
-                    nuclideData,
-                    runtime.SimulationTimeSeconds,
-                    0UL));
             SyntheticPracticeRegulatorV1 practiceRegulator = Require(
                 SyntheticPracticeRegulatorV1.TryCreate(
-                    adiabaticSolver.RelativeReactivity,
+                    equilibriumSolver.RelativeReactivity,
                     runtime.SimulationTimeSeconds));
             return new GameSession(
                 scoredRuntime,
                 playbackModes,
                 WallControlTickMilliseconds,
                 coreState,
-                adiabaticSolver,
-                xenonState,
+                equilibriumSolver,
                 practiceRegulator);
         }
 
