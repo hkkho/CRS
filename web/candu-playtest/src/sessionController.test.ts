@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type {
-  BridgeStatus,
-  CanduCommand,
-  CanduCommandResponse,
-  CanduDispatchOptions,
-  CanduPlaytestBridge,
-  CanduSnapshot,
+import {
+  createUnavailableRrsSnapshot,
+  type BridgeStatus,
+  type CanduCommand,
+  type CanduCommandResponse,
+  type CanduDispatchOptions,
+  type CanduPlaytestBridge,
+  type CanduSnapshot,
 } from "./protocol";
 import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import { BridgeSessionController } from "./sessionController";
@@ -363,6 +364,7 @@ function createSnapshot(): CanduSnapshot {
     lastRefuellingShiftCount: 0,
     physics: {} as CanduSnapshot["physics"],
     xenon: {} as CanduSnapshot["xenon"],
+    rrs: createUnavailableRrsSnapshot(),
     core: { channelCount: 380, bundlePositionCount: 12, gridWidth: 22, gridHeight: 22, channels: [] },
     diagnostics: { convergence: { state: "converged", iterations: 1, residual: 0, relativePowerError: 0, lastSolveMilliseconds: 0, solverLabel: "test" }, checks: [] },
     lastEvent: null,

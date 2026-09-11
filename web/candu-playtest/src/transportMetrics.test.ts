@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   PROTOCOL_VERSION,
   ProtocolResyncRequiredError,
+  createUnavailableRrsSnapshot,
   parseProtocolResponse,
   type CanduCommand,
   type CanduSnapshot,
@@ -126,6 +127,7 @@ function patchFor(snapshot: CanduSnapshot): Record<string, unknown> {
     lastRefuellingShiftCount: snapshot.lastRefuellingShiftCount,
     physics: snapshot.physics,
     xenon: snapshot.xenon,
+    rrs: snapshot.rrs,
     diagnostics: snapshot.diagnostics,
     lastEvent: snapshot.lastEvent,
   };
@@ -191,6 +193,7 @@ function createSnapshot(): CanduSnapshot {
     lastRefuellingShiftCount: 0,
     physics: {} as CanduSnapshot["physics"],
     xenon: {} as CanduSnapshot["xenon"],
+    rrs: createUnavailableRrsSnapshot(),
     core: {
       channelCount: 380,
       bundlePositionCount: 12,

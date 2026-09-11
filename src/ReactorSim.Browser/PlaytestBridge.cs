@@ -951,6 +951,7 @@ namespace ReactorSim.Browser
                     : game.LastRefuellingShiftCount,
                 Physics = CreatePhysicsSnapshot(game),
                 Xenon = CreateXenonSnapshot(game),
+                Rrs = CreateRrsSnapshot(game),
                 Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
                 Diagnostics = CreateDiagnosticsSnapshot(runtime, game, labSnapshot),
                 LastEvent = CreateLastEvent(runtime, game),
@@ -1056,6 +1057,7 @@ namespace ReactorSim.Browser
                     : game.LastRefuellingShiftCount,
                 Physics = CreatePhysicsSnapshot(game),
                 Xenon = CreateXenonSnapshot(game),
+                Rrs = CreateRrsSnapshot(game),
                 Diagnostics = CreateDiagnosticsSnapshot(runtime, game, null),
                 LastEvent = CreateLastEvent(runtime, game)
             };
@@ -1117,6 +1119,48 @@ namespace ReactorSim.Browser
                 SolverIdentity = game.Physics.SolverIdentity,
                 SolverIterationCount = game.Physics.SolverIterationCount,
                 SolverResidualRelativeInfinity = game.Physics.SolverResidualRelativeInfinity
+            };
+        }
+
+        private static PlaytestRrsDto CreateRrsSnapshot(GameSessionSnapshot game)
+        {
+            return new PlaytestRrsDto
+            {
+                ControllerIdentity = game.Rrs.ControllerIdentity,
+                MappingIdentity = game.Rrs.MappingIdentity,
+                MappingDigestHex = game.Rrs.MappingDigestHex,
+                OverlayIdentity = game.Rrs.OverlayIdentity,
+                OverlayDigestHex = game.Rrs.OverlayDigestHex,
+                StateDigestHex = game.Rrs.StateDigestHex,
+                SimulationTimeSeconds = game.Rrs.SimulationTimeSeconds,
+                NodeCount = game.Rrs.NodeCount,
+                AverageFillFraction = game.Rrs.AverageFillFraction,
+                MinimumFillFraction = game.Rrs.MinimumFillFraction,
+                MaximumFillFraction = game.Rrs.MaximumFillFraction,
+                MeasuredPowerWatts = game.Rrs.MeasuredPowerWatts,
+                TargetPowerWatts = game.Rrs.TargetPowerWatts,
+                PowerErrorWatts = game.Rrs.PowerErrorWatts,
+                CoreReactivity = game.Rrs.CoreReactivity,
+                CompensatedNetReactivity = game.Rrs.CompensatedNetReactivity,
+                CommonModeRhoCorrection = game.Rrs.CommonModeRhoCorrection,
+                ControllerIterationCount = game.Rrs.ControllerIterationCount,
+                ControllerConverged = game.Rrs.ControllerConverged,
+                LowExhaustion = game.Rrs.LowExhaustion,
+                HighExhaustion = game.Rrs.HighExhaustion,
+                IsGameOver = game.Rrs.IsGameOver,
+                GameOverReason = game.Rrs.GameOverReason,
+                CadenceIdentity = game.Rrs.CadenceIdentity,
+                Zones = game.Rrs.Zones
+                    .Select(zone => new PlaytestRrsZoneDto
+                    {
+                        LogicalZoneId = zone.LogicalZoneId,
+                        FillFraction = zone.FillFraction,
+                        ReferencePowerFraction = zone.ReferencePowerFraction,
+                        TargetPowerFraction = zone.TargetPowerFraction,
+                        MeasuredPowerFraction = zone.MeasuredPowerFraction,
+                        ShapeError = zone.ShapeError
+                    })
+                    .ToList()
             };
         }
 
@@ -1700,6 +1744,8 @@ namespace ReactorSim.Browser
 
         public PlaytestXenonDto Xenon { get; set; } = new PlaytestXenonDto();
 
+        public PlaytestRrsDto Rrs { get; set; } = new PlaytestRrsDto();
+
         public PlaytestDiagnosticsDto Diagnostics { get; set; } = new PlaytestDiagnosticsDto();
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
@@ -1766,6 +1812,8 @@ namespace ReactorSim.Browser
         public PlaytestCoreDto Core { get; set; } = new PlaytestCoreDto();
 
         public PlaytestXenonDto Xenon { get; set; } = new PlaytestXenonDto();
+
+        public PlaytestRrsDto Rrs { get; set; } = new PlaytestRrsDto();
 
         public PlaytestPhysicsDto Physics { get; set; } = new PlaytestPhysicsDto();
 
@@ -1896,6 +1944,74 @@ namespace ReactorSim.Browser
         public double MeanDynamicAbsorptionGroup2PerM { get; set; }
 
         public double MaxDynamicAbsorptionGroup2PerM { get; set; }
+    }
+
+    internal sealed class PlaytestRrsDto
+    {
+        public string ControllerIdentity { get; set; } = string.Empty;
+
+        public string MappingIdentity { get; set; } = string.Empty;
+
+        public string MappingDigestHex { get; set; } = string.Empty;
+
+        public string OverlayIdentity { get; set; } = string.Empty;
+
+        public string OverlayDigestHex { get; set; } = string.Empty;
+
+        public string StateDigestHex { get; set; } = string.Empty;
+
+        public double SimulationTimeSeconds { get; set; }
+
+        public int NodeCount { get; set; }
+
+        public double AverageFillFraction { get; set; }
+
+        public double MinimumFillFraction { get; set; }
+
+        public double MaximumFillFraction { get; set; }
+
+        public double MeasuredPowerWatts { get; set; }
+
+        public double TargetPowerWatts { get; set; }
+
+        public double PowerErrorWatts { get; set; }
+
+        public double CoreReactivity { get; set; }
+
+        public double CompensatedNetReactivity { get; set; }
+
+        public double CommonModeRhoCorrection { get; set; }
+
+        public int ControllerIterationCount { get; set; }
+
+        public bool ControllerConverged { get; set; }
+
+        public bool LowExhaustion { get; set; }
+
+        public bool HighExhaustion { get; set; }
+
+        public bool IsGameOver { get; set; }
+
+        public string GameOverReason { get; set; } = string.Empty;
+
+        public string CadenceIdentity { get; set; } = string.Empty;
+
+        public List<PlaytestRrsZoneDto> Zones { get; set; } = new List<PlaytestRrsZoneDto>();
+    }
+
+    internal sealed class PlaytestRrsZoneDto
+    {
+        public uint LogicalZoneId { get; set; }
+
+        public double FillFraction { get; set; }
+
+        public double ReferencePowerFraction { get; set; }
+
+        public double TargetPowerFraction { get; set; }
+
+        public double MeasuredPowerFraction { get; set; }
+
+        public double ShapeError { get; set; }
     }
 
     internal sealed class PlaytestDiagnosticsDto

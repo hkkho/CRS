@@ -171,6 +171,21 @@ namespace ReactorSim.Core
             get { return SpatialSolve.PowerBalanceRelativeError; }
         }
 
+        /// <summary>
+        /// The explicit static absorption overlay accepted by this
+        /// projection, when present. It is a generic static composition
+        /// input and is not a xenon or transient state.
+        /// </summary>
+        public StaticAbsorptionOverlayV1? StaticAbsorptionOverlay
+        {
+            get { return SpatialSolve.StaticAbsorptionOverlay; }
+        }
+
+        public bool HasStaticAbsorptionOverlay
+        {
+            get { return StaticAbsorptionOverlay != null; }
+        }
+
         public string SolverIdentity
         {
             get
@@ -328,6 +343,83 @@ namespace ReactorSim.Core
             IEnumerable<BundleState> bundles)
         {
             return TrySolveCandidate(bundles, _current.SpatialSolve);
+        }
+
+        public ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(
+            IEnumerable<BundleState> bundles,
+            StaticAbsorptionOverlayV1 staticAbsorptionOverlay)
+        {
+            return TrySolveCandidate(
+                bundles,
+                staticAbsorptionOverlay,
+                _current.SpatialSolve);
+        }
+
+        public ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(
+            IEnumerable<BundleState> bundles,
+            StaticAbsorptionOverlayV1 staticAbsorptionOverlay,
+            FullCoreDiffusionSolveResultV1 initialSpatialSolve)
+        {
+            if (bundles == null)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.Bundles.Missing",
+                    "bundles",
+                    "An equilibrium candidate requires a full-core bundle inventory.");
+            }
+
+            if (staticAbsorptionOverlay == null)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.StaticAbsorptionOverlay.Missing",
+                    "static_absorption_overlay",
+                    "A static-overlay equilibrium candidate requires an explicit overlay.");
+            }
+
+            if (initialSpatialSolve == null)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.InitialSpatialSolve.Missing",
+                    "initial_spatial_solve",
+                    "An equilibrium candidate requires an explicit accepted warm-start solve.");
+            }
+
+            if (!ReferenceEquals(initialSpatialSolve.DataPack, _spatialModel.DataPack))
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.InitialSpatialSolve.DataPackMismatch",
+                    "initial_spatial_solve.data_pack",
+                    "An equilibrium candidate warm start must use this solver's exact diffusion data pack.");
+            }
+
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
+                _spatialModel.TrySolve(
+                    bundles.ToArray(),
+                    staticAbsorptionOverlay,
+                    _targetPowerWatts,
+                    initialSpatialSolve.EffectiveK,
+                    initialSpatialSolve.Group1Flux,
+                    initialSpatialSolve.Group2Flux);
+            if (!spatial.IsValid)
+            {
+                return InvalidCandidate(
+                    spatial.FirstDiagnostic.Code,
+                    spatial.FirstDiagnostic.Path,
+                    spatial.FirstDiagnostic.Message);
+            }
+
+            try
+            {
+                return ContractValidationResult<EquilibriumCoreProjectionV1>.Valid(
+                    BuildProjection(spatial.Value));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.Candidate.Invalid",
+                    "candidate",
+                    exception.Message);
+            }
         }
 
         public ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(

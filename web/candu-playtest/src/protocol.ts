@@ -88,6 +88,73 @@ export interface CanduXenonSnapshot {
   selectedChannel: CanduXenonChannelSnapshot | null;
 }
 
+export interface CanduRrsZoneSnapshot {
+  logicalZoneId: number;
+  fillFraction: number;
+  referencePowerFraction: number;
+  targetPowerFraction: number;
+  measuredPowerFraction: number;
+  shapeError: number;
+}
+
+export interface CanduRrsSnapshot {
+  controllerIdentity: string;
+  mappingIdentity: string;
+  mappingDigestHex: string;
+  overlayIdentity: string;
+  overlayDigestHex: string;
+  stateDigestHex: string;
+  simulationTimeSeconds: number;
+  nodeCount: number;
+  averageFillFraction: number;
+  minimumFillFraction: number;
+  maximumFillFraction: number;
+  measuredPowerWatts: number;
+  targetPowerWatts: number;
+  powerErrorWatts: number;
+  coreReactivity: number;
+  compensatedNetReactivity: number;
+  commonModeRhoCorrection: number;
+  controllerIterationCount: number;
+  controllerConverged: boolean;
+  lowExhaustion: boolean;
+  highExhaustion: boolean;
+  isGameOver: boolean;
+  gameOverReason: string;
+  cadenceIdentity: string;
+  zones: CanduRrsZoneSnapshot[];
+}
+
+export function createUnavailableRrsSnapshot(): CanduRrsSnapshot {
+  return {
+    controllerIdentity: "unavailable",
+    mappingIdentity: "unavailable",
+    mappingDigestHex: "",
+    overlayIdentity: "unavailable",
+    overlayDigestHex: "",
+    stateDigestHex: "",
+    simulationTimeSeconds: 0,
+    nodeCount: 0,
+    averageFillFraction: 0.5,
+    minimumFillFraction: 0.5,
+    maximumFillFraction: 0.5,
+    measuredPowerWatts: 0,
+    targetPowerWatts: 0,
+    powerErrorWatts: 0,
+    coreReactivity: 0,
+    compensatedNetReactivity: 0,
+    commonModeRhoCorrection: 0,
+    controllerIterationCount: 0,
+    controllerConverged: false,
+    lowExhaustion: false,
+    highExhaustion: false,
+    isGameOver: false,
+    gameOverReason: "",
+    cadenceIdentity: "unavailable",
+    zones: [],
+  };
+}
+
 export interface CanduConvergenceStatus {
   state: "converged" | "settling" | "pending" | "unavailable";
   iterations: number;
@@ -244,6 +311,7 @@ export interface CanduSnapshot {
   lastRefuellingShiftCount: number;
   physics: CanduPhysicsSnapshot;
   xenon: CanduXenonSnapshot;
+  rrs: CanduRrsSnapshot;
   core: CanduCoreSnapshot;
   diagnostics: CanduDiagnostics;
   lastEvent: CanduEvent | null;
@@ -273,6 +341,7 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "lastRefuellingShiftCount"
   | "physics"
   | "xenon"
+  | "rrs"
   | "diagnostics"
   | "lastEvent">;
 
@@ -581,6 +650,7 @@ export function materializeCompactSnapshot(
   if (!isInteger(response.sequence) ||
       !isRecord(patchValue.physics) ||
       !isRecord(patchValue.xenon) ||
+      !isRecord(patchValue.rrs) ||
       !isRecord(patchValue.diagnostics) ||
       !isFiniteNumber(patchValue.simulationTimeSeconds) ||
       !isFiniteNumber(patchValue.wallElapsedSeconds) ||
@@ -624,6 +694,7 @@ export function materializeCompactSnapshot(
     lastRefuellingShiftCount: patchValue.lastRefuellingShiftCount as number,
     physics: patchValue.physics as unknown as CanduPhysicsSnapshot,
     xenon: patchValue.xenon as unknown as CanduXenonSnapshot,
+    rrs: patchValue.rrs as unknown as CanduRrsSnapshot,
     core,
     diagnostics: patchValue.diagnostics as unknown as CanduDiagnostics,
     lastEvent: "lastEvent" in patchValue

@@ -165,17 +165,27 @@ namespace ReactorSim.Game
                     fullCoreModel,
                     coreState.EnumerateBundles(),
                     PracticeReferencePowerWatts));
-            SyntheticPracticeRegulatorV1 practiceRegulator = Require(
-                SyntheticPracticeRegulatorV1.TryCreate(
-                    equilibriumSolver.RelativeReactivity,
+            PracticeLiquidZoneRrsMappingV1 rrsMapping = Require(
+                PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+            PracticeLiquidZoneRrsV1 initialRrs = Require(
+                PracticeLiquidZoneRrsV1.TryCreate(
+                    rrsMapping,
+                    equilibriumSolver.CurrentProjection,
                     runtime.SimulationTimeSeconds));
+            PracticeLiquidZoneRrsEquilibriumResultV1 acceptedRrs = Require(
+                PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                    equilibriumSolver,
+                    coreState.EnumerateBundles(),
+                    initialRrs,
+                    runtime.SimulationTimeSeconds));
+            Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
             return new GameSession(
                 scoredRuntime,
                 playbackModes,
                 WallControlTickMilliseconds,
                 coreState,
                 equilibriumSolver,
-                practiceRegulator);
+                acceptedRrs.State);
         }
 
         private static T Require<T>(ContractValidationResult<T> result)

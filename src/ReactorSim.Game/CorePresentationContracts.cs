@@ -9,10 +9,10 @@ namespace ReactorSim.Game
     /// <summary>
     /// Explicit physics metrics exposed to presentation consumers. The
     /// current practice path is backed by deterministic static k-eigenmode
-    /// shape recomputation plus a regulated steady-state scalar amplitude;
-    /// Reactivity remains a state-level value derived from k. The legacy
-    /// source/solver property names remain available for public v1
-    /// compatibility.
+    /// shape recomputation plus a bounded static liquid-zone RRS projection.
+    /// The legacy scalar compensation property names remain available for
+    /// public v1 compatibility, but the live power amplitude is the operator
+    /// equilibrium target rather than a transient response.
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
@@ -113,7 +113,7 @@ namespace ReactorSim.Game
                     "Compensation state and command must remain within ordered explicit bounds.");
             }
 
-            RequireFinitePositive(
+            RequireFiniteNonnegative(
                 compensationResponseTimeSeconds,
                 nameof(compensationResponseTimeSeconds));
             RequireFiniteNonnegative(powerBalanceRelativeError, nameof(powerBalanceRelativeError));
@@ -184,7 +184,7 @@ namespace ReactorSim.Game
             ReactivityDenominator = reactivityDenominator;
             ReactivityIdentity = reactivityIdentity;
             ReactivityBindingDigestHex = reactivityBindingDigestHex;
-            _staticReactivityMethodId = AdiabaticKineticsIdentityV1.StaticReactivityMethodId;
+            _staticReactivityMethodId = EquilibriumCoreSolverIdentityV1.ReactivityMethodId;
             CoreReactivity = coreReactivity;
             CompensatedNetReactivity = compensatedNetReactivity;
             CompensationState = compensationState;
@@ -587,6 +587,202 @@ namespace ReactorSim.Game
     }
 
     /// <summary>
+    /// Compact presentation values for one logical practice liquid zone.
+    /// Fractions are normalized against the accepted initial equilibrium;
+    /// the fill is a bounded static absorber state, not a transient.
+    /// </summary>
+    public sealed class GameRrsZonePresentationSnapshot
+    {
+        internal GameRrsZonePresentationSnapshot(
+            uint logicalZoneId,
+            double fillFraction,
+            double referencePowerFraction,
+            double targetPowerFraction,
+            double measuredPowerFraction,
+            double shapeError)
+        {
+            if (logicalZoneId >= PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(logicalZoneId));
+            }
+
+            RequireFraction(fillFraction, nameof(fillFraction));
+            RequireFraction(referencePowerFraction, nameof(referencePowerFraction));
+            RequireFraction(targetPowerFraction, nameof(targetPowerFraction));
+            RequireFraction(measuredPowerFraction, nameof(measuredPowerFraction));
+            RequireFinite(shapeError, nameof(shapeError));
+
+            LogicalZoneId = logicalZoneId;
+            FillFraction = fillFraction;
+            ReferencePowerFraction = referencePowerFraction;
+            TargetPowerFraction = targetPowerFraction;
+            MeasuredPowerFraction = measuredPowerFraction;
+            ShapeError = shapeError;
+        }
+
+        public uint LogicalZoneId { get; }
+
+        public double FillFraction { get; }
+
+        public double ReferencePowerFraction { get; }
+
+        public double TargetPowerFraction { get; }
+
+        public double MeasuredPowerFraction { get; }
+
+        public double ShapeError { get; }
+
+        private static void RequireFraction(double value, string parameterName)
+        {
+            RequireFinite(value, parameterName);
+            if (value < 0.0 || value > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    "RRS zonal fractions must remain within [0,1].");
+            }
+        }
+
+        private static void RequireFinite(double value, string parameterName)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                throw new ArgumentOutOfRangeException(parameterName);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compact, immutable practice RRS presentation contract. The complete
+    /// node map and static overlay remain owned by Core; this surface exposes
+    /// the fourteen fills and the controller diagnostics needed for playtest.
+    /// </summary>
+    public sealed class GameRrsPresentationSnapshot
+    {
+        internal GameRrsPresentationSnapshot(
+            PracticeLiquidZoneRrsV1 state)
+        {
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            var zones = new List<GameRrsZonePresentationSnapshot>(
+                (int)PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount);
+            for (uint zone = 0;
+                 zone < PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount;
+                 zone++)
+            {
+                zones.Add(new GameRrsZonePresentationSnapshot(
+                    zone,
+                    state.ZoneFills[(int)zone],
+                    state.ReferenceZonalPowerFractions[(int)zone],
+                    state.TargetZonalPowerFractions[(int)zone],
+                    state.MeasuredZonalPowerFractions[(int)zone],
+                    state.ZonalShapeErrors[(int)zone]));
+            }
+
+            ControllerIdentity = state.ControllerIdentity;
+            MappingIdentity = state.MappingIdentity;
+            MappingDigestHex = DigestHex(state.MappingDigest);
+            OverlayIdentity = state.AbsorptionOverlay.SourceIdentity;
+            OverlayDigestHex = state.AbsorptionOverlay.OverlayDigestHex;
+            StateDigestHex = state.StateDigestHex;
+            SimulationTimeSeconds = state.SimulationTimeSeconds;
+            NodeCount = checked((int)PracticeLiquidZoneRrsIdentityV1.NodeCount);
+            AverageFillFraction = state.AverageFillFraction;
+            MinimumFillFraction = state.MinimumFillFraction;
+            MaximumFillFraction = state.MaximumFillFraction;
+            MeasuredPowerWatts = state.MeasuredPowerWatts;
+            TargetPowerWatts = state.TargetPowerWatts;
+            PowerErrorWatts = state.PowerErrorWatts;
+            CoreReactivity = state.CoreReactivity;
+            CompensatedNetReactivity = state.CompensatedNetReactivity;
+            CommonModeRhoCorrection = state.CommonModeRhoCorrection;
+            ControllerIterationCount = state.ControllerIterationCount;
+            ControllerConverged = state.ControllerConverged;
+            LowExhaustion = state.LowExhaustion;
+            HighExhaustion = state.HighExhaustion;
+            IsGameOver = state.IsGameOver;
+            GameOverReason = state.GameOverReason;
+            CadenceIdentity = state.CadenceIdentity;
+            Zones = new ReadOnlyCollection<GameRrsZonePresentationSnapshot>(zones);
+        }
+
+        public string ControllerIdentity { get; }
+
+        public string MappingIdentity { get; }
+
+        public string MappingDigestHex { get; }
+
+        public string OverlayIdentity { get; }
+
+        public string OverlayDigestHex { get; }
+
+        public string StateDigestHex { get; }
+
+        public double SimulationTimeSeconds { get; }
+
+        public int NodeCount { get; }
+
+        public IReadOnlyList<GameRrsZonePresentationSnapshot> Zones { get; }
+
+        public double AverageFillFraction { get; }
+
+        public double MinimumFillFraction { get; }
+
+        public double MaximumFillFraction { get; }
+
+        public double MeasuredPowerWatts { get; }
+
+        public double TargetPowerWatts { get; }
+
+        public double PowerErrorWatts { get; }
+
+        public double CoreReactivity { get; }
+
+        public double CompensatedNetReactivity { get; }
+
+        public double CommonModeRhoCorrection { get; }
+
+        public int ControllerIterationCount { get; }
+
+        public bool ControllerConverged { get; }
+
+        public bool LowExhaustion { get; }
+
+        public bool HighExhaustion { get; }
+
+        public bool IsGameOver { get; }
+
+        public string GameOverReason { get; }
+
+        public string CadenceIdentity { get; }
+
+        public GameRrsZonePresentationSnapshot GetZone(uint logicalZoneId)
+        {
+            if (logicalZoneId >= Zones.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(logicalZoneId));
+            }
+
+            return Zones[(int)logicalZoneId];
+        }
+
+        private static string DigestHex(Digest32 digest)
+        {
+            var builder = new System.Text.StringBuilder(digest.Bytes.Count * 2 + 7);
+            builder.Append("sha256:");
+            foreach (byte value in digest.Bytes)
+            {
+                builder.Append(value.ToString("x2", System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            return builder.ToString();
+        }
+    }
+
+    /// <summary>
     /// Immutable presentation projection of the synthetic 380-channel core.
     /// It contains only values needed by the game surface; Core remains the
     /// owner of bundle transitions and physical state.
@@ -596,7 +792,8 @@ namespace ReactorSim.Game
         internal GameCorePresentationSnapshot(
             IEnumerable<GameChannelPresentationSnapshot> channels,
             GamePhysicsPresentationSnapshot physics,
-            GameXenonPresentationSnapshot xenon)
+            GameXenonPresentationSnapshot xenon,
+            GameRrsPresentationSnapshot rrs)
         {
             if (channels == null)
             {
@@ -605,6 +802,7 @@ namespace ReactorSim.Game
 
             Physics = physics ?? throw new ArgumentNullException(nameof(physics));
             Xenon = xenon ?? throw new ArgumentNullException(nameof(xenon));
+            Rrs = rrs ?? throw new ArgumentNullException(nameof(rrs));
 
             GameChannelPresentationSnapshot[] copy = channels.ToArray();
             if (copy.Length != GameCorePresentationConstants.ChannelCount)
@@ -629,6 +827,8 @@ namespace ReactorSim.Game
         public GamePhysicsPresentationSnapshot Physics { get; }
 
         public GameXenonPresentationSnapshot Xenon { get; }
+
+        public GameRrsPresentationSnapshot Rrs { get; }
 
         public uint ChannelCount
         {

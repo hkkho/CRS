@@ -65,6 +65,7 @@ namespace ReactorSim.Game
             Core = core ?? throw new ArgumentNullException(nameof(core));
             Physics = Core.Physics;
             Xenon = Core.Xenon;
+            Rrs = Core.Rrs;
         }
 
         public string ScenarioId { get; }
@@ -122,6 +123,8 @@ namespace ReactorSim.Game
         public GamePhysicsPresentationSnapshot Physics { get; }
 
         public GameXenonPresentationSnapshot Xenon { get; }
+
+        public GameRrsPresentationSnapshot Rrs { get; }
     }
 
     public sealed class GameSessionCommandResult
@@ -162,14 +165,14 @@ namespace ReactorSim.Game
             internal PracticeTransaction(
                 SyntheticGameCoreStateV1 coreState,
                 EquilibriumCoreProjectionV1 spatialCandidate,
-                SyntheticPracticeRegulatorV1 regulator,
+                PracticeLiquidZoneRrsV1 rrs,
                 double lastFullCoreSolveSimulationTime,
                 double syntheticScore,
                 ulong powerProjectionVersion)
             {
                 CoreState = coreState;
                 SpatialCandidate = spatialCandidate;
-                Regulator = regulator;
+                Rrs = rrs;
                 LastFullCoreSolveSimulationTime = lastFullCoreSolveSimulationTime;
                 SyntheticScore = syntheticScore;
                 PowerProjectionVersion = powerProjectionVersion;
@@ -179,7 +182,7 @@ namespace ReactorSim.Game
 
             internal EquilibriumCoreProjectionV1 SpatialCandidate;
 
-            internal SyntheticPracticeRegulatorV1 Regulator;
+            internal PracticeLiquidZoneRrsV1 Rrs;
 
             internal double LastFullCoreSolveSimulationTime;
 
@@ -192,7 +195,7 @@ namespace ReactorSim.Game
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private readonly EquilibriumCoreSolverV1 _equilibriumSolver;
-        private SyntheticPracticeRegulatorV1 _practiceRegulator;
+        private PracticeLiquidZoneRrsV1 _practiceRrs;
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
@@ -205,14 +208,14 @@ namespace ReactorSim.Game
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
             EquilibriumCoreSolverV1 equilibriumSolver,
-            SyntheticPracticeRegulatorV1 practiceRegulator)
+            PracticeLiquidZoneRrsV1 practiceRrs)
         {
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
             _equilibriumSolver = equilibriumSolver ?? throw new ArgumentNullException(nameof(equilibriumSolver));
-            _practiceRegulator = practiceRegulator ?? throw new ArgumentNullException(nameof(practiceRegulator));
+            _practiceRrs = practiceRrs ?? throw new ArgumentNullException(nameof(practiceRrs));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
         }
 
@@ -234,6 +237,11 @@ namespace ReactorSim.Game
         public EquilibriumCoreProjectionV1 CurrentEquilibriumProjection
         {
             get { return _equilibriumSolver.CurrentProjection; }
+        }
+
+        public PracticeLiquidZoneRrsV1 CurrentLiquidZoneRrs
+        {
+            get { return _practiceRrs; }
         }
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
@@ -458,9 +466,9 @@ namespace ReactorSim.Game
                 CreateSnapshot(),
                 CreateCorePresentationSnapshot(
                     transaction.Value.CoreState,
-                    CurrentPowerFraction(transaction.Value.Regulator),
+                    CurrentPowerFraction(),
                     transaction.Value.SpatialCandidate,
-                    transaction.Value.Regulator));
+                    transaction.Value.Rrs));
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -585,26 +593,17 @@ namespace ReactorSim.Game
                     timeBinding.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<EquilibriumCoreProjectionV1> projected =
-                TryBuildEquilibriumCandidate(result.ResultingState);
-            if (!projected.IsValid)
-            {
-                return InvalidTransaction(
-                    projected.FirstDiagnostic.Code,
-                    projected.FirstDiagnostic.Path,
-                    projected.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
-                _practiceRegulator.TryBindCoreReactivity(
-                    projected.Value.RelativeReactivity,
+            ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
+                TryBuildRrsEquilibrium(
+                    result.ResultingState,
+                    _practiceRrs,
                     simulationTimeSeconds);
-            if (!reboundRegulator.IsValid)
+            if (!regulated.IsValid)
             {
                 return InvalidTransaction(
-                    reboundRegulator.FirstDiagnostic.Code,
-                    reboundRegulator.FirstDiagnostic.Path,
-                    reboundRegulator.FirstDiagnostic.Message);
+                    regulated.FirstDiagnostic.Code,
+                    regulated.FirstDiagnostic.Path,
+                    regulated.FirstDiagnostic.Message);
             }
 
             ContractValidationResult<ulong> nextProjectionVersion =
@@ -629,8 +628,8 @@ namespace ReactorSim.Game
             return ContractValidationResult<PracticeTransaction>.Valid(
                 new PracticeTransaction(
                     result.ResultingState,
-                    projected.Value,
-                    reboundRegulator.Value,
+                    regulated.Value.Projection,
+                    regulated.Value.State,
                     simulationTimeSeconds,
                     nextScore,
                     nextProjectionVersion.Value));
@@ -654,6 +653,35 @@ namespace ReactorSim.Game
                 : _equilibriumSolver.TrySolveCandidate(
                 coreState.EnumerateBundles(),
                 initialSpatialSolve);
+        }
+
+        private ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>
+            TryBuildRrsEquilibrium(
+                SyntheticGameCoreStateV1 coreState,
+                PracticeLiquidZoneRrsV1 previousRrs,
+                double simulationTimeSeconds)
+        {
+            if (coreState == null)
+            {
+                return ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>.Invalid(
+                    "GameSession.Rrs.Input.Missing",
+                    "candidate",
+                    "An RRS event requires a validated inventory candidate.");
+            }
+
+            if (previousRrs == null)
+            {
+                return ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>.Invalid(
+                    "GameSession.Rrs.State.Missing",
+                    "rrs",
+                    "An RRS event requires the last accepted RRS state.");
+            }
+
+            return PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                _equilibriumSolver,
+                coreState.EnumerateBundles(),
+                previousRrs,
+                simulationTimeSeconds);
         }
 
         private static double PracticeRefuellingScore(GameRefuellingResultV1 result)
@@ -696,7 +724,7 @@ namespace ReactorSim.Game
             var transaction = new PracticeTransaction(
                 _coreState,
                 _equilibriumSolver.CurrentProjection,
-                _practiceRegulator,
+                _practiceRrs,
                 _lastFullCoreSolveSimulationTime,
                 _syntheticScore,
                 _powerProjectionVersion);
@@ -720,7 +748,7 @@ namespace ReactorSim.Game
                 while (simulationCursor < segmentEndSeconds - 1.0e-9)
                 {
                     if (!AreSameSimulationTime(
-                            transaction.Regulator.SimulationTimeSeconds,
+                            transaction.Rrs.SimulationTimeSeconds,
                             simulationCursor))
                     {
                         return InvalidTransaction(
@@ -766,23 +794,11 @@ namespace ReactorSim.Game
                     }
 
                     double stepEnd = simulationCursor + stepSeconds;
-                    SyntheticPracticeRegulatorV1 regulatorAtStart = transaction.Regulator;
-                    ContractValidationResult<SyntheticPracticeRegulatorV1> regulation =
-                        transaction.Regulator.TryAdvance(
-                            transaction.SpatialCandidate.RelativeReactivity,
-                            stepEnd);
-                    if (!regulation.IsValid)
-                    {
-                        return InvalidTransaction(
-                            regulation.FirstDiagnostic.Code,
-                            regulation.FirstDiagnostic.Path,
-                            regulation.FirstDiagnostic.Message);
-                    }
-
-                    double integratedPowerScale = IntegratedPowerScaleFor(
-                        requestedAmplitude,
-                        regulatorAtStart,
-                        stepSeconds);
+                    // Short ticks reuse the last accepted static equilibrium
+                    // projection. The operator target is the equilibrium
+                    // power scale; no exponential response or kinetics
+                    // substep is implied by this burnup integration.
+                    double integratedPowerScale = requestedAmplitude * stepSeconds;
 
                     var deltaEnergy = new double[
                         transaction.SpatialCandidate.ShapeNodePowerWatts.Count];
@@ -804,7 +820,17 @@ namespace ReactorSim.Game
                     }
 
                     transaction.CoreState = integrated.Value;
-                    transaction.Regulator = regulation.Value;
+                    ContractValidationResult<PracticeLiquidZoneRrsV1> advancedRrs =
+                        transaction.Rrs.TryWithSimulationTime(stepEnd);
+                    if (!advancedRrs.IsValid)
+                    {
+                        return InvalidTransaction(
+                            advancedRrs.FirstDiagnostic.Code,
+                            advancedRrs.FirstDiagnostic.Path,
+                            advancedRrs.FirstDiagnostic.Message);
+                    }
+
+                    transaction.Rrs = advancedRrs.Value;
                     ContractValidationResult<ulong> nextProjectionVersion =
                         TryNextPowerProjectionVersion(
                             transaction.PowerProjectionVersion);
@@ -845,7 +871,7 @@ namespace ReactorSim.Game
             }
 
             if (!AreSameSimulationTime(
-                    transaction.Regulator.SimulationTimeSeconds,
+                    transaction.Rrs.SimulationTimeSeconds,
                     advance.SimulationTimeSeconds))
             {
                 return InvalidTransaction(
@@ -862,7 +888,7 @@ namespace ReactorSim.Game
             double simulationTimeSeconds)
         {
             if (!AreSameSimulationTime(
-                    transaction.Regulator.SimulationTimeSeconds,
+                    transaction.Rrs.SimulationTimeSeconds,
                     simulationTimeSeconds))
             {
                 return InvalidTransactionBoolean(
@@ -871,28 +897,17 @@ namespace ReactorSim.Game
                     "A scheduled equilibrium shape must bind the exact candidate simulation time.");
             }
 
-            ContractValidationResult<EquilibriumCoreProjectionV1> candidate =
-                TryBuildEquilibriumCandidate(
+            ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
+                TryBuildRrsEquilibrium(
                     transaction.CoreState,
-                    transaction.SpatialCandidate.SpatialSolve);
-            if (!candidate.IsValid)
-            {
-                return InvalidTransactionBoolean(
-                    candidate.FirstDiagnostic.Code,
-                    candidate.FirstDiagnostic.Path,
-                    candidate.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<SyntheticPracticeRegulatorV1> reboundRegulator =
-                transaction.Regulator.TryBindCoreReactivity(
-                    candidate.Value.RelativeReactivity,
+                    transaction.Rrs,
                     simulationTimeSeconds);
-            if (!reboundRegulator.IsValid)
+            if (!regulated.IsValid)
             {
                 return InvalidTransactionBoolean(
-                    reboundRegulator.FirstDiagnostic.Code,
-                    reboundRegulator.FirstDiagnostic.Path,
-                    reboundRegulator.FirstDiagnostic.Message);
+                    regulated.FirstDiagnostic.Code,
+                    regulated.FirstDiagnostic.Path,
+                    regulated.FirstDiagnostic.Message);
             }
 
             ContractValidationResult<ulong> nextProjectionVersion =
@@ -905,8 +920,8 @@ namespace ReactorSim.Game
                     nextProjectionVersion.FirstDiagnostic.Message);
             }
 
-            transaction.SpatialCandidate = candidate.Value;
-            transaction.Regulator = reboundRegulator.Value;
+            transaction.SpatialCandidate = regulated.Value.Projection;
+            transaction.Rrs = regulated.Value.State;
             transaction.LastFullCoreSolveSimulationTime = simulationTimeSeconds;
             transaction.PowerProjectionVersion = nextProjectionVersion.Value;
             return ContractValidationResult<bool>.Valid(true);
@@ -915,7 +930,7 @@ namespace ReactorSim.Game
         private void ApplyPracticeTransaction(PracticeTransaction transaction)
         {
             _coreState = transaction.CoreState;
-            _practiceRegulator = transaction.Regulator;
+            _practiceRrs = transaction.Rrs;
             _lastFullCoreSolveSimulationTime =
                 transaction.LastFullCoreSolveSimulationTime;
             _syntheticScore = transaction.SyntheticScore;
@@ -929,14 +944,14 @@ namespace ReactorSim.Game
                 state,
                 CurrentPowerFraction(),
                 _equilibriumSolver.CurrentProjection,
-                _practiceRegulator);
+                _practiceRrs);
         }
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state,
             double powerAmplitude,
             EquilibriumCoreProjectionV1 projection,
-            SyntheticPracticeRegulatorV1 regulator)
+            PracticeLiquidZoneRrsV1 rrs)
         {
             GameXenonPresentationSnapshot xenon =
                 CreateXenonPresentationSnapshot(
@@ -1061,20 +1076,24 @@ namespace ReactorSim.Game
                 projection.SolverIdentity,
                 spatial.IterationCount,
                 spatial.ResidualRelativeInfinity,
-                regulator.CoreReactivity,
-                regulator.CompensatedNetReactivity,
-                regulator.CompensationState,
-                regulator.CompensationCommand,
-                regulator.LowerBound,
-                regulator.UpperBound,
-                regulator.CompensationSaturated,
-                regulator.ResponseTimeSeconds,
-                regulator.CadenceIdentity,
+                rrs.CoreReactivity,
+                rrs.CompensatedNetReactivity,
+                rrs.AverageFillFraction,
+                rrs.AverageFillFraction,
+                0.0,
+                1.0,
+                rrs.LowExhaustion || rrs.HighExhaustion,
+                0.0,
+                rrs.CadenceIdentity,
                 "equilibrium-static-only-v1",
                 projection.ReactivityBindingDigestHex,
                 0,
                 0.0);
-            return new GameCorePresentationSnapshot(channels, physics, xenon);
+            return new GameCorePresentationSnapshot(
+                channels,
+                physics,
+                xenon,
+                new GameRrsPresentationSnapshot(rrs));
         }
 
         private static GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(
@@ -1164,38 +1183,7 @@ namespace ReactorSim.Game
 
         private double CurrentPowerFraction()
         {
-            return CurrentPowerFraction(_practiceRegulator);
-        }
-
-        private double CurrentPowerFraction(
-            SyntheticPracticeRegulatorV1 regulator)
-        {
-            return PowerAmplitudeFor(
-                _runtime.NormalizedPowerFraction,
-                regulator);
-        }
-
-        private static double PowerAmplitudeFor(
-            double requestedAmplitude,
-            SyntheticPracticeRegulatorV1 regulator)
-        {
-            double target = Clamp(requestedAmplitude, 0.0, 1.5);
-            if (target <= 0.0)
-            {
-                return 0.0;
-            }
-
-            double netReactivity = regulator.CompensatedNetReactivity;
-            double responseMultiplier = netReactivity <= -1.0
-                ? 0.0
-                : 1.0 + netReactivity;
-            if (double.IsNaN(responseMultiplier) ||
-                double.IsInfinity(responseMultiplier))
-            {
-                responseMultiplier = netReactivity > 0.0 ? 1.5 : 0.0;
-            }
-
-            return Clamp(target * responseMultiplier, 0.0, 1.5);
+            return Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.5);
         }
 
         private double CurrentTiltFraction()
@@ -1208,122 +1196,17 @@ namespace ReactorSim.Game
             return Math.Max(minimum, Math.Min(maximum, value));
         }
 
-        private static double IntegratedPowerScaleFor(
-            double requestedAmplitude,
-            SyntheticPracticeRegulatorV1 regulator,
-            double deltaTimeSeconds)
-        {
-            double target = Clamp(requestedAmplitude, 0.0, 1.5);
-            if (target <= 0.0 || deltaTimeSeconds <= 0.0)
-            {
-                return 0.0;
-            }
-
-            double command = Clamp(
-                -regulator.CoreReactivity,
-                regulator.LowerBound,
-                regulator.UpperBound);
-            double startState = regulator.CompensationState;
-            double responseTime = regulator.ResponseTimeSeconds;
-            double constant = 1.0 + regulator.CoreReactivity + command;
-            double exponential = startState - command;
-            double upperResponse = 1.5 / target;
-            double decayAtEnd = Math.Exp(-deltaTimeSeconds / responseTime);
-            var boundaries = new List<double> { 0.0, deltaTimeSeconds };
-            AddClampCrossing(
-                boundaries,
-                0.0,
-                constant,
-                exponential,
-                responseTime,
-                deltaTimeSeconds);
-            AddClampCrossing(
-                boundaries,
-                upperResponse,
-                constant,
-                exponential,
-                responseTime,
-                deltaTimeSeconds);
-            boundaries.Sort();
-
-            double integral = 0.0;
-            for (int index = 0; index + 1 < boundaries.Count; index++)
-            {
-                double start = boundaries[index];
-                double end = boundaries[index + 1];
-                if (end - start <= 1.0e-12)
-                {
-                    continue;
-                }
-
-                double midpoint = (start + end) * 0.5;
-                double response = constant + exponential *
-                    Math.Exp(-midpoint / responseTime);
-                if (response <= 0.0)
-                {
-                    continue;
-                }
-
-                if (response >= upperResponse)
-                {
-                    integral += upperResponse * (end - start);
-                    continue;
-                }
-
-                integral += constant * (end - start) + exponential * responseTime *
-                    (Math.Exp(-start / responseTime) -
-                     Math.Exp(-end / responseTime));
-            }
-
-            // Keep the explicit end-point decay in the calculation path so a
-            // compiler cannot change the intended analytic interval into a
-            // fixed-step approximation, and guard against round-off outside
-            // the declared response bounds.
-            if (!IsFinite(decayAtEnd) || !IsFinite(integral))
-            {
-                return PowerAmplitudeFor(requestedAmplitude, regulator) * deltaTimeSeconds;
-            }
-
-            return target * Math.Max(0.0, Math.Min(upperResponse * deltaTimeSeconds, integral));
-        }
-
-        private static void AddClampCrossing(
-            List<double> boundaries,
-            double threshold,
-            double constant,
-            double exponential,
-            double responseTime,
-            double deltaTimeSeconds)
-        {
-            if (Math.Abs(exponential) <= 1.0e-15)
-            {
-                return;
-            }
-
-            double ratio = (threshold - constant) / exponential;
-            if (!IsFinite(ratio) || ratio <= 0.0 || ratio >= 1.0)
-            {
-                return;
-            }
-
-            double crossing = -responseTime * Math.Log(ratio);
-            if (crossing > 1.0e-12 && crossing < deltaTimeSeconds - 1.0e-12)
-            {
-                boundaries.Add(crossing);
-            }
-        }
-
         private ContractValidationResult<bool> ValidateCommittedTime(
             double simulationTimeSeconds)
         {
             if (!AreSameSimulationTime(
-                    _practiceRegulator.SimulationTimeSeconds,
+                    _practiceRrs.SimulationTimeSeconds,
                     simulationTimeSeconds))
             {
                 return ContractValidationResult<bool>.Invalid(
                     "GameSession.State.TimeMismatch",
                     "simulation_time_s",
-                    "The committed equilibrium projection, regulator, and scenario runtime must share one authoritative time.");
+                    "The committed equilibrium projection, RRS state, and scenario runtime must share one authoritative time.");
             }
 
             return ContractValidationResult<bool>.Valid(true);

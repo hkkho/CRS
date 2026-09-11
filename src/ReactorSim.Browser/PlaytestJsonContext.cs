@@ -16,6 +16,8 @@ namespace ReactorSim.Browser
     [JsonSerializable(typeof(PlaytestSnapshotDto))]
     [JsonSerializable(typeof(PlaytestXenonDto))]
     [JsonSerializable(typeof(PlaytestXenonChannelDto))]
+    [JsonSerializable(typeof(PlaytestRrsDto))]
+    [JsonSerializable(typeof(PlaytestRrsZoneDto))]
     internal sealed partial class PlaytestJsonContext : JsonSerializerContext
     {
     }

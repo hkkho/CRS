@@ -10,6 +10,7 @@ import {
   type CanduPlaytestBridge,
   type CanduPlaytestWasmExports,
   type CanduSnapshot,
+  createUnavailableRrsSnapshot,
   findWasmExports,
   parseProtocolResponseWithSnapshot,
   parseProtocolResponse,
@@ -674,6 +675,7 @@ function createUnavailableSnapshot(): CanduSnapshot {
       selectedChannelIndex: -1,
       selectedChannel: null,
     },
+    rrs: createUnavailableRrsSnapshot(),
     core: {
       channelCount: CORE_CHANNEL_COUNT,
       bundlePositionCount: CORE_BUNDLE_POSITION_COUNT,

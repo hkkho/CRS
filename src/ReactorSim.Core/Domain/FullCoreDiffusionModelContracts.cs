@@ -29,7 +29,8 @@ namespace ReactorSim.Core
             double effectiveK,
             double reactivity,
             double powerBalanceRelativeError,
-            XenonSpatialCouplingResultV1? xenonCoupling = null)
+            XenonSpatialCouplingResultV1? xenonCoupling = null,
+            StaticAbsorptionOverlayV1? staticAbsorptionOverlay = null)
         {
             DataPack = dataPack;
             SpatialSolve = spatialSolve;
@@ -44,6 +45,7 @@ namespace ReactorSim.Core
             Reactivity = reactivity;
             PowerBalanceRelativeError = powerBalanceRelativeError;
             XenonCoupling = xenonCoupling;
+            StaticAbsorptionOverlay = staticAbsorptionOverlay;
         }
 
         public FullCoreDiffusionDataPackV1 DataPack { get; }
@@ -90,6 +92,28 @@ namespace ReactorSim.Core
         /// path used by B2 and older callers.
         /// </summary>
         public XenonSpatialCouplingResultV1? XenonCoupling { get; }
+
+        /// <summary>
+        /// The generic static absorption overlay accepted by this solve, or
+        /// null for the unoverlaid base result. This seam is deliberately
+        /// controller-agnostic and is not a xenon or transient model.
+        /// </summary>
+        public StaticAbsorptionOverlayV1? StaticAbsorptionOverlay { get; }
+
+        public bool HasStaticAbsorptionOverlay
+        {
+            get { return StaticAbsorptionOverlay != null; }
+        }
+
+        public Digest32? StaticAbsorptionOverlayDigest
+        {
+            get
+            {
+                return StaticAbsorptionOverlay == null
+                    ? null
+                    : StaticAbsorptionOverlay.OverlayDigest;
+            }
+        }
 
         public bool HasXenonOverlay
         {
@@ -341,7 +365,108 @@ namespace ReactorSim.Core
                 initialEigenvalue,
                 initialGroup1Flux,
                 initialGroup2Flux,
+                null,
                 null);
+        }
+
+        /// <summary>
+        /// Solves the full core with one explicit, immutable static
+        /// absorption overlay. This is the generic composition seam used by
+        /// the practice liquid-zone controller; it does not imply xenon,
+        /// kinetics, or a time-substep model.
+        /// </summary>
+        public ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolve(
+            IEnumerable<BundleState> bundles,
+            StaticAbsorptionOverlayV1 staticAbsorptionOverlay,
+            double targetPowerWatts,
+            double initialEigenvalue = 1.0,
+            IReadOnlyList<double>? initialGroup1Flux = null,
+            IReadOnlyList<double>? initialGroup2Flux = null)
+        {
+            if (staticAbsorptionOverlay == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.StaticAbsorptionOverlay.Missing",
+                    "static_absorption_overlay",
+                    "A static-overlay solve requires a validated explicit overlay.");
+            }
+
+            if (bundles == null)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Bundles.Missing",
+                    "bundles",
+                    "A full-core solve requires one live bundle for every spatial node.");
+            }
+
+            if (!ContractValidation.IsFinite(targetPowerWatts) || targetPowerWatts <= 0.0)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.TargetPower.Invalid",
+                    "target_power_w",
+                    "The full-core target power must be finite and strictly positive SI watts.");
+            }
+
+            if ((initialGroup1Flux == null) != (initialGroup2Flux == null))
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.InitialFlux.Incomplete",
+                    "initial_flux",
+                    "Both warm-start flux vectors must be supplied together or both omitted.");
+            }
+
+            BundleState[] bundleRecords = bundles.ToArray();
+            ContractValidationResult<BundleInventory> inventoryResult =
+                BundleInventory.TryCreate(_topology, bundleRecords);
+            if (!inventoryResult.IsValid)
+            {
+                return InvalidSolve(
+                    inventoryResult.FirstDiagnostic.Code,
+                    inventoryResult.FirstDiagnostic.Path,
+                    inventoryResult.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> baseCoefficientResult =
+                BuildCoefficientSet(inventoryResult.Value);
+            if (!baseCoefficientResult.IsValid)
+            {
+                return InvalidSolve(
+                    baseCoefficientResult.FirstDiagnostic.Code,
+                    baseCoefficientResult.FirstDiagnostic.Path,
+                    baseCoefficientResult.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<bool> overlayBinding =
+                ValidateStaticAbsorptionOverlay(staticAbsorptionOverlay);
+            if (!overlayBinding.IsValid)
+            {
+                return InvalidSolve(
+                    overlayBinding.FirstDiagnostic.Code,
+                    overlayBinding.FirstDiagnostic.Path,
+                    overlayBinding.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> effectiveCoefficientResult =
+                ApplyStaticAbsorptionOverlay(
+                    baseCoefficientResult.Value,
+                    staticAbsorptionOverlay);
+            if (!effectiveCoefficientResult.IsValid)
+            {
+                return InvalidSolve(
+                    effectiveCoefficientResult.FirstDiagnostic.Code,
+                    effectiveCoefficientResult.FirstDiagnostic.Path,
+                    effectiveCoefficientResult.FirstDiagnostic.Message);
+            }
+
+            return TrySolveWithCoefficients(
+                inventoryResult.Value,
+                effectiveCoefficientResult.Value,
+                targetPowerWatts,
+                initialEigenvalue,
+                initialGroup1Flux,
+                initialGroup2Flux,
+                null,
+                staticAbsorptionOverlay);
         }
 
         /// <summary>
@@ -439,7 +564,8 @@ namespace ReactorSim.Core
                 initialEigenvalue,
                 initialGroup1Flux,
                 initialGroup2Flux,
-                xenonCoupling);
+                xenonCoupling,
+                null);
         }
 
         /// <summary>
@@ -649,7 +775,8 @@ namespace ReactorSim.Core
             double initialEigenvalue,
             IReadOnlyList<double>? initialGroup1Flux,
             IReadOnlyList<double>? initialGroup2Flux,
-            XenonSpatialCouplingResultV1? xenonCoupling)
+            XenonSpatialCouplingResultV1? xenonCoupling,
+            StaticAbsorptionOverlayV1? staticAbsorptionOverlay)
         {
 
             double[]? group1WarmStart = initialGroup1Flux?.ToArray();
@@ -775,7 +902,8 @@ namespace ReactorSim.Core
                     effectiveK,
                     reactivity,
                     powerBalanceRelativeError,
-                    xenonCoupling));
+                    xenonCoupling,
+                    staticAbsorptionOverlay));
         }
 
         /// <summary>
@@ -1004,6 +1132,77 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private ContractValidationResult<bool> ValidateStaticAbsorptionOverlay(
+            StaticAbsorptionOverlayV1 overlay)
+        {
+            if (overlay == null)
+            {
+                return ContractValidationResult<bool>.Invalid(
+                    "FullCoreDiffusionSolve.StaticAbsorptionOverlay.Missing",
+                    "static_absorption_overlay",
+                    "A static absorption overlay is required at the model boundary.");
+            }
+
+            var modelNodes = new HashSet<NodeKey>(
+                _stencil.Nodes.Select(node => node.Node));
+            foreach (StaticAbsorptionOverlayEntryV1 entry in overlay.Entries)
+            {
+                if (!modelNodes.Contains(entry.Node))
+                {
+                    return ContractValidationResult<bool>.Invalid(
+                        "FullCoreDiffusionSolve.StaticAbsorptionOverlay.Node.Unknown",
+                        ContractValidation.NodePath(entry.Node, ".delta_absorption_m_inverse"),
+                        "Every static absorption entry must match an occupied model node.");
+                }
+            }
+
+            return ContractValidationResult<bool>.Valid(true);
+        }
+
+        private static ContractValidationResult<SpatialCoefficientSet> ApplyStaticAbsorptionOverlay(
+            SpatialCoefficientSet baseCoefficients,
+            StaticAbsorptionOverlayV1 overlay)
+        {
+            var effectiveNodes = new List<SpatialNodeCoefficients>(
+                baseCoefficients.NodeCount);
+            foreach (SpatialNodeCoefficients baseNode in baseCoefficients.Nodes)
+            {
+                double group1 = baseNode.AbsorptionGroup1PerM +
+                    overlay.GetDeltaAbsorptionGroup1PerM(baseNode.Node);
+                double group2 = baseNode.AbsorptionGroup2PerM +
+                    overlay.GetDeltaAbsorptionGroup2PerM(baseNode.Node);
+                if (!ContractValidation.IsFinite(group1) ||
+                    !ContractValidation.IsFinite(group2))
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "FullCoreDiffusionSolve.StaticAbsorptionOverlay.NonFinite",
+                        ContractValidation.NodePath(baseNode.Node, ".effective_absorption_m_inverse"),
+                        "Static overlay application must leave both effective absorptions finite.");
+                }
+
+                effectiveNodes.Add(new SpatialNodeCoefficients(
+                    baseNode.Node,
+                    baseNode.VolumeM3,
+                    NormalizeZero(group1),
+                    NormalizeZero(group2),
+                    baseNode.DownscatterGroup1To2PerM,
+                    baseNode.FissionGroup1PerM,
+                    baseNode.FissionGroup2PerM,
+                    baseNode.NuFissionGroup1PerM,
+                    baseNode.NuFissionGroup2PerM,
+                    baseNode.ChiGroup1,
+                    baseNode.ChiGroup2,
+                    baseNode.EnergyPerFissionJ));
+            }
+
+            return baseCoefficients.TryRebindNodeCoefficients(effectiveNodes);
+        }
+
+        private static double NormalizeZero(double value)
+        {
+            return value == 0.0 ? 0.0 : value;
         }
 
         private ContractValidationResult<SpatialCoefficientSet> BuildCoefficientSet(
