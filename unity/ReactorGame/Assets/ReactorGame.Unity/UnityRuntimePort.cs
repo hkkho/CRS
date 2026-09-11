@@ -60,13 +60,6 @@ namespace ReactorGame.Unity
                         command.ShiftCount,
                         command.FuelTypeId);
                     break;
-                case Phase8UnityCommandKindV1.PreviewRefuelChannel:
-                    result = _session.PreviewRefuelChannel(
-                        command.ChannelIndex,
-                        command.RefuellingDirectionId,
-                        command.ShiftCount,
-                        command.FuelTypeId);
-                    break;
                 case Phase8UnityCommandKindV1.Debug:
                     result = ExecuteDebug(command);
                     break;
@@ -83,8 +76,7 @@ namespace ReactorGame.Unity
                 ? Phase8UnityCommandResultV1.AcceptedResult(
                     command,
                     snapshot,
-                    result.Message,
-                    result.PreviewCore)
+                    result.Message)
                 : Phase8UnityCommandResultV1.RejectedResult(
                     command,
                     result.DiagnosticCode,

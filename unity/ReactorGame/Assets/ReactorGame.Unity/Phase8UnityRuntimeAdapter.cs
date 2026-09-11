@@ -213,21 +213,6 @@ namespace ReactorGame.Unity
                     fuelTypeId));
         }
 
-        public Phase8UnityCommandResultV1 PreviewRefuelChannel(
-            uint channelIndex,
-            string refuellingDirectionId,
-            ushort shiftCount,
-            string fuelTypeId)
-        {
-            return Dispatch(
-                Phase8UnityInputCommandV1.PreviewRefuelChannel(
-                    NextCommandSequence(),
-                    channelIndex,
-                    refuellingDirectionId,
-                    shiftCount,
-                    fuelTypeId));
-        }
-
         public Phase8UnityCommandResultV1 Debug(
             Phase8UnityDebugActionKindV1 debugAction,
             uint debugValue = 0)

@@ -17,7 +17,6 @@ namespace ReactorGame.Unity
         Pause = 4,
         Resume = 5,
         RefuelChannel = 6,
-        PreviewRefuelChannel = 7,
         Debug = 8
     }
 
@@ -174,27 +173,6 @@ namespace ReactorGame.Unity
             return new Phase8UnityInputCommandV1(
                 sequence,
                 Phase8UnityCommandKindV1.RefuelChannel,
-                0,
-                0.0,
-                null,
-                channelIndex,
-                refuellingDirectionId,
-                shiftCount,
-                fuelTypeId);
-        }
-
-        public static Phase8UnityInputCommandV1 PreviewRefuelChannel(
-            ulong sequence,
-            uint channelIndex,
-            string refuellingDirectionId,
-            ushort shiftCount,
-            string fuelTypeId)
-        {
-            RequireRefuellingFields(refuellingDirectionId, shiftCount, fuelTypeId);
-
-            return new Phase8UnityInputCommandV1(
-                sequence,
-                Phase8UnityCommandKindV1.PreviewRefuelChannel,
                 0,
                 0.0,
                 null,
@@ -550,8 +528,7 @@ namespace ReactorGame.Unity
             string diagnosticCode,
             string diagnosticMessage,
             string message,
-            Phase8UnityPresentationSnapshotV1 snapshot,
-            GameCorePresentationSnapshot previewCore)
+            Phase8UnityPresentationSnapshotV1 snapshot)
         {
             Sequence = sequence;
             Kind = kind;
@@ -560,7 +537,6 @@ namespace ReactorGame.Unity
             DiagnosticMessage = diagnosticMessage;
             Message = message;
             Snapshot = snapshot;
-            PreviewCore = previewCore;
         }
 
         public ulong Sequence { get; }
@@ -577,28 +553,17 @@ namespace ReactorGame.Unity
 
         public Phase8UnityPresentationSnapshotV1 Snapshot { get; }
 
-        public GameCorePresentationSnapshot PreviewCore { get; }
-
         public static Phase8UnityCommandResultV1 AcceptedResult(
             Phase8UnityInputCommandV1 command,
             Phase8UnityPresentationSnapshotV1 snapshot)
         {
-            return AcceptedResult(command, snapshot, string.Empty, null);
+            return AcceptedResult(command, snapshot, string.Empty);
         }
 
         public static Phase8UnityCommandResultV1 AcceptedResult(
             Phase8UnityInputCommandV1 command,
             Phase8UnityPresentationSnapshotV1 snapshot,
             string message)
-        {
-            return AcceptedResult(command, snapshot, message, null);
-        }
-
-        public static Phase8UnityCommandResultV1 AcceptedResult(
-            Phase8UnityInputCommandV1 command,
-            Phase8UnityPresentationSnapshotV1 snapshot,
-            string message,
-            GameCorePresentationSnapshot previewCore)
         {
             if (command == null)
             {
@@ -617,8 +582,7 @@ namespace ReactorGame.Unity
                 null,
                 null,
                 message ?? string.Empty,
-                snapshot,
-                previewCore);
+                snapshot);
         }
 
         public static Phase8UnityCommandResultV1 RejectedResult(
@@ -659,8 +623,7 @@ namespace ReactorGame.Unity
                 diagnosticCode,
                 diagnosticMessage ?? string.Empty,
                 diagnosticMessage ?? string.Empty,
-                snapshot,
-                null);
+                snapshot);
         }
     }
 

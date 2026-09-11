@@ -22,6 +22,11 @@ namespace ReactorGame.Unity
         public const int DefaultSelectedChannelIndex = 190;
         public const string TowardEndADirectionId = Phase10ControlsView.TowardEndADirectionId;
         public const string TowardEndBDirectionId = Phase10ControlsView.TowardEndBDirectionId;
+        public const string DirectionEndAActionKey = "DirectionEndA";
+        public const string DirectionEndBActionKey = "DirectionEndB";
+        public const string ShiftFourActionKey = "ShiftFour";
+        public const string ShiftEightActionKey = "ShiftEight";
+        public const string RefuelActionKey = "RefuelSelected";
 
         private static readonly Color EmptyCellColor = new Color(0.035f, 0.075f, 0.095f, 1.0f);
         private static readonly Color UnavailableCellColor = new Color(0.025f, 0.045f, 0.060f, 1.0f);
@@ -38,6 +43,8 @@ namespace ReactorGame.Unity
             new Dictionary<uint, Outline>();
         private readonly Dictionary<string, Button> _actionButtons =
             new Dictionary<string, Button>();
+        private readonly Dictionary<string, Image> _actionImages =
+            new Dictionary<string, Image>();
         private readonly List<Text> _bundleDetailTexts = new List<Text>();
         private readonly List<Image> _bundleDetailImages = new List<Image>();
 
@@ -49,19 +56,19 @@ namespace ReactorGame.Unity
 
         private Phase8UnityRuntimeAdapter _runtimeAdapter;
         private Phase8UnityPresentationSnapshotV1 _snapshot;
-        private GameCorePresentationSnapshot _previewCore;
         private RectTransform _coreMapRoot;
         private RectTransform _mapGrid;
         private RectTransform _channelPool;
         private Text _selectedChannelText;
         private Text _bundleHeading;
-        private Text _previewText;
+        private Text _refuelFeedbackText;
         private Text _statusText;
-        private InputField _shiftInput;
         private InputField _fuelTypeInput;
         private bool _isBuilt;
         private bool _hasRenderableCore;
         private int _selectedChannelIndex = -1;
+        private string _selectedRefuellingDirectionId = TowardEndADirectionId;
+        private ushort _selectedShiftCount = 4;
 
         public bool IsBuilt
         {
@@ -93,9 +100,19 @@ namespace ReactorGame.Unity
             get { return GetText(_selectedChannelText); }
         }
 
-        public string PreviewText
+        public string SelectedRefuellingDirectionId
         {
-            get { return GetText(_previewText); }
+            get { return _selectedRefuellingDirectionId; }
+        }
+
+        public ushort SelectedShiftCount
+        {
+            get { return _selectedShiftCount; }
+        }
+
+        public string RefuelFeedbackText
+        {
+            get { return GetText(_refuelFeedbackText); }
         }
 
         public string StatusText
@@ -214,7 +231,7 @@ namespace ReactorGame.Unity
             SetStatus(
                 snapshot.Core == null
                     ? "Status: Core Map bound; this legacy snapshot has no core projection."
-                    : "Status: Core Map ready; select a channel.");
+                    : "Status: Core Map ready; select a channel and issue a refuelling order.");
         }
 
         public void Unbind()
@@ -222,7 +239,6 @@ namespace ReactorGame.Unity
             Unsubscribe();
             _runtimeAdapter = null;
             _snapshot = null;
-            _previewCore = null;
             _selectedChannelIndex = -1;
             RenderUnavailableCore();
             ClearPresentation();
@@ -232,6 +248,11 @@ namespace ReactorGame.Unity
         public bool TryGetChannelButton(uint channelIndex, out Button button)
         {
             return _channelButtons.TryGetValue(channelIndex, out button);
+        }
+
+        public bool TryGetActionButton(string actionKey, out Button button)
+        {
+            return _actionButtons.TryGetValue(actionKey, out button);
         }
 
         public bool SelectChannel(uint channelIndex)
@@ -247,10 +268,10 @@ namespace ReactorGame.Unity
             }
 
             _selectedChannelIndex = (int)channelIndex;
-            _previewCore = null;
-            if (_previewText != null)
+            if (_refuelFeedbackText != null)
             {
-                _previewText.text = "Preview: none";
+                _refuelFeedbackText.text =
+                    "Refuel order: " + DescribeRefuellingSelection() + ".";
             }
 
             ApplySelectionVisuals();
@@ -271,44 +292,79 @@ namespace ReactorGame.Unity
             return SelectChannel((uint)channelIndex);
         }
 
-        public Phase8UnityCommandResultV1 PreviewTowardEndA()
+        public bool SelectRefuellingDirection(string directionId)
         {
-            return Preview(TowardEndADirectionId);
+            if (directionId != TowardEndADirectionId && directionId != TowardEndBDirectionId)
+            {
+                SetStatus("Status: direction must be toward End A or End B.");
+                return false;
+            }
+
+            _selectedRefuellingDirectionId = directionId;
+            ApplyRefuellingChoiceVisuals();
+            SetStatus("Status: refuelling direction set to " + DescribeDirection(directionId) + ".");
+            return true;
         }
 
-        public Phase8UnityCommandResultV1 PreviewTowardEndB()
+        public bool SelectShiftCount(ushort shiftCount)
         {
-            return Preview(TowardEndBDirectionId);
+            if (shiftCount != 4 && shiftCount != 8)
+            {
+                SetStatus("Status: bundle count must be 4 or 8.");
+                return false;
+            }
+
+            _selectedShiftCount = shiftCount;
+            ApplyRefuellingChoiceVisuals();
+            SetStatus(
+                "Status: refuelling order set to " +
+                shiftCount.ToString(CultureInfo.InvariantCulture) + " bundles.");
+            return true;
         }
 
-        public Phase8UnityCommandResultV1 PreviewRefuelTowardEndA()
+        public bool SelectTowardEndA()
         {
-            return PreviewTowardEndA();
+            return SelectRefuellingDirection(TowardEndADirectionId);
         }
 
-        public Phase8UnityCommandResultV1 PreviewRefuelTowardEndB()
+        public bool SelectTowardEndB()
         {
-            return PreviewTowardEndB();
+            return SelectRefuellingDirection(TowardEndBDirectionId);
+        }
+
+        public bool SelectFourBundles()
+        {
+            return SelectShiftCount(4);
+        }
+
+        public bool SelectEightBundles()
+        {
+            return SelectShiftCount(8);
+        }
+
+        public Phase8UnityCommandResultV1 RefuelSelected()
+        {
+            return Refuel();
         }
 
         public Phase8UnityCommandResultV1 RefuelTowardEndA()
         {
-            return Refuel(TowardEndADirectionId);
+            if (!SelectTowardEndA())
+            {
+                return null;
+            }
+
+            return RefuelSelected();
         }
 
         public Phase8UnityCommandResultV1 RefuelTowardEndB()
         {
-            return Refuel(TowardEndBDirectionId);
-        }
+            if (!SelectTowardEndB())
+            {
+                return null;
+            }
 
-        public Phase8UnityCommandResultV1 CommitTowardEndA()
-        {
-            return RefuelTowardEndA();
-        }
-
-        public Phase8UnityCommandResultV1 CommitTowardEndB()
-        {
-            return RefuelTowardEndB();
+            return RefuelSelected();
         }
 
         private void OnDestroy()
@@ -321,13 +377,6 @@ namespace ReactorGame.Unity
             if (snapshot == null)
             {
                 return;
-            }
-
-            bool hadPreview = _previewCore != null;
-            _previewCore = null;
-            if (hadPreview && _previewText != null)
-            {
-                _previewText.text = "Preview: stale; request a new preview.";
             }
 
             Render(snapshot);
@@ -343,47 +392,23 @@ namespace ReactorGame.Unity
 
             string sequence = result.Sequence.ToString(CultureInfo.InvariantCulture);
             string message = result.Message ?? string.Empty;
-            if (result.Kind == Phase8UnityCommandKindV1.PreviewRefuelChannel)
+            if (result.Accepted)
             {
-                if (result.Accepted)
+                if (result.Kind == Phase8UnityCommandKindV1.RefuelChannel)
                 {
-                    _previewCore = result.PreviewCore;
-                    _previewText.text = string.IsNullOrWhiteSpace(message)
-                        ? "Preview: accepted; no predicted core was returned."
-                        : message;
-                    RenderSelectedChannel();
+                    _refuelFeedbackText.text = string.IsNullOrWhiteSpace(message)
+                        ? "Refuel accepted (sequence " + sequence + ")."
+                        : "Refuel accepted: " + message;
                     SetStatus(
-                        "Status: preview accepted (sequence " + sequence + ")." +
+                        "Status: REFUEL accepted (sequence " + sequence + ")." +
                         (string.IsNullOrWhiteSpace(message) ? string.Empty : " " + message));
                 }
                 else
                 {
-                    _previewCore = null;
-                    _previewText.text =
-                        "Preview rejected [" + result.DiagnosticCode + "] " +
-                        result.DiagnosticMessage;
                     SetStatus(
-                        "Status: preview rejected [" + result.DiagnosticCode + "] " +
-                        result.DiagnosticMessage);
-                    RenderSelectedChannel();
-                }
-
-                return;
-            }
-
-            if (result.Accepted)
-            {
-                _previewCore = null;
-                SetStatus(
-                    "Status: last command " + result.Kind +
-                    " accepted (sequence " + sequence + ")." +
-                    (string.IsNullOrWhiteSpace(message) ? string.Empty : " " + message));
-
-                if (result.Kind == Phase8UnityCommandKindV1.RefuelChannel)
-                {
-                    _previewText.text = string.IsNullOrWhiteSpace(message)
-                        ? "Preview: commit accepted."
-                        : "Preview: committed; " + message;
+                        "Status: last command " + result.Kind +
+                        " accepted (sequence " + sequence + ")." +
+                        (string.IsNullOrWhiteSpace(message) ? string.Empty : " " + message));
                 }
 
                 RenderSelectedChannel();
@@ -392,9 +417,8 @@ namespace ReactorGame.Unity
 
             if (result.Kind == Phase8UnityCommandKindV1.RefuelChannel)
             {
-                _previewCore = null;
-                _previewText.text =
-                    "Preview: commit rejected [" + result.DiagnosticCode + "] " +
+                _refuelFeedbackText.text =
+                    "Refuel rejected [" + result.DiagnosticCode + "] " +
                     result.DiagnosticMessage;
             }
 
@@ -513,6 +537,7 @@ namespace ReactorGame.Unity
                 item.Value.effectColor = SelectedOutlineColor;
             }
 
+            ApplyRefuellingChoiceVisuals();
             RenderSelectedChannel();
             SetControlAvailability(_runtimeAdapter != null && _hasRenderableCore);
         }
@@ -523,7 +548,7 @@ namespace ReactorGame.Unity
                 _liveChannels[_selectedChannelIndex] == null)
             {
                 _selectedChannelText.text = "Channel: unavailable";
-                RenderBundleDetails(null, false);
+                RenderBundleDetails(null);
                 return;
             }
 
@@ -537,29 +562,12 @@ namespace ReactorGame.Unity
                 " | Local power " + FormatPercent(liveChannel.LocalPowerFraction) +
                 " | Tilt " + FormatPercent(liveChannel.LocalTiltFraction);
 
-            GameChannelPresentationSnapshot displayedChannel = liveChannel;
-            bool showingPreview = false;
-            if (_previewCore != null)
-            {
-                GameChannelPresentationSnapshot previewChannel =
-                    FindChannel(_previewCore, _selectedChannelIndex);
-                if (previewChannel != null)
-                {
-                    displayedChannel = previewChannel;
-                    showingPreview = true;
-                }
-            }
-
-            RenderBundleDetails(displayedChannel, showingPreview);
+            RenderBundleDetails(liveChannel);
         }
 
-        private void RenderBundleDetails(
-            GameChannelPresentationSnapshot channel,
-            bool showingPreview)
+        private void RenderBundleDetails(GameChannelPresentationSnapshot channel)
         {
-            _bundleHeading.text = showingPreview
-                ? "Predicted 12-bundle profile"
-                : "12-bundle profile";
+            _bundleHeading.text = "12-bundle profile";
 
             var bundles = new List<GameBundlePresentationSnapshot>();
             if (channel != null && channel.Bundles != null)
@@ -596,28 +604,7 @@ namespace ReactorGame.Unity
             }
         }
 
-        private Phase8UnityCommandResultV1 Preview(string directionId)
-        {
-            if (!TryReadRefuellingInputs(
-                    out uint channelIndex,
-                    out ushort shiftCount,
-                    out string fuelTypeId))
-            {
-                return null;
-            }
-
-            return Dispatch(
-                delegate
-                {
-                    return _runtimeAdapter.PreviewRefuelChannel(
-                        channelIndex,
-                        directionId,
-                        shiftCount,
-                        fuelTypeId);
-                });
-        }
-
-        private Phase8UnityCommandResultV1 Refuel(string directionId)
+        private Phase8UnityCommandResultV1 Refuel()
         {
             if (!TryReadRefuellingInputs(
                     out uint channelIndex,
@@ -632,7 +619,7 @@ namespace ReactorGame.Unity
                 {
                     return _runtimeAdapter.RefuelChannel(
                         channelIndex,
-                        directionId,
+                        _selectedRefuellingDirectionId,
                         shiftCount,
                         fuelTypeId);
                 });
@@ -644,7 +631,7 @@ namespace ReactorGame.Unity
             out string fuelTypeId)
         {
             channelIndex = 0;
-            shiftCount = 0;
+            shiftCount = _selectedShiftCount;
             fuelTypeId = _fuelTypeInput == null ? string.Empty : _fuelTypeInput.text.Trim();
 
             if (_runtimeAdapter == null || !_hasRenderableCore || _selectedChannelIndex < 0)
@@ -654,15 +641,9 @@ namespace ReactorGame.Unity
             }
 
             channelIndex = (uint)_selectedChannelIndex;
-            if (_shiftInput == null ||
-                !ushort.TryParse(
-                    _shiftInput.text,
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out shiftCount) ||
-                (shiftCount != 4 && shiftCount != 8))
+            if (shiftCount != 4 && shiftCount != 8)
             {
-                SetStatus("Status: input rejected; shift count must be 4 or 8.");
+                SetStatus("Status: input rejected; bundle count must be 4 or 8.");
                 return false;
             }
 
@@ -673,6 +654,41 @@ namespace ReactorGame.Unity
             }
 
             return true;
+        }
+
+        private void ApplyRefuellingChoiceVisuals()
+        {
+            SetChoiceButtonVisual(
+                DirectionEndAActionKey,
+                _selectedRefuellingDirectionId == TowardEndADirectionId);
+            SetChoiceButtonVisual(
+                DirectionEndBActionKey,
+                _selectedRefuellingDirectionId == TowardEndBDirectionId);
+            SetChoiceButtonVisual(ShiftFourActionKey, _selectedShiftCount == 4);
+            SetChoiceButtonVisual(ShiftEightActionKey, _selectedShiftCount == 8);
+        }
+
+        private void SetChoiceButtonVisual(string actionKey, bool isSelected)
+        {
+            if (!_actionButtons.ContainsKey(actionKey) || !_actionImages.ContainsKey(actionKey))
+            {
+                return;
+            }
+
+            Button button = _actionButtons[actionKey];
+            Image image = _actionImages[actionKey];
+            Color normalColor = new Color(0.095f, 0.145f, 0.215f, 1.0f);
+            Color selectedColor = new Color(0.12f, 0.38f, 0.48f, 1.0f);
+            Color targetColor = isSelected ? selectedColor : normalColor;
+            image.color = targetColor;
+
+            ColorBlock colors = button.colors;
+            colors.normalColor = targetColor;
+            colors.highlightedColor = isSelected
+                ? new Color(0.18f, 0.48f, 0.56f, 1.0f)
+                : new Color(0.16f, 0.29f, 0.42f, 1.0f);
+            colors.selectedColor = colors.highlightedColor;
+            button.colors = colors;
         }
 
         private Phase8UnityCommandResultV1 Dispatch(
@@ -713,9 +729,9 @@ namespace ReactorGame.Unity
 
             _selectedChannelText.text = "Channel: unavailable";
             _bundleHeading.text = "12-bundle profile unavailable";
-            _previewText.text = "Preview: unavailable";
+            _refuelFeedbackText.text = "Refuel order: unavailable";
             _statusText.text = "Status: waiting for runtime binding";
-            RenderBundleDetails(null, false);
+            RenderBundleDetails(null);
         }
 
         private void RenderUnavailableCore()
@@ -730,7 +746,8 @@ namespace ReactorGame.Unity
             ClearMapPlacement();
             _selectedChannelText.text = "Channel: unavailable";
             _bundleHeading.text = "12-bundle profile unavailable";
-            RenderBundleDetails(null, false);
+            _refuelFeedbackText.text = "Refuel order: unavailable";
+            RenderBundleDetails(null);
         }
 
         private void SetControlAvailability(bool isAvailable)
@@ -743,11 +760,6 @@ namespace ReactorGame.Unity
             foreach (Button button in _actionButtons.Values)
             {
                 button.interactable = isAvailable;
-            }
-
-            if (_shiftInput != null)
-            {
-                _shiftInput.interactable = isAvailable;
             }
 
             if (_fuelTypeInput != null)
@@ -767,33 +779,6 @@ namespace ReactorGame.Unity
             }
 
             return 0;
-        }
-
-        private static GameChannelPresentationSnapshot FindChannel(
-            GameCorePresentationSnapshot core,
-            int channelIndex)
-        {
-            if (core == null || core.Channels == null || channelIndex < 0)
-            {
-                return null;
-            }
-
-            if (channelIndex < core.Channels.Count &&
-                core.Channels[channelIndex] != null &&
-                core.Channels[channelIndex].ChannelIndex == (uint)channelIndex)
-            {
-                return core.Channels[channelIndex];
-            }
-
-            foreach (GameChannelPresentationSnapshot channel in core.Channels)
-            {
-                if (channel != null && channel.ChannelIndex == (uint)channelIndex)
-                {
-                    return channel;
-                }
-            }
-
-            return null;
         }
 
         private void CreateMapPanel(RectTransform parent)
@@ -957,69 +942,92 @@ namespace ReactorGame.Unity
                 _bundleDetailTexts.Add(detail);
             }
 
-            RectTransform inputRow = CreateRow("RefuellingInputs", detailsPanel, 60.0f);
             AddValueLabel(
-                inputRow,
+                detailsPanel,
+                "RefuellingOrderHeading",
+                "Direct refuelling order",
+                16,
+                TextAnchor.MiddleLeft,
+                28.0f);
+
+            RectTransform directionRow = CreateRow("RefuellingDirection", detailsPanel, 62.0f);
+            AddValueLabel(
+                directionRow,
                 "RefuellingInputLabel",
-                "Refuel selected channel",
+                "Direction",
                 15,
                 TextAnchor.MiddleLeft,
-                60.0f).GetComponent<LayoutElement>().preferredWidth = 210.0f;
+                62.0f).GetComponent<LayoutElement>().preferredWidth = 150.0f;
             AddValueLabel(
-                inputRow,
-                "ShiftLabel",
-                "Shift",
-                14,
-                TextAnchor.MiddleCenter,
-                60.0f).GetComponent<LayoutElement>().preferredWidth = 55.0f;
-            _shiftInput = CreateInputField(
-                inputRow,
-                "RefuelShift",
-                InputField.ContentType.IntegerNumber,
-                "4",
-                100.0f);
+                directionRow,
+                "DirectionSelection",
+                "Choose fuelling direction",
+                13,
+                TextAnchor.MiddleLeft,
+                62.0f).GetComponent<LayoutElement>().preferredWidth = 190.0f;
+            AddActionButton(
+                directionRow,
+                DirectionEndAActionKey,
+                "END A",
+                delegate { SelectTowardEndA(); });
+            AddActionButton(
+                directionRow,
+                DirectionEndBActionKey,
+                "END B",
+                delegate { SelectTowardEndB(); });
+
+            RectTransform shiftRow = CreateRow("RefuellingBundleCount", detailsPanel, 62.0f);
             AddValueLabel(
-                inputRow,
+                shiftRow,
+                "BundleCountLabel",
+                "Bundles",
+                15,
+                TextAnchor.MiddleLeft,
+                62.0f).GetComponent<LayoutElement>().preferredWidth = 150.0f;
+            AddValueLabel(
+                shiftRow,
+                "BundleCountSelection",
+                "Choose shift size",
+                13,
+                TextAnchor.MiddleLeft,
+                62.0f).GetComponent<LayoutElement>().preferredWidth = 190.0f;
+            AddActionButton(
+                shiftRow,
+                ShiftFourActionKey,
+                "4 BUNDLES",
+                delegate { SelectFourBundles(); });
+            AddActionButton(
+                shiftRow,
+                ShiftEightActionKey,
+                "8 BUNDLES",
+                delegate { SelectEightBundles(); });
+
+            RectTransform fuelRow = CreateRow("RefuellingFuel", detailsPanel, 60.0f);
+            AddValueLabel(
+                fuelRow,
                 "FuelLabel",
-                "Fuel",
-                14,
-                TextAnchor.MiddleCenter,
-                60.0f).GetComponent<LayoutElement>().preferredWidth = 48.0f;
+                "Fuel type",
+                15,
+                TextAnchor.MiddleLeft,
+                60.0f).GetComponent<LayoutElement>().preferredWidth = 150.0f;
             _fuelTypeInput = CreateInputField(
-                inputRow,
+                fuelRow,
                 "RefuelFuelType",
                 InputField.ContentType.Standard,
                 "NAT-U-SYNTHETIC",
                 230.0f);
 
-            RectTransform previewRow = CreateRow("PreviewActions", detailsPanel, 62.0f);
+            RectTransform actionRow = CreateRow("RefuellingAction", detailsPanel, 70.0f);
             AddActionButton(
-                previewRow,
-                "PreviewEndA",
-                "Preview toward End A",
-                delegate { PreviewTowardEndA(); });
-            AddActionButton(
-                previewRow,
-                "PreviewEndB",
-                "Preview toward End B",
-                delegate { PreviewTowardEndB(); });
+                actionRow,
+                RefuelActionKey,
+                "REFUEL SELECTED CHANNEL",
+                delegate { RefuelSelected(); });
 
-            RectTransform commitRow = CreateRow("CommitActions", detailsPanel, 62.0f);
-            AddActionButton(
-                commitRow,
-                "CommitEndA",
-                "Commit toward End A",
-                delegate { RefuelTowardEndA(); });
-            AddActionButton(
-                commitRow,
-                "CommitEndB",
-                "Commit toward End B",
-                delegate { RefuelTowardEndB(); });
-
-            _previewText = AddValueLabel(
+            _refuelFeedbackText = AddValueLabel(
                 detailsPanel,
-                "CoreMapPreview",
-                "Preview: none",
+                "CoreMapRefuelFeedback",
+                "Refuel order: End A | 4 bundles",
                 14,
                 TextAnchor.MiddleLeft,
                 48.0f);
@@ -1030,6 +1038,8 @@ namespace ReactorGame.Unity
                 14,
                 TextAnchor.MiddleLeft,
                 58.0f);
+
+            ApplyRefuellingChoiceVisuals();
         }
 
         private void CreateChannelButtons()
@@ -1115,6 +1125,7 @@ namespace ReactorGame.Unity
             SetOffsets(label.rectTransform, 8.0f, 0.0f, 8.0f, 0.0f);
             button.onClick.AddListener(delegate { callback(); });
             _actionButtons.Add(key, button);
+            _actionImages.Add(key, image);
             return button;
         }
 
@@ -1281,6 +1292,19 @@ namespace ReactorGame.Unity
         {
             rect.offsetMin = new Vector2(left, bottom);
             rect.offsetMax = new Vector2(-right, -top);
+        }
+
+        private string DescribeRefuellingSelection()
+        {
+            return DescribeDirection(_selectedRefuellingDirectionId) +
+                " | " +
+                _selectedShiftCount.ToString(CultureInfo.InvariantCulture) +
+                " bundles";
+        }
+
+        private static string DescribeDirection(string directionId)
+        {
+            return directionId == TowardEndBDirectionId ? "End B" : "End A";
         }
 
         private static string GetText(Text text)
