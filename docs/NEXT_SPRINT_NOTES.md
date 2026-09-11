@@ -1,6 +1,6 @@
 # Next orchestrator handoff
 
-Status: canonical implementation handoff, refreshed 2026-09-09.
+Status: canonical implementation handoff, refreshed 2026-09-11.
 
 Use this document to start the next orchestrator chat. `README.md` and
 `docs/IMPLEMENTATION_GUIDE.md` remain useful architecture references, while
@@ -10,14 +10,25 @@ historical review evidence rather than current task trackers.
 ## Product boundary
 
 Build the playable Unity steady-state CANDU refuelling game first. The player
-must be able to inspect the 380-channel core, preview and commit four- or
-eight-bundle shifts in either direction, advance time, see power/burnup/xenon
-and score respond, and use a debug menu to reach useful playtest states.
+must be able to inspect the 380-channel core, issue direct four- or eight-bundle
+shifts in either direction from the main operations panel, advance time, keep
+the automated RRS inside its playable operating band, see power/burnup/RRS
+and score respond, and use a debug menu to reach useful playtest states. The
+existing predictor/preview-and-confirm flow is transitional work to remove
+from the player-facing path; a direct refuelling order should be immediately
+accepted or rejected with a clear result.
 
 Keep shutdown, scram, accident progression, and operator-training scenarios
 out of scope. Keep `ReactorSim.Core` engine-neutral and authoritative for state
 transitions. Unity and browser code are presentation/input layers. DRAGON5 and
 DONJON5 remain offline tools; runtimes consume only compact, versioned packs.
+
+The next cut is a player-facing vertical slice, not a physics expansion. The
+automated 14-zone RRS is the primary survival/resource meter: the UI must show
+compact zone status, the selected zone's target/measured/error values, explicit
+warnings, and a visible game-over state when average fill reaches 0% or 100%.
+Unity is the product and acceptance surface; `web/candu-playtest` is the fast
+iteration and interaction proxy over the same Game/Core contracts.
 
 ## Audit result
 
@@ -54,12 +65,17 @@ items as absent; treat the review as the original input, not current status.
 3. **The browser channel detail lacks the requested burnup graph.** It renders
    a bundle power profile followed by textual bundle burnup. Add a matching
    12-position burnup profile immediately below the power profile.
-4. **Candidate recommendations and operational trade-off guidance are absent.**
-   Preview metrics exist, but there is no engine-neutral ranking service or
-   optional recommendation surface.
-5. **Objectives and onboarding remain thin.** There is a practice scenario and
-   controls, but no concise objective flow covering guided refuelling, tilt
-   correction, discharge-burnup optimization, and an equilibrium campaign.
+4. **The current player-facing interaction is the wrong shape for the next
+   cut.** `web/candu-playtest/src/scenes/OperationsScene.ts` still opens a
+   predictor/preview modal and hides the refuelling order behind confirmation.
+   The main panel does not yet make direct refuelling, automated RRS state, the
+   14-zone strip, selected-zone target/measured/error, warnings, or the
+   average-fill game-over state immediately legible. Unity must receive the
+   same interaction contract; the browser remains its proxy.
+5. **Objectives and scoring remain thin.** There is a practice scenario and
+   score feedback, but no concise run arc that teaches direct refuelling,
+   rewards stable power and useful discharge burnup, and makes RRS margin a
+   visible resource without adding accident or operator-training scope.
 6. **Unity debug state control is incomplete.** Time, restart, fuel grant,
    pending-action clearing, score-response reset, raw diagnostics, and digest
    copy exist. Direct burnup/residence bands, power/tilt/xenon/control/device
@@ -172,80 +188,227 @@ integrated result.
    import/compile smoke. No phase gates, approvals, evidence generation, or
    routine soaks were restored.
 
-### Wave 1 — fix the reported playable surfaces
+### Next implementation order — player-facing vertical slice
 
-8. **Complete — reproduce and fix the deployed browser clock.** Reproduction
-   (2026-09-09): the live Vercel deployment and exact local Release WASM/Vite
-   dist both loaded the authoritative bridge with no console/page errors, but
-   the old fixed interval reached only `D01 01:00` after 287 visible wall
-   seconds because worker latency dropped intervening one-second intervals.
-   Fix: extracted a monotonic visible-time `LiveClockScheduler` with 100 ms
-   control-tick alignment and remainder retention, no overlapping background
-   dispatch, foreground command blocking without elapsed-time loss, one-second
-   command chunks, a bounded 60-second backlog, pause/hidden-time exclusion,
-   clean lifecycle rebasing, and failed-dispatch recovery. Verification:
-   `tools/Test-Browser.ps1` passed Browser .NET 6/6, Vitest 10/10, and the
-   production build; an exact Release WASM production-artifact probe advanced
-   `00:00` → `00:03`, pause settled at `00:33`, and resume advanced to `00:36`
-   in 82 seconds with no browser errors. `scripts/smoke.mjs` intentionally
-   remains unchanged: its direct deterministic full-core call is already
-   long-running, Vite preview SPA fallback makes its missing-asset 404
-   assertion unsuitable locally, and short pause/resume deadlines would be
-   flaky. Scheduler tests are the stable latency-regression proof.
-9. **Add the paired burnup profile.** Reuse the power-profile layout and render
-   all 12 bundle burnups immediately below it with clear units, fresh-fuel
-   treatment, and accessible text. Acceptance: reducer/component test plus a
-   real-browser visual smoke at desktop and narrow widths.
-10. **Implement engine-neutral candidate ranking.** Add a Game/Core service that
-    evaluates a bounded set of valid channel/direction/shift candidates through
-    existing preview semantics and returns stable ranked reasons. Inputs and
-    scoring weights must be explicit; no Unity rules. Acceptance: ordering is
-    deterministic, invalid/unavailable candidates are excluded, and requesting
-    recommendations does not mutate session state.
-11. **Expose recommendations and trade-offs.** Add an optional Unity panel that
-    shows two or three candidates with predicted power, tilt, discharge burnup,
-    fuel cost, xenon tendency, and score effect. The player still chooses and
-    commits. Acceptance: recommendation-to-preview-to-commit smoke with clear
-    explanation of why ranking changed.
-12. **Add short objective progression.** Implement four bounded steady-state
-    objectives: guided first refuel, correct a tilt, optimize discharge burnup,
-    and sustain an equilibrium campaign. Keep scenario rules in Core/Game and
-    presentation in Unity. Acceptance: success/failure is deterministic and a
-    practice run remains roughly 10–20 minutes at intended acceleration.
+The completed Wave 0 work is the safety net, not the next product milestone.
+The slices below supersede the former recommendation/save/realism order. Run
+one writer task at a time in the shared checkout; keep each slice small enough
+to review and play in Unity before starting the next one.
 
-### Wave 2 — owner controls and presentation quality
+1. **Replace the predictor flow with a direct refuelling order.**
 
-13. **Define a versioned Game save/archive contract.** Capture initial identity,
-    commands, accepted state/digests, and replay metadata. Reject tampered or
-    mismatched archives before mutation. Do not serialize Unity objects.
-14. **Add Unity save/load controls.** Bind the Game archive to explicit debug
-    slots/files, visibly label restored debug state, and prove round-trip parity.
-15. **Add bounded debug overrides.** Implement burnup/residence presets first,
-    then power/tilt/xenon/control/device overrides and heat-map layers only as
-    concrete playtest needs arise. Every override must be visible and excluded
-    from normal scoring.
-16. **Polish feedback and accessibility.** Add movement animation, tooltips,
-    annotated timeline causes, accessible palettes, and restrained audio in
-    separate small tasks. Preserve responsiveness and non-audio feedback.
+   Objective: let the player select a channel, choose four or eight bundles and
+   a direction, then issue one direct `RefuelChannel` order from the main side
+   panel. Return an immediate accepted/rejected result with the existing
+   atomic Game/Core state transition. Remove `preview-refuel`, predictor copy,
+   and confirm-gated presentation from the player-facing path. If a temporary
+   compatibility seam is required during migration, keep it non-player-facing
+   and delete it before the vertical-slice gate.
 
-### Wave 3 — optional lawful realism pass
+   Files: `src/ReactorSim.Game/GameSession.cs`,
+   `src/ReactorSim.Game/CorePresentationContracts.cs`,
+   `src/ReactorSim.Game/PracticeGameSessionFactory.cs`,
+   `src/ReactorSim.Browser/PlaytestProtocol.cs`,
+   `web/candu-playtest/src/protocol.ts`,
+   `web/candu-playtest/src/commandState.ts`,
+   `web/candu-playtest/src/sessionController.ts`,
+   `web/candu-playtest/src/scenes/OperationsScene.ts`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase8UnityRuntimePort.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/UnityRuntimePort.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/CoreMapView.cs`, and the
+   focused Game, Browser, web, and Unity seam tests that still assert preview.
 
-17. **Finish runtime-pack admission independently of reactor tools.** Define one
-    compact schema/loader selection path with units, energy-group order,
-    topology digest, provenance, version, and checksum; prove synthetic pack
-    swapping does not alter Game/Unity rules.
-18. **Produce and admit a lawful offline export.** Only after source/licensing
-    decisions are recorded, run DRAGON5/DONJON5 offline, export the selected
-    branch grid, compare trends/invariants, and package only redistributable
-    runtime fields. Never invoke either executable from Unity or browser.
+   Acceptance: a direct order from Unity and browser changes the same accepted
+   snapshot; invalid direction/size/fuel/inventory requests leave the complete
+   state unchanged; the side panel exposes the order without opening a modal;
+   no player-facing button, key hint, status, or test refers to preview or
+   predicted outcome.
 
-### Final documentation reconciliation
+   Dependencies: the existing `GameSession` refuelling transaction,
+   `RefuellingShift` contracts, and Wave 0 atomicity tests. Stop if this needs
+   a second simulation authority or a new predictive model. Go only when the
+   Unity order is playable and the browser proxy is contract-parity checked.
 
-19. Update `README.md` and `docs/IMPLEMENTATION_GUIDE.md` to match implemented
-    behavior and the rebuilt test layout. Add “historical review” banners or
-    supersession links to `gemini_review.md`, `review.md`, and
-    `docs/LLM_SOLVER_REPLACEMENT_HANDOFF.md`; do not rewrite review evidence as
-    if it were a new independent review.
+2. **Bound the automated RRS response for gameplay.**
+
+   Objective: replace the current repeated static-controller loop with one
+   deterministic bounded pass over the fourteen fill variables. Build a
+   14-variable sensitivity/Jacobian response, solve the constrained
+   least-squares fill command, perform one verification solve, and allow at
+   most one bounded correction. There is no unbounded iteration or hidden
+   retry loop. Preserve fail-closed atomicity and the existing project-authored
+   RRS provenance.
+
+   Files: `src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs`,
+   `src/ReactorSim.Core/Domain/EquilibriumCoreSolverContracts.cs`,
+   `src/ReactorSim.Game/GameSession.cs`,
+   `src/ReactorSim.Game/CorePresentationContracts.cs`, and focused
+   `tests/ReactorSim.Core.Tests/PracticeLiquidZoneRrsTests.cs`, relevant
+   equilibrium/Game tests, and
+   `tests/ReactorSim.Game.Tests/PracticeRefuellingCampaignTests.cs` cases.
+
+   Acceptance: the 14-variable ordering, finite-difference/sensitivity inputs,
+   bounds, least-squares result, verification solve, and optional single
+   correction are explicit and deterministic; the solve budget is testable;
+   a failed/nonconverged candidate retains the prior accepted state; a normal
+   command cannot move fills outside [0,1]; and the resulting RRS values are
+   available in the same immutable Game snapshot used by Unity and browser.
+
+   Dependencies: Slice 1's direct command boundary and the existing
+   `PracticeLiquidZoneRrsV1`/`GameRrsPresentationSnapshot` contracts. Stop if
+   the work expands into new transient physics, plant calibration, or an
+   unconstrained solver backend. Go when a repeated direct order is bounded,
+   replay-stable, and visibly changes the RRS state.
+
+3. **Make RRS the primary survival/resource meter.**
+
+   Objective: promote the existing RRS snapshot to the primary status surface.
+   Show average fill prominently, render a compact status for all fourteen
+   zones, and show the selected zone's fill plus target, measured, and error
+   values. Keep the heat map and bundle detail useful, but subordinate to the
+   RRS state that the player is managing.
+
+   Files: `src/ReactorSim.Game/CorePresentationContracts.cs`,
+   `src/ReactorSim.Browser/PlaytestProtocol.cs`,
+   `web/candu-playtest/src/protocol.ts`,
+   `web/candu-playtest/src/scenes/OperationsScene.ts`,
+   `web/candu-playtest/src/visuals.ts`,
+   `web/candu-playtest/src/drawing.ts`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase8UnityRuntimePort.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10DashboardView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10ShellView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/CoreMapView.cs`, and focused
+   presentation/reducer/EditMode tests.
+
+   Acceptance: exactly fourteen zones are visible and stably ordered; selecting
+   a zone updates its target/measured/error readout; fills and errors update
+   after the direct order and after time advances; all values come from the
+   shared snapshot rather than TypeScript or Unity rules; and the browser
+   surface remains a fast acceptance proxy for the Unity layout/contract.
+
+   Dependencies: Slice 2's bounded RRS result. Stop if the UI requires
+   inventing a new physics value. Go when an owner can understand which zone
+   is healthy, drifting, or consuming margin without opening diagnostics.
+
+4. **Add explicit warnings and the RRS game-over boundary.**
+
+   Objective: give the player immediate, readable warning states for poor RRS
+   margin, zonal error, power/tilt drift, and unavailable fuel as appropriate to
+   the existing contracts. Make average fill exactly 0% or exactly 100% a
+   visible game-over state using `IsGameOver`/`GameOverReason`; do not introduce
+   scram, shutdown, accident, or operator-training progression.
+
+   Files: `src/ReactorSim.Game/GameSession.cs`,
+   `src/ReactorSim.Game/CorePresentationContracts.cs`,
+   `src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs`,
+   `web/candu-playtest/src/scenes/OperationsScene.ts`,
+   `web/candu-playtest/src/visuals.ts`,
+   `web/candu-playtest/src/sessionController.ts`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10DashboardView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10ShellView.cs`, and
+   focused boundary tests in Core, Game, Browser, and Unity.
+
+   Acceptance: values just inside the boundary are warnings but playable;
+   average fill at 0 or 1 is game over with the correct reason; the warning
+   and game-over presentation is visible without the debug menu; normal time
+   and refuelling actions cannot silently continue a finished run; restart or
+   an explicitly labelled debug reset remains deterministic.
+
+   Dependencies: Slice 3's RRS projection. Stop if “game over” is implemented
+   as accident simulation or if a UI-only threshold disagrees with Core. Go
+   when both Unity and browser show the same boundary behavior.
+
+5. **Give each run a compact goal arc and coherent score.**
+
+   Objective: add a short, deterministic steady-state run with visible goals:
+   issue the guided first direct order, stabilize power/tilt, earn useful
+   discharge burnup, and sustain the RRS operating band for a timed interval.
+   Score stable power/tilt, useful burnup, economical direct refuelling, RRS
+   margin, and completed goals. Keep objectives actionable and legible; do not
+   turn them into a training narrative or plant-operations simulator.
+
+   Files: `src/ReactorSim.Core/Domain/Phase8ScenarioRuntimeContracts.cs`,
+   `src/ReactorSim.Core/Domain/Phase8ScoringContracts.cs`,
+   `src/ReactorSim.Game/PracticeGameSessionFactory.cs`,
+   `src/ReactorSim.Game/GameSession.cs`,
+   `src/ReactorSim.Game/CorePresentationContracts.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10DashboardView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10ControlsView.cs`,
+   `web/candu-playtest/src/scenes/OperationsScene.ts`, and focused Game,
+   Unity, and browser tests.
+
+   Acceptance: the next goal, progress, score delta, and end-of-run result are
+   visible in the main play surface; replaying the same command/time trace
+   produces the same goals and score; a useful run fits roughly 10–20 minutes
+   at intended acceleration; and RRS game over ends the run without a hidden
+   alternate failure system.
+
+   Dependencies: Slices 1–4. Stop if a goal needs a new detailed-physics
+   observable; expose only the smallest engine-neutral state needed. Go when a
+   player can state what to do next and why a refuelling choice improved or
+   hurt the score.
+
+6. **Polish the tactical operations surface and keep Unity/browser aligned.**
+
+   Objective: make the interface feel like a layered tactical operations
+   console: rich panel materials, strong selection and movement feedback,
+   readable hierarchy, accessible warning colors, contextual tooltips, and a
+   paired 12-position burnup profile below the power profile. This may draw
+   only interface/aesthetic language from Fire Emblem, Disgaea, and Final
+   Fantasy Tactics. It must contain no characters, story, dialogue, copied IP,
+   or copied assets.
+
+   Files: `web/candu-playtest/src/scenes/OperationsScene.ts`,
+   `web/candu-playtest/src/drawing.ts`, `web/candu-playtest/src/visuals.ts`,
+   `web/candu-playtest/src/projection.ts`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10ShellView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/Phase10DashboardView.cs`,
+   `unity/ReactorGame/Assets/ReactorGame.Unity/CoreMapView.cs`, and the
+   focused Vitest, browser smoke, Unity EditMode, and Unity PlayMode checks.
+
+   Acceptance: direct refuelling, RRS status, warnings, goals, and game over
+   remain readable at desktop and narrow browser widths and in the Unity
+   scene; selection and refuelling feedback are responsive with reduced-motion
+   support; the burnup profile has clear units and fresh-fuel treatment; and
+   no art task adds narrative/IP scope.
+
+   Dependencies: Slices 1–5. Stop if polish hides a value or introduces a
+   browser-only rule. Go when the Unity development build is enjoyable to
+   repeat and the browser proxy catches layout/interaction regressions quickly.
+
+7. **Hold the physics boundary while gameplay is being proven.**
+
+   Objective: freeze speculative physics work beyond the already requested
+   cross-section audit. The true inhomogeneous fixed-source IQS operator,
+   nodewise fission-delayed/heavy-water photoneutron fields, dynamic bilinear
+   rho/beta-effective/generation-time integrals, and a deterministic Krylov
+   backend remain deferred. Cross-section audit/admission documentation may
+   continue only as a bounded offline activity and must not displace the
+   playable slices.
+
+   Files: the already scoped `docs/spec/xsec-*.md` audit documents and their
+   provenance references; do not add runtime physics files in this slice.
+
+   Acceptance: no new speculative physics task is placed on the gameplay
+   critical path; runtime code still consumes only compact, versioned,
+   lawfully usable packs; and the Unity/browser game can be built, launched,
+   and playtested using the deterministic project-authored model.
+
+   Dependencies: none for the documentation boundary. Stop any physics
+   expansion when it competes with a player-facing slice. Go to the optional
+   DRAGON5/DONJON5 data pass only after the vertical-slice gate below passes
+   and a separate provenance/licensing decision is recorded.
+
+### Vertical-slice go/no-go gate
+
+Go only after an owner can launch the Unity development build, issue direct
+orders from the main side panel, see all fourteen RRS zones and the selected
+zone target/measured/error, recognize warnings, reach and understand both
+average-fill game-over boundaries through debug setup, complete a short goal
+run with score feedback, and repeat the same trace deterministically. Run the
+browser console against the same bridge as a fast interaction/acceptance proxy;
+it is never a second authority. If any check fails, keep the next task on the
+smallest failing gameplay slice and do not advance the physics/data roadmap.
 
 ## Orchestrator execution rules
 
@@ -256,9 +419,15 @@ integrated result.
   critically stuck.
 - Preserve unrelated worktree changes. Never bulk-restore the archived tests.
 - Keep `unity/ReactorGame` runnable after each slice.
-- Dispatch no intermediary implementation-review task. Integrate the result,
-  run proportionate focused checks, inspect the final combined diff for scope,
+- Dispatch no intermediary implementation-review task. Integrate each bounded
+  result, run proportionate focused checks, inspect the final diff for scope,
   and leave the next independent review to Gemini as requested.
+- Treat Unity owner playtesting as the acceptance path and the browser as a
+  fast interaction/contract proxy. Do not let browser convenience recreate a
+  second simulator or a preview/predictor workflow.
+- Do not start recommendations, save/archive, broad debug overrides, or
+  DRAGON5/DONJON5 runtime admission until the vertical-slice go/no-go gate
+  passes.
 - Commit each completed slice with its focused checks and report the hash.
 
 ## Copy-ready prompt for a new orchestrator chat
@@ -267,10 +436,18 @@ integrated result.
 > `AGENTS.md`, `README.md`, `docs/IMPLEMENTATION_GUIDE.md`, and
 > `docs/TEST_CASE_REBUILD_DRAFT.md`. Preserve the intentional legacy-test
 > archive under `archive/test-cases/legacy/2026-09-07/`. Start at the first
-> incomplete task in the dependency-ordered plan. Delegate each bounded coding,
-> test, or documentation task to GPT-5.6 Luna at max reasoning, one writer at a
-> time. Keep Core authoritative and engine-neutral, keep Unity/browser as
-> presentation, and keep DRAGON5/DONJON5 offline. Do not add shutdown, scram,
-> accident, or operator-training scope. Do not commission intermediary reviews;
+> incomplete player-facing slice in the vertical-slice plan. Delegate each
+> bounded coding, test, or documentation task to GPT-5.6 Luna at max
+> reasoning, one writer at a time. Remove the player-facing predictor/preview
+> flow, put direct refuelling in the main side panel, make automated RRS the
+> primary survival/resource meter, and expose the fourteen-zone status plus
+> selected-zone target/measured/error, warnings, game-over boundaries, goals,
+> and score. Keep Core authoritative and engine-neutral, keep Unity as the
+> product acceptance surface, use the browser only as a fast proxy, and keep
+> DRAGON5/DONJON5 offline. Bound the RRS controller to one 14-variable
+> sensitivity/Jacobian least-squares pass, one verification solve, and at most
+> one correction. Do not add shutdown, scram, accident, or operator-training
+> scope, and freeze speculative physics beyond the scoped cross-section audit
+> until the vertical-slice gate passes. Do not commission intermediary reviews;
 > integrate and test the work, commit completed slices, and leave the later
 > independent review to Gemini.
