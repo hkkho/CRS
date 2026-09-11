@@ -11,7 +11,6 @@ namespace ReactorGame.Unity.PlayModeTests
     public sealed class PrimaryLoopPlayModeSmokeTests
     {
         private const string BootstrapSceneName = "Bootstrap";
-        private const string FuelTypeId = "NAT-U-SYNTHETIC";
         private const ushort ShiftCount = 4;
 
         [UnityTest]
@@ -63,23 +62,18 @@ namespace ReactorGame.Unity.PlayModeTests
 
             controller.AutoAdvance = false;
 
-            Phase8UnityCommandResultV1 previewA = coreMap.PreviewTowardEndA();
-            AssertAccepted(previewA, Phase8UnityCommandKindV1.PreviewRefuelChannel);
-            Assert.That(previewA.PreviewCore, Is.Not.Null);
+            Assert.That(coreMap.SelectTowardEndA(), Is.True);
+            Phase8UnityCommandResultV1 refuelA = coreMap.RefuelSelected();
+            AssertAccepted(refuelA, Phase8UnityCommandKindV1.RefuelChannel);
+            Assert.That(refuelA.Snapshot.Core, Is.Not.Null);
             Assert.That(
-                previewA.PreviewCore.GetChannel((uint)selectedChannelIndex).Bundles.Count,
+                refuelA.Snapshot.Core.GetChannel((uint)selectedChannelIndex).Bundles.Count,
                 Is.EqualTo((int)GameCorePresentationConstants.BundlePositionCount));
-            Assert.That(coreMap.PreviewText, Does.Contain("Preview"));
-            Assert.That(coreMap.StatusText, Does.Contain("preview accepted"));
-
-            Phase8UnityCommandResultV1 commitA = coreMap.CommitTowardEndA();
-            AssertAccepted(commitA, Phase8UnityCommandKindV1.RefuelChannel);
-            Assert.That(commitA.Snapshot, Is.Not.Null);
-            Assert.That(commitA.Snapshot.RefuellingOperationCount, Is.EqualTo(1u));
-            Assert.That(commitA.Snapshot.FreshBundlesAvailable, Is.EqualTo(initial.FreshBundlesAvailable - ShiftCount));
-            Assert.That(commitA.Snapshot.LastRefuelledChannel, Is.EqualTo(selectedChannelIndex));
-            Assert.That(commitA.Snapshot.LastRefuellingDirectionId, Is.EqualTo(CoreMapView.TowardEndADirectionId));
-            Assert.That(coreMap.PreviewText, Does.Contain("committed"));
+            Assert.That(refuelA.Snapshot.RefuellingOperationCount, Is.EqualTo(1u));
+            Assert.That(refuelA.Snapshot.FreshBundlesAvailable, Is.EqualTo(initial.FreshBundlesAvailable - ShiftCount));
+            Assert.That(refuelA.Snapshot.LastRefuelledChannel, Is.EqualTo(selectedChannelIndex));
+            Assert.That(refuelA.Snapshot.LastRefuellingDirectionId, Is.EqualTo(CoreMapView.TowardEndADirectionId));
+            Assert.That(coreMap.RefuelFeedbackText, Does.Contain("Refuel accepted"));
             Assert.That(coreMap.StatusText, Does.Contain("accepted"));
 
             int secondChannelIndex = selectedChannelIndex == 0 ? 1 : selectedChannelIndex - 1;
@@ -88,19 +82,19 @@ namespace ReactorGame.Unity.PlayModeTests
                 coreMap.SelectedChannelText,
                 Does.Contain("Channel " + secondChannelIndex));
 
-            Phase8UnityCommandResultV1 previewB = coreMap.PreviewTowardEndB();
-            AssertAccepted(previewB, Phase8UnityCommandKindV1.PreviewRefuelChannel);
-            Assert.That(previewB.PreviewCore, Is.Not.Null);
+            Assert.That(coreMap.SelectTowardEndB(), Is.True);
+            Phase8UnityCommandResultV1 refuelB = coreMap.RefuelSelected();
+            AssertAccepted(refuelB, Phase8UnityCommandKindV1.RefuelChannel);
+            Assert.That(refuelB.Sequence, Is.EqualTo(refuelA.Sequence + 1UL));
+            Assert.That(refuelB.Snapshot.Core, Is.Not.Null);
             Assert.That(
-                previewB.PreviewCore.GetChannel((uint)secondChannelIndex).Bundles.Count,
+                refuelB.Snapshot.Core.GetChannel((uint)secondChannelIndex).Bundles.Count,
                 Is.EqualTo((int)GameCorePresentationConstants.BundlePositionCount));
-
-            Phase8UnityCommandResultV1 commitB = coreMap.CommitTowardEndB();
-            AssertAccepted(commitB, Phase8UnityCommandKindV1.RefuelChannel);
-            Assert.That(commitB.Snapshot.RefuellingOperationCount, Is.EqualTo(2u));
-            Assert.That(commitB.Snapshot.FreshBundlesAvailable, Is.EqualTo(initial.FreshBundlesAvailable - (ShiftCount * 2u)));
-            Assert.That(commitB.Snapshot.LastRefuelledChannel, Is.EqualTo(secondChannelIndex));
-            Assert.That(commitB.Snapshot.LastRefuellingDirectionId, Is.EqualTo(CoreMapView.TowardEndBDirectionId));
+            Assert.That(refuelB.Snapshot.RefuellingOperationCount, Is.EqualTo(2u));
+            Assert.That(refuelB.Snapshot.FreshBundlesAvailable, Is.EqualTo(initial.FreshBundlesAvailable - (ShiftCount * 2u)));
+            Assert.That(refuelB.Snapshot.LastRefuelledChannel, Is.EqualTo(secondChannelIndex));
+            Assert.That(refuelB.Snapshot.LastRefuellingDirectionId, Is.EqualTo(CoreMapView.TowardEndBDirectionId));
+            Assert.That(coreMap.RefuelFeedbackText, Does.Contain("Refuel accepted"));
             Assert.That(coreMap.StatusText, Does.Contain("accepted"));
 
             Phase8UnityCommandResultV1 pause = debugMenu.Pause();
