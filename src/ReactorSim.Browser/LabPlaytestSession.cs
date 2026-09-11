@@ -306,9 +306,7 @@ namespace ReactorSim.Browser
             switch (type)
             {
                 case "refuel":
-                    return TryRefuel(command, false);
-                case "preview-refuel":
-                    return TryRefuel(command, true);
+                    return TryRefuel(command);
                 case "solve":
                     return TrySolve(command);
                 default:
@@ -316,7 +314,7 @@ namespace ReactorSim.Browser
                         PlaytestProtocolV1.Diagnostic(
                             "Lab.Command.Unsupported",
                             "type",
-                            "Lab supports refuel, preview-refuel, and solve commands."));
+                            "Lab supports refuel and solve commands."));
             }
         }
 
@@ -491,11 +489,10 @@ namespace ReactorSim.Browser
             _spatialSolve = solve.Result!;
             return BridgeCommandExecution.Success(
                 "Lab spatial solve converged.",
-                null,
                 CreateSpatialSolveSnapshot(_spatialSolve));
         }
 
-        private BridgeCommandExecution TryRefuel(JsonElement command, bool preview)
+        private BridgeCommandExecution TryRefuel(JsonElement command)
         {
             BridgeDiagnosticDto? diagnostic = TryReadRefuelArguments(
                 command,
@@ -603,17 +600,6 @@ namespace ReactorSim.Browser
                         "The refuelling candidate did not produce a usable converged solve; no state changed."));
             }
 
-            if (preview)
-            {
-                LabSnapshotDto previewSnapshot = CreateCandidateSnapshot(
-                    transition.Value.ResultingInventory,
-                    solve.Result!);
-                return BridgeCommandExecution.Success(
-                    "Lab refuelling preview produced a converged candidate.",
-                    previewSnapshot,
-                    CreateSpatialSolveSnapshot(solve.Result!));
-            }
-
             _inventory = transition.Value.ResultingInventory;
             _spatialSolve = solve.Result!;
             _freshBundlesAvailable -= shiftCount;
@@ -624,7 +610,6 @@ namespace ReactorSim.Browser
             _lastRefuellingShiftCount = shiftCount;
             return BridgeCommandExecution.Success(
                 "Lab refuelling committed through RefuelShiftTransition; the coupled spatial solve converged.",
-                null,
                 CreateSpatialSolveSnapshot(_spatialSolve));
         }
 
@@ -715,16 +700,6 @@ namespace ReactorSim.Browser
 
             fuelTypeId = fuelType.GetString()!.Trim();
             return null;
-        }
-
-        private LabSnapshotDto CreateCandidateSnapshot(
-            BundleInventory inventory,
-            SpatialSolveResult solve)
-        {
-            LabSnapshotDto snapshot = CreateSnapshot();
-            snapshot.Core = CreateCoreSnapshot(inventory);
-            snapshot.SpatialSolve = CreateSpatialSolveSnapshot(solve);
-            return snapshot;
         }
 
         private LabCoreSnapshotDto CreateCoreSnapshot()

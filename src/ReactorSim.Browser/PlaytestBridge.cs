@@ -112,7 +112,6 @@ namespace ReactorSim.Browser
                         Commands = new List<string>
                         {
                             "solve",
-                            "preview-refuel",
                             "commit-refuel",
                             "reset"
                         }
@@ -330,8 +329,6 @@ namespace ReactorSim.Browser
                     }
 
                     BridgeCommandExecution execution;
-                    PlaytestPreviewDto? preview;
-                    LabSnapshotDto? labPreview = null;
                     double previousScore = _runtime.LastScore;
                     object? previousDetailedProjection = _runtime.Mode == DefaultMode
                         ? _runtime.LastDetailedProjection
@@ -342,7 +339,6 @@ namespace ReactorSim.Browser
                         if (candidate.InitializationFailure != null)
                         {
                             execution = BridgeCommandExecution.Failure(candidate.InitializationFailure);
-                            preview = null;
                         }
                         else
                         {
@@ -356,21 +352,17 @@ namespace ReactorSim.Browser
                                 Tone = "info"
                             };
                             execution = BridgeCommandExecution.Success("Browser playtest run reset.");
-                            preview = null;
                         }
                     }
                     else if (_runtime.Mode == "lab" &&
                         (commandType == "solve" ||
-                         commandType == "preview-refuel" ||
                          commandType == "commit-refuel"))
                     {
                         execution = DispatchLab(_runtime, commandType, payload);
-                        preview = null;
-                        labPreview = execution.PreviewSnapshot as LabSnapshotDto;
                     }
                     else
                     {
-                        execution = DispatchPlay(_runtime, commandType, payload, out preview);
+                        execution = DispatchPlay(_runtime, commandType, payload);
                     }
 
                     _runtime.Sequence = checked(_runtime.Sequence + 1);
@@ -455,8 +447,6 @@ namespace ReactorSim.Browser
                                 Sequence = _runtime.Sequence,
                                 Command = payload.Clone(),
                                 Snapshot = snapshot!,
-                                Preview = preview,
-                                LabPreview = labPreview,
                                 Lab = CreateLabSnapshot(_runtime),
                                 StateDigest = stateDigest,
                                 ReplayDigest = ComputeReplayDigest(_runtime),
@@ -481,7 +471,6 @@ namespace ReactorSim.Browser
                             Command = payload.Clone(),
                             SnapshotPatch = snapshotPatch!,
                             CoreReplacement = coreReplacement,
-                            Preview = preview,
                             StateDigest = stateDigest,
                             ReplayDigest = ComputeReplayDigest(_runtime),
                             Diagnostics = execution.Diagnostics
@@ -513,7 +502,6 @@ namespace ReactorSim.Browser
                 "resume",
                 "queue-power-target",
                 "queue-tilt-target",
-                "preview-refuel",
                 "commit-refuel",
                 "reset"
             };
@@ -566,10 +554,8 @@ namespace ReactorSim.Browser
         private static BridgeCommandExecution DispatchPlay(
             BridgeRuntime runtime,
             string commandType,
-            JsonElement payload,
-            out PlaytestPreviewDto? preview)
+            JsonElement payload)
         {
-            preview = null;
             GameSession session = runtime.PlaySession;
             switch (commandType)
             {
@@ -671,11 +657,8 @@ namespace ReactorSim.Browser
                 case "queue-tilt-target":
                     return QueueTiltTarget(session, payload);
 
-                case "preview-refuel":
-                    return Refuel(runtime, payload, true, out preview);
-
                 case "commit-refuel":
-                    return Refuel(runtime, payload, false, out preview);
+                    return Refuel(runtime, payload);
 
                 case "reset":
                     runtime.PlaySession = PracticeGameSessionFactory.CreateBrowserPlaytest();
@@ -732,11 +715,8 @@ namespace ReactorSim.Browser
 
         private static BridgeCommandExecution Refuel(
             BridgeRuntime runtime,
-            JsonElement payload,
-            bool isPreview,
-            out PlaytestPreviewDto? preview)
+            JsonElement payload)
         {
-            preview = null;
             GameSession session = runtime.PlaySession;
             JsonElement request = payload;
             if (PlaytestInput.TryGetProperty(payload, out JsonElement nested, "request"))
@@ -755,82 +735,8 @@ namespace ReactorSim.Browser
                     "channelIndex, directionId, shiftCount, and fuelTypeId are required.");
             }
 
-            GameSessionSnapshot before = GetCurrentGameSnapshot(runtime);
-            GameSessionCommandResult result = isPreview
-                ? session.PreviewRefuelChannel(channelIndex, direction, shiftCount, fuelType)
-                : session.RefuelChannel(channelIndex, direction, shiftCount, fuelType);
-            if (isPreview && result.Accepted && result.PreviewCore != null)
-            {
-                preview = CreatePreview(
-                    before,
-                    result.PreviewCore,
-                    channelIndex,
-                    direction,
-                    shiftCount,
-                    fuelType);
-            }
-
-            return ToExecution(result);
-        }
-
-        private static PlaytestPreviewDto CreatePreview(
-            GameSessionSnapshot before,
-            GameCorePresentationSnapshot candidate,
-            uint channelIndex,
-            string direction,
-            ushort shiftCount,
-            string fuelType)
-        {
-            GameChannelPresentationSnapshot source = before.Core.GetChannel(channelIndex);
-            GameChannelPresentationSnapshot target = candidate.GetChannel(channelIndex);
-            HashSet<string> sourceIds = source.Bundles
-                .Select(bundle => bundle.BundleId)
-                .ToHashSet(StringComparer.Ordinal);
-            HashSet<string> targetIds = target.Bundles
-                .Select(bundle => bundle.BundleId)
-                .ToHashSet(StringComparer.Ordinal);
-            int dischargeStart = string.Equals(
-                    direction,
-                    TowardEndB,
-                    StringComparison.OrdinalIgnoreCase)
-                ? checked((int)GameCorePresentationConstants.BundlePositionCount - shiftCount)
-                : 0;
-            double dischargeBurnup = source.Bundles
-                .Where(bundle =>
-                    bundle.Position >= dischargeStart &&
-                    bundle.Position < dischargeStart + shiftCount)
-                .Select(bundle => bundle.CurrentBurnupMwDayPerKg)
-                .DefaultIfEmpty()
-                .Average();
-            double localPowerDelta = target.LocalPowerFraction - source.LocalPowerFraction;
-            double localTiltDelta = target.LocalTiltFraction - source.LocalTiltFraction;
-            return new PlaytestPreviewDto
-            {
-                Request = new PlaytestRefuelRequestDto
-                {
-                    ChannelIndex = channelIndex,
-                    DirectionId = PlaytestInput.NormalizeType(direction),
-                    ShiftCount = shiftCount,
-                    FuelTypeId = fuelType.Trim()
-                },
-                DischargeBurnupMwdPerKg = dischargeBurnup,
-                LocalPowerDeltaFraction = localPowerDelta,
-                LocalTiltDeltaFraction = localTiltDelta,
-                PredictedReactivityDelta = candidate.Physics.WeightedPerturbationReactivity,
-                ProjectedPowerFraction = before.Physics.ReferencePowerWatts <= 0.0
-                    ? before.NormalizedPowerFraction
-                    : candidate.Physics.TotalPowerWatts / candidate.Physics.ReferencePowerWatts,
-                ProjectedTiltFraction = before.AbsoluteTiltFraction,
-                ProjectedScoreDelta = 6.0 + dischargeBurnup - shiftCount * 0.75,
-                InsertedBundleIds = target.Bundles
-                    .Where(bundle => !sourceIds.Contains(bundle.BundleId))
-                    .Select(bundle => bundle.BundleId)
-                    .ToList(),
-                DischargedBundleIds = source.Bundles
-                    .Where(bundle => !targetIds.Contains(bundle.BundleId))
-                    .Select(bundle => bundle.BundleId)
-                    .ToList()
-            };
+            return ToExecution(
+                session.RefuelChannel(channelIndex, direction, shiftCount, fuelType));
         }
 
         private static BridgeCommandExecution ToExecution(GameSessionCommandResult result)
@@ -859,7 +765,6 @@ namespace ReactorSim.Browser
                 Accepted = execution.Accepted,
                 Message = execution.Message,
                 Diagnostics = execution.Diagnostics,
-                PreviewSnapshot = execution.PreviewSnapshot,
                 SpatialSolve = execution.SpatialSolve,
                 Snapshot = snapshot
             };
@@ -1678,10 +1583,6 @@ namespace ReactorSim.Browser
 
         public PlaytestCoreDto? CoreReplacement { get; set; }
 
-        public PlaytestPreviewDto? Preview { get; set; }
-
-        public LabSnapshotDto? LabPreview { get; set; }
-
         public LabSnapshotDto? Lab { get; set; }
 
         public string StateDigest { get; set; } = string.Empty;
@@ -2143,37 +2044,4 @@ namespace ReactorSim.Browser
         public string Tone { get; set; } = "info";
     }
 
-    internal sealed class PlaytestRefuelRequestDto
-    {
-        public uint ChannelIndex { get; set; }
-
-        public string DirectionId { get; set; } = string.Empty;
-
-        public ushort ShiftCount { get; set; }
-
-        public string FuelTypeId { get; set; } = string.Empty;
-    }
-
-    internal sealed class PlaytestPreviewDto
-    {
-        public PlaytestRefuelRequestDto Request { get; set; } = new PlaytestRefuelRequestDto();
-
-        public double DischargeBurnupMwdPerKg { get; set; }
-
-        public double LocalPowerDeltaFraction { get; set; }
-
-        public double LocalTiltDeltaFraction { get; set; }
-
-        public double PredictedReactivityDelta { get; set; }
-
-        public double ProjectedPowerFraction { get; set; }
-
-        public double ProjectedTiltFraction { get; set; }
-
-        public double ProjectedScoreDelta { get; set; }
-
-        public List<string> InsertedBundleIds { get; set; } = new List<string>();
-
-        public List<string> DischargedBundleIds { get; set; } = new List<string>();
-    }
 }

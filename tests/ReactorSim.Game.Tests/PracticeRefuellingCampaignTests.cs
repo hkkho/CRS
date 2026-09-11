@@ -10,7 +10,7 @@ public sealed class PracticeRefuellingCampaignTests
     private const string FuelType = "NAT-U-SYNTHETIC";
 
     [Fact]
-    public void PreviewThenCommitPublishesExactlyTheProposedFourBundleShift()
+    public void DirectRefuelPublishesTheAcceptedFourBundleShift()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
@@ -19,36 +19,6 @@ public sealed class PracticeRefuellingCampaignTests
         IqsSpatialCandidateV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
         GameChannelPresentationSnapshot beforeChannel = before.Core.GetChannel(CampaignChannel);
 
-        GameSessionCommandResult preview = session.PreviewRefuelChannel(
-            CampaignChannel,
-            "toward-end-b",
-            4,
-            FuelType);
-
-        Assert.True(preview.Accepted, preview.DiagnosticMessage);
-        Assert.NotNull(preview.PreviewCore);
-        AssertAcceptedStateEqual(before, session.Snapshot);
-        Assert.Same(beforeCoreState, session.CoreState);
-        Assert.Same(beforeEquilibrium, session.CurrentEquilibriumProjection);
-        Assert.Same(beforeSpatialCandidate, session.CurrentSpatialCandidate);
-
-        GameChannelPresentationSnapshot previewChannel =
-            preview.PreviewCore.GetChannel(CampaignChannel);
-        for (int position = 0; position < 4; position++)
-        {
-            Assert.True(previewChannel.Bundles[position].IsFresh);
-            Assert.NotEqual(
-                beforeChannel.Bundles[position].BundleId,
-                previewChannel.Bundles[position].BundleId);
-        }
-
-        for (int position = 4; position < 12; position++)
-        {
-            Assert.Equal(
-                beforeChannel.Bundles[position - 4].BundleId,
-                previewChannel.Bundles[position].BundleId);
-        }
-
         GameSessionCommandResult committed = session.RefuelChannel(
             CampaignChannel,
             "toward-end-b",
@@ -56,7 +26,23 @@ public sealed class PracticeRefuellingCampaignTests
             FuelType);
 
         Assert.True(committed.Accepted, committed.DiagnosticMessage);
-        Assert.Null(committed.PreviewCore);
+        GameChannelPresentationSnapshot committedChannel =
+            committed.Snapshot.Core.GetChannel(CampaignChannel);
+        for (int position = 0; position < 4; position++)
+        {
+            Assert.True(committedChannel.Bundles[position].IsFresh);
+            Assert.NotEqual(
+                beforeChannel.Bundles[position].BundleId,
+                committedChannel.Bundles[position].BundleId);
+        }
+
+        for (int position = 4; position < 12; position++)
+        {
+            Assert.Equal(
+                beforeChannel.Bundles[position - 4].BundleId,
+                committedChannel.Bundles[position].BundleId);
+        }
+
         Assert.Equal(1u, committed.Snapshot.RefuellingOperationCount);
         Assert.Equal(before.FreshBundlesAvailable - 4u, committed.Snapshot.FreshBundlesAvailable);
         Assert.Equal((int)CampaignChannel, committed.Snapshot.LastRefuelledChannel);
@@ -74,10 +60,6 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.NotSame(beforeCoreState, session.CoreState);
         Assert.NotSame(beforeEquilibrium, session.CurrentEquilibriumProjection);
         Assert.NotSame(beforeSpatialCandidate, session.CurrentSpatialCandidate);
-        AssertCoreEqual(
-            preview.PreviewCore,
-            committed.Snapshot.Core,
-            compareBindingVersion: false);
     }
 
     [Fact]
@@ -98,7 +80,6 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.False(rejected.Accepted);
         Assert.NotEmpty(rejected.DiagnosticCode);
         Assert.NotEmpty(rejected.DiagnosticMessage);
-        Assert.Null(rejected.PreviewCore);
         AssertAcceptedStateEqual(before, rejected.Snapshot);
         AssertAcceptedStateEqual(before, session.Snapshot);
         Assert.Same(beforeCoreState, session.CoreState);

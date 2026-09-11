@@ -379,8 +379,6 @@ namespace ReactorSim.Browser
 
         public string? DiagnosticMessage { get; set; }
 
-        public object? PreviewSnapshot { get; set; }
-
         public object? SpatialSolve { get; set; }
     }
 
@@ -421,15 +419,12 @@ namespace ReactorSim.Browser
 
         public List<BridgeDiagnosticDto> Diagnostics { get; init; } = new List<BridgeDiagnosticDto>();
 
-        public object? PreviewSnapshot { get; init; }
-
         public object? SpatialSolve { get; init; }
 
         public GameSessionSnapshot? Snapshot { get; init; }
 
         public static BridgeCommandExecution Success(
             string message = "",
-            object? previewSnapshot = null,
             object? spatialSolve = null,
             GameSessionSnapshot? snapshot = null)
         {
@@ -437,7 +432,6 @@ namespace ReactorSim.Browser
             {
                 Accepted = true,
                 Message = message,
-                PreviewSnapshot = previewSnapshot,
                 SpatialSolve = spatialSolve,
                 Snapshot = snapshot
             };

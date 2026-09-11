@@ -134,15 +134,13 @@ namespace ReactorSim.Game
             string diagnosticCode,
             string diagnosticMessage,
             string message,
-            GameSessionSnapshot snapshot,
-            GameCorePresentationSnapshot? previewCore)
+            GameSessionSnapshot snapshot)
         {
             Accepted = accepted;
             DiagnosticCode = diagnosticCode;
             DiagnosticMessage = diagnosticMessage;
             Message = message;
             Snapshot = snapshot;
-            PreviewCore = previewCore;
         }
 
         public bool Accepted { get; }
@@ -154,8 +152,6 @@ namespace ReactorSim.Game
         public string Message { get; }
 
         public GameSessionSnapshot Snapshot { get; }
-
-        public GameCorePresentationSnapshot? PreviewCore { get; }
     }
 
     public sealed class GameSession
@@ -416,59 +412,13 @@ namespace ReactorSim.Game
             }
 
             ApplyPracticeTransaction(transaction.Value);
-            string message = FormatRefuellingMessage(result.Value, false);
+            string message = FormatRefuellingMessage(result.Value);
             return new GameSessionCommandResult(
                 true,
                 string.Empty,
                 string.Empty,
                 message,
-                CreateSnapshot(),
-                null);
-        }
-
-        public GameSessionCommandResult PreviewRefuelChannel(
-            uint channelIndex,
-            string directionId,
-            ushort shiftCount,
-            string fuelTypeId)
-        {
-            if (!TryParseDirection(directionId, out GameRefuellingDirectionV1 direction))
-            {
-                return Rejected(
-                    "GameSession.Refuelling.Direction.Invalid",
-                    "Choose either toward-end-a or toward-end-b.");
-            }
-
-            ContractValidationResult<GameRefuellingResultV1> result = TryRefuel(
-                channelIndex,
-                direction,
-                shiftCount,
-                fuelTypeId);
-            if (!result.IsValid)
-            {
-                return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<PracticeTransaction> transaction =
-                TryBuildRefuellingTransaction(result.Value);
-            if (!transaction.IsValid)
-            {
-                return Rejected(
-                    transaction.FirstDiagnostic.Code,
-                    transaction.FirstDiagnostic.Message);
-            }
-
-            return new GameSessionCommandResult(
-                true,
-                string.Empty,
-                string.Empty,
-                FormatRefuellingMessage(result.Value, true),
-                CreateSnapshot(),
-                CreateCorePresentationSnapshot(
-                    transaction.Value.CoreState,
-                    CurrentPowerFraction(),
-                    transaction.Value.SpatialCandidate,
-                    transaction.Value.Rrs));
+                CreateSnapshot());
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -485,8 +435,7 @@ namespace ReactorSim.Game
                 string.Empty,
                 string.Empty,
                 string.Empty,
-                CreateSnapshot(),
-                null);
+                CreateSnapshot());
         }
 
         private GameSessionCommandResult CompleteWithMessage<T>(
@@ -510,8 +459,7 @@ namespace ReactorSim.Game
                 string.Empty,
                 string.Empty,
                 message,
-                CreateSnapshot(),
-                null);
+                CreateSnapshot());
         }
 
         private GameSessionCommandResult Rejected(string code, string message)
@@ -521,8 +469,7 @@ namespace ReactorSim.Game
                 code,
                 message,
                 message,
-                CreateSnapshot(),
-                null);
+                CreateSnapshot());
         }
 
         private GameSessionSnapshot CreateSnapshot()
@@ -1157,8 +1104,7 @@ namespace ReactorSim.Game
         }
 
         private string FormatRefuellingMessage(
-            GameRefuellingResultV1 result,
-            bool preview)
+            GameRefuellingResultV1 result)
         {
             string endName = result.Direction == GameRefuellingDirectionV1.TowardEndA
                 ? "End A"
@@ -1168,15 +1114,12 @@ namespace ReactorSim.Game
                 : result.DischargedBundles.Average(
                     bundle => bundle.CurrentBurnupJPerKgHm /
                               GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
-            string prefix = preview ? "Preview: " : string.Empty;
-            string inventory = preview
-                ? string.Empty
-                : "; " + _coreState.FreshBundlesAvailable.ToString(CultureInfo.InvariantCulture) +
-                  " fresh bundles remain";
-            return prefix + "Channel " + result.ChannelIndex.ToString(CultureInfo.InvariantCulture) +
+            string inventory = "; " + _coreState.FreshBundlesAvailable.ToString(CultureInfo.InvariantCulture) +
+                               " fresh bundles remain";
+            return "Channel " + result.ChannelIndex.ToString(CultureInfo.InvariantCulture) +
                    " refuelled toward " + endName + " with " +
                    result.ShiftCount.ToString(CultureInfo.InvariantCulture) + " " +
-                   result.FuelTypeId + " bundles; predicted discharge burnup " +
+                   result.FuelTypeId + " bundles; discharged burnup " +
                    averageDischargedBurnup.ToString("0.00", CultureInfo.InvariantCulture) +
                    " MWd/kg HM" + inventory + ".";
         }
