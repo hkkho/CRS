@@ -90,6 +90,116 @@ public sealed class PracticeLiquidZoneRrsTests
         Assert.False(first.HighExhaustion);
     }
 
+    [Fact]
+    public void ResponseModelHasDeterministicConservativeShapeAndAbsorbingCommonMode()
+    {
+        double[] baseline = Enumerable.Repeat(1.0 / 14.0, 14).ToArray();
+
+        PracticeLiquidZoneRrsResponseModelV1 first = Require(
+            PracticeLiquidZoneRrsResponseModelV1.TryCreate(baseline));
+        PracticeLiquidZoneRrsResponseModelV1 second = Require(
+            PracticeLiquidZoneRrsResponseModelV1.TryCreate(baseline));
+
+        Assert.Equal(14, first.VariableCount);
+        Assert.Equal(15, first.OutputCount);
+        Assert.Equal(Enumerable.Range(0, 14).Select(value => (uint)value), first.VariableOrder);
+        Assert.Equal(first.ModelDigest, second.ModelDigest);
+        Assert.Equal(15, first.Jacobian.Count);
+        Assert.All(first.Jacobian, row => Assert.Equal(14, row.Count));
+
+        for (int variable = 0; variable < first.VariableCount; variable++)
+        {
+            double shapeColumnSum = 0.0;
+            for (int output = 0; output < first.VariableCount; output++)
+            {
+                Assert.True(double.IsFinite(first.Jacobian[output][variable]));
+                shapeColumnSum += first.Jacobian[output][variable];
+            }
+
+            Assert.InRange(Math.Abs(shapeColumnSum), 0.0, 1.0e-15);
+            Assert.True(first.Jacobian[first.VariableCount][variable] < 0.0);
+        }
+    }
+
+    [Fact]
+    public void EquilibriumControllerIsDeterministicBoundedAndNeverUsesMoreThanFourCandidates()
+    {
+        CreateRunFixture(
+            out SyntheticGameCoreStateV1 firstInventory,
+            out EquilibriumCoreSolverV1 firstSolver,
+            out PracticeLiquidZoneRrsV1 firstInitial);
+        CreateRunFixture(
+            out SyntheticGameCoreStateV1 secondInventory,
+            out EquilibriumCoreSolverV1 secondSolver,
+            out PracticeLiquidZoneRrsV1 secondInitial);
+
+        PracticeLiquidZoneRrsEquilibriumResultV1 first = Require(
+            PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                firstSolver,
+                firstInventory.EnumerateBundles(),
+                firstInitial,
+                1.0));
+        PracticeLiquidZoneRrsEquilibriumResultV1 second = Require(
+            PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                secondSolver,
+                secondInventory.EnumerateBundles(),
+                secondInitial,
+                1.0));
+
+        PracticeLiquidZoneRrsV1 state = first.State;
+        Assert.Equal(state.StateDigest, second.State.StateDigest);
+        Assert.Equal(state.ZoneFills, second.State.ZoneFills);
+        Assert.Equal(1, state.BaseCandidateSolveCount);
+        Assert.Equal(1, state.ControlledBaselineCandidateSolveCount);
+        Assert.InRange(state.VerificationCandidateSolveCount, 0, 1);
+        Assert.InRange(state.CorrectionCandidateSolveCount, 0, 1);
+        Assert.Equal(
+            state.BaseCandidateSolveCount +
+            state.ControlledBaselineCandidateSolveCount +
+            state.VerificationCandidateSolveCount +
+            state.CorrectionCandidateSolveCount,
+            state.TotalCandidateSolveCount);
+        Assert.InRange(
+            state.TotalCandidateSolveCount,
+            2,
+            PracticeLiquidZoneRrsIdentityV1.MaximumCandidateSolveCount);
+        Assert.All(state.ZoneFills, fill => Assert.InRange(fill, 0.0, 1.0));
+        Assert.Equal(14, state.AppliedFillCommand.Count);
+        Assert.All(
+            state.AppliedFillCommand,
+            command => Assert.InRange(
+                Math.Abs(command),
+                0.0,
+                PracticeLiquidZoneRrsIdentityV1.MaxFillMovementPerEvent + 1.0e-12));
+        Assert.True(
+            state.CombinedWeightedResidual <=
+            state.ControlledBaselineWeightedResidual +
+            PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance);
+        Assert.Equal(state.OverlayDigest, first.Projection.StaticAbsorptionOverlay!.OverlayDigest);
+        if (state.CorrectionApplied)
+        {
+            Assert.Equal(1, state.CorrectionCandidateSolveCount);
+        }
+    }
+
+    private static void CreateRunFixture(
+        out SyntheticGameCoreStateV1 inventory,
+        out EquilibriumCoreSolverV1 solver,
+        out PracticeLiquidZoneRrsV1 initial)
+    {
+        inventory = SyntheticGameCoreStateV1.CreatePractice();
+        FullCoreDiffusionDataPackV1 pack = Require(
+            FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+        FullCoreDiffusionModelV1 model = Require(
+            FullCoreDiffusionModelV1.TryCreateCandu6(pack));
+        solver = Require(
+            EquilibriumCoreSolverV1.TryCreate(model, inventory.EnumerateBundles(), 1.0e9));
+        PracticeLiquidZoneRrsMappingV1 mapping = Require(
+            PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+        initial = Require(
+            PracticeLiquidZoneRrsV1.TryCreate(mapping, solver.CurrentProjection));
+    }
+
     private static T Require<T>(ContractValidationResult<T> result)
     {
         if (!result.IsValid)
