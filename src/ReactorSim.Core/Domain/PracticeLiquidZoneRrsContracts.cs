@@ -1323,13 +1323,25 @@ namespace ReactorSim.Core
             }
 
             BundleState[] bundleRecords = bundles.ToArray();
+            ContractValidationResult<EquilibriumCorePreparedCandidatesV1> preparedCandidates =
+                equilibriumSolver.TryPrepareCandidates(bundleRecords);
+            if (!preparedCandidates.IsValid)
+            {
+                return InvalidRun(
+                    preparedCandidates.FirstDiagnostic.Code,
+                    preparedCandidates.FirstDiagnostic.Path,
+                    preparedCandidates.FirstDiagnostic.Message);
+            }
+
             int baseCandidateSolveCount = 0;
             int controlledBaselineCandidateSolveCount = 0;
             int verificationCandidateSolveCount = 0;
             int correctionCandidateSolveCount = 0;
 
             ContractValidationResult<EquilibriumCoreProjectionV1> baseCandidate =
-                equilibriumSolver.TrySolveCandidate(bundleRecords);
+                equilibriumSolver.TrySolveCandidate(
+                    preparedCandidates.Value,
+                    equilibriumSolver.CurrentSpatialSolve);
             baseCandidateSolveCount++;
             if (!baseCandidate.IsValid)
             {
@@ -1365,9 +1377,9 @@ namespace ReactorSim.Core
 
             ContractValidationResult<EquilibriumCoreProjectionV1> controlledBaseline =
                 equilibriumSolver.TrySolveCandidate(
-                    bundleRecords,
-                    baselineOverlay.Value,
-                    baseCandidate.Value.SpatialSolve);
+                    preparedCandidates.Value,
+                    baseCandidate.Value.SpatialSolve,
+                    baselineOverlay.Value);
             controlledBaselineCandidateSolveCount++;
             if (!controlledBaseline.IsValid)
             {
@@ -1454,9 +1466,9 @@ namespace ReactorSim.Core
 
                     ContractValidationResult<EquilibriumCoreProjectionV1> verification =
                         equilibriumSolver.TrySolveCandidate(
-                            bundleRecords,
-                            verificationOverlay.Value,
-                            controlledBaseline.Value.SpatialSolve);
+                            preparedCandidates.Value,
+                            controlledBaseline.Value.SpatialSolve,
+                            verificationOverlay.Value);
                     verificationCandidateSolveCount++;
                     if (!verification.IsValid)
                     {
@@ -1552,9 +1564,9 @@ namespace ReactorSim.Core
 
                             ContractValidationResult<EquilibriumCoreProjectionV1> correction =
                                 equilibriumSolver.TrySolveCandidate(
-                                    bundleRecords,
-                                    correctionOverlay.Value,
-                                    verification.Value.SpatialSolve);
+                                    preparedCandidates.Value,
+                                    verification.Value.SpatialSolve,
+                                    correctionOverlay.Value);
                             correctionCandidateSolveCount++;
                             if (!correction.IsValid)
                             {

@@ -225,6 +225,21 @@ namespace ReactorSim.Core
         }
     }
 
+    internal sealed class EquilibriumCorePreparedCandidatesV1
+    {
+        internal EquilibriumCorePreparedCandidatesV1(
+            EquilibriumCoreSolverV1 owner,
+            FullCoreDiffusionPreparedSolveV1 spatialPreparedSolve)
+        {
+            Owner = owner;
+            SpatialPreparedSolve = spatialPreparedSolve;
+        }
+
+        internal EquilibriumCoreSolverV1 Owner { get; }
+
+        internal FullCoreDiffusionPreparedSolveV1 SpatialPreparedSolve { get; }
+    }
+
     /// <summary>
     /// Deterministic full-core equilibrium solver facade. Solving a candidate
     /// is side-effect free; only TryCommitCandidate changes the current
@@ -343,6 +358,82 @@ namespace ReactorSim.Core
             IEnumerable<BundleState> bundles)
         {
             return TrySolveCandidate(bundles, _current.SpatialSolve);
+        }
+
+        internal ContractValidationResult<EquilibriumCorePreparedCandidatesV1>
+            TryPrepareCandidates(IEnumerable<BundleState> bundles)
+        {
+            ContractValidationResult<FullCoreDiffusionPreparedSolveV1> prepared =
+                _spatialModel.TryPrepareSolve(bundles);
+            if (!prepared.IsValid)
+            {
+                return ContractValidationResult<EquilibriumCorePreparedCandidatesV1>.Invalid(
+                    prepared.FirstDiagnostic.Code,
+                    prepared.FirstDiagnostic.Path,
+                    prepared.FirstDiagnostic.Message);
+            }
+
+            return ContractValidationResult<EquilibriumCorePreparedCandidatesV1>.Valid(
+                new EquilibriumCorePreparedCandidatesV1(this, prepared.Value));
+        }
+
+        internal ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(
+            EquilibriumCorePreparedCandidatesV1 prepared,
+            FullCoreDiffusionSolveResultV1 initialSpatialSolve,
+            StaticAbsorptionOverlayV1? staticAbsorptionOverlay = null)
+        {
+            if (prepared == null || !ReferenceEquals(prepared.Owner, this))
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.Prepared.OwnerMismatch",
+                    "prepared_candidates",
+                    "Prepared equilibrium candidates may only be used by their owning solver.");
+            }
+
+            if (initialSpatialSolve == null)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.InitialSpatialSolve.Missing",
+                    "initial_spatial_solve",
+                    "An equilibrium candidate requires an explicit accepted warm-start solve.");
+            }
+
+            if (!ReferenceEquals(initialSpatialSolve.DataPack, _spatialModel.DataPack))
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.InitialSpatialSolve.DataPackMismatch",
+                    "initial_spatial_solve.data_pack",
+                    "An equilibrium candidate warm start must use this solver's exact diffusion data pack.");
+            }
+
+            ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
+                _spatialModel.TrySolvePrepared(
+                    prepared.SpatialPreparedSolve,
+                    _targetPowerWatts,
+                    initialSpatialSolve.EffectiveK,
+                    initialSpatialSolve.Group1Flux,
+                    initialSpatialSolve.Group2Flux,
+                    staticAbsorptionOverlay);
+            if (!spatial.IsValid)
+            {
+                return InvalidCandidate(
+                    spatial.FirstDiagnostic.Code,
+                    spatial.FirstDiagnostic.Path,
+                    spatial.FirstDiagnostic.Message);
+            }
+
+            try
+            {
+                return ContractValidationResult<EquilibriumCoreProjectionV1>.Valid(
+                    BuildProjection(spatial.Value));
+            }
+            catch (InvalidOperationException exception)
+            {
+                return InvalidCandidate(
+                    "EquilibriumCoreSolver.Candidate.Invalid",
+                    "candidate",
+                    exception.Message);
+            }
         }
 
         public ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(

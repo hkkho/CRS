@@ -152,6 +152,34 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
+    /// One validated inventory and its burnup-dependent base coefficient set,
+    /// prepared for a bounded group of candidate solves. It is internal so
+    /// callers cannot bypass the model ownership and validation boundary.
+    /// </summary>
+    internal sealed class FullCoreDiffusionPreparedSolveV1
+    {
+        internal FullCoreDiffusionPreparedSolveV1(
+            FullCoreDiffusionModelV1 owner,
+            BundleInventory inventory,
+            SpatialCoefficientSet baseCoefficients,
+            Digest32 inventoryBindingDigest)
+        {
+            Owner = owner;
+            Inventory = inventory;
+            BaseCoefficients = baseCoefficients;
+            InventoryBindingDigest = inventoryBindingDigest;
+        }
+
+        internal FullCoreDiffusionModelV1 Owner { get; }
+
+        internal BundleInventory Inventory { get; }
+
+        internal SpatialCoefficientSet BaseCoefficients { get; }
+
+        internal Digest32 InventoryBindingDigest { get; }
+    }
+
+    /// <summary>
     /// Shared full-core solver adapter used by the Game and Browser layers.
     /// It assembles the 380 by 12 CANDU-6 stencil once, binds material rows
     /// from the selected pack for every live bundle, and delegates the actual
@@ -366,7 +394,120 @@ namespace ReactorSim.Core
                 initialGroup1Flux,
                 initialGroup2Flux,
                 null,
+                null,
                 null);
+        }
+
+        internal ContractValidationResult<FullCoreDiffusionPreparedSolveV1> TryPrepareSolve(
+            IEnumerable<BundleState> bundles)
+        {
+            if (bundles == null)
+            {
+                return ContractValidationResult<FullCoreDiffusionPreparedSolveV1>.Invalid(
+                    "FullCoreDiffusionSolve.Bundles.Missing",
+                    "bundles",
+                    "A prepared full-core solve requires one live bundle for every spatial node.");
+            }
+
+            ContractValidationResult<BundleInventory> inventoryResult =
+                BundleInventory.TryCreate(_topology, bundles);
+            if (!inventoryResult.IsValid)
+            {
+                return ContractValidationResult<FullCoreDiffusionPreparedSolveV1>.Invalid(
+                    inventoryResult.FirstDiagnostic.Code,
+                    inventoryResult.FirstDiagnostic.Path,
+                    inventoryResult.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> coefficientResult =
+                BuildCoefficientSet(inventoryResult.Value);
+            if (!coefficientResult.IsValid)
+            {
+                return ContractValidationResult<FullCoreDiffusionPreparedSolveV1>.Invalid(
+                    coefficientResult.FirstDiagnostic.Code,
+                    coefficientResult.FirstDiagnostic.Path,
+                    coefficientResult.FirstDiagnostic.Message);
+            }
+
+            Digest32 inventoryDigest = FullCoreAdjointImportanceV1.ComputeReferenceStateDigest(
+                _dataPack,
+                inventoryResult.Value);
+            return ContractValidationResult<FullCoreDiffusionPreparedSolveV1>.Valid(
+                new FullCoreDiffusionPreparedSolveV1(
+                    this,
+                    inventoryResult.Value,
+                    coefficientResult.Value,
+                    inventoryDigest));
+        }
+
+        internal ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolvePrepared(
+            FullCoreDiffusionPreparedSolveV1 prepared,
+            double targetPowerWatts,
+            double initialEigenvalue,
+            IReadOnlyList<double>? initialGroup1Flux,
+            IReadOnlyList<double>? initialGroup2Flux,
+            StaticAbsorptionOverlayV1? staticAbsorptionOverlay = null)
+        {
+            if (prepared == null || !ReferenceEquals(prepared.Owner, this))
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.Prepared.OwnerMismatch",
+                    "prepared_solve",
+                    "A prepared solve may only be used by the model that validated it.");
+            }
+
+            if (!ContractValidation.IsFinite(targetPowerWatts) || targetPowerWatts <= 0.0)
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.TargetPower.Invalid",
+                    "target_power_w",
+                    "The full-core target power must be finite and strictly positive SI watts.");
+            }
+
+            if ((initialGroup1Flux == null) != (initialGroup2Flux == null))
+            {
+                return InvalidSolve(
+                    "FullCoreDiffusionSolve.InitialFlux.Incomplete",
+                    "initial_flux",
+                    "Both warm-start flux vectors must be supplied together or both omitted.");
+            }
+
+            SpatialCoefficientSet coefficients = prepared.BaseCoefficients;
+            if (staticAbsorptionOverlay != null)
+            {
+                ContractValidationResult<bool> overlayBinding =
+                    ValidateStaticAbsorptionOverlay(staticAbsorptionOverlay);
+                if (!overlayBinding.IsValid)
+                {
+                    return InvalidSolve(
+                        overlayBinding.FirstDiagnostic.Code,
+                        overlayBinding.FirstDiagnostic.Path,
+                        overlayBinding.FirstDiagnostic.Message);
+                }
+
+                ContractValidationResult<SpatialCoefficientSet> effective =
+                    ApplyStaticAbsorptionOverlay(coefficients, staticAbsorptionOverlay);
+                if (!effective.IsValid)
+                {
+                    return InvalidSolve(
+                        effective.FirstDiagnostic.Code,
+                        effective.FirstDiagnostic.Path,
+                        effective.FirstDiagnostic.Message);
+                }
+
+                coefficients = effective.Value;
+            }
+
+            return TrySolveWithCoefficients(
+                prepared.Inventory,
+                coefficients,
+                targetPowerWatts,
+                initialEigenvalue,
+                initialGroup1Flux,
+                initialGroup2Flux,
+                null,
+                staticAbsorptionOverlay,
+                prepared.InventoryBindingDigest);
         }
 
         /// <summary>
@@ -466,7 +607,8 @@ namespace ReactorSim.Core
                 initialGroup1Flux,
                 initialGroup2Flux,
                 null,
-                staticAbsorptionOverlay);
+                staticAbsorptionOverlay,
+                null);
         }
 
         /// <summary>
@@ -565,6 +707,7 @@ namespace ReactorSim.Core
                 initialGroup1Flux,
                 initialGroup2Flux,
                 xenonCoupling,
+                null,
                 null);
         }
 
@@ -776,7 +919,8 @@ namespace ReactorSim.Core
             IReadOnlyList<double>? initialGroup1Flux,
             IReadOnlyList<double>? initialGroup2Flux,
             XenonSpatialCouplingResultV1? xenonCoupling,
-            StaticAbsorptionOverlayV1? staticAbsorptionOverlay)
+            StaticAbsorptionOverlayV1? staticAbsorptionOverlay,
+            Digest32? preparedInventoryBindingDigest)
         {
 
             double[]? group1WarmStart = initialGroup1Flux?.ToArray();
@@ -889,9 +1033,10 @@ namespace ReactorSim.Core
                     _dataPack,
                     spatialResult.Value,
                     coefficientSet,
-                    FullCoreAdjointImportanceV1.ComputeReferenceStateDigest(
-                        _dataPack,
-                        inventory),
+                    preparedInventoryBindingDigest ??
+                        FullCoreAdjointImportanceV1.ComputeReferenceStateDigest(
+                            _dataPack,
+                            inventory),
                     AdjointWeightedReactivityV1.ComputeCoefficientBindingDigest(
                         _dataPack,
                         coefficientSet),
@@ -1197,7 +1342,7 @@ namespace ReactorSim.Core
                     baseNode.EnergyPerFissionJ));
             }
 
-            return baseCoefficients.TryRebindNodeCoefficients(effectiveNodes);
+            return baseCoefficients.TryRebindCanonicalNodeCoefficients(effectiveNodes);
         }
 
         private static double NormalizeZero(double value)

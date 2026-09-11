@@ -574,6 +574,73 @@ namespace ReactorSim.Core
                 _referenceXeNumberDensityM3);
         }
 
+        /// <summary>
+        /// Rebinds node rows that were produced by an already validated
+        /// coefficient set in its canonical stencil order. The immutable
+        /// edge and boundary dictionaries retain their original validation;
+        /// only the replacement physical rows need to be checked again.
+        /// </summary>
+        internal ContractValidationResult<SpatialCoefficientSet>
+            TryRebindCanonicalNodeCoefficients(
+                IEnumerable<SpatialNodeCoefficients> nodeCoefficients)
+        {
+            if (nodeCoefficients == null)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Rebind.Nodes.Missing",
+                    "node_coefficients",
+                    "A node coefficient collection is required for a canonical rebind.");
+            }
+
+            SpatialNodeCoefficients[] records = nodeCoefficients.ToArray();
+            if (records.Length != _stencil.NodeCount)
+            {
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "SpatialCoefficients.Rebind.Nodes.CountMismatch",
+                    "node_coefficients",
+                    "A canonical rebind requires exactly one coefficient row per stencil node.");
+            }
+
+            for (int nodeIndex = 0; nodeIndex < records.Length; nodeIndex++)
+            {
+                SpatialNodeCoefficients record = records[nodeIndex];
+                if (record == null)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Node.Null",
+                        "node_coefficients",
+                        "A node coefficient record may not be null.");
+                }
+
+                NodeKey expectedNode = _stencil.Nodes[nodeIndex].Node;
+                if (record.Node != expectedNode)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "SpatialCoefficients.Rebind.Nodes.OrderMismatch",
+                        ContractValidation.NodePath(record.Node, ".coefficients"),
+                        "Canonical replacement coefficient rows must follow stencil node order.");
+                }
+
+                ContractDiagnostic? failure = ValidateNodeCoefficients(record);
+                if (failure != null)
+                {
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        failure.Code,
+                        failure.Path,
+                        failure.Message);
+                }
+            }
+
+            return ContractValidationResult<SpatialCoefficientSet>.Valid(
+                new SpatialCoefficientSet(
+                    _stencil,
+                    records,
+                    _edges,
+                    _boundaries,
+                    _xenonBasis,
+                    _referenceXeNumberDensityM3));
+        }
+
         private static ContractDiagnostic? ValidateNodeCoefficients(SpatialNodeCoefficients record)
         {
             string path = ContractValidation.NodePath(record.Node, ".coefficients");
