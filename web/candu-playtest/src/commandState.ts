@@ -1,4 +1,4 @@
-import type { CanduChannelSnapshot, RefuelPreview, RefuelRequest } from "./protocol";
+import type { CanduChannelSnapshot, RefuelRequest } from "./protocol";
 import { clamp } from "./protocol";
 
 export interface RefuelDraft {
@@ -29,23 +29,12 @@ export function toggleShiftCount(shiftCount: RefuelRequest["shiftCount"]): Refue
   return shiftCount === 4 ? 8 : 4;
 }
 
-export function previewMatchesDraft(preview: RefuelPreview | null, draft: RefuelDraft): boolean {
-  if (preview === null) {
-    return false;
-  }
-  return preview.request.channelIndex === draft.channelIndex &&
-    preview.request.directionId === draft.directionId &&
-    preview.request.shiftCount === draft.shiftCount &&
-    preview.request.fuelTypeId === draft.fuelTypeId;
-}
-
-export function canConfirmRefuel(
-  preview: RefuelPreview | null,
-  draft: RefuelDraft,
+export function canIssueRefuel(
+  draft: RefuelDraft | null,
   freshBundlesAvailable: number,
   commandPending: boolean,
-): boolean {
-  return !commandPending && freshBundlesAvailable >= draft.shiftCount && previewMatchesDraft(preview, draft);
+): draft is RefuelDraft {
+  return draft !== null && !commandPending && freshBundlesAvailable >= draft.shiftCount;
 }
 
 export function adjustTarget(value: number, delta: number, minimum: number, maximum: number): number {

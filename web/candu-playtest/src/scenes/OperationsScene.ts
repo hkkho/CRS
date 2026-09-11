@@ -1,9 +1,8 @@
 import Phaser from "phaser";
 import {
-  canConfirmRefuel,
+  canIssueRefuel,
   createRefuelDraft,
   formatRefuelDirection,
-  previewMatchesDraft,
   toggleRefuelDirection,
   toRefuelRequest,
   adjustTarget,
@@ -28,14 +27,12 @@ import type {
   CanduCommandResponse,
   CanduSnapshot,
   PlaybackModeId,
-  RefuelPreview,
   RefuelRequest,
 } from "../protocol";
 import { createCoreFaceLayout, findAdjacentChannelIndex, getFlowVector, gridCoordinateLabel, projectChannelToFace, type CoreFaceLayout, type CorePoint } from "../projection";
 import {
   formatReactivity,
   formatEffectiveK,
-  formatSignedNumber,
   formatSimulationTime,
   formatSolveHealth,
   getFlowArrow,
@@ -69,7 +66,7 @@ interface RefuelMotion {
   origin: CorePoint;
 }
 
-type ModalKind = "refuel" | "control";
+type ModalKind = "control";
 
 interface ModalObject {
   destroy: () => void;
@@ -88,7 +85,6 @@ export class OperationsScene extends Phaser.Scene {
   private pending = false;
   private modalKind: ModalKind | null = null;
   private refuelDraft: RefuelDraft | null = null;
-  private preview: RefuelPreview | null = null;
   private controlPowerTarget = 1;
   private controlTiltTarget = 0;
   private lastHandledResponseSequence = -1;
@@ -98,7 +94,6 @@ export class OperationsScene extends Phaser.Scene {
   private motion: RefuelMotion | null = null;
   private modalBackdrop: Phaser.GameObjects.Graphics | null = null;
   private modalGraphics: Phaser.GameObjects.Graphics | null = null;
-  private modalPreviewGraphics: Phaser.GameObjects.Graphics | null = null;
   private modalTitle: Phaser.GameObjects.Text | null = null;
   private modalSubtitle: Phaser.GameObjects.Text | null = null;
   private modalStatus: Phaser.GameObjects.Text | null = null;
@@ -114,7 +109,6 @@ export class OperationsScene extends Phaser.Scene {
   private mapGraphics: Phaser.GameObjects.Graphics | null = null;
   private ambientGraphics: Phaser.GameObjects.Graphics | null = null;
   private selectionGraphics: Phaser.GameObjects.Graphics | null = null;
-  private previewGraphics: Phaser.GameObjects.Graphics | null = null;
   private motionGraphics: Phaser.GameObjects.Graphics | null = null;
   private motionText: Phaser.GameObjects.Text | null = null;
   private hudDay: Phaser.GameObjects.Text | null = null;
@@ -140,6 +134,9 @@ export class OperationsScene extends Phaser.Scene {
   private sideProfileLegend: Phaser.GameObjects.Text | null = null;
   private readonly sideProfileNumbers: Phaser.GameObjects.Text[] = [];
   private readonly sideProfileValues: Phaser.GameObjects.Text[] = [];
+  private refuelDirectionButton: TacticalButton | null = null;
+  private refuelFourButton: TacticalButton | null = null;
+  private refuelEightButton: TacticalButton | null = null;
   private refuelButton: TacticalButton | null = null;
   private controlButton: TacticalButton | null = null;
   private playbackButtons: TacticalButton[] = [];
@@ -154,6 +151,8 @@ export class OperationsScene extends Phaser.Scene {
   public create(): void {
     this.snapshot = this.session.snapshot;
     this.selectedChannelIndex = chooseInitialChannel(this.snapshot);
+    const initialChannel = this.getSelectedChannel();
+    this.refuelDraft = initialChannel === undefined ? null : createRefuelDraft(initialChannel);
     this.createBackdrop();
     this.createUnavailableOverlay();
     this.createMap();
@@ -179,7 +178,7 @@ export class OperationsScene extends Phaser.Scene {
         this.motion = null;
         this.motionGraphics?.clear();
         this.motionText?.setVisible(false);
-        this.resultMessage = finished.response.message;
+        this.resultMessage = `ACCEPTED  /  ${finished.response.message}`;
         this.resultExpiresAt = time + 6800;
         this.refreshSidePanel();
       }
@@ -220,7 +219,6 @@ export class OperationsScene extends Phaser.Scene {
     this.mapGraphics = this.add.graphics().setDepth(0);
     this.ambientGraphics = this.add.graphics().setDepth(12);
     this.selectionGraphics = this.add.graphics().setDepth(13);
-    this.previewGraphics = this.add.graphics().setDepth(14);
     this.drawMapFoundation();
 
     for (const channel of this.snapshot.core.channels) {
@@ -364,47 +362,6 @@ export class OperationsScene extends Phaser.Scene {
     graphics.fillCircle(position.x, position.y, 2.5);
   }
 
-  private drawPreviewVisual(): void {
-    if (this.previewGraphics === null) {
-      return;
-    }
-    const graphics = this.previewGraphics;
-    graphics.clear();
-    if (this.modalKind !== "refuel" || this.preview === null || this.refuelDraft === null || !previewMatchesDraft(this.preview, this.refuelDraft)) {
-      return;
-    }
-    const selected = this.getSelectedChannel();
-    if (selected === undefined) {
-      return;
-    }
-    const position = projectChannelToFace(selected, this.layout);
-    const vector = getFlowVector(this.refuelDraft.directionId);
-    const magnitude = Math.hypot(vector.x, vector.y);
-    const vx = vector.x / magnitude;
-    const vy = vector.y / magnitude;
-    graphics.lineStyle(12, COLORS.magenta, 0.16);
-    graphics.lineBetween(position.x - vx * 74, position.y - vy * 74, position.x + vx * 74, position.y + vy * 74);
-    graphics.lineStyle(2, COLORS.cyan, 0.9);
-    graphics.lineBetween(position.x - vx * 74, position.y - vy * 74, position.x + vx * 74, position.y + vy * 74);
-    for (let index = 0; index < 12; index += 1) {
-      const offset = -60 + index * 11;
-      const tokenX = position.x + vx * offset;
-      const tokenY = position.y + vy * offset;
-      const tokenColor = index < this.refuelDraft.shiftCount ? COLORS.cyan : COLORS.magenta;
-      graphics.fillStyle(tokenColor, index < this.refuelDraft.shiftCount ? 0.94 : 0.36);
-      graphics.fillRoundedRect(tokenX - 4, tokenY - 3, 8, 6, 2);
-    }
-    graphics.fillStyle(COLORS.gold, 0.95);
-    graphics.fillTriangle(
-      position.x + vx * 85,
-      position.y + vy * 85,
-      position.x + vx * 73 - vy * 6,
-      position.y + vy * 73 + vx * 6,
-      position.x + vx * 73 + vy * 6,
-      position.y + vy * 73 - vx * 6,
-    );
-  }
-
   private drawAmbient(time: number): void {
     if (this.ambientGraphics === null) {
       return;
@@ -537,15 +494,21 @@ export class OperationsScene extends Phaser.Scene {
     }
     graphics.lineStyle(1, COLORS.ivory, 0.14);
     graphics.lineBetween(SIDE.x + 24, SIDE.y + 535, SIDE.x + SIDE.width - 24, SIDE.y + 535);
-    makeText(this, SIDE.x + 24, SIDE.y + 548, "SELECTED CHANNEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.8 }).setDepth(170);
-    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 548, "ENTER / R  REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 548, "DIRECT REFUELLING", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.8 }).setDepth(170);
+    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 548, "LIVE AUTHORITATIVE ORDER", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
     this.sideEvent = makeText(this, SIDE.x + 24, SIDE.y + 571, "Ready for an on-power shift.", { fontFamily: FONTS.body, fontSize: "11px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: SIDE.width - 48 }, lineSpacing: 3 }).setDepth(170);
 
-    this.refuelButton = makeButton(this, SIDE.x + 98, SIDE.y + 604, 150, 42, "REFUEL  ↗", () => this.openRefuelModal(), { tone: "gold", fontSize: 12 });
+    this.refuelDirectionButton = makeButton(this, SIDE.x + 102, SIDE.y + 610, 156, 34, formatRefuelDirection(this.refuelDraft?.directionId ?? "toward-end-a"), () => this.toggleRefuelDirection(), { tone: "magenta", fontSize: 9, compact: true });
+    this.refuelDirectionButton.gameObject.setDepth(180);
+    this.refuelFourButton = makeButton(this, SIDE.x + 222, SIDE.y + 610, 68, 34, "4 BUNDLES", () => this.setRefuelShiftCount(4), { tone: "cyan", fontSize: 9, compact: true });
+    this.refuelFourButton.gameObject.setDepth(180);
+    this.refuelEightButton = makeButton(this, SIDE.x + 298, SIDE.y + 610, 68, 34, "8 BUNDLES", () => this.setRefuelShiftCount(8), { tone: "cyan", fontSize: 9, compact: true });
+    this.refuelEightButton.gameObject.setDepth(180);
+    this.refuelButton = makeButton(this, SIDE.x + 118, SIDE.y + 658, 188, 34, "REFUEL 4  ↗", () => this.dispatchRefuel(), { tone: "gold", fontSize: 11 });
     this.refuelButton.gameObject.setDepth(180);
-    this.controlButton = makeButton(this, SIDE.x + 258, SIDE.y + 604, 92, 42, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 11, compact: true });
+    this.controlButton = makeButton(this, SIDE.x + 276, SIDE.y + 658, 108, 34, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 10, compact: true });
     this.controlButton.gameObject.setDepth(180);
-    makeText(this, SIDE.x + 24, SIDE.y + 660, "ARROWS / WASD  MOVE   ·   ESC  CLOSE", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.3 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 678, "ARROWS MOVE · 4/8 SIZE · D DIRECTION · R REFUEL", { fontFamily: FONTS.mono, fontSize: "7px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.15 }).setDepth(170);
   }
 
   private createMotionLayer(): void {
@@ -612,7 +575,6 @@ export class OperationsScene extends Phaser.Scene {
       drawTileArrow(tile.graphics, tile.channel.flowDirection, width, height, isSelected ? COLORS.ink : COLORS.ivoryMuted);
     }
     this.drawSelection();
-    this.drawPreviewVisual();
   }
 
   private refreshSidePanel(): void {
@@ -626,6 +588,8 @@ export class OperationsScene extends Phaser.Scene {
       this.sideBurnup?.setText("AVG BURNUP —");
       this.sideFlow?.setText("—");
       this.sideEvent?.setText("CHANNEL DATA UNAVAILABLE");
+      this.sideEvent?.setColor(colorString(COLORS.red));
+      this.refreshRefuelControls(undefined);
       return;
     }
     this.sideChannelId?.setText(`CH ${String(channel.channelIndex).padStart(3, "0")}`);
@@ -638,7 +602,17 @@ export class OperationsScene extends Phaser.Scene {
     const contextualEvent = lastEventDetail !== undefined && !/select a channel/i.test(lastEventDetail)
       ? lastEventDetail
       : "Ready for an on-power shift.";
-    this.sideEvent?.setText(this.resultMessage || contextualEvent);
+    const feedback = this.pending ? "ORDER PENDING…" : this.resultMessage || contextualEvent;
+    const feedbackColor = this.pending
+      ? COLORS.gold
+      : this.resultMessage.startsWith("REJECTED") || this.resultMessage.startsWith("FAILED")
+        ? COLORS.red
+        : this.resultMessage.startsWith("ACCEPTED")
+          ? COLORS.green
+          : this.resultMessage.startsWith("TRANSFER")
+            ? COLORS.cyan
+            : COLORS.ivoryMuted;
+    this.sideEvent?.setText(feedback).setColor(colorString(feedbackColor));
     if (this.sideProfileGraphics !== null) {
       const graphics = this.sideProfileGraphics;
       graphics.clear();
@@ -658,8 +632,25 @@ export class OperationsScene extends Phaser.Scene {
         this.sideProfileValues[index]?.setText(bundle.isFresh ? "FRESH" : `${(bundle.currentBurnupMwdPerKg / 1000).toFixed(1)}k`).setColor(colorString(bundle.isFresh ? COLORS.cyan : COLORS.ivoryMuted));
       });
     }
-    this.refuelButton?.setEnabled(!this.pending && this.snapshot.core.channels.length === 380 && this.snapshot.freshBundlesAvailable >= 4);
+    this.refreshRefuelControls(channel);
     this.controlButton?.setEnabled(!this.pending && this.snapshot.core.channels.length === 380);
+  }
+
+  private refreshRefuelControls(channel: CanduChannelSnapshot | undefined): void {
+    if (channel !== undefined && (this.refuelDraft === null || this.refuelDraft.channelIndex !== channel.channelIndex)) {
+      this.refuelDraft = createRefuelDraft(channel);
+    }
+    const draft = this.refuelDraft;
+    const ready = channel !== undefined && this.snapshot.core.channels.length === 380 && this.session.status.isWasmAvailable;
+    const controlsEnabled = ready && !this.pending;
+    this.refuelDirectionButton?.setLabel(draft === null ? "DIRECTION" : formatRefuelDirection(draft.directionId));
+    this.refuelFourButton?.setEnabled(controlsEnabled);
+    this.refuelEightButton?.setEnabled(controlsEnabled);
+    this.refuelDirectionButton?.setEnabled(controlsEnabled);
+    this.refuelFourButton?.gameObject.setAlpha(draft?.shiftCount === 4 ? 1 : 0.64);
+    this.refuelEightButton?.gameObject.setAlpha(draft?.shiftCount === 8 ? 1 : 0.64);
+    this.refuelButton?.setLabel(`REFUEL ${draft?.shiftCount ?? 4}  ↗`);
+    this.refuelButton?.setEnabled(ready && canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending));
   }
 
   private refreshPhysicsReadout(): void {
@@ -716,16 +707,19 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private handleCommandResponse(response: CanduCommandResponse): void {
-    if (response.command.type === "preview-refuel") {
-      this.preview = response.preview;
-      this.refreshModal();
-      return;
-    }
     if (response.command.type === "commit-refuel") {
       const request = response.command.request;
-      const origin = projectChannelToFace({ gridColumn: this.getSelectedChannel()?.gridColumn ?? 0, gridRow: this.getSelectedChannel()?.gridRow ?? 0 }, this.layout);
-      this.modalKind = null;
-      this.destroyModal();
+      if (!response.accepted) {
+        this.motion = null;
+        this.motionGraphics?.clear();
+        this.motionText?.setVisible(false);
+        this.resultMessage = `REJECTED  /  ${response.message}`;
+        this.resultExpiresAt = this.scene.systems.game.loop.time + 6800;
+        this.refreshSidePanel();
+        return;
+      }
+      const channel = this.snapshot.core.channels.find((candidate) => candidate.channelIndex === request.channelIndex);
+      const origin = projectChannelToFace({ gridColumn: channel?.gridColumn ?? 0, gridRow: channel?.gridRow ?? 0 }, this.layout);
       this.motion = { request, response, elapsed: 0, duration: this.reducedMotion ? 1 : 920, origin };
       this.motionText?.setVisible(true).setText(`TRANSFER  /  CH ${String(request.channelIndex).padStart(3, "0")}`);
       this.resultMessage = "TRANSFER IN PROGRESS…";
@@ -739,54 +733,54 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private selectChannel(channelIndex: number): void {
-    if (this.modalKind !== null || !this.snapshot.core.channels.some((channel) => channel.channelIndex === channelIndex)) {
+    const channel = this.snapshot.core.channels.find((candidate) => candidate.channelIndex === channelIndex);
+    if (this.modalKind !== null || channel === undefined) {
       return;
     }
     this.selectedChannelIndex = channelIndex;
-    this.preview = null;
+    this.refuelDraft = createRefuelDraft(channel);
     this.lastError = "";
+    this.resultMessage = "";
+    this.resultExpiresAt = 0;
     this.refreshCore();
     this.refreshSidePanel();
   }
 
-  private openRefuelModal(): void {
-    const channel = this.getSelectedChannel();
-    if (channel === undefined || this.pending || !this.session.status.isWasmAvailable) {
+  private toggleRefuelDirection(): void {
+    if (this.refuelDraft === null || this.pending || this.motion !== null) {
       return;
     }
-    this.destroyModal();
-    this.modalKind = "refuel";
-    this.refuelDraft = createRefuelDraft(channel);
-    this.preview = null;
-    this.createRefuelModalObjects();
-    this.refreshModal();
-    this.refreshCore();
+    this.refuelDraft.directionId = toggleRefuelDirection(this.refuelDraft.directionId);
+    this.resultMessage = "";
+    this.resultExpiresAt = 0;
+    this.refreshSidePanel();
   }
 
-  private createRefuelModalObjects(): void {
-    this.createModalFrame("REFUELLING ORDER", "STAGE AN ON-POWER SHIFT");
-    this.modalButtons.push(
-      this.addModalButton(438, 696, 150, 42, "4 BUNDLES", () => { if (this.refuelDraft !== null) { this.refuelDraft.shiftCount = 4; this.preview = null; this.refreshModal(); this.refreshCore(); } }, { tone: "cyan", fontSize: 11 }),
-      this.addModalButton(600, 696, 150, 42, "8 BUNDLES", () => { if (this.refuelDraft !== null) { this.refuelDraft.shiftCount = 8; this.preview = null; this.refreshModal(); this.refreshCore(); } }, { tone: "cyan", fontSize: 11 }),
-      this.addModalButton(438, 748, 312, 42, "REVERSE DIRECTION  ↔", () => { if (this.refuelDraft !== null) { this.refuelDraft.directionId = toggleRefuelDirection(this.refuelDraft.directionId); this.preview = null; this.refreshModal(); this.refreshCore(); } }, { tone: "magenta", fontSize: 11 }),
-      this.addModalButton(842, 748, 150, 42, "CANCEL", () => this.closeModal(), { tone: "quiet", fontSize: 11 }),
-      this.addModalButton(1002, 748, 206, 42, "PREVIEW SHIFT  ↗", () => this.dispatchRefuelPreview(), { tone: "gold", fontSize: 11 }),
-      this.addModalButton(1002, 696, 206, 42, "CONFIRM SHIFT  ✓", () => this.dispatchRefuelCommit(), { tone: "gold", fontSize: 11 }),
-    );
-  }
-
-  private dispatchRefuelPreview(): void {
-    if (this.refuelDraft === null || this.pending) {
+  private setRefuelShiftCount(shiftCount: RefuelRequest["shiftCount"]): void {
+    if (this.refuelDraft === null || this.pending || this.motion !== null) {
       return;
     }
-    void this.session.dispatch({ type: "preview-refuel", request: toRefuelRequest(this.refuelDraft) }).catch(() => undefined);
+    this.refuelDraft.shiftCount = shiftCount;
+    this.resultMessage = "";
+    this.resultExpiresAt = 0;
+    this.refreshSidePanel();
   }
 
-  private dispatchRefuelCommit(): void {
-    if (this.refuelDraft === null || !canConfirmRefuel(this.preview, this.refuelDraft, this.snapshot.freshBundlesAvailable, this.pending)) {
+  private dispatchRefuel(): void {
+    const draft = this.refuelDraft;
+    if (this.motion !== null || !canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending)) {
       return;
     }
-    void this.session.dispatch({ type: "commit-refuel", request: toRefuelRequest(this.refuelDraft) }).catch(() => undefined);
+    const request = toRefuelRequest(draft);
+    this.resultMessage = "ORDER PENDING…";
+    this.resultExpiresAt = 0;
+    this.refreshSidePanel();
+    void this.session.dispatch({ type: "commit-refuel", request }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.resultMessage = `FAILED  /  ${message}`;
+      this.resultExpiresAt = this.scene.systems.game.loop.time + 6800;
+      this.refreshSidePanel();
+    });
   }
 
   private openControlModal(): void {
@@ -855,7 +849,6 @@ export class OperationsScene extends Phaser.Scene {
     this.modalSubtitle = this.addModalText(418, 268, subtitle, { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.cyan), letterSpacing: 1.4 });
     this.modalStatus = this.addModalText(416, 283, "", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), align: "right" }).setOrigin(1, 0);
     this.modalStatus.setX(1168);
-    this.modalPreviewGraphics = this.add.graphics().setDepth(505);
     this.modalDetail = this.addModalText(416, 335, "", { fontFamily: FONTS.body, fontSize: "15px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: 324 }, lineSpacing: 4 });
     this.modalValueA = this.addModalText(805, 345, "", { fontFamily: FONTS.mono, fontSize: "16px", color: colorString(COLORS.ivory), fontStyle: "bold" });
     this.modalValueB = this.addModalText(805, 386, "", { fontFamily: FONTS.mono, fontSize: "16px", color: colorString(COLORS.cyan), fontStyle: "bold" });
@@ -878,56 +871,9 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private refreshModal(): void {
-    if (this.modalKind === null) {
-      return;
-    }
-    if (this.modalKind === "refuel") {
-      this.refreshRefuelModal();
-    } else {
+    if (this.modalKind === "control") {
       this.refreshControlModal();
     }
-  }
-
-  private refreshRefuelModal(): void {
-    if (this.refuelDraft === null || this.modalDetail === null || this.modalValueA === null || this.modalValueB === null || this.modalValueC === null || this.modalValueD === null || this.modalValueE === null || this.modalStatus === null || this.modalPreviewGraphics === null) {
-      return;
-    }
-    const channel = this.getSelectedChannel();
-    if (channel === undefined) return;
-    const previewReady = previewMatchesDraft(this.preview, this.refuelDraft);
-    this.modalStatus.setText(previewReady ? "AUTHORITATIVE PREVIEW READY" : this.pending ? "COMMAND IN FLIGHT…" : "AWAITING PREVIEW").setColor(colorString(previewReady ? COLORS.green : COLORS.gold));
-    this.modalDetail.setText(`${String(channel.channelIndex).padStart(3, "0")}  /  ${gridCoordinateLabel(channel)}\n\n${formatRefuelDirection(this.refuelDraft.directionId)}\n\n${this.refuelDraft.shiftCount} bundle transfer\nNAT-U-SYNTHETIC\n\n${previewReady ? "The highlighted path is the projected local transition. Confirm only after reviewing the response." : "Choose a shift size and direction, then request an authoritative preview from the live command bridge."}`);
-    this.modalValueA.setText(`POWER        ${previewReady && this.preview !== null ? formatSignedNumber(this.preview.localPowerDeltaFraction * 100, 2) + " pts" : "—"}`);
-    this.modalValueB.setText(`TILT         ${previewReady && this.preview !== null ? formatSignedNumber(this.preview.localTiltDeltaFraction * 100, 2) + " pts" : "—"}`);
-    this.modalValueC.setText(`REACTIVITY   ${previewReady && this.preview !== null ? formatReactivity(this.preview.predictedReactivityDelta) : "—"}`);
-    this.modalValueD.setText(`SCORE        ${previewReady && this.preview !== null ? formatSignedNumber(this.preview.projectedScoreDelta, 1) : "—"}`);
-    this.modalValueE.setText(`DISCHARGE    ${previewReady && this.preview !== null ? this.preview.dischargeBurnupMwdPerKg.toFixed(1) + " MWd/kg" : "—"}`);
-    this.modalPreviewGraphics.clear();
-    const vector = getFlowVector(this.refuelDraft.directionId);
-    const length = Math.hypot(vector.x, vector.y);
-    const vx = vector.x / length;
-    const vy = vector.y / length;
-    const centerX = 1005;
-    const centerY = 585;
-    const pathLength = 110;
-    this.modalPreviewGraphics.lineStyle(12, COLORS.magenta, 0.13);
-    this.modalPreviewGraphics.lineBetween(centerX - vx * pathLength, centerY - vy * pathLength, centerX + vx * pathLength, centerY + vy * pathLength);
-    this.modalPreviewGraphics.lineStyle(2, previewReady ? COLORS.cyan : COLORS.gold, 0.88);
-    this.modalPreviewGraphics.lineBetween(centerX - vx * pathLength, centerY - vy * pathLength, centerX + vx * pathLength, centerY + vy * pathLength);
-    for (let index = 0; index < 12; index += 1) {
-      const offset = -93 + index * 17;
-      const tokenColor = index < this.refuelDraft.shiftCount ? COLORS.cyan : COLORS.magenta;
-      this.modalPreviewGraphics.fillStyle(tokenColor, index < this.refuelDraft.shiftCount ? 0.94 : 0.35);
-      this.modalPreviewGraphics.fillRoundedRect(centerX + vx * offset - 10, centerY + vy * offset - 6.5, 20, 13, 3);
-    }
-    this.modalPreviewGraphics.fillStyle(COLORS.gold, 0.95);
-    this.modalPreviewGraphics.fillTriangle(centerX + vx * 132, centerY + vy * 132, centerX + vx * 112 - vy * 11, centerY + vy * 112 + vx * 11, centerX + vx * 112 + vy * 11, centerY + vy * 112 - vx * 11);
-    this.modalButtons[0]?.setEnabled(!this.pending);
-    this.modalButtons[1]?.setEnabled(!this.pending);
-    this.modalButtons[2]?.setEnabled(!this.pending);
-    this.modalButtons[3]?.setEnabled(!this.pending);
-    this.modalButtons[4]?.setEnabled(!this.pending);
-    this.modalButtons[5]?.setEnabled(!this.pending && previewReady && canConfirmRefuel(this.preview, this.refuelDraft, this.snapshot.freshBundlesAvailable, false));
   }
 
   private refreshControlModal(): void {
@@ -955,8 +901,6 @@ export class OperationsScene extends Phaser.Scene {
 
   private closeModal(): void {
     this.modalKind = null;
-    this.refuelDraft = null;
-    this.preview = null;
     this.destroyModal();
     this.refreshCore();
     this.refreshSidePanel();
@@ -970,10 +914,8 @@ export class OperationsScene extends Phaser.Scene {
     this.modalButtons.length = 0;
     this.modalBackdrop?.destroy();
     this.modalGraphics?.destroy();
-    this.modalPreviewGraphics?.destroy();
     this.modalBackdrop = null;
     this.modalGraphics = null;
-    this.modalPreviewGraphics = null;
     this.modalTitle = null;
     this.modalSubtitle = null;
     this.modalStatus = null;
@@ -1034,14 +976,6 @@ export class OperationsScene extends Phaser.Scene {
 
   private handleKeyDown(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
-    if (this.modalKind === "refuel") {
-      if (key === "escape") { this.closeModal(); return; }
-      if (key === "4" && this.refuelDraft !== null) { this.refuelDraft.shiftCount = 4; this.preview = null; this.refreshModal(); this.refreshCore(); return; }
-      if (key === "8" && this.refuelDraft !== null) { this.refuelDraft.shiftCount = 8; this.preview = null; this.refreshModal(); this.refreshCore(); return; }
-      if (key === "d" && this.refuelDraft !== null) { this.refuelDraft.directionId = toggleRefuelDirection(this.refuelDraft.directionId); this.preview = null; this.refreshModal(); this.refreshCore(); return; }
-      if (key === "enter") { if (previewMatchesDraft(this.preview, this.refuelDraft!)) this.dispatchRefuelCommit(); else this.dispatchRefuelPreview(); return; }
-      return;
-    }
     if (this.modalKind === "control") {
       if (key === "escape") { this.closeModal(); return; }
       if (key === "arrowup" || key === "w") { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, 0.01, 0.8, 1.2); this.refreshModal(); return; }
@@ -1053,14 +987,17 @@ export class OperationsScene extends Phaser.Scene {
       return;
     }
     if (key === "escape") return;
-    if (key === "r" || key === "enter") { this.openRefuelModal(); return; }
+    if (key === "4") { this.setRefuelShiftCount(4); return; }
+    if (key === "8") { this.setRefuelShiftCount(8); return; }
+    if (key === "d") { this.toggleRefuelDirection(); return; }
+    if (key === "r" || key === "enter") { this.dispatchRefuel(); return; }
     if (key === "c") { this.openControlModal(); return; }
     if (key === "1") { this.setPlayback("1x"); return; }
     if (key === "2") { this.setPlayback("10x"); return; }
     if (key === "3") { this.setPlayback("60x"); return; }
-    if (key === "4" || key === " ") { this.setPlayback("pause"); return; }
+    if (key === " ") { this.setPlayback("pause"); return; }
     const movement: Record<string, [number, number]> = {
-      arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0], d: [1, 0],
+      arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0],
       arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1],
     };
     const delta = movement[key];

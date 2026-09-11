@@ -352,19 +352,6 @@ export interface RefuelRequest {
   fuelTypeId: string;
 }
 
-export interface RefuelPreview {
-  request: RefuelRequest;
-  dischargeBurnupMwdPerKg: number;
-  localPowerDeltaFraction: number;
-  localTiltDeltaFraction: number;
-  predictedReactivityDelta: number;
-  projectedPowerFraction: number;
-  projectedTiltFraction: number;
-  projectedScoreDelta: number;
-  insertedBundleIds: string[];
-  dischargedBundleIds: string[];
-}
-
 export type CanduCommand =
   | { type: "advance"; wallMilliseconds: number }
   | { type: "step"; simulationSeconds: number }
@@ -373,7 +360,6 @@ export type CanduCommand =
   | { type: "resume" }
   | { type: "queue-power-target"; targetFraction: number }
   | { type: "queue-tilt-target"; targetFraction: number }
-  | { type: "preview-refuel"; request: RefuelRequest }
   | { type: "commit-refuel"; request: RefuelRequest }
   | { type: "reset" };
 
@@ -396,7 +382,6 @@ export interface CanduCommandResponse {
     message: string;
   }>;
   snapshot: CanduSnapshot;
-  preview: RefuelPreview | null;
   lab?: CanduLabSnapshot;
   labPreview?: CanduLabSnapshot | null;
 }

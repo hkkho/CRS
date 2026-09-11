@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   adjustTarget,
-  canConfirmRefuel,
+  canIssueRefuel,
   createRefuelDraft,
   formatRefuelDirection,
-  previewMatchesDraft,
   toggleRefuelDirection,
   toggleShiftCount,
   toRefuelRequest,
@@ -26,26 +25,14 @@ describe("Phaser command window state", () => {
     expect(toggleShiftCount(draft.shiftCount)).toBe(8);
   });
 
-  it("only enables confirmation for the current authoritative preview", () => {
+  it("allows a direct order when the selected shift is affordable", () => {
     const draft = createRefuelDraft(channel);
-    const preview = {
-      request: toRefuelRequest(draft),
-      dischargeBurnupMwdPerKg: 5_200,
-      localPowerDeltaFraction: 0.01,
-      localTiltDeltaFraction: -0.01,
-      predictedReactivityDelta: 0.0001,
-      projectedPowerFraction: 1,
-      projectedTiltFraction: 0,
-      projectedScoreDelta: 2,
-      insertedBundleIds: [],
-      dischargedBundleIds: [],
-    };
 
-    expect(previewMatchesDraft(preview, draft)).toBe(true);
-    expect(canConfirmRefuel(preview, draft, 8, false)).toBe(true);
-    expect(canConfirmRefuel(preview, { ...draft, shiftCount: 8 }, 8, false)).toBe(false);
-    expect(canConfirmRefuel(preview, draft, 2, false)).toBe(false);
-    expect(canConfirmRefuel(preview, draft, 8, true)).toBe(false);
+    expect(canIssueRefuel(draft, 4, false)).toBe(true);
+    expect(canIssueRefuel({ ...draft, shiftCount: 8 }, 8, false)).toBe(true);
+    expect(canIssueRefuel({ ...draft, shiftCount: 8 }, 4, false)).toBe(false);
+    expect(canIssueRefuel(draft, 8, true)).toBe(false);
+    expect(canIssueRefuel(null, 8, false)).toBe(false);
   });
 
   it("keeps target nudges inside the operator envelope", () => {

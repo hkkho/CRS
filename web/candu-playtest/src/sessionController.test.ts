@@ -296,7 +296,6 @@ function createResponse(command: CanduCommand, snapshot: CanduSnapshot): CanduCo
     message: "accepted",
     diagnostics: [],
     snapshot,
-    preview: null,
   };
 }
 

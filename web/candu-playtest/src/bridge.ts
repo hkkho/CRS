@@ -345,7 +345,6 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
             message: "Authoritative snapshot initialized.",
             diagnostics: [],
             snapshot,
-            preview: null,
           };
         }
       } catch (error) {
