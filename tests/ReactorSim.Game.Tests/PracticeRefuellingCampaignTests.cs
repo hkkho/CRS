@@ -64,8 +64,11 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.Equal((ushort)4, committed.Snapshot.LastRefuellingShiftCount);
         Assert.True(committed.Snapshot.ScoreTotal > before.ScoreTotal);
         Assert.True(
-            committed.Snapshot.Physics.WeightedPerturbationReactivity >
-            before.Physics.WeightedPerturbationReactivity);
+            committed.Snapshot.Rrs.CoreReactivity >
+            before.Rrs.CoreReactivity);
+        Assert.True(
+            Math.Abs(committed.Snapshot.Rrs.CompensatedNetReactivity) <=
+            Math.Abs(committed.Snapshot.Rrs.CoreReactivity));
         Assert.Equal(0UL, committed.Snapshot.Xenon.StateVersion);
         Assert.Equal(0.0, committed.Snapshot.Xenon.MeanXe135NumberDensityM3);
         Assert.NotSame(beforeCoreState, session.CoreState);
