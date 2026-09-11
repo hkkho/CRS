@@ -642,7 +642,7 @@ export class OperationsScene extends Phaser.Scene {
     }
     const draft = this.refuelDraft;
     const ready = channel !== undefined && this.snapshot.core.channels.length === 380 && this.session.status.isWasmAvailable;
-    const controlsEnabled = ready && !this.pending;
+    const controlsEnabled = ready && !this.pending && this.motion === null;
     this.refuelDirectionButton?.setLabel(draft === null ? "DIRECTION" : formatRefuelDirection(draft.directionId));
     this.refuelFourButton?.setEnabled(controlsEnabled);
     this.refuelEightButton?.setEnabled(controlsEnabled);
@@ -650,7 +650,7 @@ export class OperationsScene extends Phaser.Scene {
     this.refuelFourButton?.gameObject.setAlpha(draft?.shiftCount === 4 ? 1 : 0.64);
     this.refuelEightButton?.gameObject.setAlpha(draft?.shiftCount === 8 ? 1 : 0.64);
     this.refuelButton?.setLabel(`REFUEL ${draft?.shiftCount ?? 4}  ↗`);
-    this.refuelButton?.setEnabled(ready && canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending));
+    this.refuelButton?.setEnabled(controlsEnabled && canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending));
   }
 
   private refreshPhysicsReadout(): void {
