@@ -6,6 +6,7 @@ param(
     [string]$TargetPath,
     [string]$StagingPath,
     [switch]$RunAOTCompilation,
+    [switch]$OmitPrecompressedAssets,
     [ValidateSet('default', 'true', 'false')]
     [string]$WasmEnableSIMD = 'default'
 )
@@ -121,6 +122,10 @@ function Copy-PublishedFiles {
     )
 
     Get-ChildItem -LiteralPath $SourceRoot -Recurse:$Recurse -File | ForEach-Object {
+        if ($OmitPrecompressedAssets -and $_.Extension.ToLowerInvariant() -in @('.br', '.gz')) {
+            return
+        }
+
         $relativePath = $_.FullName.Substring($SourceRoot.Length).TrimStart('\', '/')
         $combinedRelativePath = if ([string]::IsNullOrEmpty($RelativeBase)) {
             $relativePath
@@ -159,6 +164,7 @@ $buildInfo = [ordered]@{
     runAotCompilation  = [bool]$RunAOTCompilation
     wasmEnableSIMD     = $WasmEnableSIMD
     wasmEnableThreads  = $false
+    omitPrecompressedAssets = [bool]$OmitPrecompressedAssets
 }
 $buildInfo | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $targetPath 'build-info.json') -Encoding utf8
 

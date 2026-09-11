@@ -41,7 +41,7 @@ jobs:
         shell: pwsh
         env:
           BUILD_COMMIT_SHA: ${{ github.sha }}
-        run: .\tools\Build-BrowserWasm.ps1 -Configuration Release -CommitSha $env:BUILD_COMMIT_SHA
+        run: .\tools\Build-BrowserWasm.ps1 -Configuration Release -CommitSha $env:BUILD_COMMIT_SHA -RunAOTCompilation -OmitPrecompressedAssets
 
       - name: Verify staged bridge output
         id: staged-wasm
@@ -61,7 +61,14 @@ jobs:
           if (info.targetFramework !== 'net10.0' || info.runtimeIdentifier !== 'browser-wasm') {
             throw new Error('build-info.json has the wrong browser target');
           }
+          if (info.runAotCompilation !== true || info.omitPrecompressedAssets !== true) {
+            throw new Error('build-info.json does not describe the required Release AOT staging configuration');
+          }
           NODE
+          if find "$wasm_root" -type f \( -name '*.br' -o -name '*.gz' \) -print -quit | grep -q .; then
+            echo 'Precompressed .br/.gz assets were staged unexpectedly' >&2
+            exit 1
+          fi
           wasm_url_path="/${wasm_file#web/candu-playtest/public/}"
           echo "wasm_path=$wasm_url_path" >> "$GITHUB_OUTPUT"
           printf 'Staged bridge: %s\n' "$wasm_file"
