@@ -1,4 +1,5 @@
 using System;
+using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
 
@@ -24,7 +25,11 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.True(boundary.Accepted, boundary.DiagnosticMessage);
         Assert.NotSame(initialProjection, session.CurrentEquilibriumProjection);
         Assert.Equal(3_600.0, boundary.Snapshot.SimulationTimeSeconds);
-        Assert.InRange(session.CurrentLiquidZoneRrs.ControllerIterationCount, 1, 8);
+        Assert.Equal(1, session.CurrentLiquidZoneRrs.ControllerIterationCount);
+        Assert.InRange(
+            boundary.Snapshot.Rrs.CandidateSolveCount,
+            2,
+            PracticeLiquidZoneRrsIdentityV1.MaximumCandidateSolveCount);
     }
 
     [Fact]
@@ -46,7 +51,24 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Equal(
             first.CurrentEquilibriumProjection.ReactivityBindingDigest,
             second.CurrentEquilibriumProjection.ReactivityBindingDigest);
-        Assert.InRange(first.CurrentLiquidZoneRrs.ControllerIterationCount, 1, 8);
+        Assert.Equal(1, first.CurrentLiquidZoneRrs.ControllerIterationCount);
+        Assert.InRange(
+            firstResult.Snapshot.Rrs.CandidateSolveCount,
+            2,
+            PracticeLiquidZoneRrsIdentityV1.MaximumCandidateSolveCount);
+        Assert.Equal(
+            first.CurrentLiquidZoneRrs.ResponseModelIdentity,
+            firstResult.Snapshot.Rrs.ResponseModelIdentity);
+        Assert.Equal(
+            first.CurrentLiquidZoneRrs.AppliedFillCommand,
+            firstResult.Snapshot.Rrs.AppliedFillCommand);
+        Assert.Equal(
+            first.CurrentLiquidZoneRrs.CombinedWeightedResidual,
+            firstResult.Snapshot.Rrs.CombinedWeightedResidual);
+        Assert.True(
+            firstResult.Snapshot.Rrs.CombinedWeightedResidual <=
+            firstResult.Snapshot.Rrs.ControlledBaselineWeightedResidual +
+            PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance);
         Assert.All(first.CurrentLiquidZoneRrs.ZoneFills, fill => Assert.InRange(fill, 0.0, 1.0));
         Assert.True(
             Math.Abs(first.CurrentLiquidZoneRrs.CompensatedNetReactivity) <=

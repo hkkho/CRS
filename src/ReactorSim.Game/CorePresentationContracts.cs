@@ -701,6 +701,16 @@ namespace ReactorSim.Game
             CommonModeRhoCorrection = state.CommonModeRhoCorrection;
             ControllerIterationCount = state.ControllerIterationCount;
             ControllerConverged = state.ControllerConverged;
+            ResponseModelIdentity = state.ResponseModelIdentity;
+            ResponseModelDigestHex = DigestHex(state.ResponseModelDigest);
+            AppliedFillCommand = new ReadOnlyCollection<double>(
+                state.AppliedFillCommand.ToArray());
+            ControlledBaselineWeightedResidual = state.ControlledBaselineWeightedResidual;
+            CombinedWeightedResidual = state.CombinedWeightedResidual;
+            CandidateSolveCount = state.TotalCandidateSolveCount;
+            VerificationSolveCount = state.VerificationCandidateSolveCount;
+            CorrectionSolveCount = state.CorrectionCandidateSolveCount;
+            CorrectionApplied = state.CorrectionApplied;
             LowExhaustion = state.LowExhaustion;
             HighExhaustion = state.HighExhaustion;
             IsGameOver = state.IsGameOver;
@@ -748,6 +758,24 @@ namespace ReactorSim.Game
         public int ControllerIterationCount { get; }
 
         public bool ControllerConverged { get; }
+
+        public string ResponseModelIdentity { get; }
+
+        public string ResponseModelDigestHex { get; }
+
+        public IReadOnlyList<double> AppliedFillCommand { get; }
+
+        public double ControlledBaselineWeightedResidual { get; }
+
+        public double CombinedWeightedResidual { get; }
+
+        public int CandidateSolveCount { get; }
+
+        public int VerificationSolveCount { get; }
+
+        public int CorrectionSolveCount { get; }
+
+        public bool CorrectionApplied { get; }
 
         public bool LowExhaustion { get; }
 

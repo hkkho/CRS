@@ -117,6 +117,15 @@ export interface CanduRrsSnapshot {
   commonModeRhoCorrection: number;
   controllerIterationCount: number;
   controllerConverged: boolean;
+  responseModelIdentity: string;
+  responseModelDigestHex: string;
+  appliedFillCommand: number[];
+  controlledBaselineWeightedResidual: number;
+  combinedWeightedResidual: number;
+  candidateSolveCount: number;
+  verificationSolveCount: number;
+  correctionSolveCount: number;
+  correctionApplied: boolean;
   lowExhaustion: boolean;
   highExhaustion: boolean;
   isGameOver: boolean;
@@ -146,6 +155,15 @@ export function createUnavailableRrsSnapshot(): CanduRrsSnapshot {
     commonModeRhoCorrection: 0,
     controllerIterationCount: 0,
     controllerConverged: false,
+    responseModelIdentity: "unavailable",
+    responseModelDigestHex: "",
+    appliedFillCommand: Array.from({ length: 14 }, () => 0),
+    controlledBaselineWeightedResidual: 0,
+    combinedWeightedResidual: 0,
+    candidateSolveCount: 0,
+    verificationSolveCount: 0,
+    correctionSolveCount: 0,
+    correctionApplied: false,
     lowExhaustion: false,
     highExhaustion: false,
     isGameOver: false,

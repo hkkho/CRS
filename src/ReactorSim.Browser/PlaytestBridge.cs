@@ -1050,6 +1050,15 @@ namespace ReactorSim.Browser
                 CommonModeRhoCorrection = game.Rrs.CommonModeRhoCorrection,
                 ControllerIterationCount = game.Rrs.ControllerIterationCount,
                 ControllerConverged = game.Rrs.ControllerConverged,
+                ResponseModelIdentity = game.Rrs.ResponseModelIdentity,
+                ResponseModelDigestHex = game.Rrs.ResponseModelDigestHex,
+                AppliedFillCommand = game.Rrs.AppliedFillCommand.ToList(),
+                ControlledBaselineWeightedResidual = game.Rrs.ControlledBaselineWeightedResidual,
+                CombinedWeightedResidual = game.Rrs.CombinedWeightedResidual,
+                CandidateSolveCount = game.Rrs.CandidateSolveCount,
+                VerificationSolveCount = game.Rrs.VerificationSolveCount,
+                CorrectionSolveCount = game.Rrs.CorrectionSolveCount,
+                CorrectionApplied = game.Rrs.CorrectionApplied,
                 LowExhaustion = game.Rrs.LowExhaustion,
                 HighExhaustion = game.Rrs.HighExhaustion,
                 IsGameOver = game.Rrs.IsGameOver,
@@ -1886,6 +1895,24 @@ namespace ReactorSim.Browser
         public int ControllerIterationCount { get; set; }
 
         public bool ControllerConverged { get; set; }
+
+        public string ResponseModelIdentity { get; set; } = string.Empty;
+
+        public string ResponseModelDigestHex { get; set; } = string.Empty;
+
+        public List<double> AppliedFillCommand { get; set; } = new List<double>();
+
+        public double ControlledBaselineWeightedResidual { get; set; }
+
+        public double CombinedWeightedResidual { get; set; }
+
+        public int CandidateSolveCount { get; set; }
+
+        public int VerificationSolveCount { get; set; }
+
+        public int CorrectionSolveCount { get; set; }
+
+        public bool CorrectionApplied { get; set; }
 
         public bool LowExhaustion { get; set; }
 
