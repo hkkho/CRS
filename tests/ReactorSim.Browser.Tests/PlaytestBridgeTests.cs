@@ -571,6 +571,24 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(expected.Physics.EffectiveK, physics.GetProperty("effectiveK").GetDouble(), 12);
             Assert.Equal(expected.Physics.Reactivity, physics.GetProperty("reactivity").GetDouble(), 12);
 
+            JsonElement rrs = browser.GetProperty("rrs");
+            Assert.Equal(expected.Rrs.ResponseModelIdentity, rrs.GetProperty("responseModelIdentity").GetString());
+            Assert.Equal(expected.Rrs.ResponseModelDigestHex, rrs.GetProperty("responseModelDigestHex").GetString());
+            Assert.Equal(expected.Rrs.CandidateSolveCount, rrs.GetProperty("candidateSolveCount").GetInt32());
+            Assert.Equal(expected.Rrs.VerificationSolveCount, rrs.GetProperty("verificationSolveCount").GetInt32());
+            Assert.Equal(expected.Rrs.CorrectionSolveCount, rrs.GetProperty("correctionSolveCount").GetInt32());
+            Assert.Equal(expected.Rrs.CorrectionApplied, rrs.GetProperty("correctionApplied").GetBoolean());
+            Assert.Equal(
+                expected.Rrs.CombinedWeightedResidual,
+                rrs.GetProperty("combinedWeightedResidual").GetDouble(),
+                12);
+            Assert.Equal(
+                expected.Rrs.AppliedFillCommand,
+                rrs.GetProperty("appliedFillCommand")
+                    .EnumerateArray()
+                    .Select(value => value.GetDouble())
+                    .ToArray());
+
             JsonElement expectedChannel = browser.GetProperty("core").GetProperty("channels")[(int)inspectedChannelIndex];
             GameChannelPresentationSnapshot directChannel = expected.Core.GetChannel(inspectedChannelIndex);
             Assert.Equal(directChannel.ChannelIndex, expectedChannel.GetProperty("channelIndex").GetUInt32());
