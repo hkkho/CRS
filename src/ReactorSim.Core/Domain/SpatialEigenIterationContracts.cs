@@ -729,16 +729,16 @@ namespace ReactorSim.Core
                     solution[nodeIndex] = initialValue;
                 }
             }
+            if (!_operator.TryApply(group, solution, applied, out ContractDiagnostic operatorDiagnostic))
+            {
+                diagnostic = operatorDiagnostic;
+                return false;
+            }
+
             for (int innerIteration = 0;
                  innerIteration < _linearSolvePolicy.MaximumInnerIterations;
                  innerIteration++)
             {
-                if (!_operator.TryApply(group, solution, applied, out ContractDiagnostic operatorDiagnostic))
-                {
-                    diagnostic = operatorDiagnostic;
-                    return false;
-                }
-
                 for (int nodeIndex = 0; nodeIndex < source.Length; nodeIndex++)
                 {
                     double correction = (source[nodeIndex] - applied[nodeIndex]) / diagonal[nodeIndex];
