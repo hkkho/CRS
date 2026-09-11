@@ -83,4 +83,34 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Same(acceptedRrs, first.CurrentLiquidZoneRrs);
         Assert.Same(acceptedProjection, first.CurrentEquilibriumProjection);
     }
+
+    [Fact]
+    public void RejectedVerificationDoesNotConsumeCorrectionSolveOrReplaceBaseline()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+        PracticeLiquidZoneRrsV1 before = session.CurrentLiquidZoneRrs;
+        Digest32 baselineOverlayDigest =
+            session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!.OverlayDigest;
+
+        GameSessionCommandResult result = session.RefuelChannel(
+            189, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+
+        Assert.True(result.Accepted, result.DiagnosticMessage);
+        PracticeLiquidZoneRrsV1 after = session.CurrentLiquidZoneRrs;
+        Assert.Equal(1, after.BaseCandidateSolveCount);
+        Assert.Equal(1, after.ControlledBaselineCandidateSolveCount);
+        Assert.Equal(1, after.VerificationCandidateSolveCount);
+        Assert.Equal(0, after.CorrectionCandidateSolveCount);
+        Assert.Equal(3, after.CandidateSolveCount);
+        Assert.False(after.CorrectionApplied);
+        Assert.Equal(before.ZoneFills, after.ZoneFills);
+        Assert.Equal(baselineOverlayDigest, after.OverlayDigest);
+        Assert.Equal(
+            baselineOverlayDigest,
+            session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!.OverlayDigest);
+        Assert.All(after.AppliedFillCommand, command => Assert.Equal(0.0, command));
+        Assert.Equal(
+            after.ControlledBaselineWeightedResidual,
+            after.CombinedWeightedResidual);
+    }
 }

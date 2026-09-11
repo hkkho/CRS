@@ -1490,14 +1490,16 @@ namespace ReactorSim.Core
                         verificationOverlay.Value,
                         verificationWeightedResidual,
                         false);
-                    if (IsStrictlyBetter(
-                            verificationCandidate.WeightedResidual,
-                            finalCandidate.WeightedResidual))
+                    bool verificationAccepted = IsStrictlyBetter(
+                        verificationCandidate.WeightedResidual,
+                        finalCandidate.WeightedResidual);
+                    if (verificationAccepted)
                     {
                         finalCandidate = verificationCandidate;
                     }
 
-                    if (!IsControllerConverged(
+                    if (verificationAccepted &&
+                        !IsControllerConverged(
                             verificationMeasurement.Value.Errors,
                             verification.Value.RelativeReactivity))
                     {
