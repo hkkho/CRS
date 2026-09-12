@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -132,6 +133,74 @@ namespace ReactorGame.Unity.Tests
                 Assert.That(coreMap.IsBound, Is.True);
                 Assert.That(coreMap.LastAcceptedRefuellingOutcome, Is.Null);
                 StringAssert.Contains("No accepted refuelling outcome", coreMap.RefuelOutcomeText);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        }
+
+        [Test]
+        public void TimelineProjectsSnapshotHeadroomAndScoreAndFormatsCommandMessages()
+        {
+            ControllerFixture fixture = CreateControllerFixture("timeline-authority");
+            try
+            {
+                Phase8UnityRuntimeAdapter adapter =
+                    fixture.Controller.GetComponent<Phase8UnityRuntimeAdapter>();
+                Phase10TimelineView timeline =
+                    fixture.Controller.GetComponent<Phase10TimelineView>();
+                Phase8UnityPresentationSnapshotV1 before = adapter.Snapshot;
+
+                Phase8UnityCommandResultV1 accepted = adapter.RefuelChannel(
+                    190,
+                    CoreMapView.TowardEndBDirectionId,
+                    4,
+                    "NAT-U-SYNTHETIC");
+
+                Assert.That(accepted.Accepted, Is.True, accepted.DiagnosticMessage);
+                double expectedHeadroom = Math.Min(
+                    accepted.Snapshot.Rrs.AverageFillFraction,
+                    1.0 - accepted.Snapshot.Rrs.AverageFillFraction);
+                double expectedScoreDelta =
+                    accepted.Snapshot.ScoreTotal - before.ScoreTotal;
+                string expectedScore = accepted.Snapshot.ScoreTotal.ToString(
+                    "0.###",
+                    CultureInfo.InvariantCulture);
+                string expectedScoreDeltaText =
+                    (expectedScoreDelta >= 0.0 ? "+" : string.Empty) +
+                    expectedScoreDelta.ToString("0.###", CultureInfo.InvariantCulture);
+                string expectedHeadroomText = expectedHeadroom.ToString(
+                    "0.0%",
+                    CultureInfo.InvariantCulture);
+
+                StringAssert.Contains(
+                    "Score: " + expectedScore + " (window " +
+                    expectedScoreDeltaText + ")",
+                    timeline.SummaryText);
+                StringAssert.Contains(
+                    "RRS headroom: " + expectedHeadroomText,
+                    timeline.SummaryText);
+                StringAssert.Contains("\n", timeline.SummaryText);
+                StringAssert.Contains(accepted.Message, timeline.EventLogText);
+                Assert.That(
+                    timeline.PlotBarCount,
+                    Is.EqualTo(timeline.SnapshotCount * 4));
+
+                Phase8UnityCommandResultV1 rejected = adapter.RefuelChannel(
+                    190,
+                    CoreMapView.TowardEndBDirectionId,
+                    4,
+                    "NOT-A-SUPPORTED-FUEL");
+
+                Assert.That(rejected.Accepted, Is.False);
+                StringAssert.Contains(rejected.DiagnosticCode, timeline.EventLogText);
+                StringAssert.Contains(rejected.DiagnosticMessage, timeline.EventLogText);
+
+                Assert.That(fixture.Controller.RestartPracticeSession(), Is.True);
+                Assert.That(timeline.SnapshotCount, Is.EqualTo(1));
+                Assert.That(timeline.EventCount, Is.EqualTo(0));
+                Assert.That(timeline.PlotBarCount, Is.EqualTo(4));
             }
             finally
             {

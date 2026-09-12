@@ -14,7 +14,7 @@ namespace ReactorGame.Unity
     public sealed class Phase10TimelineView : MonoBehaviour
     {
         public const int DefaultSnapshotCapacity = 24;
-        public const int DefaultEventCapacity = 8;
+        public const int DefaultEventCapacity = 5;
 
         private readonly List<Phase8UnityPresentationSnapshotV1> _snapshots =
             new List<Phase8UnityPresentationSnapshotV1>();
@@ -26,6 +26,7 @@ namespace ReactorGame.Unity
         private RectTransform _powerPlotRoot;
         private RectTransform _tiltPlotRoot;
         private RectTransform _marginPlotRoot;
+        private RectTransform _rrsHeadroomPlotRoot;
         private RectTransform _eventRoot;
         private Text _statusText;
         private Text _summaryText;
@@ -138,16 +139,21 @@ namespace ReactorGame.Unity
                 return;
             }
 
-            string disposition = result.Accepted ? "accepted" : "rejected";
+            string prefix =
+                "#" + result.Sequence.ToString(CultureInfo.InvariantCulture) +
+                " " + result.Kind + " ";
+            if (result.Accepted)
+            {
+                AddEvent(prefix + "accepted" + FormatMessage(result.Message));
+                return;
+            }
+
             string diagnostic = string.IsNullOrWhiteSpace(result.DiagnosticCode)
                 ? string.Empty
                 : " [" + result.DiagnosticCode + "]";
-            string message = string.IsNullOrWhiteSpace(result.DiagnosticMessage)
-                ? string.Empty
-                : ": " + result.DiagnosticMessage;
             AddEvent(
-                "#" + result.Sequence.ToString(CultureInfo.InvariantCulture) +
-                " " + result.Kind + " " + disposition + diagnostic + message);
+                prefix + "rejected" + diagnostic +
+                FormatMessage(result.DiagnosticMessage));
         }
 
         private void AddSnapshot(Phase8UnityPresentationSnapshotV1 snapshot)
@@ -182,7 +188,10 @@ namespace ReactorGame.Unity
                 "Samples: " + SnapshotCount.ToString(CultureInfo.InvariantCulture) +
                 "/" + DefaultSnapshotCapacity.ToString(CultureInfo.InvariantCulture) +
                 " | Simulation: " + Format(snapshot.SimulationTimeSeconds) +
-                " s | Wall: " + Format(snapshot.WallElapsedSeconds) + " s";
+                " s | Wall: " + Format(snapshot.WallElapsedSeconds) + " s\n" +
+                "Score: " + Format(snapshot.ScoreTotal) +
+                " (window " + FormatSigned(WindowScoreDelta()) + ")" +
+                " | RRS headroom: " + FormatRrsHeadroom(snapshot);
         }
 
         private void RenderPlot()
@@ -216,6 +225,17 @@ namespace ReactorGame.Unity
                     sampleWidth,
                     DisplayFraction(snapshot.ControlMarginFraction),
                     new Color(0.36f, 0.88f, 0.50f, 0.90f));
+
+                double headroom;
+                if (TryGetRrsHeadroom(snapshot, out headroom))
+                {
+                    CreatePlotBar(
+                        _rrsHeadroomPlotRoot,
+                        x,
+                        sampleWidth,
+                        DisplayFraction(headroom * 2.0),
+                        new Color(0.72f, 0.46f, 0.98f, 0.90f));
+                }
             }
         }
 
@@ -290,11 +310,16 @@ namespace ReactorGame.Unity
 
             AddValueLabel(_timelineRoot, "TimelineHeading", "Trend timeline", 26, 38);
             _statusText = AddValueLabel(_timelineRoot, "TimelineStatus", "Status: waiting for runtime binding", 18, 30);
-            _summaryText = AddValueLabel(_timelineRoot, "TimelineSummary", "Samples: 0/24 | no observed history", 18, 30);
+            _summaryText = AddValueLabel(
+                _timelineRoot,
+                "TimelineSummary",
+                "Samples: 0/24 | no observed history\nScore: unavailable | RRS headroom: unavailable",
+                18,
+                44);
             _legendText = AddValueLabel(
                 _timelineRoot,
                 "TimelineLegend",
-                "Actual power / Tilt / Margin trends are presentation-only observations.",
+                "Observed: Power / Tilt / Margin / RRS headroom (nearest boundary, 0–50%). Blank = unavailable.",
                 16,
                 28);
 
@@ -309,27 +334,33 @@ namespace ReactorGame.Unity
             _powerPlotRoot = CreatePlotTrack(
                 plot,
                 "PowerTrend",
-                new Vector2(0.03f, 0.68f),
+                new Vector2(0.03f, 0.76f),
                 new Vector2(0.97f, 0.96f),
                 new Color(0.06f, 0.13f, 0.20f, 1.0f));
             _tiltPlotRoot = CreatePlotTrack(
                 plot,
                 "TiltTrend",
-                new Vector2(0.03f, 0.37f),
-                new Vector2(0.97f, 0.65f),
+                new Vector2(0.03f, 0.51f),
+                new Vector2(0.97f, 0.71f),
                 new Color(0.20f, 0.12f, 0.06f, 1.0f));
             _marginPlotRoot = CreatePlotTrack(
                 plot,
                 "MarginTrend",
-                new Vector2(0.03f, 0.06f),
-                new Vector2(0.97f, 0.34f),
+                new Vector2(0.03f, 0.27f),
+                new Vector2(0.97f, 0.46f),
                 new Color(0.06f, 0.18f, 0.10f, 1.0f));
+            _rrsHeadroomPlotRoot = CreatePlotTrack(
+                plot,
+                "RrsHeadroomTrend",
+                new Vector2(0.03f, 0.04f),
+                new Vector2(0.97f, 0.21f),
+                new Color(0.12f, 0.08f, 0.20f, 1.0f));
 
             AddValueLabel(_timelineRoot, "TimelineEventHeading", "Event log", 20, 30);
             _eventRoot = CreateRect("TimelineEvents", _timelineRoot);
             LayoutElement eventLayout = _eventRoot.gameObject.AddComponent<LayoutElement>();
-            eventLayout.minHeight = 190.0f;
-            eventLayout.preferredHeight = 190.0f;
+            eventLayout.minHeight = 200.0f;
+            eventLayout.preferredHeight = 200.0f;
             VerticalLayoutGroup eventGroup = _eventRoot.gameObject.AddComponent<VerticalLayoutGroup>();
             eventGroup.spacing = 2.0f;
             eventGroup.childAlignment = TextAnchor.UpperLeft;
@@ -352,9 +383,9 @@ namespace ReactorGame.Unity
             _statusText.text = "Status: waiting for runtime binding";
             _summaryText.text = "Samples: 0/" +
                 DefaultSnapshotCapacity.ToString(CultureInfo.InvariantCulture) +
-                " | no observed history";
+                " | no observed history\nScore: unavailable | RRS headroom: unavailable";
             _legendText.text =
-                "Power / Tilt / Margin trends are presentation-only observations.";
+                "Observed: Power / Tilt / Margin / RRS headroom (nearest boundary, 0–50%). Blank = unavailable.";
             RenderPlot();
             RenderEvents();
         }
@@ -392,7 +423,7 @@ namespace ReactorGame.Unity
 
         private void AddEventLabel(string eventText, bool muted)
         {
-            Text label = AddValueLabel(_eventRoot, "Event", eventText, 16, 24);
+            Text label = AddValueLabel(_eventRoot, "Event", eventText, 14, 36);
             label.color = muted
                 ? new Color(0.62f, 0.68f, 0.76f, 1.0f)
                 : new Color(0.88f, 0.91f, 0.98f, 1.0f);
@@ -508,6 +539,73 @@ namespace ReactorGame.Unity
             }
 
             return Mathf.Clamp01((float)value);
+        }
+
+        private double WindowScoreDelta()
+        {
+            if (_snapshots.Count == 0 ||
+                !IsFinite(_snapshots[0].ScoreTotal) ||
+                !IsFinite(_snapshots[_snapshots.Count - 1].ScoreTotal))
+            {
+                return double.NaN;
+            }
+
+            return _snapshots[_snapshots.Count - 1].ScoreTotal - _snapshots[0].ScoreTotal;
+        }
+
+        private static string FormatRrsHeadroom(
+            Phase8UnityPresentationSnapshotV1 snapshot)
+        {
+            double headroom;
+            return TryGetRrsHeadroom(snapshot, out headroom)
+                ? FormatPercent(headroom)
+                : "unavailable";
+        }
+
+        private static bool TryGetRrsHeadroom(
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            out double headroom)
+        {
+            headroom = double.NaN;
+            if (snapshot == null || snapshot.Rrs == null)
+            {
+                return false;
+            }
+
+            double averageFillFraction = snapshot.Rrs.AverageFillFraction;
+            if (!IsFinite(averageFillFraction) ||
+                averageFillFraction < 0.0 || averageFillFraction > 1.0)
+            {
+                return false;
+            }
+
+            headroom = Math.Min(averageFillFraction, 1.0 - averageFillFraction);
+            return IsFinite(headroom);
+        }
+
+        private static string FormatMessage(string message)
+        {
+            return string.IsNullOrWhiteSpace(message) ? string.Empty : ": " + message;
+        }
+
+        private static string FormatSigned(double value)
+        {
+            if (!IsFinite(value))
+            {
+                return "unavailable";
+            }
+
+            return (value >= 0.0 ? "+" : string.Empty) + Format(value);
+        }
+
+        private static string FormatPercent(double value)
+        {
+            return value.ToString("0.0%", CultureInfo.InvariantCulture);
+        }
+
+        private static bool IsFinite(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
         private static string Format(double value)
