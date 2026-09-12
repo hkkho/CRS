@@ -192,6 +192,7 @@ namespace ReactorSim.Core
         private readonly FullCoreDiffusionDataPackV1 _dataPack;
         private readonly ReadOnlyCollection<SpatialEdgeConductance> _edgeConductances;
         private readonly ReadOnlyCollection<SpatialBoundaryConductance> _boundaryConductances;
+        private SpatialCoefficientSet? _validatedTopologyConductanceTemplate;
 
         private FullCoreDiffusionModelV1(
             CoreTopology topology,
@@ -1412,13 +1413,34 @@ namespace ReactorSim.Core
                     values.EnergyPerFissionJ));
             }
 
-            return SpatialCoefficientSet.TryCreateWithXenonBasis(
-                _stencil,
-                nodeCoefficients,
-                _edgeConductances,
-                _boundaryConductances,
-                XenonBasisV1.Excluded,
-                0.0);
+            SpatialCoefficientSet? template =
+                System.Threading.Volatile.Read(ref _validatedTopologyConductanceTemplate);
+            if (template != null)
+            {
+                return template.TryRebindCanonicalNodeCoefficients(nodeCoefficients);
+            }
+
+            ContractValidationResult<SpatialCoefficientSet> created =
+                SpatialCoefficientSet.TryCreateWithXenonBasis(
+                    _stencil,
+                    nodeCoefficients,
+                    _edgeConductances,
+                    _boundaryConductances,
+                    XenonBasisV1.Excluded,
+                    0.0);
+            if (created.IsValid)
+            {
+                // The first successful binding establishes an immutable
+                // topology/conductance template. A racing valid preparation
+                // may publish a different equivalent template, but neither
+                // preparation mutates the object it returns.
+                System.Threading.Interlocked.CompareExchange(
+                    ref _validatedTopologyConductanceTemplate,
+                    created.Value,
+                    null);
+            }
+
+            return created;
         }
 
         private static List<SpatialEdgeConductance> BuildEdgeConductances(
