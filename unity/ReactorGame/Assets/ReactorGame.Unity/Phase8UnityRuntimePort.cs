@@ -440,6 +440,7 @@ namespace ReactorGame.Unity
             LastRefuellingDirectionId = lastRefuellingDirectionId ?? string.Empty;
             LastRefuellingShiftCount = lastRefuellingShiftCount;
             Core = core;
+            Rrs = core == null ? null : core.Rrs;
             ActualPowerFraction = core == null
                 ? normalizedPowerFraction
                 : core.Physics.ActualPowerFraction;
@@ -502,6 +503,13 @@ namespace ReactorGame.Unity
         public ushort LastRefuellingShiftCount { get; }
 
         public GameCorePresentationSnapshot Core { get; }
+
+        /// <summary>
+        /// The authoritative RRS projection published by GameSession. This is
+        /// an alias for Core.Rrs so Unity can bind the reserve surface without
+        /// recreating or translating reactor-control state.
+        /// </summary>
+        public GameRrsPresentationSnapshot Rrs { get; }
 
         public ulong Seed { get; }
 
