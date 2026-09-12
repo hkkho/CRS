@@ -168,9 +168,9 @@ integrated result.
    protocol/parity cases and reducer tests, including fail-closed WASM
    unavailability without making the TypeScript compatibility fixture
    authoritative. Completed 2026-09-08 with six Browser facts in
-   `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and four Vitest cases
-   in `web/candu-playtest/src/uiSlice.test.ts`; both focused suites and the web
-   production build pass.
+   `tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and the focused
+   Vitest suites under `web/candu-playtest/src/`; both focused suites and the
+   web production build pass.
 6. **Complete — rebuild Unity seam smoke tests.** Added the deliberately small
    replacement seam: two EditMode facts in
    `unity/ReactorGame/Assets/ReactorGame.Unity/Tests/Editor/RuntimeSeamAndPacing.EditModeTests.cs`

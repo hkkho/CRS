@@ -1,0 +1,313 @@
+using System;
+using System.Text.Json;
+using ReactorSim.Browser;
+using ReactorSim.Core;
+using Xunit;
+
+namespace ReactorSim.Browser.Tests
+{
+    public sealed class PlaytestBridgeTests
+    {
+        [Fact]
+        public void CapabilitiesDeclareTheVersionedPlayAndLabSeams()
+        {
+            using JsonDocument document = JsonDocument.Parse(PlaytestBridgeV1.GetCapabilities());
+            JsonElement root = document.RootElement;
+
+            Assert.Equal("candu-playtest-v1", root.GetProperty("protocol").GetString());
+            Assert.Contains(
+                root.GetProperty("modes").EnumerateArray(),
+                mode => mode.GetProperty("id").GetString() == "play");
+            Assert.Contains(
+                root.GetProperty("modes").EnumerateArray(),
+                mode => mode.GetProperty("id").GetString() == "lab");
+            Assert.Equal(
+                "fast-to-thermal",
+                root.GetProperty("metadata")
+                    .GetProperty("energyGroups")[0]
+                    .GetProperty("ordering")
+                    .GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.FormulationId,
+                root.GetProperty("metadata").GetProperty("formulationId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.ShapeMethodId,
+                root.GetProperty("metadata").GetProperty("shapeMethodId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.AmplitudeMethodId,
+                root.GetProperty("metadata").GetProperty("amplitudeMethodId").GetString());
+        }
+
+        [Fact]
+        public void PlayDispatchUsesTheFullPracticeTopologyAndAtomicRefuelling()
+        {
+            JsonElement initialized = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            Assert.Equal("play", initialized.GetProperty("mode").GetString());
+            Assert.Equal(380, initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channelCount").GetInt32());
+            Assert.Equal(12, initialized.GetProperty("snapshot").GetProperty("core").GetProperty("bundlePositionCount").GetInt32());
+            Assert.Equal(
+                "toward-end-b",
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0].GetProperty("flowDirection").GetString());
+            Assert.Equal(
+                "toward-end-a",
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[1].GetProperty("flowDirection").GetString());
+            JsonElement initialPhysics = initialized.GetProperty("snapshot").GetProperty("physics");
+            Assert.Equal(AdiabaticKineticsIdentityV1.ModelId, initialPhysics.GetProperty("sourceId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.FormulationId, initialPhysics.GetProperty("formulationId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.ShapeMethodId, initialPhysics.GetProperty("shapeMethodId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.AmplitudeMethodId, initialPhysics.GetProperty("amplitudeMethodId").GetString());
+            Assert.Equal(AdiabaticKineticsIdentityV1.ReactivityMethodId, initialPhysics.GetProperty("reactivityMethodId").GetString());
+            Assert.Equal(
+                AdiabaticKineticsIdentityV1.StaticReactivityMethodId,
+                initialPhysics.GetProperty("staticReactivityMethodId").GetString());
+            Assert.Equal(
+                AdjointWeightedReactivityIdentityV1.MethodId,
+                initialPhysics.GetProperty("reactivityIdentity").GetString());
+            Assert.Equal(0.0, initialPhysics.GetProperty("weightedPerturbationReactivity").GetDouble(), 15);
+            Assert.Equal(0.0, initialPhysics.GetProperty("reactivityNumerator").GetDouble(), 15);
+            Assert.True(initialPhysics.GetProperty("reactivityDenominator").GetDouble() > 0.0);
+            Assert.Equal(64, initialPhysics.GetProperty("reactivityBindingDigestHex").GetString()!.Length);
+            Assert.Equal("converged", initialPhysics.GetProperty("solveState").GetString());
+            Assert.True(initialPhysics.GetProperty("isAuthoritative").GetBoolean());
+            Assert.Contains(AdiabaticKineticsIdentityV1.SolverId, initialPhysics.GetProperty("solverIdentity").GetString());
+            Assert.Contains("spatial-eigen-jacobi-v1", initialPhysics.GetProperty("solverIdentity").GetString());
+            Assert.Equal(
+                SpatialAdjointEigenSolve.NormalizationIdentity,
+                initialPhysics.GetProperty("adjointNormalizationIdentity").GetString());
+            Assert.Equal(64, initialPhysics.GetProperty("adjointDigestHex").GetString()!.Length);
+            Assert.True(initialPhysics.GetProperty("adjointIterationCount").GetInt32() > 0);
+            Assert.InRange(
+                initialPhysics.GetProperty("adjointTransposeResidualRelativeInfinity").GetDouble(),
+                0.0,
+                2.0e-3);
+            Assert.Equal(
+                initialPhysics.GetProperty("targetPowerWatts").GetDouble(),
+                initialPhysics.GetProperty("totalPowerWatts").GetDouble(),
+                2);
+            Assert.Equal(
+                initialPhysics.GetProperty("staticReactivity").GetDouble(),
+                initialPhysics.GetProperty("reactivity").GetDouble(),
+                15);
+            Assert.Equal(
+                initialPhysics.GetProperty("weightedPerturbationReactivity").GetDouble(),
+                initialPhysics.GetProperty("coreReactivity").GetDouble(),
+                15);
+            Assert.InRange(
+                Math.Abs(initialPhysics.GetProperty("compensatedNetReactivity").GetDouble()),
+                0.0,
+                1e-12);
+            Assert.Equal(
+                "deterministic-regulated-steady-state-long-step-v1",
+                initialPhysics.GetProperty("cadenceIdentity").GetString());
+            Assert.Equal(
+                4.0,
+                initialPhysics.GetProperty("compensationResponseTimeSeconds").GetDouble(),
+                12);
+            Assert.False(initialPhysics.GetProperty("compensationSaturated").GetBoolean());
+            Assert.True(
+                initialized.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0]
+                    .GetProperty("powerWatts").GetDouble() > 0.0);
+
+            JsonElement preview = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"preview-refuel\",\"request\":{\"channelIndex\":189,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+            Assert.True(preview.GetProperty("accepted").GetBoolean());
+            Assert.NotEqual(
+                preview.GetProperty("stateDigest").GetString(),
+                initialized.GetProperty("stateDigest").GetString());
+            Assert.Equal(
+                0,
+                preview.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.True(
+                preview.GetProperty("preview").GetProperty("predictedReactivityDelta").GetDouble() > 0.0);
+
+            JsonElement committed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":189,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+            Assert.True(committed.GetProperty("accepted").GetBoolean());
+            Assert.Equal(
+                1,
+                committed.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Equal(
+                124,
+                committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+
+            JsonElement invalid = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+            Assert.False(invalid.GetProperty("accepted").GetBoolean());
+            Assert.Equal(
+                1,
+                invalid.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
+        }
+
+        [Fact]
+        public void BrowserPlayUsesTheHourPerTwoSecondsClockAndResumesAfterDayJump()
+        {
+            JsonElement initialized = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            Assert.Equal("1x", initialized.GetProperty("snapshot").GetProperty("playbackModeId").GetString());
+
+            JsonElement hour = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            Assert.Equal(3_600.0, hour.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+            Assert.Equal(2.0, hour.GetProperty("snapshot").GetProperty("wallElapsedSeconds").GetDouble());
+
+            JsonElement paused = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"set-playback-mode\",\"modeId\":\"pause\"}"));
+            Assert.True(paused.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+
+            JsonElement jumped = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"step\",\"simulationSeconds\":86400}"));
+            Assert.True(jumped.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+            Assert.Equal(90_000.0, jumped.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+
+            JsonElement resumed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"set-playback-mode\",\"modeId\":\"1x\"}"));
+            Assert.False(resumed.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
+
+            JsonElement nextHour = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            Assert.Equal(93_600.0, nextHour.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+        }
+
+        [Fact]
+        public void BrowserPlaySerializesCompactDeterministicXenonDiagnosticsAndSelection()
+        {
+            JsonElement first = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            JsonElement firstSnapshot = first.GetProperty("snapshot");
+            JsonElement firstXenon = firstSnapshot.GetProperty("xenon");
+
+            Assert.Equal(
+                XenonSpatialStateV1.Identity,
+                firstXenon.GetProperty("stateIdentity").GetString());
+            Assert.Equal(
+                XenonSpatialCouplingV1.Identity,
+                firstXenon.GetProperty("couplingIdentity").GetString());
+            Assert.StartsWith("sha256:", firstXenon.GetProperty("stateDigestHex").GetString());
+            Assert.Equal(4560, firstXenon.GetProperty("nodeCount").GetInt32());
+            Assert.Equal(-1, firstXenon.GetProperty("selectedChannelIndex").GetInt32());
+            Assert.Equal(JsonValueKind.Null, firstXenon.GetProperty("selectedChannel").ValueKind);
+            Assert.Equal(
+                380,
+                firstSnapshot.GetProperty("core").GetProperty("channels").GetArrayLength());
+
+            JsonElement refuelled = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+            Assert.True(refuelled.GetProperty("accepted").GetBoolean());
+            JsonElement snapshot = refuelled.GetProperty("snapshot");
+            JsonElement xenon = snapshot.GetProperty("xenon");
+            Assert.Equal(12, xenon.GetProperty("selectedChannelIndex").GetInt32());
+            JsonElement selected = xenon.GetProperty("selectedChannel");
+            Assert.Equal(12, selected.GetProperty("channelIndex").GetInt32());
+            JsonElement channel = snapshot.GetProperty("core").GetProperty("channels")[12];
+            Assert.Equal(
+                channel.GetProperty("xenon").GetProperty("meanXe135NumberDensityM3").GetDouble(),
+                selected.GetProperty("meanXe135NumberDensityM3").GetDouble(),
+                15);
+            Assert.Equal(
+                channel.GetProperty("xenon").GetProperty("maxDynamicAbsorptionGroup1PerM").GetDouble(),
+                selected.GetProperty("maxDynamicAbsorptionGroup1PerM").GetDouble(),
+                15);
+            Assert.True(xenon.GetProperty("hasCoupling").GetBoolean());
+            Assert.StartsWith("sha256:", xenon.GetProperty("dynamicXenonDigestHex").GetString());
+            Assert.StartsWith("sha256:", xenon.GetProperty("effectiveCoefficientDigestHex").GetString());
+            AssertFinite(xenon.GetProperty("meanI135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("maxI135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("meanXe135NumberDensityM3").GetDouble());
+            AssertFinite(xenon.GetProperty("maxDynamicAbsorptionGroup2PerM").GetDouble());
+
+            string serialized = refuelled.GetRawText();
+            Assert.DoesNotContain("nodeInputs", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("nodeStates", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("overlays", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("group1Flux", serialized, StringComparison.Ordinal);
+            Assert.DoesNotContain("group2Flux", serialized, StringComparison.Ordinal);
+
+            JsonElement replay = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}"));
+            Assert.Equal(
+                first.GetProperty("stateDigest").GetString(),
+                replay.GetProperty("stateDigest").GetString());
+            Assert.Equal(
+                firstXenon.GetProperty("stateDigestHex").GetString(),
+                replay.GetProperty("snapshot").GetProperty("xenon").GetProperty("stateDigestHex").GetString());
+        }
+
+        [Fact]
+        public void LabRefuellingRequiresAConvergedCoupledSolve()
+        {
+            JsonElement initialized = Parse(
+                PlaytestBridgeV1.Initialize("{\"protocol\":\"candu-playtest-v1\",\"mode\":\"lab\"}"));
+            Assert.Equal("lab", initialized.GetProperty("mode").GetString());
+            Assert.Equal(
+                "lab-2x8-synthetic-v1",
+                initialized.GetProperty("lab").GetProperty("fixtureId").GetString());
+            Assert.Equal(
+                2,
+                initialized.GetProperty("lab").GetProperty("core").GetProperty("channelCount").GetInt32());
+
+            JsonElement preview = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"preview-refuel\",\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"LAB-FRESH-SYNTHETIC\"}"));
+            Assert.True(preview.GetProperty("accepted").GetBoolean());
+            Assert.Equal(
+                0,
+                preview.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Equal(
+                "LAB-FRESH-SYNTHETIC",
+                preview.GetProperty("labPreview")
+                    .GetProperty("core")
+                    .GetProperty("channels")[0]
+                    .GetProperty("bundles")[0]
+                    .GetProperty("fuelTypeId")
+                    .GetString());
+
+            JsonElement committed = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"LAB-FRESH-SYNTHETIC\"}"));
+            Assert.True(committed.GetProperty("accepted").GetBoolean());
+            Assert.Equal(
+                1,
+                committed.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.True(
+                committed.GetProperty("lab")
+                    .GetProperty("spatialSolve")
+                    .GetProperty("hasUsableState")
+                    .GetBoolean());
+
+            JsonElement beforeRejected = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            JsonElement rejected = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"solve\",\"solver\":{\"maximumIterations\":1}}"));
+            Assert.False(rejected.GetProperty("accepted").GetBoolean());
+            Assert.Equal(
+                beforeRejected.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32(),
+                rejected.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Contains(
+                rejected.GetProperty("diagnostics").EnumerateArray(),
+                diagnostic => diagnostic.GetProperty("code").GetString() == "Lab.Solve.Failed" ||
+                    diagnostic.GetProperty("code").GetString() == "SpatialEigenSolve.Nonconverged");
+        }
+
+        private static JsonElement Parse(string json)
+        {
+            using JsonDocument document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
+        }
+
+        private static void AssertFinite(double value)
+        {
+            Assert.False(double.IsNaN(value));
+            Assert.False(double.IsInfinity(value));
+        }
+    }
+}

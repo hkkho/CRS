@@ -11,9 +11,12 @@ power, burnup, and spatial slice is implemented in
 control, and determinism slice is implemented in
 `tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs`;
 the Browser bridge and web UI seam slices are implemented in
-`tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and
-`web/candu-playtest/src/uiSlice.test.ts`; serialization, CLI, and browser smoke
-remain pending, while the Unity replacement seam is complete as of 2026-09-09.
+`tests/ReactorSim.Browser.Tests/PlaytestBridgeTests.cs` and the focused Vitest
+files under `web/candu-playtest/src/` (`commandState.test.ts`,
+`liveClock.test.ts`, `projection.test.ts`, `sessionController.test.ts`,
+`transportMetrics.test.ts`, and `visuals.test.ts`); serialization, CLI, and
+browser smoke remain pending, while the Unity replacement seam is complete as
+of 2026-09-09.
 
 ## Intent
 
@@ -222,9 +225,9 @@ Implementation status: complete as of 2026-09-08. The seven facts in
 | WEB-UI-004 | Export/import a local command history and replay metadata. | Local-only archive preserves protocol identity and commands; malformed or different-version archives are rejected. |
 | WEB-SMOKE-001 | Start the dev server and exercise initialize, inspect, preview, commit, pause, and resume in a real browser. | Page loads without console errors, controls remain responsive, the core surface is visible, and the visible result matches the bridge response. |
 
-Implementation status: `WEB-UI-001..004` are complete as of 2026-09-08 in
-`web/candu-playtest/src/uiSlice.test.ts`. `WEB-SMOKE-001` remains pending for the
-production-shaped deployed-browser clock slice.
+Implementation status: `WEB-UI-001..004` are complete as of 2026-09-08 in the
+focused Vitest files under `web/candu-playtest/src/`. `WEB-SMOKE-001` remains
+pending for the production-shaped deployed-browser clock slice.
 
 ## P2: opt-in or future data-pack cases
 
