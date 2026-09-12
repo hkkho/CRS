@@ -63,6 +63,83 @@ namespace ReactorGame.Unity.Tests
         }
 
         [Test]
+        public void CoreMapPersistsAcceptedOutcomeAndPreservesItOnRejection()
+        {
+            ControllerFixture fixture = CreateControllerFixture("refuelling-outcome");
+            try
+            {
+                CoreMapView coreMap = fixture.Controller.CoreMap;
+                Phase8UnityRuntimeAdapter adapter =
+                    fixture.Controller.GetComponent<Phase8UnityRuntimeAdapter>();
+                const int channelIndex = 190;
+                const ushort shiftCount = 4;
+
+                Assert.That(coreMap.SelectChannel(channelIndex), Is.True);
+                Assert.That(coreMap.SelectTowardEndB(), Is.True);
+                Phase8UnityPresentationSnapshotV1 before = adapter.Snapshot;
+
+                Phase8UnityCommandResultV1 accepted = coreMap.RefuelSelected();
+
+                Assert.That(accepted.Accepted, Is.True, accepted.DiagnosticMessage);
+                Assert.That(coreMap.LastAcceptedRefuellingOutcome, Is.Not.Null);
+                CoreMapRefuellingOutcome outcome = coreMap.LastAcceptedRefuellingOutcome;
+                Assert.That(outcome.Sequence, Is.EqualTo(accepted.Sequence));
+                Assert.That(outcome.ChannelIndex, Is.EqualTo(accepted.Snapshot.LastRefuelledChannel));
+                Assert.That(outcome.DirectionId, Is.EqualTo(accepted.Snapshot.LastRefuellingDirectionId));
+                Assert.That(outcome.ShiftCount, Is.EqualTo(accepted.Snapshot.LastRefuellingShiftCount));
+                Assert.That(outcome.AuthoritativeMessage, Is.EqualTo(accepted.Message));
+                Assert.That(
+                    outcome.FreshBundlesSpent,
+                    Is.EqualTo(before.FreshBundlesAvailable - accepted.Snapshot.FreshBundlesAvailable));
+                Assert.That(
+                    outcome.FreshBundlesRemaining,
+                    Is.EqualTo(accepted.Snapshot.FreshBundlesAvailable));
+                Assert.That(
+                    outcome.ScoreDelta,
+                    Is.EqualTo(accepted.Snapshot.ScoreTotal - before.ScoreTotal).Within(1e-12));
+                Assert.That(
+                    outcome.ActualPowerDelta,
+                    Is.EqualTo(accepted.Snapshot.ActualPowerFraction - before.ActualPowerFraction)
+                        .Within(1e-12));
+                Assert.That(
+                    outcome.RrsAverageReserveDelta,
+                    Is.EqualTo(
+                        accepted.Snapshot.Rrs.AverageFillFraction - before.Rrs.AverageFillFraction)
+                        .Within(1e-12));
+                Assert.That(
+                    outcome.RrsHeadroomDelta,
+                    Is.EqualTo(
+                        Math.Min(
+                            accepted.Snapshot.Rrs.AverageFillFraction,
+                            1.0 - accepted.Snapshot.Rrs.AverageFillFraction) -
+                        Math.Min(before.Rrs.AverageFillFraction, 1.0 - before.Rrs.AverageFillFraction))
+                        .Within(1e-12));
+                StringAssert.Contains(accepted.Message, coreMap.RefuelOutcomeText);
+
+                Phase8UnityCommandResultV1 rejected = adapter.RefuelChannel(
+                    (uint)channelIndex,
+                    CoreMapView.TowardEndBDirectionId,
+                    shiftCount,
+                    "NOT-A-SUPPORTED-FUEL");
+
+                Assert.That(rejected.Accepted, Is.False);
+                Assert.That(coreMap.LastAcceptedRefuellingOutcome, Is.SameAs(outcome));
+                StringAssert.Contains(rejected.DiagnosticCode, coreMap.RefuelFeedbackText);
+                StringAssert.Contains(rejected.DiagnosticMessage, coreMap.RefuelFeedbackText);
+                StringAssert.Contains(accepted.Message, coreMap.RefuelOutcomeText);
+
+                Assert.That(fixture.Controller.RestartPracticeSession(), Is.True);
+                Assert.That(coreMap.IsBound, Is.True);
+                Assert.That(coreMap.LastAcceptedRefuellingOutcome, Is.Null);
+                StringAssert.Contains("No accepted refuelling outcome", coreMap.RefuelOutcomeText);
+            }
+            finally
+            {
+                fixture.Dispose();
+            }
+        }
+
+        [Test]
         public void ControllerUsesFixedPacingRetainsRemainderAndCapsCatchUp()
         {
             ControllerFixture fixture = CreateControllerFixture("fixed-pacing");

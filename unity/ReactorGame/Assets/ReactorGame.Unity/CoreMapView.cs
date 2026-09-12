@@ -8,6 +8,62 @@ using UnityEngine.UI;
 namespace ReactorGame.Unity
 {
     /// <summary>
+    /// Immutable presentation record for the last accepted refuelling order.
+    /// The values are derived from the authoritative Unity snapshots around
+    /// one command and the command result's authoritative message.
+    /// </summary>
+    public sealed class CoreMapRefuellingOutcome
+    {
+        internal CoreMapRefuellingOutcome(
+            ulong sequence,
+            int channelIndex,
+            string directionId,
+            ushort shiftCount,
+            string authoritativeMessage,
+            uint freshBundlesSpent,
+            uint freshBundlesRemaining,
+            double scoreDelta,
+            double actualPowerDelta,
+            double rrsAverageReserveDelta,
+            double rrsHeadroomDelta)
+        {
+            Sequence = sequence;
+            ChannelIndex = channelIndex;
+            DirectionId = directionId ?? string.Empty;
+            ShiftCount = shiftCount;
+            AuthoritativeMessage = authoritativeMessage ?? string.Empty;
+            FreshBundlesSpent = freshBundlesSpent;
+            FreshBundlesRemaining = freshBundlesRemaining;
+            ScoreDelta = scoreDelta;
+            ActualPowerDelta = actualPowerDelta;
+            RrsAverageReserveDelta = rrsAverageReserveDelta;
+            RrsHeadroomDelta = rrsHeadroomDelta;
+        }
+
+        public ulong Sequence { get; }
+
+        public int ChannelIndex { get; }
+
+        public string DirectionId { get; }
+
+        public ushort ShiftCount { get; }
+
+        public string AuthoritativeMessage { get; }
+
+        public uint FreshBundlesSpent { get; }
+
+        public uint FreshBundlesRemaining { get; }
+
+        public double ScoreDelta { get; }
+
+        public double ActualPowerDelta { get; }
+
+        public double RrsAverageReserveDelta { get; }
+
+        public double RrsHeadroomDelta { get; }
+    }
+
+    /// <summary>
     /// Presentation-only view of the synthetic CANDU core. The view owns the
     /// uGUI objects and the current immutable projection used for display;
     /// the runtime adapter remains the sole owner of simulation state.
@@ -62,6 +118,7 @@ namespace ReactorGame.Unity
         private Text _selectedChannelText;
         private Text _bundleHeading;
         private Text _refuelFeedbackText;
+        private Text _refuellingOutcomeText;
         private Text _statusText;
         private InputField _fuelTypeInput;
         private bool _isBuilt;
@@ -69,6 +126,7 @@ namespace ReactorGame.Unity
         private int _selectedChannelIndex = -1;
         private string _selectedRefuellingDirectionId = TowardEndADirectionId;
         private ushort _selectedShiftCount = 4;
+        private CoreMapRefuellingOutcome _lastAcceptedRefuellingOutcome;
 
         public bool IsBuilt
         {
@@ -113,6 +171,16 @@ namespace ReactorGame.Unity
         public string RefuelFeedbackText
         {
             get { return GetText(_refuelFeedbackText); }
+        }
+
+        public string RefuelOutcomeText
+        {
+            get { return GetText(_refuellingOutcomeText); }
+        }
+
+        public CoreMapRefuellingOutcome LastAcceptedRefuellingOutcome
+        {
+            get { return _lastAcceptedRefuellingOutcome; }
         }
 
         public string StatusText
@@ -240,6 +308,7 @@ namespace ReactorGame.Unity
             _runtimeAdapter = null;
             _snapshot = null;
             _selectedChannelIndex = -1;
+            _lastAcceptedRefuellingOutcome = null;
             RenderUnavailableCore();
             ClearPresentation();
             SetControlAvailability(false);
@@ -614,7 +683,10 @@ namespace ReactorGame.Unity
                 return null;
             }
 
-            return Dispatch(
+            Phase8UnityPresentationSnapshotV1 beforeSnapshot = _runtimeAdapter == null
+                ? null
+                : _runtimeAdapter.Snapshot;
+            Phase8UnityCommandResultV1 result = Dispatch(
                 delegate
                 {
                     return _runtimeAdapter.RefuelChannel(
@@ -623,6 +695,18 @@ namespace ReactorGame.Unity
                         shiftCount,
                         fuelTypeId);
                 });
+
+            if (result != null && result.Accepted)
+            {
+                CaptureAcceptedRefuellingOutcome(
+                    beforeSnapshot,
+                    result,
+                    channelIndex,
+                    _selectedRefuellingDirectionId,
+                    shiftCount);
+            }
+
+            return result;
         }
 
         private bool TryReadRefuellingInputs(
@@ -730,6 +814,7 @@ namespace ReactorGame.Unity
             _selectedChannelText.text = "Channel: unavailable";
             _bundleHeading.text = "12-bundle profile unavailable";
             _refuelFeedbackText.text = "Refuel order: unavailable";
+            RenderRefuellingOutcome();
             _statusText.text = "Status: waiting for runtime binding";
             RenderBundleDetails(null);
         }
@@ -748,6 +833,104 @@ namespace ReactorGame.Unity
             _bundleHeading.text = "12-bundle profile unavailable";
             _refuelFeedbackText.text = "Refuel order: unavailable";
             RenderBundleDetails(null);
+        }
+
+        private void CaptureAcceptedRefuellingOutcome(
+            Phase8UnityPresentationSnapshotV1 beforeSnapshot,
+            Phase8UnityCommandResultV1 result,
+            uint requestedChannelIndex,
+            string requestedDirectionId,
+            ushort requestedShiftCount)
+        {
+            Phase8UnityPresentationSnapshotV1 afterSnapshot = result.Snapshot;
+            if (beforeSnapshot == null || afterSnapshot == null)
+            {
+                return;
+            }
+
+            int channelIndex = afterSnapshot.LastRefuelledChannel >= 0
+                ? afterSnapshot.LastRefuelledChannel
+                : (int)requestedChannelIndex;
+            string directionId = string.IsNullOrWhiteSpace(
+                afterSnapshot.LastRefuellingDirectionId)
+                ? requestedDirectionId
+                : afterSnapshot.LastRefuellingDirectionId;
+            ushort shiftCount = afterSnapshot.LastRefuellingShiftCount == 0
+                ? requestedShiftCount
+                : afterSnapshot.LastRefuellingShiftCount;
+            uint freshBundlesSpent = beforeSnapshot.FreshBundlesAvailable >=
+                afterSnapshot.FreshBundlesAvailable
+                ? beforeSnapshot.FreshBundlesAvailable - afterSnapshot.FreshBundlesAvailable
+                : 0;
+            double beforeAverageReserve = beforeSnapshot.Rrs == null
+                ? double.NaN
+                : beforeSnapshot.Rrs.AverageFillFraction;
+            double afterAverageReserve = afterSnapshot.Rrs == null
+                ? double.NaN
+                : afterSnapshot.Rrs.AverageFillFraction;
+            double beforeHeadroom = NearestRrsHeadroom(beforeSnapshot.Rrs);
+            double afterHeadroom = NearestRrsHeadroom(afterSnapshot.Rrs);
+
+            _lastAcceptedRefuellingOutcome = new CoreMapRefuellingOutcome(
+                result.Sequence,
+                channelIndex,
+                directionId,
+                shiftCount,
+                result.Message,
+                freshBundlesSpent,
+                afterSnapshot.FreshBundlesAvailable,
+                afterSnapshot.ScoreTotal - beforeSnapshot.ScoreTotal,
+                afterSnapshot.ActualPowerFraction - beforeSnapshot.ActualPowerFraction,
+                afterAverageReserve - beforeAverageReserve,
+                afterHeadroom - beforeHeadroom);
+            RenderRefuellingOutcome();
+        }
+
+        private void RenderRefuellingOutcome()
+        {
+            if (_refuellingOutcomeText == null)
+            {
+                return;
+            }
+
+            if (_lastAcceptedRefuellingOutcome == null)
+            {
+                _refuellingOutcomeText.text = "No accepted refuelling outcome yet.";
+                return;
+            }
+
+            CoreMapRefuellingOutcome outcome = _lastAcceptedRefuellingOutcome;
+            _refuellingOutcomeText.text =
+                "Channel " + outcome.ChannelIndex.ToString(CultureInfo.InvariantCulture) +
+                " | " + DescribeDirection(outcome.DirectionId) +
+                " | " + outcome.ShiftCount.ToString(CultureInfo.InvariantCulture) +
+                " bundles" +
+                "\n" +
+                (string.IsNullOrWhiteSpace(outcome.AuthoritativeMessage)
+                    ? "Authoritative result message unavailable."
+                    : outcome.AuthoritativeMessage) +
+                "\nFRESH BUNDLES  /  SPENT " +
+                outcome.FreshBundlesSpent.ToString(CultureInfo.InvariantCulture) +
+                "  |  REMAINING " +
+                outcome.FreshBundlesRemaining.ToString(CultureInfo.InvariantCulture) +
+                "\nSCORE DELTA  " + FormatSigned(outcome.ScoreDelta) +
+                "  |  ACTUAL POWER DELTA  " + FormatSignedPercent(outcome.ActualPowerDelta) +
+                "\nRRS AVG RESERVE DELTA  " +
+                FormatSignedPercent(outcome.RrsAverageReserveDelta) +
+                "  |  HEADROOM DELTA  " +
+                FormatSignedPercent(outcome.RrsHeadroomDelta);
+        }
+
+        private static double NearestRrsHeadroom(GameRrsPresentationSnapshot rrs)
+        {
+            if (rrs == null ||
+                double.IsNaN(rrs.AverageFillFraction) ||
+                double.IsInfinity(rrs.AverageFillFraction))
+            {
+                return double.NaN;
+            }
+
+            return Math.Min(rrs.AverageFillFraction, 1.0 - rrs.AverageFillFraction);
         }
 
         private void SetControlAvailability(bool isAvailable)
@@ -942,14 +1125,6 @@ namespace ReactorGame.Unity
                 _bundleDetailTexts.Add(detail);
             }
 
-            AddValueLabel(
-                detailsPanel,
-                "RefuellingOrderHeading",
-                "Direct refuelling order",
-                16,
-                TextAnchor.MiddleLeft,
-                28.0f);
-
             RectTransform directionRow = CreateRow("RefuellingDirection", detailsPanel, 62.0f);
             AddValueLabel(
                 directionRow,
@@ -1023,6 +1198,40 @@ namespace ReactorGame.Unity
                 RefuelActionKey,
                 "REFUEL SELECTED CHANNEL",
                 delegate { RefuelSelected(); });
+
+            RectTransform outcomeCard = CreateRect(
+                "RefuellingOutcomeCard",
+                detailsPanel);
+            LayoutElement outcomeCardLayout = outcomeCard.gameObject.AddComponent<LayoutElement>();
+            outcomeCardLayout.minHeight = 98.0f;
+            outcomeCardLayout.preferredHeight = 98.0f;
+            Image outcomeCardImage = outcomeCard.gameObject.AddComponent<Image>();
+            outcomeCardImage.color = new Color(0.045f, 0.115f, 0.135f, 1.0f);
+            outcomeCardImage.raycastTarget = false;
+            VerticalLayoutGroup outcomeCardLayoutGroup = outcomeCard.gameObject.AddComponent<VerticalLayoutGroup>();
+            outcomeCardLayoutGroup.spacing = 2.0f;
+            outcomeCardLayoutGroup.padding = new RectOffset(8, 8, 4, 4);
+            outcomeCardLayoutGroup.childAlignment = TextAnchor.UpperLeft;
+            outcomeCardLayoutGroup.childControlWidth = true;
+            outcomeCardLayoutGroup.childControlHeight = true;
+            outcomeCardLayoutGroup.childForceExpandWidth = true;
+            outcomeCardLayoutGroup.childForceExpandHeight = false;
+            AddValueLabel(
+                outcomeCard,
+                "RefuellingOutcomeHeading",
+                "LAST ACCEPTED REFUELLING OUTCOME",
+                12,
+                TextAnchor.MiddleLeft,
+                20.0f);
+            _refuellingOutcomeText = AddValueLabel(
+                outcomeCard,
+                "RefuellingOutcomeText",
+                "No accepted refuelling outcome yet.",
+                10,
+                TextAnchor.UpperLeft,
+                64.0f);
+            _refuellingOutcomeText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            _refuellingOutcomeText.verticalOverflow = VerticalWrapMode.Overflow;
 
             _refuelFeedbackText = AddValueLabel(
                 detailsPanel,
@@ -1320,6 +1529,28 @@ namespace ReactorGame.Unity
             }
 
             return value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatSigned(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return "n/a";
+            }
+
+            return (value >= 0.0 ? "+" : string.Empty) +
+                value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatSignedPercent(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return "n/a";
+            }
+
+            return (value >= 0.0 ? "+" : string.Empty) +
+                value.ToString("0.0%", CultureInfo.InvariantCulture);
         }
 
         private static string FormatPercent(double value)
