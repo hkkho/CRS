@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 
 namespace ReactorSim.Core
 {
@@ -504,8 +505,21 @@ namespace ReactorSim.Core
             FullCoreDiffusionDataPackV1 dataPack,
             SpatialCoefficientSet coefficients)
         {
-            return new Digest32(Phase5CanonicalBytesV1.HashBody(
-                "full-core-coefficient-binding-v1",
+            const string magic = "full-core-coefficient-binding-v1";
+            int requiredByteCapacity = checked(
+                Encoding.ASCII.GetByteCount(magic) +
+                1 +
+                32 +
+                32 +
+                4 + Encoding.UTF8.GetByteCount(dataPack.Descriptor.TopologySchemaId) +
+                4 + Encoding.UTF8.GetByteCount(
+                    AdjointWeightedReactivityIdentityV1.EnergyGroupOrderIdentity) +
+                4 +
+                checked(96 * coefficients.NodeCount));
+
+            return new Digest32(Phase5CanonicalBytesV1.HashBodyWithCapacity(
+                magic,
+                requiredByteCapacity,
                 writer =>
                 {
                     Phase5CanonicalBytesV1.WriteDigest(

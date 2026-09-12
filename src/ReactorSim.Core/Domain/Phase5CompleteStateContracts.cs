@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -2392,6 +2393,40 @@ namespace ReactorSim.Core
                 writer.Write((byte)0);
                 WriteBytesRaw(writer, body);
             }));
+        }
+
+        internal static byte[] HashBodyWithCapacity(
+            string magic,
+            int requiredByteCapacity,
+            Action<BinaryWriter> write)
+        {
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(requiredByteCapacity);
+            try
+            {
+                using (var stream = new MemoryStream(
+                    buffer,
+                    0,
+                    requiredByteCapacity,
+                    true,
+                    true))
+                using (var writer = new BinaryWriter(stream, Utf8, true))
+                using (SHA256 sha = SHA256.Create())
+                {
+                    stream.SetLength(0);
+                    WriteAscii(writer, magic);
+                    writer.Write((byte)0);
+                    write(writer);
+                    writer.Flush();
+                    return sha.ComputeHash(
+                        buffer,
+                        0,
+                        checked((int)stream.Length));
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         public static byte[] Sha256(byte[] bytes)
