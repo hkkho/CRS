@@ -17,18 +17,25 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
 ## Execution strategy
 
 - Use GPT-5.6 Luna subagents whenever work can be separated into bounded coding,
-  inventory, research, documentation, mechanical editing, or focused test
-  tasks. Keep architecture, cross-cutting integration, difficult debugging,
-  verification, and final commits with the primary agent, which is responsible
-  for checking and integrating Luna's results.
+  inventory, research, documentation, mechanical editing, benchmark execution,
+  test runs, log triage, or focused diff review. Keep architecture,
+  cross-cutting integration, difficult debugging, final acceptance, and final
+  commits with the primary agent, which is responsible for checking and
+  integrating delegated results.
 - When creating an agent, delegate all coding and implementation work to
   GPT-5.6 Luna and set its reasoning effort to `max` automatically.
-- Use GPT-5.6 Terra only when clarification is needed and set its reasoning
-  effort to `high`.
+- Use GPT-5.6 Terra at `high` for small read-only inventory, straightforward
+  summaries, status checks, and routine command or test verification when a
+  Luna implementation agent would be unnecessary. Terra may also be used when
+  clarification is needed.
 - Use GPT-5.6 Sol only when something is critically stuck and set its reasoning
   effort to `medium`.
 - Do not substitute Terra or Sol for ordinary coding work when Luna can handle
   the bounded task.
+- Before delegating command-running work, verify that the spawned task can run
+  with full access and without approval prompts. If it pauses for permission,
+  correct the host permission selection or relaunch it instead of duplicating
+  the delegated work in the primary context.
 - If the primary agent cannot stage or commit because `.git` access is blocked,
   delegate only the final staging and commit operation to the existing
   `Publisher` chat as a subagent. Give it the exact file allowlist, commit
