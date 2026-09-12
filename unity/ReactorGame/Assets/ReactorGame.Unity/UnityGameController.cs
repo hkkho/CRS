@@ -29,6 +29,11 @@ namespace ReactorGame.Unity
 
         public UnityRuntimePort RuntimePort { get; private set; }
 
+        public double AccumulatedWallMilliseconds
+        {
+            get { return _accumulatedWallMilliseconds; }
+        }
+
         public CoreMapView CoreMap
         {
             get { return _coreMap; }
@@ -94,15 +99,25 @@ namespace ReactorGame.Unity
 
         public void Tick(double unscaledDeltaSeconds)
         {
-            if (!IsInitialized || !AutoAdvance || unscaledDeltaSeconds <= 0.0 ||
-                double.IsNaN(unscaledDeltaSeconds) || double.IsInfinity(unscaledDeltaSeconds))
+            if (!IsInitialized || _adapter == null)
             {
                 return;
             }
 
             Phase8UnityPresentationSnapshotV1 snapshot = _adapter.Snapshot;
-            if (snapshot == null || snapshot.IsPaused ||
-                !string.Equals(snapshot.OutcomeId, "Running", StringComparison.Ordinal))
+            if (IsRrsGameOver(snapshot))
+            {
+                _accumulatedWallMilliseconds = 0.0;
+                return;
+            }
+
+            if (!AutoAdvance || unscaledDeltaSeconds <= 0.0 ||
+                double.IsNaN(unscaledDeltaSeconds) || double.IsInfinity(unscaledDeltaSeconds))
+            {
+                return;
+            }
+
+            if (ShouldStopAutomaticAdvance(snapshot))
             {
                 _accumulatedWallMilliseconds = 0.0;
                 return;
@@ -118,6 +133,19 @@ namespace ReactorGame.Unity
             while (_accumulatedWallMilliseconds + 1e-9 >= tickMilliseconds &&
                    ticks < MaximumCatchUpTicksPerFrame)
             {
+                snapshot = _adapter.Snapshot;
+                if (IsRrsGameOver(snapshot))
+                {
+                    _accumulatedWallMilliseconds = 0.0;
+                    return;
+                }
+
+                if (ShouldStopAutomaticAdvance(snapshot))
+                {
+                    _accumulatedWallMilliseconds = 0.0;
+                    return;
+                }
+
                 Phase8UnityCommandResultV1 result = _adapter.AdvanceWallMilliseconds(
                     snapshot.WallControlTickMilliseconds);
                 if (!result.Accepted)
@@ -126,12 +154,42 @@ namespace ReactorGame.Unity
                         "Automatic simulation advance stopped: " + result.DiagnosticMessage,
                         this);
                     AutoAdvance = false;
-                    break;
+                    return;
                 }
 
                 _accumulatedWallMilliseconds -= tickMilliseconds;
                 ticks++;
+
+                snapshot = result.Snapshot ?? _adapter.Snapshot;
+                if (IsRrsGameOver(snapshot))
+                {
+                    _accumulatedWallMilliseconds = 0.0;
+                    return;
+                }
+
+                if (ShouldStopAutomaticAdvance(snapshot))
+                {
+                    _accumulatedWallMilliseconds = 0.0;
+                    return;
+                }
             }
+        }
+
+        private static bool IsRrsGameOver(
+            Phase8UnityPresentationSnapshotV1 snapshot)
+        {
+            return snapshot != null &&
+                snapshot.Rrs != null &&
+                snapshot.Rrs.IsGameOver;
+        }
+
+        private static bool ShouldStopAutomaticAdvance(
+            Phase8UnityPresentationSnapshotV1 snapshot)
+        {
+            return snapshot == null ||
+                snapshot.IsPaused ||
+                IsRrsGameOver(snapshot) ||
+                !string.Equals(snapshot.OutcomeId, "Running", StringComparison.Ordinal);
         }
 
         public bool RestartPracticeSession()

@@ -1,75 +1,69 @@
 # CANDU Refuelling Game
 
-This repository is building an interactive Unity game about steady-state CANDU
-on-power refuelling. The immediate goal is a playable synthetic-physics game;
-DRAGON5/DONJON5-derived data should improve its realism after the complete game
-loop works.
+This repository contains a playable Unity game about steady-state CANDU
+on-power refuelling. The current product is a deterministic practice run: keep
+the reactor at useful power, manage the automatic regulating-system (RRS)
+reserve, spend a finite fresh-bundle inventory carefully, and build score from
+stable operation and useful discharged burnup. The game should become more
+realistic after this loop is enjoyable and reliable.
 
-Read [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md) and [`gemini_review.md`](gemini_review.md)
-first. They contain the comprehensive repository review, architectural boundaries,
-target player experience, and ordered implementation path.
+Read [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md) for the
+current product contract, architecture boundaries, physics provenance, and
+development priorities.
 
-## Current state
+## Current product
 
-- `src/ReactorSim.Core` contains substantial engine-neutral simulation, refuelling,
-  depletion, spatial diffusion, xenon/iodine dynamics, control systems (LZC, adjusters,
-  bulk poison), and deterministic scenario contracts.
-- `src/ReactorSim.Game` provides the reusable application session layer (`GameSession`),
-  snapshot projections, and player command orchestration.
-- `src/ReactorSim.Cli` runs synthetic scenarios headlessly for validation, baseline
-  policy checks, and long-horizon soak testing.
-- `unity/ReactorGame` starts a real synthetic practice session, binds it to the
-  dashboard, Controls, Timeline, and Core Map views, plus the F1/backquote debug
-  overlay. It advances the session continuously in fixed 100 ms wall-time requests;
-  the Core Map presents 380 selectable channels, 12-bundle burnup details, preview
-  and commit actions, deterministic localized power/tilt/score feedback, and
-  explicit watts/k/rho physics diagnostics from the shared 380 × 12 two-group
-  full-core diffusion solve. Its embedded pack is a project-authored,
-  infinite-cell-calibrated surrogate, not a plant rating or an external
-  DRAGON/DONJON result.
-- `web/candu-playtest` is a companion browser pivot for algorithm and interaction
-  playtesting. It uses the same `ReactorSim.Game` Play session through the
-  versioned browser bridge. It fails closed if the authoritative WASM bridge is
-  not loaded; it is not a second authoritative simulator or a replacement for
-  Unity acceptance.
-- `data` and `reference` contain synthetic packs, literature-derived design context,
-  and offline DRAGON5/DONJON5 integration specs.
+- `unity/ReactorGame` is the primary playable surface. It starts a synthetic
+  practice session and binds the Dashboard, Controls, Timeline, Core Map, and
+  F1/backquote debug menu. The Unity runtime advances the shared session through
+  bounded 100 ms wall-time requests.
+- The Dashboard exposes the RRS reserve and a compact RUN STAKES surface. The
+  player-facing budget is `FreshBundlesAvailable`; `RefuelRequestsRemaining` is
+  a scenario/runtime counter and is not the fuel budget. A terminal RRS reserve
+  state stops automatic advancement and offers a run restart.
+- The Core Map presents 380 selectable channels and the 12 bundle positions in
+  a selected channel. Refuelling commits through `GameSession`, and the shared
+  projection supplies the resulting power, tilt, burnup, and score feedback.
+- `src/ReactorSim.Core` owns engine-neutral deterministic state transitions,
+  inventory, burnup, topology, control contracts, and the two-group spatial
+  solve. `src/ReactorSim.Game` owns the reusable session, commands, and
+  presentation snapshot. Unity is an input and presentation layer over those
+  authorities.
+- `src/ReactorSim.Cli` runs synthetic scenarios headlessly for validation and
+  long-horizon checks.
+- `web/candu-playtest` is a secondary Phaser 3 companion for interaction and
+  bridge playtesting. It uses the same `ReactorSim.Game` session through the
+  versioned browser bridge, fails closed when the authoritative WASM bridge is
+  unavailable, and never substitutes a browser simulator for Unity acceptance.
+- `data` and `reference` contain synthetic packs, design context, and the
+  offline DRAGON5/DONJON5 integration material.
 
-## Implementation Roadmap
+## Simulation contract
 
-As detailed in [`gemini_review.md`](gemini_review.md):
-1. **Milestone 0.5 — Browser algorithm/playtest pivot:** Build and host the
-   small Vite/Three.js console in [`web/candu-playtest`](web/candu-playtest/).
-   Keep Play mode backed by `GameSession`, make Lab mode call the existing Core
-   spatial solver through browser WASM, and capture local replay/digest/feedback
-   data so UI and algorithm decisions can be iterated before Unity presentation
-   work. The browser surface is public synthetic data only, contains no backend
-   or authentication, and remains a companion validation tool.
-2. **Complete — Slice 1 (Milestone 1):** Interactive 380-channel Core Map heat map
-   with channel selection, 12-bundle axial profile inspection, and refuel preview.
-3. **Complete — Slice 2:** Deterministic localized power/tilt feedback and
-   fuel-utilization scoring are connected to committed refuelling.
-4. **Complete — Slice 3 (Milestone 2):** In-game debug and playtesting menu
-   (`F1` / backquote overlay) for time jumps, playback, restart, inventory, and
-   snapshot diagnostics.
-5. **Slice 4 (Milestone 3):** Refuelling candidate recommendations and operational
-   trade-off guidance.
-6. **Complete initial slice — Slice 5 (Milestone 4):** Two-group full-core
-   spatial diffusion solver (`SpatialEigenSolve`) integrated on the shared
-   one-hour simulation cadence.
-7. **Next — Slice 6 (Milestone 5):** Offline DRAGON5/DONJON5 runtime data pack
-   admission and calibration.
+The practice session uses the project-authored
+`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is a
+surrogate, not a plant rating or an external DRAGON/DONJON result. The shared
+full-core adapter publishes explicit SI watts, normalized power, `k`, and
+`rho = (k - 1) / k`, along with solve identity and diagnostics. Its static
+flux shape is normalized to the operator target; short operation intervals
+reuse the retained equilibrium projection for deterministic burnup integration.
+This is a regulated steady-state practice model, not a sub-second transient
+claim.
 
-The physics migration is intentionally staged. The current session publishes a
-versioned two-group full-core projection with `P_ref`, amplitude,
-total/channel/bundle watts, `k`, and `rho = (k - 1) / k`; refuelling re-solves
-the resulting bundle inventory and burnup advances from the retained node
-powers. The embedded
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack is a project-authored
-surrogate with explicit provenance; its static flux shape is normalized to the
-operator setpoint and its displayed fission power responds to relative `k`.
-It is the seam for the next offline DRAGON5 lattice/depletion plus
-DONJON5/TRIVAC core-follow export; runtime code never invokes those tools.
+The Core repository includes iodine/xenon contracts, but the current
+`GameSession` practice projection intentionally exposes xenon as an unavailable
+static compatibility state with no coupling in Unity or the browser companion.
+
+## Gameplay bargain
+
+The player must maintain automatic RRS reserve away from both 0% and 100%,
+conserve finite fresh bundles, and earn score through stable power and useful
+discharged burnup. Refuelling operations change the authoritative bundle state;
+the shared projection then supplies power and RRS feedback. The UI does not
+invent a fuel budget or unmodeled future state.
+
+Shutdown, scram, accident progression, operator-training scenarios, and full
+plant operations are out of scope for this product.
 
 ## Quick start
 
@@ -80,16 +74,15 @@ dotnet build ReactorSim.sln
 powershell -ExecutionPolicy Bypass -File tools/Prepare-UnityCore.ps1
 ```
 
-Open `unity/ReactorGame` in Unity and run `Assets/Scenes/Bootstrap.unity`. The
-practice scenario begins automatically at 10x simulation speed; use the Controls
-page to pause, resume, change playback speed, queue power and tilt targets, or
-refuel a numbered channel toward either end. The synthetic practice inventory
-starts with 128 fresh bundles and currently accepts `NAT-U-SYNTHETIC` fuel in
-four- or eight-bundle shifts. Use the Core Map page to inspect the 380 channels,
-preview a shift, and commit it; press F1 or backquote for the debug overlay.
+Open `unity/ReactorGame` in Unity and run `Assets/Scenes/Bootstrap.unity`.
+The practice session starts at 10x simulation speed. Use Controls to pause,
+resume, change playback speed, queue power and tilt targets, or refuel a
+numbered channel toward either end. The synthetic inventory starts with 128
+fresh bundles and accepts `NAT-U-SYNTHETIC` fuel in four- or eight-bundle
+shifts. Use Core Map to inspect channels and commit a shift; press F1 or
+backquote for the debug menu.
 
-Automated tests are intentionally limited to focused checks for code being
-changed. The minimal runners are:
+Automated checks are focused on the code being changed:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/Test-DotNet.ps1
@@ -97,19 +90,17 @@ powershell -ExecutionPolicy Bypass -File tools/Test-Browser.ps1
 powershell -ExecutionPolicy Bypass -File tools/Test-UnityImport.ps1
 ```
 
-`Test-DotNet.ps1` runs all suites by default; use `-Suite Core`, `-Suite Game`,
-`-Suite Browser`, or `-Suite All` to select one. `Test-Browser.ps1` expects
-browser dependencies to already be installed and runs the Browser .NET bridge
-suite, Vitest, and the production build. `Test-UnityImport.ps1` discovers the
-pinned editor or accepts `-UnityEditorPath`, prepares the simulation DLLs, and runs
-the Unity import/compile/Bootstrap smoke. The primary acceptance path remains
-a playable build exercised through the in-game debug menu. Historical task,
-gate, approval, and review language in supporting research is not an active
-development requirement.
+`Test-DotNet.ps1` runs all available .NET suites by default; use `-Suite Core`,
+`-Suite Game`, `-Suite Browser`, or `-Suite All` to select one. The browser
+runner expects dependencies to be installed and runs the bridge suite, Vitest,
+and production build. The Unity runner discovers the pinned editor or accepts
+`-UnityEditorPath`, prepares the simulation DLLs, and runs the import/compile
+and Bootstrap smoke. The primary acceptance path is still an owner playthrough
+of the Unity scene and debug menu.
 
-### Browser playtest pivot
+### Browser companion
 
-The browser console is launched independently from the Unity project:
+Run the secondary Phaser companion independently:
 
 ```powershell
 cd web/candu-playtest
@@ -117,19 +108,36 @@ npm install
 npm run dev
 ```
 
-For a production-shaped static build, stage the authoritative bridge with
-`tools/Build-BrowserWasm.ps1` and then run `npm run build`. The production
-deployment workflow in `.github/workflows/deploy-candu-playtest.yml` performs
-that staging, verifies the Vercel prebuilt output, and runs the browser smoke
-test. Vercel hosts the directory as a static Vite project; there is no runtime
-server, user account, or reactor-analysis executable involved. See the web
-README for the bridge, replay, and deployment details.
+For a production-shaped build, stage the authoritative bridge from the
+repository root and then build the web project:
 
-## Codex agent collaboration
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/Build-BrowserWasm.ps1
+cd web/candu-playtest
+npm ci
+npm test
+npm run build
+```
 
-- When creating an agent, select GPT-5.6 Luna with reasoning effort `max` for
-  all coding and implementation work.
-- Select GPT-5.6 Terra with reasoning effort `high` only when clarification is
-  needed.
-- Select GPT-5.6 Sol with reasoning effort `medium` only when something is
-  critically stuck.
+The Phaser client is a static companion. Its bridge runs in a worker, the
+runtime never invokes DRAGON5, DONJON5, or another analysis executable, and
+local command history/replay and feedback notes remain local to the browser.
+
+## Next priorities
+
+In order, keep the work focused on the live player loop:
+
+- Tune the Unity dashboard, refuelling feedback, pacing, and accessibility
+  using the existing authoritative snapshot; keep the RUN STAKES bargain
+  legible during normal play and at terminal RRS exhaustion.
+- Improve operation readability and debug-menu diagnostics without duplicating
+  `GameSession` rules or adding presentation-owned simulation rules.
+- Validate scoring and practice pacing against stable-power, reserve, inventory,
+  and discharged-burnup behavior through focused tests and owner playtests.
+- Admit a compact, versioned offline DRAGON5/DONJON5-derived data pack behind
+  the existing runtime seam only after provenance, licensing, units, group
+  ordering, topology, convergence, and power-balance checks are documented.
+
+Richer reactor physics can follow those priorities as a separate validated
+data/model effort; it is not a prerequisite for making the current Unity run
+playable.

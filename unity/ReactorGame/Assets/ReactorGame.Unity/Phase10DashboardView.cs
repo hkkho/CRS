@@ -38,6 +38,10 @@ namespace ReactorGame.Unity
             new Color(1.0f, 0.16f, 0.34f, 1.0f);
         private static readonly Color ReserveUnavailableColor =
             new Color(0.52f, 0.60f, 0.68f, 1.0f);
+        private static readonly Color RunStakesGuidanceColor =
+            new Color(0.77f, 0.87f, 0.93f, 1.0f);
+        private static readonly Color RunStakesDisabledColor =
+            new Color(0.42f, 0.49f, 0.57f, 1.0f);
 
         private Phase8UnityRuntimeAdapter _runtimeAdapter;
         private RectTransform _dashboardRoot;
@@ -55,7 +59,11 @@ namespace ReactorGame.Unity
         private Text _rrsPressureText;
         private Text _rrsWarningText;
         private Text _rrsPowerText;
+        private Text _runStakesText;
+        private Text _runStakesGuidanceText;
+        private Text _runStakesTerminalText;
         private Image _reserveMeterImage;
+        private Button _restartRunButton;
         private bool _isBuilt;
 
         public bool IsBuilt
@@ -147,6 +155,37 @@ namespace ReactorGame.Unity
         public string RrsPowerText
         {
             get { return GetText(_rrsPowerText); }
+        }
+
+        public string RunStakesText
+        {
+            get { return GetText(_runStakesText); }
+        }
+
+        public string RunStakesGuidanceText
+        {
+            get { return GetText(_runStakesGuidanceText); }
+        }
+
+        public string TerminalReasonText
+        {
+            get { return GetText(_runStakesTerminalText); }
+        }
+
+        public Button RestartRunButton
+        {
+            get { return _restartRunButton; }
+        }
+
+        public bool RestartRunButtonInteractable
+        {
+            get { return _restartRunButton != null && _restartRunButton.interactable; }
+        }
+
+        public bool TryGetRestartRunButton(out Button button)
+        {
+            button = _restartRunButton;
+            return button != null;
         }
 
         /// <summary>
@@ -253,6 +292,7 @@ namespace ReactorGame.Unity
                 " | Turn summaries: " + Format(snapshot.TurnSummaryCount);
             _outcomeText.text = "Outcome: " + snapshot.OutcomeId;
             RenderRrs(snapshot.Rrs);
+            RenderRunStakes(snapshot, snapshot.Rrs);
         }
 
         private void RenderRrs(GameRrsPresentationSnapshot rrs)
@@ -287,6 +327,7 @@ namespace ReactorGame.Unity
                 FormatSignedWatts(rrs.PowerErrorWatts) +
                 "  |  NET RHO " + FormatSignedRho(rrs.CompensatedNetReactivity);
             _rrsWarningText.text = FormatWarningText(rrs, RrsWarningTier);
+            _rrsWarningText.fontSize = rrs.IsGameOver ? 21 : 17;
 
             Color accent = GetWarningColor(RrsWarningTier);
             _reserveMeterImage.color = accent;
@@ -295,6 +336,51 @@ namespace ReactorGame.Unity
             _rrsStatusText.color = rrs.ControllerConverged && !rrs.IsGameOver
                 ? new Color(0.58f, 0.92f, 0.78f, 1.0f)
                 : accent;
+        }
+
+        private void RenderRunStakes(
+            Phase8UnityPresentationSnapshotV1 snapshot,
+            GameRrsPresentationSnapshot rrs)
+        {
+            if (snapshot == null)
+            {
+                ClearRunStakesPresentation();
+                return;
+            }
+
+            _runStakesText.text =
+                "SCORE  " + Format(snapshot.ScoreTotal) +
+                "  ·  FRESH BUNDLES  " + Format(snapshot.FreshBundlesAvailable) +
+                "\nREFUELLING OPS  " + Format(snapshot.RefuellingOperationCount) +
+                "  ·  ACTUAL POWER  " + FormatPercent(snapshot.ActualPowerFraction) +
+                "\n" + FormatNearestRrsHeadroom(rrs);
+
+            bool isTerminal = rrs != null && rrs.IsGameOver;
+            _runStakesGuidanceText.text = isTerminal
+                ? "RUN GUIDANCE  /  DISABLED — TERMINAL RRS STATE"
+                : rrs == null
+                    ? "RUN GUIDANCE  /  WAITING FOR RRS TELEMETRY"
+                    : "KEEP RRS RESERVE AWAY FROM 0% / 100%.\n" +
+                      "CONSERVE FRESH BUNDLES. STABLE POWER + USEFUL DISCHARGED BURNUP EARN SCORE.";
+            _runStakesGuidanceText.color = isTerminal
+                ? RunStakesDisabledColor
+                : RunStakesGuidanceColor;
+
+            _runStakesTerminalText.gameObject.SetActive(isTerminal);
+            if (isTerminal)
+            {
+                _runStakesTerminalText.text =
+                    "TERMINAL RRS EXHAUSTION\n" +
+                    (string.IsNullOrWhiteSpace(rrs.GameOverReason)
+                        ? "RRS RESERVE LIMIT REACHED"
+                        : rrs.GameOverReason);
+            }
+            else
+            {
+                _runStakesTerminalText.text = string.Empty;
+            }
+
+            _restartRunButton.interactable = isTerminal;
         }
 
         private void EnsureVisuals()
@@ -543,11 +629,21 @@ namespace ReactorGame.Unity
                 TextAnchor.MiddleLeft,
                 FontStyle.Normal);
 
+            RectTransform bottomRow = CreateRect("DashboardBottomRow", _dashboardRoot);
+            SetLayoutHeight(bottomRow, 280.0f);
+            HorizontalLayoutGroup bottomRowLayout = bottomRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            bottomRowLayout.spacing = 12.0f;
+            bottomRowLayout.childAlignment = TextAnchor.UpperLeft;
+            bottomRowLayout.childControlWidth = true;
+            bottomRowLayout.childControlHeight = true;
+            bottomRowLayout.childForceExpandWidth = false;
+            bottomRowLayout.childForceExpandHeight = true;
+
             RectTransform operatingPanel = CreatePanel(
-                _dashboardRoot,
+                bottomRow,
                 "OperatingSnapshot",
                 new Color(0.030f, 0.042f, 0.070f, 0.94f));
-            SetLayoutHeight(operatingPanel, 280.0f);
+            SetFlexibleWidth(operatingPanel, 1.20f);
             AddLabel(
                 operatingPanel,
                 "OperatingSnapshotHeading",
@@ -621,6 +717,55 @@ namespace ReactorGame.Unity
                 TextAnchor.MiddleLeft,
                 FontStyle.Bold);
 
+            RectTransform runStakesPanel = CreatePanel(
+                bottomRow,
+                "RunStakesPanel",
+                new Color(0.062f, 0.052f, 0.090f, 0.96f));
+            SetFlexibleWidth(runStakesPanel, 0.80f);
+            AddLabel(
+                runStakesPanel,
+                "RunStakesHeading",
+                "RUN STAKES  //  CURRENT RUN",
+                18,
+                20.0f,
+                new Color(0.93f, 0.82f, 0.98f, 1.0f),
+                TextAnchor.MiddleLeft,
+                FontStyle.Bold);
+            _runStakesText = AddLabel(
+                runStakesPanel,
+                "RunStakesValues",
+                "SCORE  --  ·  FRESH BUNDLES  --\nREFUELLING OPS  --  ·  ACTUAL POWER  --\nNEAREST RRS HEADROOM  /  --",
+                13,
+                50.0f,
+                new Color(0.92f, 0.91f, 1.0f, 1.0f),
+                TextAnchor.MiddleLeft,
+                FontStyle.Bold);
+            _runStakesGuidanceText = AddLabel(
+                runStakesPanel,
+                "RunStakesGuidance",
+                "RUN GUIDANCE  /  WAITING FOR RRS TELEMETRY",
+                12,
+                30.0f,
+                RunStakesGuidanceColor,
+                TextAnchor.MiddleLeft,
+                FontStyle.Normal);
+            _runStakesTerminalText = AddLabel(
+                runStakesPanel,
+                "RunStakesTerminal",
+                string.Empty,
+                12,
+                40.0f,
+                ReserveExhaustedColor,
+                TextAnchor.MiddleLeft,
+                FontStyle.Bold);
+            _runStakesTerminalText.gameObject.SetActive(false);
+            _restartRunButton = AddButton(
+                runStakesPanel,
+                "RestartRunButton",
+                "RESTART PRACTICE RUN",
+                delegate { RestartPracticeSession(); });
+            _restartRunButton.interactable = false;
+
             _isBuilt = true;
         }
 
@@ -632,8 +777,18 @@ namespace ReactorGame.Unity
             }
         }
 
+        private void RestartPracticeSession()
+        {
+            UnityGameController controller = GetComponent<UnityGameController>();
+            if (controller != null)
+            {
+                controller.RestartPracticeSession();
+            }
+        }
+
         private void ClearPresentation()
         {
+            Snapshot = null;
             if (!_isBuilt)
             {
                 return;
@@ -647,28 +802,108 @@ namespace ReactorGame.Unity
             _scoreText.text = "Score: unavailable";
             _outcomeText.text = "Outcome: unavailable";
             ClearRrsPresentation();
+            ClearRunStakesPresentation();
         }
 
         private void ClearRrsPresentation()
         {
             RrsSnapshot = null;
             RrsWarningTier = Phase10RrsReserveWarningTierV1.Unavailable;
-            if (_reserveMeterImage == null)
+            if (_reserveMeterImage != null)
             {
-                return;
+                _reserveMeterImage.fillAmount = 0.0f;
+                _reserveMeterImage.color = ReserveUnavailableColor;
             }
 
-            _reserveMeterImage.fillAmount = 0.0f;
-            _reserveMeterImage.color = ReserveUnavailableColor;
-            _reserveValueText.text = "--";
-            _reserveValueText.color = ReserveUnavailableColor;
-            _reserveHeadroomText.text = "HEADROOM  /  TO EMPTY --  |  TO FULL --";
-            _reserveRangeText.text = "ZONE RANGE  /  --  |  SPREAD --";
-            _rrsStatusText.text = "AUTO RRS  /  WAITING";
-            _rrsPressureText.text = "PRESSURE CUE  /  WAITING";
-            _rrsWarningText.text = "RESERVE TELEMETRY UNAVAILABLE";
-            _rrsWarningText.color = ReserveUnavailableColor;
-            _rrsPowerText.text = "CURRENT RESPONSE  /  WAITING";
+            if (_reserveValueText != null)
+            {
+                _reserveValueText.text = "--";
+                _reserveValueText.color = ReserveUnavailableColor;
+            }
+
+            if (_reserveHeadroomText != null)
+            {
+                _reserveHeadroomText.text = "HEADROOM  /  TO EMPTY --  |  TO FULL --";
+            }
+
+            if (_reserveRangeText != null)
+            {
+                _reserveRangeText.text = "ZONE RANGE  /  --  |  SPREAD --";
+            }
+
+            if (_rrsStatusText != null)
+            {
+                _rrsStatusText.text = "AUTO RRS  /  WAITING";
+            }
+
+            if (_rrsPressureText != null)
+            {
+                _rrsPressureText.text = "PRESSURE CUE  /  WAITING";
+            }
+
+            if (_rrsWarningText != null)
+            {
+                _rrsWarningText.text = "RESERVE TELEMETRY UNAVAILABLE";
+                _rrsWarningText.color = ReserveUnavailableColor;
+            }
+
+            if (_rrsPowerText != null)
+            {
+                _rrsPowerText.text = "CURRENT RESPONSE  /  WAITING";
+            }
+        }
+
+        private void ClearRunStakesPresentation()
+        {
+            if (_runStakesText != null)
+            {
+                _runStakesText.text =
+                    "SCORE  --  ·  FRESH BUNDLES  --\n" +
+                    "REFUELLING OPS  --  ·  ACTUAL POWER  --\n" +
+                    "NEAREST RRS HEADROOM  /  --";
+            }
+
+            if (_runStakesGuidanceText != null)
+            {
+                _runStakesGuidanceText.text = "RUN GUIDANCE  /  WAITING FOR RUNTIME";
+                _runStakesGuidanceText.color = RunStakesGuidanceColor;
+            }
+
+            if (_runStakesTerminalText != null)
+            {
+                _runStakesTerminalText.text = string.Empty;
+                _runStakesTerminalText.gameObject.SetActive(false);
+            }
+
+            if (_restartRunButton != null)
+            {
+                _restartRunButton.interactable = false;
+            }
+        }
+
+        private static string FormatNearestRrsHeadroom(GameRrsPresentationSnapshot rrs)
+        {
+            if (rrs == null)
+            {
+                return "NEAREST RRS HEADROOM  /  --";
+            }
+
+            double averageFill = rrs.AverageFillFraction;
+            if (double.IsNaN(averageFill) ||
+                double.IsInfinity(averageFill) ||
+                averageFill < 0.0 ||
+                averageFill > 1.0)
+            {
+                return "NEAREST RRS HEADROOM  /  --";
+            }
+
+            double toEmpty = averageFill;
+            double toFull = 1.0 - averageFill;
+            bool emptyIsNearest = toEmpty <= toFull;
+            return "NEAREST RRS HEADROOM  /  " +
+                FormatPercent(emptyIsNearest ? toEmpty : toFull) +
+                " TO " + (emptyIsNearest ? "EMPTY" : "FULL") +
+                "  ·  AVG " + FormatPercent(averageFill);
         }
 
         private static string FormatPressureCue(GameRrsPresentationSnapshot rrs)
@@ -789,6 +1024,45 @@ namespace ReactorGame.Unity
             label.verticalOverflow = VerticalWrapMode.Truncate;
             label.raycastTarget = false;
             return label;
+        }
+
+        private static Button AddButton(
+            RectTransform parent,
+            string name,
+            string labelText,
+            Action callback)
+        {
+            RectTransform buttonRoot = CreateRect(name, parent);
+            LayoutElement buttonLayout = buttonRoot.gameObject.AddComponent<LayoutElement>();
+            buttonLayout.minHeight = Phase10ShellView.MinimumTouchTargetPixels;
+            buttonLayout.preferredHeight = Phase10ShellView.MinimumTouchTargetPixels;
+
+            Color buttonColor = new Color(0.13f, 0.10f, 0.20f, 1.0f);
+            Image image = AddImage(buttonRoot, buttonColor);
+            image.raycastTarget = true;
+
+            Button button = buttonRoot.gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            ColorBlock colors = button.colors;
+            colors.normalColor = buttonColor;
+            colors.highlightedColor = new Color(0.28f, 0.22f, 0.40f, 1.0f);
+            colors.pressedColor = new Color(0.40f, 0.30f, 0.52f, 1.0f);
+            colors.selectedColor = colors.highlightedColor;
+            button.colors = colors;
+
+            Text text = AddLabel(
+                buttonRoot,
+                "RestartRunLabel",
+                labelText,
+                16,
+                Phase10ShellView.MinimumTouchTargetPixels,
+                Color.white,
+                TextAnchor.MiddleCenter,
+                FontStyle.Bold);
+            SetAnchors(text.rectTransform, Vector2.zero, Vector2.one);
+            SetOffsets(text.rectTransform, 10.0f, 0.0f, 10.0f, 0.0f);
+            button.onClick.AddListener(delegate { callback(); });
+            return button;
         }
 
         private static RectTransform CreatePanel(
