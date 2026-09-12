@@ -29,6 +29,8 @@ namespace ReactorSim.Game
             double scoreTotal,
             uint turnSummaryCount,
             string outcomeId,
+            bool isGameOver,
+            string gameOverReason,
             bool isPaused,
             uint freshBundlesAvailable,
             uint refuellingOperationCount,
@@ -56,6 +58,8 @@ namespace ReactorSim.Game
             ScoreTotal = scoreTotal;
             TurnSummaryCount = turnSummaryCount;
             OutcomeId = outcomeId;
+            IsGameOver = isGameOver;
+            GameOverReason = gameOverReason;
             IsPaused = isPaused;
             FreshBundlesAvailable = freshBundlesAvailable;
             RefuellingOperationCount = refuellingOperationCount;
@@ -105,6 +109,10 @@ namespace ReactorSim.Game
         public uint TurnSummaryCount { get; }
 
         public string OutcomeId { get; }
+
+        public bool IsGameOver { get; }
+
+        public string GameOverReason { get; }
 
         public bool IsPaused { get; }
 
@@ -242,6 +250,11 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             ContractValidationResult<Phase8ScoredAdvanceResultV1> planned =
                 _runtime.TryPlanAdvanceWallMilliseconds(wallMilliseconds);
             if (!planned.IsValid)
@@ -258,6 +271,40 @@ namespace ReactorSim.Game
                 return Rejected(
                     transaction.FirstDiagnostic.Code,
                     transaction.FirstDiagnostic.Message);
+            }
+
+            ulong acceptedWallMilliseconds = wallMilliseconds;
+            if (transaction.Value.Rrs.IsGameOver)
+            {
+                ContractValidationResult<ulong> terminalWallMilliseconds =
+                    TryFindTerminalWallMilliseconds(wallMilliseconds);
+                if (!terminalWallMilliseconds.IsValid)
+                {
+                    return Rejected(
+                        terminalWallMilliseconds.FirstDiagnostic.Code,
+                        terminalWallMilliseconds.FirstDiagnostic.Message);
+                }
+
+                acceptedWallMilliseconds = terminalWallMilliseconds.Value;
+                if (acceptedWallMilliseconds != wallMilliseconds)
+                {
+                    planned = _runtime.TryPlanAdvanceWallMilliseconds(
+                        acceptedWallMilliseconds);
+                    if (!planned.IsValid)
+                    {
+                        return Rejected(
+                            planned.FirstDiagnostic.Code,
+                            planned.FirstDiagnostic.Message);
+                    }
+
+                    transaction = TryBuildPracticeAdvance(planned.Value.Advance);
+                    if (!transaction.IsValid)
+                    {
+                        return Rejected(
+                            transaction.FirstDiagnostic.Code,
+                            transaction.FirstDiagnostic.Message);
+                    }
+                }
             }
 
             EquilibriumCoreProjectionV1 previousProjection =
@@ -278,7 +325,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
-                _runtime.TryAdvanceWallMilliseconds(wallMilliseconds);
+                _runtime.TryAdvanceWallMilliseconds(acceptedWallMilliseconds);
             if (!result.IsValid)
             {
                 if (projectionChanged)
@@ -297,16 +344,31 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult QueuePowerTarget(double targetFraction)
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             return Complete(_runtime.TryQueuePowerTarget(targetFraction));
         }
 
         public GameSessionCommandResult QueueTiltTarget(double targetFraction)
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             return Complete(_runtime.TryQueueTiltTarget(targetFraction));
         }
 
         public GameSessionCommandResult SetPlaybackMode(string playbackModeId)
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             if (string.IsNullOrWhiteSpace(playbackModeId) ||
                 !_playbackModes.TryGetValue(playbackModeId, out Phase8PlaybackModeV1 playbackMode))
             {
@@ -330,11 +392,21 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult Pause()
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             return Complete(_runtime.TryPause());
         }
 
         public GameSessionCommandResult Resume()
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             return Complete(_runtime.TryResume());
         }
 
@@ -375,6 +447,11 @@ namespace ReactorSim.Game
             ushort shiftCount,
             string fuelTypeId)
         {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
             if (!TryParseDirection(directionId, out GameRefuellingDirectionV1 direction))
             {
                 return Rejected(
@@ -495,6 +572,8 @@ namespace ReactorSim.Game
                 _runtime.Score.TotalPoints - _scoreResetBaseline + _syntheticScore,
                 checked((uint)_runtime.TurnSummaries.Count),
                 _runtime.Outcome.ToString(),
+                _practiceRrs.IsGameOver,
+                _practiceRrs.GameOverReason,
                 _runtime.IsPaused,
                 _coreState.FreshBundlesAvailable,
                 _coreState.RefuellingOperationCount,
@@ -502,6 +581,13 @@ namespace ReactorSim.Game
                 DirectionId(_coreState.LastDirection),
                 _coreState.LastShiftCount,
                 core);
+        }
+
+        private GameSessionCommandResult RejectGameOver()
+        {
+            return Rejected(
+                "GameSession.Run.GameOver",
+                "The practice run is terminal: " + _practiceRrs.GameOverReason + ".");
         }
 
         private ContractValidationResult<GameRefuellingResultV1> TryRefuel(
@@ -719,6 +805,12 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Message);
                         }
 
+                        if (transaction.Rrs.IsGameOver)
+                        {
+                            return ContractValidationResult<PracticeTransaction>.Valid(
+                                transaction);
+                        }
+
                         if (scheduled.Value)
                         {
                             continue;
@@ -813,6 +905,12 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Path,
                                 scheduled.FirstDiagnostic.Message);
                         }
+
+                        if (transaction.Rrs.IsGameOver)
+                        {
+                            return ContractValidationResult<PracticeTransaction>.Valid(
+                                transaction);
+                        }
                     }
                 }
             }
@@ -828,6 +926,47 @@ namespace ReactorSim.Game
             }
 
             return ContractValidationResult<PracticeTransaction>.Valid(transaction);
+        }
+
+        private ContractValidationResult<ulong> TryFindTerminalWallMilliseconds(
+            ulong maximumWallMilliseconds)
+        {
+            ulong lowerBound = 0;
+            ulong upperBound = maximumWallMilliseconds;
+            while (lowerBound < upperBound)
+            {
+                ulong midpoint = lowerBound + (upperBound - lowerBound) / 2UL;
+                ContractValidationResult<Phase8ScoredAdvanceResultV1> planned =
+                    _runtime.TryPlanAdvanceWallMilliseconds(midpoint);
+                if (!planned.IsValid)
+                {
+                    return ContractValidationResult<ulong>.Invalid(
+                        planned.FirstDiagnostic.Code,
+                        planned.FirstDiagnostic.Path,
+                        planned.FirstDiagnostic.Message);
+                }
+
+                ContractValidationResult<PracticeTransaction> transaction =
+                    TryBuildPracticeAdvance(planned.Value.Advance);
+                if (!transaction.IsValid)
+                {
+                    return ContractValidationResult<ulong>.Invalid(
+                        transaction.FirstDiagnostic.Code,
+                        transaction.FirstDiagnostic.Path,
+                        transaction.FirstDiagnostic.Message);
+                }
+
+                if (transaction.Value.Rrs.IsGameOver)
+                {
+                    upperBound = midpoint;
+                }
+                else
+                {
+                    lowerBound = midpoint + 1UL;
+                }
+            }
+
+            return ContractValidationResult<ulong>.Valid(lowerBound);
         }
 
         private ContractValidationResult<bool> TryBuildScheduledShape(

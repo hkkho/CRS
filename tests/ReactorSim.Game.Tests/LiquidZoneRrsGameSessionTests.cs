@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Reflection;
 using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
@@ -7,6 +9,87 @@ namespace ReactorSim.Game.Tests;
 
 public sealed class LiquidZoneRrsGameSessionTests
 {
+    [Fact]
+    public void SnapshotPublishesAuthoritativeRrsRunStatus()
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+
+        Assert.Equal(
+            session.CurrentLiquidZoneRrs.IsGameOver,
+            session.Snapshot.IsGameOver);
+        Assert.Equal(
+            session.CurrentLiquidZoneRrs.GameOverReason,
+            session.Snapshot.GameOverReason);
+        Assert.False(session.Snapshot.IsGameOver);
+        Assert.Empty(session.Snapshot.GameOverReason);
+    }
+
+    [Theory]
+    [InlineData(0.0, "liquid-zone-average-empty")]
+    [InlineData(1.0, "liquid-zone-average-full")]
+    public void ExhaustedRrsLocksOrdinaryCommandsWithoutChangingAcceptedState(
+        double terminalFill,
+        string expectedReason)
+    {
+        GameSession session = PracticeGameSessionFactory.Create();
+        PracticeLiquidZoneRrsV1 terminal = CreateUniformFillState(
+            session.CurrentLiquidZoneRrs,
+            terminalFill);
+        ReplacePracticeRrs(session, terminal);
+
+        GameSessionSnapshot before = session.Snapshot;
+        SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
+        EquilibriumCoreProjectionV1 beforeProjection = session.CurrentEquilibriumProjection;
+        PracticeLiquidZoneRrsV1 beforeRrs = session.CurrentLiquidZoneRrs;
+
+        Assert.True(before.IsGameOver);
+        Assert.Equal(expectedReason, before.GameOverReason);
+
+        GameSessionCommandResult[] rejectedCommands =
+        {
+            session.AdvanceWallMilliseconds(1_000),
+            session.QueuePowerTarget(0.95),
+            session.QueueTiltTarget(0.05),
+            session.SetPlaybackMode(PracticeGameSessionFactory.DebugPlaybackModeId),
+            session.Pause(),
+            session.Resume(),
+            session.RefuelChannel(189, "toward-end-b", 4, "NAT-U-SYNTHETIC")
+        };
+
+        foreach (GameSessionCommandResult rejected in rejectedCommands)
+        {
+            Assert.False(rejected.Accepted);
+            Assert.Equal("GameSession.Run.GameOver", rejected.DiagnosticCode);
+            Assert.Equal(expectedReason, rejected.Snapshot.GameOverReason);
+            AssertTerminalStateUnchanged(
+                before,
+                rejected.Snapshot,
+                session,
+                beforeCoreState,
+                beforeProjection,
+                beforeRrs);
+        }
+    }
+
+    [Fact]
+    public void DebugRestartCreatesAFreshNonterminalPracticeRun()
+    {
+        GameSession exhausted = PracticeGameSessionFactory.Create();
+        ReplacePracticeRrs(
+            exhausted,
+            CreateUniformFillState(exhausted.CurrentLiquidZoneRrs, 1.0));
+
+        Assert.True(exhausted.Snapshot.IsGameOver);
+
+        GameSession restarted = PracticeGameSessionFactory.Create();
+        Assert.False(restarted.Snapshot.IsGameOver);
+        Assert.Empty(restarted.Snapshot.GameOverReason);
+
+        GameSessionCommandResult advance = restarted.AdvanceWallMilliseconds(100);
+        Assert.True(advance.Accepted, advance.DiagnosticMessage);
+        Assert.False(advance.Snapshot.IsGameOver);
+    }
+
     [Fact]
     public void ShortTickReusesProjectionWhileHourlyBoundaryRunsStaticRrs()
     {
@@ -112,5 +195,104 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Equal(
             after.ControlledBaselineWeightedResidual,
             after.CombinedWeightedResidual);
+    }
+
+    private static PracticeLiquidZoneRrsV1 CreateUniformFillState(
+        PracticeLiquidZoneRrsV1 source,
+        double fill)
+    {
+        double[] fills = Enumerable.Repeat(
+            fill,
+            (int)PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount).ToArray();
+        StaticAbsorptionOverlayV1 overlay = Require(
+            source.Mapping.TryBuildOverlay(fills));
+        ConstructorInfo constructor = typeof(PracticeLiquidZoneRrsV1)
+            .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
+            .Single();
+        return (PracticeLiquidZoneRrsV1)constructor.Invoke(
+            new object?[]
+            {
+                source.Mapping,
+                fills,
+                source.ReferenceZonalPowerFractions,
+                source.TargetZonalPowerFractions,
+                source.MeasuredZonalPowerFractions,
+                source.ZonalShapeErrors,
+                overlay,
+                source.TargetPowerWatts,
+                source.MeasuredPowerWatts,
+                source.CoreReactivity,
+                source.CompensatedNetReactivity,
+                source.CommonModeRhoCorrection,
+                source.ControllerIterationCount,
+                source.ControllerConverged,
+                source.SimulationTimeSeconds,
+                source.ResponseModel,
+                source.CorrectionResponseModel,
+                source.AppliedFillCommand,
+                source.UncompensatedWeightedResidual,
+                source.ControlledBaselineWeightedResidual,
+                source.CombinedWeightedResidual,
+                source.BaseCandidateSolveCount,
+                source.ControlledBaselineCandidateSolveCount,
+                source.VerificationCandidateSolveCount,
+                source.CorrectionCandidateSolveCount,
+                source.CorrectionApplied
+            });
+    }
+
+    private static void ReplacePracticeRrs(
+        GameSession session,
+        PracticeLiquidZoneRrsV1 replacement)
+    {
+        FieldInfo? field = typeof(GameSession).GetField(
+            "_practiceRrs",
+            BindingFlags.Instance | BindingFlags.NonPublic);
+        if (field == null)
+        {
+            throw new InvalidOperationException(
+                "The GameSession practice RRS field was not found.");
+        }
+
+        field.SetValue(session, replacement);
+    }
+
+    private static void AssertTerminalStateUnchanged(
+        GameSessionSnapshot expected,
+        GameSessionSnapshot actual,
+        GameSession session,
+        SyntheticGameCoreStateV1 expectedCoreState,
+        EquilibriumCoreProjectionV1 expectedProjection,
+        PracticeLiquidZoneRrsV1 expectedRrs)
+    {
+        Assert.Equal(expected.SimulationTimeSeconds, actual.SimulationTimeSeconds);
+        Assert.Equal(expected.WallElapsedSeconds, actual.WallElapsedSeconds);
+        Assert.Equal(expected.PlaybackModeId, actual.PlaybackModeId);
+        Assert.Equal(expected.PendingActionCount, actual.PendingActionCount);
+        Assert.Equal(expected.ScoreTotal, actual.ScoreTotal);
+        Assert.Equal(expected.TurnSummaryCount, actual.TurnSummaryCount);
+        Assert.Equal(expected.IsPaused, actual.IsPaused);
+        Assert.Equal(expected.FreshBundlesAvailable, actual.FreshBundlesAvailable);
+        Assert.Equal(expected.RefuellingOperationCount, actual.RefuellingOperationCount);
+        Assert.Equal(expected.Core.Physics.BindingVersion, actual.Core.Physics.BindingVersion);
+        Assert.Equal(
+            expected.Core.Physics.ReactivityBindingDigestHex,
+            actual.Core.Physics.ReactivityBindingDigestHex);
+        Assert.Equal(expected.Rrs.StateDigestHex, actual.Rrs.StateDigestHex);
+        Assert.Equal(expected.Rrs.OverlayDigestHex, actual.Rrs.OverlayDigestHex);
+        Assert.Same(expectedCoreState, session.CoreState);
+        Assert.Same(expectedProjection, session.CurrentEquilibriumProjection);
+        Assert.Same(expectedProjection.LegacyPresentationProjection, session.CurrentSpatialCandidate);
+        Assert.Same(expectedRrs, session.CurrentLiquidZoneRrs);
+    }
+
+    private static T Require<T>(ContractValidationResult<T> result)
+    {
+        if (!result.IsValid)
+        {
+            Assert.Fail(result.FirstDiagnostic.Message);
+        }
+
+        return result.Value;
     }
 }
