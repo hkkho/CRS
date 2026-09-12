@@ -644,21 +644,17 @@ namespace ReactorSim.Core
         private static ContractDiagnostic? ValidateNodeCoefficients(SpatialNodeCoefficients record)
         {
             string path = ContractValidation.NodePath(record.Node, ".coefficients");
-            double[] values =
-            {
-                record.VolumeM3,
-                record.AbsorptionGroup1PerM,
-                record.AbsorptionGroup2PerM,
-                record.DownscatterGroup1To2PerM,
-                record.FissionGroup1PerM,
-                record.FissionGroup2PerM,
-                record.NuFissionGroup1PerM,
-                record.NuFissionGroup2PerM,
-                record.ChiGroup1,
-                record.ChiGroup2,
-                record.EnergyPerFissionJ
-            };
-            if (values.Any(value => !ContractValidation.IsFinite(value)))
+            if (!ContractValidation.IsFinite(record.VolumeM3) ||
+                !ContractValidation.IsFinite(record.AbsorptionGroup1PerM) ||
+                !ContractValidation.IsFinite(record.AbsorptionGroup2PerM) ||
+                !ContractValidation.IsFinite(record.DownscatterGroup1To2PerM) ||
+                !ContractValidation.IsFinite(record.FissionGroup1PerM) ||
+                !ContractValidation.IsFinite(record.FissionGroup2PerM) ||
+                !ContractValidation.IsFinite(record.NuFissionGroup1PerM) ||
+                !ContractValidation.IsFinite(record.NuFissionGroup2PerM) ||
+                !ContractValidation.IsFinite(record.ChiGroup1) ||
+                !ContractValidation.IsFinite(record.ChiGroup2) ||
+                !ContractValidation.IsFinite(record.EnergyPerFissionJ))
             {
                 return new ContractDiagnostic(
                     "SpatialCoefficients.Node.NonFinite",
@@ -682,19 +678,15 @@ namespace ReactorSim.Core
                     "Energy per fission must be strictly positive SI joules.");
             }
 
-            double[] nonnegativeValues =
-            {
-                record.AbsorptionGroup1PerM,
-                record.AbsorptionGroup2PerM,
-                record.DownscatterGroup1To2PerM,
-                record.FissionGroup1PerM,
-                record.FissionGroup2PerM,
-                record.NuFissionGroup1PerM,
-                record.NuFissionGroup2PerM,
-                record.ChiGroup1,
-                record.ChiGroup2
-            };
-            if (nonnegativeValues.Any(value => value < 0))
+            if (record.AbsorptionGroup1PerM < 0 ||
+                record.AbsorptionGroup2PerM < 0 ||
+                record.DownscatterGroup1To2PerM < 0 ||
+                record.FissionGroup1PerM < 0 ||
+                record.FissionGroup2PerM < 0 ||
+                record.NuFissionGroup1PerM < 0 ||
+                record.NuFissionGroup2PerM < 0 ||
+                record.ChiGroup1 < 0 ||
+                record.ChiGroup2 < 0)
             {
                 return new ContractDiagnostic(
                     "SpatialCoefficients.Node.Negative",
