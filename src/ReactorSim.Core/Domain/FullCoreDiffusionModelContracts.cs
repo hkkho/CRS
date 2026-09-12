@@ -78,6 +78,21 @@ namespace ReactorSim.Core
             get { return _nodePowerWatts; }
         }
 
+        internal ReadOnlyCollection<double> Group1FluxStorage
+        {
+            get { return _group1Flux; }
+        }
+
+        internal ReadOnlyCollection<double> Group2FluxStorage
+        {
+            get { return _group2Flux; }
+        }
+
+        internal ReadOnlyCollection<double> NodePowerWattsStorage
+        {
+            get { return _nodePowerWatts; }
+        }
+
         public double TotalPowerWatts { get; }
 
         public double EffectiveK { get; }

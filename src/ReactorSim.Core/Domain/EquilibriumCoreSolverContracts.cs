@@ -42,21 +42,21 @@ namespace ReactorSim.Core
             EquilibriumCoreSolverV1 owner,
             FullCoreDiffusionSolveResultV1 spatialSolve,
             double targetPowerWatts,
-            IEnumerable<double> shapeGroup1,
-            IEnumerable<double> shapeGroup2,
-            IEnumerable<double> shapeNodePowerWatts,
-            IEnumerable<double> shapeChannelPowerWatts,
-            IEnumerable<double> shapeBundlePowerWatts,
+            ReadOnlyCollection<double> shapeGroup1,
+            ReadOnlyCollection<double> shapeGroup2,
+            ReadOnlyCollection<double> shapeNodePowerWatts,
+            ReadOnlyCollection<double> shapeChannelPowerWatts,
+            ReadOnlyCollection<double> shapeBundlePowerWatts,
             IqsSpatialCandidateV1 legacyPresentationProjection)
         {
             Owner = owner;
             SpatialSolve = spatialSolve;
             TargetPowerWatts = targetPowerWatts;
-            _shapeGroup1 = new ReadOnlyCollection<double>(shapeGroup1.ToArray());
-            _shapeGroup2 = new ReadOnlyCollection<double>(shapeGroup2.ToArray());
-            _shapeNodePowerWatts = new ReadOnlyCollection<double>(shapeNodePowerWatts.ToArray());
-            _shapeChannelPowerWatts = new ReadOnlyCollection<double>(shapeChannelPowerWatts.ToArray());
-            _shapeBundlePowerWatts = new ReadOnlyCollection<double>(shapeBundlePowerWatts.ToArray());
+            _shapeGroup1 = shapeGroup1;
+            _shapeGroup2 = shapeGroup2;
+            _shapeNodePowerWatts = shapeNodePowerWatts;
+            _shapeChannelPowerWatts = shapeChannelPowerWatts;
+            _shapeBundlePowerWatts = shapeBundlePowerWatts;
             LegacyPresentationProjection = legacyPresentationProjection;
         }
 
@@ -603,7 +603,6 @@ namespace ReactorSim.Core
             }
 
             var channelPowerWatts = new double[_spatialModel.Topology.ChannelCount];
-            var bundlePowerWatts = spatial.NodePowerWatts.ToArray();
             for (int nodeIndex = 0; nodeIndex < _spatialModel.Stencil.Nodes.Count; nodeIndex++)
             {
                 SpatialNodeStencil node = _spatialModel.Stencil.Nodes[nodeIndex];
@@ -623,9 +622,9 @@ namespace ReactorSim.Core
                 new IqsSpatialCandidateV1(
                     this,
                     spatial,
-                    spatial.Group1Flux,
-                    spatial.Group2Flux,
-                    spatial.NodePowerWatts,
+                    spatial.Group1FluxStorage,
+                    spatial.Group2FluxStorage,
+                    spatial.NodePowerWattsStorage,
                     spatial.TotalPowerWatts,
                     1.0,
                     spatial.Reactivity,
@@ -635,11 +634,11 @@ namespace ReactorSim.Core
                 this,
                 spatial,
                 _targetPowerWatts,
-                spatial.Group1Flux,
-                spatial.Group2Flux,
-                spatial.NodePowerWatts,
-                channelPowerWatts,
-                bundlePowerWatts,
+                spatial.Group1FluxStorage,
+                spatial.Group2FluxStorage,
+                spatial.NodePowerWattsStorage,
+                new ReadOnlyCollection<double>(channelPowerWatts),
+                spatial.NodePowerWattsStorage,
                 legacyProjection);
         }
 
