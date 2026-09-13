@@ -13,6 +13,9 @@ if (!Number.isInteger(warmSamples) || warmSamples < 0 || warmSamples > 10) {
 }
 
 const targetUrl = new URL(baseUrl);
+const bridgeMode = parseBridgeMode(options.bridge ?? process.env.PLAYTEST_BENCHMARK_BRIDGE);
+const useRichBridge = bridgeMode === "worker" ||
+  (bridgeMode === "auto" && isLocalDevelopmentUrl(targetUrl));
 const moduleUrl = new URL("/wasm/main.mjs", targetUrl.origin).toString();
 const buildInfoUrl = new URL("/wasm/build-info.json", targetUrl.origin).toString();
 const consoleErrors = [];
@@ -52,23 +55,29 @@ async function checkApplication(page) {
 async function loadBenchmarkBridge(page) {
   observe(page);
   await checkApplication(page);
-  return page.evaluate(async ({ moduleUrl: wasmModuleUrl }) => {
+  return page.evaluate(async ({ moduleUrl: wasmModuleUrl, useRichBridge: shouldUseRichBridge }) => {
     await import(/* @vite-ignore */ wasmModuleUrl);
     const api = globalThis.canduPlaytestWasm;
     if (api === undefined) {
       throw new Error("The browser WASM module did not expose canduPlaytestWasm.");
     }
 
-    try {
-      const { WasmProtocolBridge } = await import("/src/bridge.ts?benchmark=1");
-      globalThis.__canduBenchmarkBridge = new WasmProtocolBridge(api);
-      return "WasmProtocolBridge";
-    } catch {
-      globalThis.__canduBenchmarkBridge = null;
-      globalThis.__canduBenchmarkApi = api;
-      return "direct-json-parse";
+    if (shouldUseRichBridge) {
+      try {
+        const { WasmProtocolBridge } = await import("/src/bridge.ts?benchmark=1");
+        globalThis.__canduBenchmarkBridge = new WasmProtocolBridge(api);
+        return "WasmProtocolBridge";
+      } catch {
+        // Keep local/dev runs usable when the source bridge is unavailable.
+        // Production never attempts this import; it measures the exported
+        // authoritative WASM calls directly below.
+      }
     }
-  }, { moduleUrl });
+
+    globalThis.__canduBenchmarkBridge = null;
+    globalThis.__canduBenchmarkApi = api;
+    return "direct-json-parse";
+  }, { moduleUrl, useRichBridge });
 }
 
 async function initialize(page) {
@@ -288,6 +297,17 @@ function parseOptions(argumentsList) {
   }
   if (result.url === undefined && positional.length > 0) result.url = positional[0];
   return result;
+}
+
+function parseBridgeMode(value) {
+  const mode = String(value ?? "auto").toLowerCase();
+  if (mode === "auto" || mode === "direct" || mode === "worker") return mode;
+  throw new Error("--bridge must be auto, direct, or worker.");
+}
+
+function isLocalDevelopmentUrl(url) {
+  return ["localhost", "127.0.0.1", "[::1]", "::1"].includes(url.hostname) &&
+    url.port !== "4173";
 }
 
 function toOptionName(value) {

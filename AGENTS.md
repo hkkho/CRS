@@ -4,9 +4,14 @@ These instructions apply to the whole repository.
 
 ## Product priority
 
-- Make the Unity steady-state CANDU refuelling game playable first.
-- Prioritize the live refuelling loop, immediate feedback, scoring, and a debug
-  menu that exposes simulation controls and state for functional playtesting.
+- Make `web/candu-playtest` deployed on Vercel the primary product and
+  acceptance path until the web version is highly functional.
+- Prioritize the live browser refuelling loop, immediate feedback, scoring, and
+  the debug/playtest controls that expose simulation state for functional
+  acceptance.
+- Unity feature development is paused during this web-first phase. Do not add
+  Unity presentation, input, gameplay, or polish work; shared engine-neutral
+  changes are allowed only when they are strictly required by the web path.
 - Keep shutdown, scram, accident progression, and operator-training scenarios
   out of scope.
 - Start with the deterministic project-authored model. Add realism afterward
@@ -43,7 +48,9 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
   the commit hash.
 - Work autonomously within the requested scope and preserve unrelated user
   changes.
-- Keep `unity/ReactorGame` runnable after each implementation slice.
+- Keep `web/candu-playtest` runnable after each implementation slice. Do not
+  touch Unity while the web-first freeze is active unless a shared change
+  strictly required by the web path makes it necessary.
 - Prefer the smallest useful implementation over speculative infrastructure.
 - Do not create task reports, gate reports, approval records, review records,
   or mandatory validation checklists.
@@ -62,8 +69,10 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
 ## Testing and completion
 
 - Add only focused unit tests needed to prove newly implemented behavior.
-- Run proportionate build, focused-test, and Unity import checks. The owner's
-  functional testing through the playable game and debug menu is the primary
-  acceptance path.
+- Run proportionate browser build, focused-test, and deployed Vercel
+  benchmark/smoke checks. The owner's functional testing through the deployed
+  web playtest is the primary acceptance path.
+- Run Unity checks only when a shared engine-neutral change required by the web
+  path affects Unity integration; do not use them to reopen Unity feature work.
 - Inspect the final diff, then commit every completed change. Report the commit
   hash and any checks that were run.

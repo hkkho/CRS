@@ -2,30 +2,41 @@
 
 ## Product direction
 
-Build a fun, responsive Unity game about keeping a CANDU reactor at useful
-steady power through on-power refuelling. The player inspects channels and
-bundles, chooses a refuelling operation, watches the shared reactor state
-update, and learns the relationship between fuel history, power shape, RRS
-reserve, and score.
+Build a fun, responsive web game about keeping a CANDU reactor at useful steady
+power through on-power refuelling. The player inspects channels and bundles,
+chooses a refuelling operation, watches the shared reactor state update, and
+learns the relationship between fuel history, power shape, RRS reserve, and
+score. The Vercel-deployed `web/candu-playtest` is the primary product and
+acceptance path until the web game is highly functional.
 
 The current game is intentionally a deterministic practice model. The product
 bargain is visible and finite: maintain automatic RRS reserve away from both
 0% and 100%, conserve fresh bundles, and earn score through stable power and
 useful discharged burnup. Make that loop readable and enjoyable before adding
-more physical detail. Shutdown, scram, accident progression, operator-training
-scenarios, and full plant simulation are out of scope.
+more physical detail. Unity is retained as a runnable presentation and input
+client, but Unity feature development is paused during this web-first phase.
+Shutdown, scram, accident progression, operator-training scenarios, and full
+plant simulation are out of scope.
 
 ## Current implementation
 
-`unity/ReactorGame` is the primary playable surface. It creates a real
-`PracticeGameSessionFactory` session, binds the Bootstrap shell, and advances
-the session through bounded fixed wall-time requests. The Dashboard, Controls,
-Timeline, Core Map, and F1/backquote debug menu are all presentation and input
-surfaces over the same runtime. `UnityGameController` owns pacing and restart;
-`UnityRuntimePort` maps Unity commands to `GameSession` without copying its
-rules.
+`web/candu-playtest` is the primary playable surface, and its Vercel deployment
+is the primary acceptance path. It is one Phaser 3 canvas using the same public
+`ReactorSim.Game` contract through the versioned `candu-playtest-v1` browser
+bridge. The bridge runs in a worker and the client fails closed when the
+authoritative WASM module is unavailable; the browser is never a second
+simulation authority.
 
-The current Unity run provides:
+`unity/ReactorGame` remains a runnable retained surface, but is frozen for
+feature development while the web game becomes highly functional. It creates a
+real `PracticeGameSessionFactory` session, binds the Bootstrap shell, and
+advances the session through bounded fixed wall-time requests. The Dashboard,
+Controls, Timeline, Core Map, and F1/backquote debug menu are all presentation
+and input surfaces over the same runtime. `UnityGameController` owns pacing and
+restart; `UnityRuntimePort` maps Unity commands to `GameSession` without
+copying its rules.
+
+The retained Unity run provides:
 
 - a selectable 380-channel core map and the 12 bundle positions in a selected
   channel;
@@ -46,12 +57,10 @@ presented as fuel inventory. The terminal authority is the RRS projection's
 `IsGameOver` and `GameOverReason`, which are carried through the Unity snapshot
 as `snapshot.Rrs`.
 
-`web/candu-playtest` is a secondary browser companion. It is one Phaser 3
-canvas using the same public `ReactorSim.Game` contract through the versioned
-`candu-playtest-v1` browser bridge. The bridge runs in a worker and the client
-fails closed when the authoritative WASM module is unavailable. The browser
-surface is useful for interaction and bridge playtesting; Unity remains the
-acceptance path and primary product surface.
+The browser playtest is useful for live interaction and bridge playtesting, and
+the Vercel deployment is the owner-facing acceptance surface. Unity remains
+available for retained-surface checks and shared-change validation, not as the
+primary product surface.
 
 ## Gameplay bargain and player loop
 
@@ -80,9 +89,9 @@ Keep simulation independent from Unity and keep the browser a consumer of the
 same application contract:
 
 ```text
-Unity views, controls, and debug menu       Phaser 3 browser companion
+Vercel-deployed Phaser 3 browser playtest  Retained/frozen Unity views and controls
                     |                                  |
-             UnityRuntimePort              versioned browser bridge
+             versioned browser bridge              UnityRuntimePort
                     |                                  |
                          GameSession
                               |
@@ -150,7 +159,10 @@ runtime constants or redistributing vendor data:
 
 ## Unity implementation notes
 
-Keep the playable scene runnable after each change. The important seams are:
+Keep the retained scene runnable when a shared change requires it, but do not
+use Unity as the primary acceptance path. Unity presentation, input, gameplay,
+and polish feature work is paused during the web-first phase. The important
+retained seams are:
 
 - `UnityGameController` initializes the real session, binds views, accumulates
   unscaled wall time, dispatches bounded fixed requests, and clears pacing
@@ -171,9 +183,11 @@ Generated uGUI should stay compact, tactical, high-contrast, and readable at
 the Bootstrap layout's supported sizes. Add only the smallest presentation
 surface needed to make an existing authoritative value understandable.
 
-## Browser companion notes
+## Browser playtest notes
 
-The browser project is launched independently from Unity:
+The browser project is the primary product and is launched independently from
+Unity. The deployed Vercel site is the primary acceptance path. For local
+development:
 
 ```powershell
 cd web/candu-playtest
@@ -201,24 +215,27 @@ npm run build
 
 ## Next priorities
 
-Work on these priorities in order, keeping the live Unity loop first:
+Work on these priorities in order, keeping the live browser loop and Vercel
+deployment first:
 
-- Tune dashboard readability, terminal feedback, refuelling feedback,
-  pacing, and accessibility using the existing snapshot values.
+- Tune browser dashboard readability, terminal feedback, refuelling feedback,
+  pacing, accessibility, and debug/playtest controls using the existing
+  snapshot values.
 - Improve operation feedback and owner diagnostics while leaving authority in
   `GameSession`; do not add presentation-owned simulation rules to make the
   loop legible.
 - Validate scoring and practice pacing against stable power, RRS reserve,
   finite inventory, operation count, and useful discharged burnup with focused
-  checks and owner playthroughs.
+  checks and owner playthroughs of the deployed web game.
 - Prepare and admit a compact offline DRAGON5/DONJON5-derived pack behind the
   existing data seam. Record source identities, tool/data versions, deck or
   export hashes, units, group ordering, topology, convergence, and power
   balance before comparing gameplay trends.
 
-Additional reactor-model detail can follow as a separate validated data/model
-effort. It is not the next gameplay requirement and must not displace the
-readable Unity refuelling loop.
+Unity feature development remains paused during this phase. Additional
+reactor-model detail can follow as a separate validated data/model effort. It
+is not the next gameplay requirement and must not displace the readable browser
+refuelling loop.
 
 ## Testing and launch checks
 
@@ -245,7 +262,9 @@ the production build. The Unity runner discovers the pinned editor or accepts
 and Bootstrap smoke.
 
 Automated checks should protect only the behavior being changed. The owner's
-functional acceptance remains a Unity playthrough: launch Bootstrap, run time,
-inspect channels, refuel in both directions, observe power/RRS/score/inventory
-feedback, exercise the debug menu, reach terminal RRS state when practical,
-and restart the run.
+functional acceptance is a playthrough of the deployed Vercel browser game:
+launch the playtest, run time, inspect channels, refuel in both directions,
+observe power/RRS/score/inventory feedback, exercise the browser debug/playtest
+controls, reach terminal RRS state when practical, and restart the run. Use the
+Unity runner only for retained-surface checks or when a shared engine-neutral
+change requires Unity validation.

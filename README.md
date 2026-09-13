@@ -1,8 +1,9 @@
 # CANDU Refuelling Game
 
-This repository contains a playable Unity game about steady-state CANDU
-on-power refuelling. The current product is a deterministic practice run: keep
-the reactor at useful power, manage the automatic regulating-system (RRS)
+This repository contains a web-first CANDU on-power refuelling game. The
+Vercel-deployed `web/candu-playtest` is the primary product and acceptance path
+until the web game is highly functional. It is a deterministic practice run:
+keep the reactor at useful power, manage the automatic regulating-system (RRS)
 reserve, spend a finite fresh-bundle inventory carefully, and build score from
 stable operation and useful discharged burnup. The game should become more
 realistic after this loop is enjoyable and reliable.
@@ -13,10 +14,18 @@ development priorities.
 
 ## Current product
 
-- `unity/ReactorGame` is the primary playable surface. It starts a synthetic
-  practice session and binds the Dashboard, Controls, Timeline, Core Map, and
-  F1/backquote debug menu. The Unity runtime advances the shared session through
-  bounded 100 ms wall-time requests.
+- `web/candu-playtest` is the primary playable and acceptance surface. Its
+  Vercel deployment exposes the live browser refuelling loop and feedback. It
+  is one Phaser 3 canvas using the same `ReactorSim.Game` session through the
+  versioned browser bridge, fails closed when the authoritative WASM bridge is
+  unavailable, and never substitutes a browser simulator for the shared
+  authorities.
+- `unity/ReactorGame` is retained as a runnable Unity presentation and input
+  surface, but Unity feature development is paused while the web game becomes
+  highly functional. It starts a synthetic practice session and binds the
+  Dashboard, Controls, Timeline, Core Map, and F1/backquote debug menu. The
+  Unity runtime advances the shared session through bounded 100 ms wall-time
+  requests.
 - The Dashboard exposes the RRS reserve and a compact RUN STAKES surface. The
   player-facing budget is `FreshBundlesAvailable`; `RefuelRequestsRemaining` is
   a scenario/runtime counter and is not the fuel budget. A terminal RRS reserve
@@ -31,10 +40,6 @@ development priorities.
   authorities.
 - `src/ReactorSim.Cli` runs synthetic scenarios headlessly for validation and
   long-horizon checks.
-- `web/candu-playtest` is a secondary Phaser 3 companion for interaction and
-  bridge playtesting. It uses the same `ReactorSim.Game` session through the
-  versioned browser bridge, fails closed when the authoritative WASM bridge is
-  unavailable, and never substitutes a browser simulator for Unity acceptance.
 - `data` and `reference` contain synthetic packs, design context, and the
   offline DRAGON5/DONJON5 integration material.
 
@@ -67,7 +72,34 @@ plant operations are out of scope for this product.
 
 ## Quick start
 
-Install Unity `6000.3.21f1` and a .NET `10.0.3xx` SDK, then run:
+The primary acceptance path is the deployed Vercel site for
+`web/candu-playtest`. Use that deployment to exercise the live browser
+refuelling loop, immediate power/RRS/score feedback, and the playtest/debug
+controls.
+
+For local browser development, stage the authoritative bridge from the
+repository root and run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/Build-BrowserWasm.ps1
+cd web/candu-playtest
+npm ci
+npm run dev
+```
+
+For a production-shaped browser build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/Build-BrowserWasm.ps1
+cd web/candu-playtest
+npm ci
+npm test
+npm run build
+```
+
+Unity is retained but frozen. If you need to inspect the existing Unity
+surface or validate a shared change that affects it, install Unity
+`6000.3.21f1` and a .NET `10.0.3xx` SDK, then run:
 
 ```powershell
 dotnet build ReactorSim.sln
@@ -75,9 +107,9 @@ powershell -ExecutionPolicy Bypass -File tools/Prepare-UnityCore.ps1
 ```
 
 Open `unity/ReactorGame` in Unity and run `Assets/Scenes/Bootstrap.unity`.
-The practice session starts at 10x simulation speed. Use Controls to pause,
-resume, change playback speed, queue power and tilt targets, or refuel a
-numbered channel toward either end. The synthetic inventory starts with 128
+The existing practice session starts at 10x simulation speed. Use Controls to
+pause, resume, change playback speed, queue power and tilt targets, or refuel
+a numbered channel toward either end. The synthetic inventory starts with 128
 fresh bundles and accepts `NAT-U-SYNTHETIC` fuel in four- or eight-bundle
 shifts. Use Core Map to inspect channels and commit a shift; press F1 or
 backquote for the debug menu.
@@ -95,12 +127,13 @@ powershell -ExecutionPolicy Bypass -File tools/Test-UnityImport.ps1
 runner expects dependencies to be installed and runs the bridge suite, Vitest,
 and production build. The Unity runner discovers the pinned editor or accepts
 `-UnityEditorPath`, prepares the simulation DLLs, and runs the import/compile
-and Bootstrap smoke. The primary acceptance path is still an owner playthrough
-of the Unity scene and debug menu.
+and Bootstrap smoke. The primary acceptance path is an owner playthrough of
+the deployed Vercel browser playtest; use the Unity scene and debug menu only
+for retained-surface checks or shared-change validation.
 
-### Browser companion
+### Browser playtest
 
-Run the secondary Phaser companion independently:
+Run the Phaser playtest independently for local development:
 
 ```powershell
 cd web/candu-playtest
@@ -125,19 +158,21 @@ local command history/replay and feedback notes remain local to the browser.
 
 ## Next priorities
 
-In order, keep the work focused on the live player loop:
+In order, keep the work focused on the live browser player loop and its Vercel
+deployment:
 
-- Tune the Unity dashboard, refuelling feedback, pacing, and accessibility
-  using the existing authoritative snapshot; keep the RUN STAKES bargain
-  legible during normal play and at terminal RRS exhaustion.
-- Improve operation readability and debug-menu diagnostics without duplicating
+- Tune the browser dashboard, refuelling feedback, pacing, accessibility, and
+  debug/playtest controls using the existing authoritative snapshot; keep the
+  RUN STAKES bargain legible during normal play and at terminal RRS exhaustion.
+- Improve live operation readability and diagnostics without duplicating
   `GameSession` rules or adding presentation-owned simulation rules.
 - Validate scoring and practice pacing against stable-power, reserve, inventory,
-  and discharged-burnup behavior through focused tests and owner playtests.
+  and discharged-burnup behavior through focused checks and owner playthroughs
+  of the deployed web game.
 - Admit a compact, versioned offline DRAGON5/DONJON5-derived data pack behind
   the existing runtime seam only after provenance, licensing, units, group
   ordering, topology, convergence, and power-balance checks are documented.
 
-Richer reactor physics can follow those priorities as a separate validated
-data/model effort; it is not a prerequisite for making the current Unity run
-playable.
+Unity feature development remains paused during this web-first phase. Richer
+reactor physics can follow those priorities as a separate validated data/model
+effort; it is not a prerequisite for making the current browser run playable.
