@@ -125,12 +125,13 @@ async function dispatch(page, command) {
       return {
         accepted: value.accepted,
         sequence: value.sequence,
+        commandType: value.command?.type ?? null,
         responseKind: value.responseKind ?? "full",
         stateDigest: value.stateDigest ?? null,
         replayDigest: value.replayDigest ?? null,
         requiresResync: value.requiresResync === true,
+        snapshotPatchIncluded: value.snapshotPatch !== undefined && value.snapshotPatch !== null,
         coreReplacementIncluded: value.coreReplacement !== undefined && value.coreReplacement !== null,
-        hasPreview: value.preview !== undefined && value.preview !== null,
         snapshotSequence: value.snapshot?.sequence ?? null,
       };
     }
@@ -194,8 +195,8 @@ async function runTrace(page) {
     { label: "advance-100-ms", type: "advance", wallMilliseconds: 100 },
     { label: "advance-1000-ms", type: "advance", wallMilliseconds: 1000 },
     {
-      label: "preview-refuel",
-      type: "preview-refuel",
+      label: "commit-refuel",
+      type: "commit-refuel",
       request: {
         channelIndex: 210,
         directionId: "toward-end-a",
@@ -205,13 +206,26 @@ async function runTrace(page) {
     },
   ];
   let sequence = 0;
+  let previousStateDigest = null;
+  let previousReplayDigest = null;
+  let refuelTransition = null;
   const steps = [];
   for (const entry of commands) {
     const { label, ...command } = entry;
+    const beforeRefuel = command.type === "commit-refuel" ? await getSnapshot(page) : null;
     const result = await dispatch(page, { ...command, __baseSequence: sequence });
     const response = result.response;
     if (result.metric === null) {
       throw new Error(`${label} did not expose a transport metric.`);
+    }
+    if (result.metric.commandType !== command.type || response.commandType !== command.type) {
+      throw new Error(`${label} was not acknowledged as the requested authoritative command.`);
+    }
+    if (response.responseKind !== "compact" || result.metric.responseKind !== "compact") {
+      throw new Error(`${label} did not return the requested compact response.`);
+    }
+    if (response.snapshotPatchIncluded !== true) {
+      throw new Error(`${label} did not return a compact snapshot patch.`);
     }
     if (response.requiresResync) {
       throw new Error(`${label} required a compact resync unexpectedly.`);
@@ -219,17 +233,77 @@ async function runTrace(page) {
     if (response.accepted !== true) {
       throw new Error(`${label} was rejected by the authoritative bridge.`);
     }
+    if (response.sequence !== sequence + 1) {
+      throw new Error(`${label} did not advance the authoritative sequence exactly once.`);
+    }
+    if (typeof response.stateDigest !== "string" || response.stateDigest.length === 0 ||
+        typeof response.replayDigest !== "string" || response.replayDigest.length === 0) {
+      throw new Error(`${label} did not return deterministic state and replay digests.`);
+    }
+
+    let stepRefuelTransition = null;
+    if (command.type === "commit-refuel") {
+      if (beforeRefuel === null) {
+        throw new Error(`${label} did not capture the pre-commit authoritative snapshot.`);
+      }
+      if (response.coreReplacementIncluded !== true) {
+        throw new Error(`${label} did not return the changed core in the compact response.`);
+      }
+      const afterRefuel = await getSnapshot(page);
+      const beforeSemantic = semanticSnapshot(beforeRefuel);
+      const afterSemantic = semanticSnapshot(afterRefuel);
+      const beforeCore = canonicalJson(beforeRefuel.core);
+      const afterCore = canonicalJson(afterRefuel.core);
+      if (afterRefuel.refuellingOperationCount !== beforeRefuel.refuellingOperationCount + 1) {
+        throw new Error(`${label} did not increment refuellingOperationCount exactly once.`);
+      }
+      if (afterRefuel.freshBundlesAvailable !==
+          beforeRefuel.freshBundlesAvailable - command.request.shiftCount) {
+        throw new Error(`${label} did not consume the requested fresh inventory.`);
+      }
+      if (beforeSemantic === afterSemantic || beforeCore === afterCore) {
+        throw new Error(`${label} did not change authoritative refuelling state.`);
+      }
+      if (previousStateDigest === null || response.stateDigest === previousStateDigest ||
+          previousReplayDigest === null || response.replayDigest === previousReplayDigest) {
+        throw new Error(`${label} did not change the deterministic state and replay digests.`);
+      }
+      stepRefuelTransition = {
+        before: {
+          refuellingOperationCount: beforeRefuel.refuellingOperationCount,
+          freshBundlesAvailable: beforeRefuel.freshBundlesAvailable,
+        },
+        after: {
+          refuellingOperationCount: afterRefuel.refuellingOperationCount,
+          freshBundlesAvailable: afterRefuel.freshBundlesAvailable,
+        },
+        refuellingOperationCountDelta:
+          afterRefuel.refuellingOperationCount - beforeRefuel.refuellingOperationCount,
+        freshBundlesAvailableDelta:
+          afterRefuel.freshBundlesAvailable - beforeRefuel.freshBundlesAvailable,
+        stateChanged: beforeSemantic !== afterSemantic,
+        coreChanged: beforeCore !== afterCore,
+        stateDigestChanged: response.stateDigest !== previousStateDigest,
+        replayDigestChanged: response.replayDigest !== previousReplayDigest,
+      };
+      refuelTransition = stepRefuelTransition;
+    }
+
     sequence = response.sequence;
+    previousStateDigest = response.stateDigest;
+    previousReplayDigest = response.replayDigest;
     steps.push({
       label,
       command,
       accepted: response.accepted,
       sequence: response.sequence,
+      acknowledgedCommandType: response.commandType,
       responseKind: response.responseKind,
       stateDigest: response.stateDigest,
       replayDigest: response.replayDigest,
+      snapshotPatchIncluded: response.snapshotPatchIncluded,
       coreReplacementIncluded: response.coreReplacementIncluded,
-      hasPreview: response.hasPreview,
+      refuelTransition: stepRefuelTransition,
       metric: result.metric,
     });
   }
@@ -238,6 +312,7 @@ async function runTrace(page) {
   return {
     steps,
     finalSequence: sequence,
+    refuelTransition,
     finalSemanticSnapshotBytes: new TextEncoder().encode(semantic).byteLength,
     finalSemanticSnapshotSha256: sha256(semantic),
   };
@@ -277,6 +352,36 @@ function summarize(samples) {
     returnedUtf8PayloadBytes: metrics.map((metric) => metric.returnedUtf8PayloadBytes),
     responseKinds: metrics.map((metric) => metric.responseKind),
   }]));
+}
+
+function assertDeterministicDigests(samples) {
+  const baseline = samples[0]?.trace;
+  if (baseline === undefined) return { sampleCount: 0, matched: true };
+
+  for (let sampleIndex = 1; sampleIndex < samples.length; sampleIndex += 1) {
+    const current = samples[sampleIndex].trace;
+    if (current.finalSemanticSnapshotSha256 !== baseline.finalSemanticSnapshotSha256) {
+      throw new Error(`Sample ${sampleIndex} produced a different final semantic snapshot digest.`);
+    }
+    if (current.steps.length !== baseline.steps.length) {
+      throw new Error(`Sample ${sampleIndex} produced a different command trace length.`);
+    }
+    for (let stepIndex = 0; stepIndex < baseline.steps.length; stepIndex += 1) {
+      for (const digestName of ["stateDigest", "replayDigest"]) {
+        if (current.steps[stepIndex][digestName] !== baseline.steps[stepIndex][digestName]) {
+          throw new Error(
+            `Sample ${sampleIndex} step ${stepIndex} produced a different ${digestName}.`,
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    sampleCount: samples.length,
+    matched: true,
+    finalSemanticSnapshotSha256: baseline.finalSemanticSnapshotSha256,
+  };
 }
 
 function parseOptions(argumentsList) {
@@ -337,6 +442,8 @@ try {
     samples.push({ kind: "warm", sample: index + 1, initialization: warmInitialization, trace: warmTrace });
   }
 
+  const deterministicDigestChecks = assertDeterministicDigests(samples);
+
   report = {
     label: options.label ?? "current",
     url: targetUrl.toString(),
@@ -345,6 +452,7 @@ try {
     application,
     samples,
     commandSummary: summarize(samples),
+    deterministicDigestChecks,
     consoleErrors,
     pageErrors,
   };
