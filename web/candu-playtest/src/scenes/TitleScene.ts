@@ -22,6 +22,8 @@ export class TitleScene extends Phaser.Scene {
   private titleAvailability: Phaser.GameObjects.Text | null = null;
   private beginButton: TacticalButton | null = null;
   private readyForShift = false;
+  private shiftTransitionStarted = false;
+  private fadeCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private unsubscribe: (() => void) | null = null;
 
   public constructor() {
@@ -29,6 +31,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   public create(): void {
+    this.shiftTransitionStarted = false;
     this.cameras.main.setBackgroundColor(colorString(COLORS.void));
     this.drawBackdrop();
     this.createParticles();
@@ -47,6 +50,8 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-ENTER", this.beginShift, this);
     this.input.keyboard?.on("keydown-SPACE", this.beginShift, this);
     this.events.once("shutdown", () => {
+      this.fadeCamera?.off(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, this.handleFadeOutComplete, this);
+      this.fadeCamera = null;
       this.input.keyboard?.off("keydown-ENTER", this.beginShift, this);
       this.input.keyboard?.off("keydown-SPACE", this.beginShift, this);
     });
@@ -294,14 +299,26 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private beginShift(): void {
-    if (!this.readyForShift || this.session.isPending) {
+    if (!this.readyForShift || this.session.isPending || this.shiftTransitionStarted) {
       return;
     }
+    this.shiftTransitionStarted = true;
+    this.beginButton?.setEnabled(false);
     this.session.startShift();
-    this.cameras.main.fadeOut(450, 7, 11, 27, (_camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
-      if (progress >= 1) {
-        this.scene.start("OperationsScene");
-      }
-    });
+    const fadeCamera = this.cameras.main;
+    this.fadeCamera = fadeCamera;
+    fadeCamera.once(
+      Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
+      this.handleFadeOutComplete,
+      this,
+    );
+    fadeCamera.fadeOut(450, 7, 11, 27);
+  }
+
+  private handleFadeOutComplete(): void {
+    if (!this.shiftTransitionStarted) {
+      return;
+    }
+    this.scene.start("OperationsScene");
   }
 }
