@@ -55,7 +55,17 @@ sizes the canvas plus a hidden live status mirror for assistive technology.
 npm test
 npm run build
 npm run smoke -- http://localhost:4173
+npm run benchmark -- http://localhost:4173 --warm-samples=1
 ```
+
+The benchmark prints a compact `candu-playtest-reproduction-matrix-v1` to
+stdout. Each fresh authoritative session covers channel 210 plus central and
+peripheral fixtures, both refuelling directions, four/eight-bundle shifts,
+paused/live advance, before/after snapshot summaries and hashes, state/replay
+digests, transport timing, UTF-8 payload bytes, and console/page errors. Set
+`PLAYTEST_EXPECTED_COMMIT_SHA` in CI to fail when the deployed bridge was not
+built from the checked-out source SHA. The benchmark does not write a report
+file or provide a browser simulation fallback.
 
 Focused Vitest coverage protects the pure orthographic face projection, selection,
 refuelling command state, scheduler, display helpers, and bridge-session

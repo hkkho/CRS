@@ -11,6 +11,10 @@ const warmSamples = Number(options.warmSamples ?? 3);
 if (!Number.isInteger(warmSamples) || warmSamples < 0 || warmSamples > 10) {
   throw new Error("--warm-samples must be an integer from 0 through 10.");
 }
+const expectedCommitSha = options.expectedCommitSha ?? process.env.PLAYTEST_EXPECTED_COMMIT_SHA ?? null;
+if (expectedCommitSha !== null && !/^[0-9a-f]{40}$/i.test(expectedCommitSha)) {
+  throw new Error("--expected-commit-sha must be a 40-character hexadecimal Git commit SHA.");
+}
 
 const targetUrl = new URL(baseUrl);
 const bridgeMode = parseBridgeMode(options.bridge ?? process.env.PLAYTEST_BENCHMARK_BRIDGE);
@@ -20,9 +24,24 @@ const moduleUrl = new URL("/wasm/main.mjs", targetUrl.origin).toString();
 const buildInfoUrl = new URL("/wasm/build-info.json", targetUrl.origin).toString();
 const consoleErrors = [];
 const pageErrors = [];
+const observedPages = new WeakSet();
 const browser = await chromium.launch({ headless: true });
 
+// Keep the matrix small enough for routine CI runs while covering every
+// direction/shift pair. Each representative gets both a paused and a live
+// advance case, and every case is initialized from a fresh WASM session.
+const MATRIX_CASES = [
+  { advanceState: "paused", directionId: "toward-end-a", shiftCount: 4 },
+  { advanceState: "live", directionId: "toward-end-b", shiftCount: 4 },
+  { advanceState: "live", directionId: "toward-end-a", shiftCount: 8 },
+  { advanceState: "paused", directionId: "toward-end-b", shiftCount: 8 },
+];
+const CASE_ADVANCE_WALL_MILLISECONDS = 1_000;
+const REFUEL_CHANNEL_INDEX = 210;
+
 function observe(page) {
+  if (observedPages.has(page)) return;
+  observedPages.add(page);
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text());
   });
@@ -53,7 +72,6 @@ async function checkApplication(page) {
 }
 
 async function loadBenchmarkBridge(page) {
-  observe(page);
   await checkApplication(page);
   return page.evaluate(async ({ moduleUrl: wasmModuleUrl, useRichBridge: shouldUseRichBridge }) => {
     await import(/* @vite-ignore */ wasmModuleUrl);
@@ -65,7 +83,22 @@ async function loadBenchmarkBridge(page) {
     if (shouldUseRichBridge) {
       try {
         const { WasmProtocolBridge } = await import("/src/bridge.ts?benchmark=1");
-        globalThis.__canduBenchmarkBridge = new WasmProtocolBridge(api);
+        const recordingApi = {
+          getCapabilities: api.getCapabilities?.bind(api),
+          getSnapshotJson: api.getSnapshotJson.bind(api),
+          initialize: async (requestJson) => {
+            const raw = await api.initialize(requestJson);
+            globalThis.__canduBenchmarkLastRawResponse = raw;
+            return raw;
+          },
+          dispatchJson: async (commandJson) => {
+            const raw = await api.dispatchJson(commandJson);
+            globalThis.__canduBenchmarkLastRawResponse = raw;
+            return raw;
+          },
+        };
+        globalThis.__canduBenchmarkLastRawResponse = null;
+        globalThis.__canduBenchmarkBridge = new WasmProtocolBridge(recordingApi);
         return "WasmProtocolBridge";
       } catch {
         // Keep local/dev runs usable when the source bridge is unavailable.
@@ -80,15 +113,181 @@ async function loadBenchmarkBridge(page) {
   }, { moduleUrl, useRichBridge });
 }
 
+async function installPageHelpers(page) {
+  await page.evaluate(() => {
+    function snapshotMeta(snapshot) {
+      return {
+        protocol: snapshot.protocol,
+        source: snapshot.source,
+        scenarioId: snapshot.scenarioId,
+        dataPackId: snapshot.dataPackId,
+        coreChannelCount: snapshot.core?.channelCount ?? null,
+        bundlePositionCount: snapshot.core?.bundlePositionCount ?? null,
+      };
+    }
+
+    function semanticSnapshot(snapshot) {
+      const copy = JSON.parse(JSON.stringify(snapshot));
+      if (copy.diagnostics?.convergence !== undefined) {
+        delete copy.diagnostics.convergence.lastSolveMilliseconds;
+      }
+      return canonicalJson(copy);
+    }
+
+    function canonicalJson(value) {
+      if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+      if (value !== null && typeof value === "object") {
+        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+      }
+      return JSON.stringify(value);
+    }
+
+    async function sha256Hex(value) {
+      if (globalThis.crypto?.subtle === undefined) return null;
+      const digest = await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+      return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    function compactSnapshotSummary(snapshot, selectedChannelIndex) {
+      const channel = snapshot.core.channels.find((item) => item.channelIndex === selectedChannelIndex);
+      if (channel === undefined) {
+        throw new Error(`The authoritative snapshot did not contain channel ${selectedChannelIndex}.`);
+      }
+      return {
+        protocol: snapshot.protocol,
+        source: snapshot.source,
+        sequence: snapshot.sequence,
+        scenarioId: snapshot.scenarioId,
+        dataPackId: snapshot.dataPackId,
+        simulationTimeSeconds: snapshot.simulationTimeSeconds,
+        wallElapsedSeconds: snapshot.wallElapsedSeconds,
+        isPaused: snapshot.isPaused,
+        playbackModeId: snapshot.playbackModeId,
+        normalizedPowerFraction: snapshot.normalizedPowerFraction,
+        targetPowerFraction: snapshot.targetPowerFraction,
+        absoluteTiltFraction: snapshot.absoluteTiltFraction,
+        targetTiltFraction: snapshot.targetTiltFraction,
+        controlMarginFraction: snapshot.controlMarginFraction,
+        scoreTotal: snapshot.scoreTotal,
+        scoreDelta: snapshot.scoreDelta,
+        freshBundlesAvailable: snapshot.freshBundlesAvailable,
+        refuellingOperationCount: snapshot.refuellingOperationCount,
+        lastRefuelledChannel: snapshot.lastRefuelledChannel,
+        lastRefuellingDirectionId: snapshot.lastRefuellingDirectionId,
+        lastRefuellingShiftCount: snapshot.lastRefuellingShiftCount,
+        physics: {
+          sourceId: snapshot.physics.sourceId,
+          formulationId: snapshot.physics.formulationId,
+          shapeMethodId: snapshot.physics.shapeMethodId,
+          amplitudeMethodId: snapshot.physics.amplitudeMethodId,
+          reactivityMethodId: snapshot.physics.reactivityMethodId,
+          solveState: snapshot.physics.solveState,
+          bindingVersion: snapshot.physics.bindingVersion,
+          actualPowerFraction: snapshot.physics.actualPowerFraction,
+          totalPowerWatts: snapshot.physics.totalPowerWatts,
+          effectiveK: snapshot.physics.effectiveK,
+          reactivity: snapshot.physics.reactivity,
+          staticReactivity: snapshot.physics.staticReactivity,
+          weightedPerturbationReactivity: snapshot.physics.weightedPerturbationReactivity,
+          coreReactivity: snapshot.physics.coreReactivity,
+          compensatedNetReactivity: snapshot.physics.compensatedNetReactivity,
+          solverIdentity: snapshot.physics.solverIdentity,
+          solverIterationCount: snapshot.physics.solverIterationCount,
+          solverResidualRelativeInfinity: snapshot.physics.solverResidualRelativeInfinity,
+          cadenceIdentity: snapshot.physics.cadenceIdentity,
+        },
+        rrs: {
+          controllerIdentity: snapshot.rrs.controllerIdentity,
+          mappingIdentity: snapshot.rrs.mappingIdentity,
+          overlayIdentity: snapshot.rrs.overlayIdentity,
+          stateDigestHex: snapshot.rrs.stateDigestHex,
+          simulationTimeSeconds: snapshot.rrs.simulationTimeSeconds,
+          nodeCount: snapshot.rrs.nodeCount,
+          averageFillFraction: snapshot.rrs.averageFillFraction,
+          minimumFillFraction: snapshot.rrs.minimumFillFraction,
+          maximumFillFraction: snapshot.rrs.maximumFillFraction,
+          measuredPowerWatts: snapshot.rrs.measuredPowerWatts,
+          targetPowerWatts: snapshot.rrs.targetPowerWatts,
+          powerErrorWatts: snapshot.rrs.powerErrorWatts,
+          coreReactivity: snapshot.rrs.coreReactivity,
+          compensatedNetReactivity: snapshot.rrs.compensatedNetReactivity,
+          appliedFillCommand: snapshot.rrs.appliedFillCommand,
+          controlledBaselineWeightedResidual: snapshot.rrs.controlledBaselineWeightedResidual,
+          combinedWeightedResidual: snapshot.rrs.combinedWeightedResidual,
+          candidateSolveCount: snapshot.rrs.candidateSolveCount,
+          verificationSolveCount: snapshot.rrs.verificationSolveCount,
+          correctionSolveCount: snapshot.rrs.correctionSolveCount,
+          correctionApplied: snapshot.rrs.correctionApplied,
+          lowExhaustion: snapshot.rrs.lowExhaustion,
+          highExhaustion: snapshot.rrs.highExhaustion,
+          isGameOver: snapshot.rrs.isGameOver,
+          gameOverReason: snapshot.rrs.gameOverReason,
+          cadenceIdentity: snapshot.rrs.cadenceIdentity,
+          zones: snapshot.rrs.zones.map((zone) => ({
+            logicalZoneId: zone.logicalZoneId,
+            fillFraction: zone.fillFraction,
+            targetPowerFraction: zone.targetPowerFraction,
+            measuredPowerFraction: zone.measuredPowerFraction,
+            shapeError: zone.shapeError,
+          })),
+        },
+        channel: {
+          channelIndex: channel.channelIndex,
+          gridColumn: channel.gridColumn,
+          gridRow: channel.gridRow,
+          flowDirection: channel.flowDirection,
+          averageBurnupMwdPerKg: channel.averageBurnupMwdPerKg,
+          powerWatts: channel.powerWatts,
+          localPowerFraction: channel.localPowerFraction,
+          localTiltFraction: channel.localTiltFraction,
+          bundles: channel.bundles.map((bundle) => ({
+            position: bundle.position,
+            bundleId: bundle.bundleId,
+            fuelTypeId: bundle.fuelTypeId,
+            currentBurnupMwdPerKg: bundle.currentBurnupMwdPerKg,
+            powerWatts: bundle.powerWatts,
+            localPowerFraction: bundle.localPowerFraction,
+            insertedAtSeconds: bundle.insertedAtSeconds,
+            stateVersion: bundle.stateVersion,
+            isFresh: bundle.isFresh,
+          })),
+        },
+      };
+    }
+
+    function lastMetric(metrics, commandType) {
+      for (let index = metrics.length - 1; index >= 0; index -= 1) {
+        if (metrics[index]?.commandType === commandType) return metrics[index];
+      }
+      return null;
+    }
+
+    globalThis.__canduBenchmarkHelpers = {
+      compactSnapshotSummary,
+      lastMetric,
+      semanticSnapshot,
+      sha256Hex,
+      snapshotMeta,
+    };
+  });
+}
+
 async function initialize(page) {
   return page.evaluate(async () => {
+    const helpers = globalThis.__canduBenchmarkHelpers;
+    if (helpers === undefined) throw new Error("Benchmark page helpers were not installed.");
     const bridge = globalThis.__canduBenchmarkBridge;
     if (bridge !== null && bridge !== undefined) {
       const snapshot = await bridge.initialize("play");
-      const metric = bridge.getTransportMetrics().at(-1);
+      const raw = globalThis.__canduBenchmarkLastRawResponse;
+      const response = raw === null || raw === undefined ? null : JSON.parse(raw);
+      const metric = helpers.lastMetric(bridge.getTransportMetrics(), "initialize");
       return {
         snapshotSequence: snapshot.sequence,
-        metric: metric === undefined ? null : { ...metric },
+        snapshotMeta: helpers.snapshotMeta(snapshot),
+        stateDigest: response?.stateDigest ?? null,
+        replayDigest: response?.replayDigest ?? null,
+        metric: metric === null ? null : { ...metric },
       };
     }
 
@@ -99,8 +298,10 @@ async function initialize(page) {
     const parseStarted = performance.now();
     const response = JSON.parse(raw);
     const jsonParseMaterializationDurationMs = performance.now() - parseStarted;
+    const snapshot = response.snapshot ?? response;
     return {
-      snapshotSequence: response.snapshot?.sequence ?? response.sequence,
+      snapshotSequence: snapshot.sequence ?? response.sequence,
+      snapshotMeta: helpers.snapshotMeta(snapshot),
       stateDigest: response.stateDigest ?? null,
       replayDigest: response.replayDigest ?? null,
       metric: {
@@ -120,13 +321,16 @@ async function dispatch(page, command) {
     const commandValue = { ...payload };
     const baseSequence = commandValue.__baseSequence;
     delete commandValue.__baseSequence;
+    const helpers = globalThis.__canduBenchmarkHelpers;
 
     function serializeResponse(value) {
       return {
         accepted: value.accepted,
         sequence: value.sequence,
-        commandType: value.command?.type ?? null,
+        commandType: value.command?.type ?? commandValue.type,
         responseKind: value.responseKind ?? "full",
+        message: value.message ?? "",
+        baseSequence: value.baseSequence ?? null,
         stateDigest: value.stateDigest ?? null,
         replayDigest: value.replayDigest ?? null,
         requiresResync: value.requiresResync === true,
@@ -139,10 +343,10 @@ async function dispatch(page, command) {
     const bridge = globalThis.__canduBenchmarkBridge;
     if (bridge !== null && bridge !== undefined) {
       const response = await bridge.dispatch(commandValue, { responseMode: "compact", baseSequence });
-      const metric = bridge.getTransportMetrics().at(-1);
+      const metric = helpers.lastMetric(bridge.getTransportMetrics(), commandValue.type);
       return {
         response: serializeResponse(response),
-        metric: metric === undefined ? null : { ...metric },
+        metric: metric === null ? null : { ...metric },
       };
     }
 
@@ -163,7 +367,7 @@ async function dispatch(page, command) {
     return {
       response: serializeResponse(response),
       metric: {
-        commandType: payload.type,
+        commandType: commandValue.type,
         responseKind: response.responseKind === "compact" ? "compact" : "full",
         wasmCallDurationMs,
         returnedUtf8PayloadBytes: new TextEncoder().encode(raw).byteLength,
@@ -171,159 +375,348 @@ async function dispatch(page, command) {
         coreReplacementIncluded: response.coreReplacement !== undefined && response.coreReplacement !== null,
       },
     };
-
   }, { ...command, __baseSequence: command.__baseSequence });
 }
 
 async function getSnapshot(page) {
   return page.evaluate(async () => {
     const bridge = globalThis.__canduBenchmarkBridge;
-    if (bridge !== null && bridge !== undefined) {
-      return bridge.getSnapshot();
-    }
+    if (bridge !== null && bridge !== undefined) return bridge.getSnapshot();
 
     const api = globalThis.__canduBenchmarkApi;
-    const raw = await api.getSnapshotJson();
-    return JSON.parse(raw);
+    return JSON.parse(await api.getSnapshotJson());
   });
 }
 
-async function runTrace(page) {
-  const commands = [
-    { label: "pause", type: "pause" },
-    { label: "resume", type: "resume" },
-    { label: "advance-100-ms", type: "advance", wallMilliseconds: 100 },
-    { label: "advance-1000-ms", type: "advance", wallMilliseconds: 1000 },
-    {
-      label: "commit-refuel",
-      type: "commit-refuel",
-      request: {
-        channelIndex: 210,
-        directionId: "toward-end-a",
-        shiftCount: 4,
-        fuelTypeId: "NAT-U-SYNTHETIC",
-      },
-    },
-  ];
-  let sequence = 0;
-  let previousStateDigest = null;
-  let previousReplayDigest = null;
-  let refuelTransition = null;
-  const steps = [];
-  for (const entry of commands) {
-    const { label, ...command } = entry;
-    const beforeRefuel = command.type === "commit-refuel" ? await getSnapshot(page) : null;
-    const result = await dispatch(page, { ...command, __baseSequence: sequence });
-    const response = result.response;
-    if (result.metric === null) {
-      throw new Error(`${label} did not expose a transport metric.`);
-    }
-    if (result.metric.commandType !== command.type || response.commandType !== command.type) {
-      throw new Error(`${label} was not acknowledged as the requested authoritative command.`);
-    }
-    if (response.responseKind !== "compact" || result.metric.responseKind !== "compact") {
-      throw new Error(`${label} did not return the requested compact response.`);
-    }
-    if (response.snapshotPatchIncluded !== true) {
-      throw new Error(`${label} did not return a compact snapshot patch.`);
-    }
-    if (response.requiresResync) {
-      throw new Error(`${label} required a compact resync unexpectedly.`);
-    }
-    if (response.accepted !== true) {
-      throw new Error(`${label} was rejected by the authoritative bridge.`);
-    }
-    if (response.sequence !== sequence + 1) {
-      throw new Error(`${label} did not advance the authoritative sequence exactly once.`);
-    }
-    if (typeof response.stateDigest !== "string" || response.stateDigest.length === 0 ||
-        typeof response.replayDigest !== "string" || response.replayDigest.length === 0) {
-      throw new Error(`${label} did not return deterministic state and replay digests.`);
-    }
-
-    let stepRefuelTransition = null;
-    if (command.type === "commit-refuel") {
-      if (beforeRefuel === null) {
-        throw new Error(`${label} did not capture the pre-commit authoritative snapshot.`);
-      }
-      if (response.coreReplacementIncluded !== true) {
-        throw new Error(`${label} did not return the changed core in the compact response.`);
-      }
-      const afterRefuel = await getSnapshot(page);
-      const beforeSemantic = semanticSnapshot(beforeRefuel);
-      const afterSemantic = semanticSnapshot(afterRefuel);
-      const beforeCore = canonicalJson(beforeRefuel.core);
-      const afterCore = canonicalJson(afterRefuel.core);
-      if (afterRefuel.refuellingOperationCount !== beforeRefuel.refuellingOperationCount + 1) {
-        throw new Error(`${label} did not increment refuellingOperationCount exactly once.`);
-      }
-      if (afterRefuel.freshBundlesAvailable !==
-          beforeRefuel.freshBundlesAvailable - command.request.shiftCount) {
-        throw new Error(`${label} did not consume the requested fresh inventory.`);
-      }
-      if (beforeSemantic === afterSemantic || beforeCore === afterCore) {
-        throw new Error(`${label} did not change authoritative refuelling state.`);
-      }
-      if (previousStateDigest === null || response.stateDigest === previousStateDigest ||
-          previousReplayDigest === null || response.replayDigest === previousReplayDigest) {
-        throw new Error(`${label} did not change the deterministic state and replay digests.`);
-      }
-      stepRefuelTransition = {
-        before: {
-          refuellingOperationCount: beforeRefuel.refuellingOperationCount,
-          freshBundlesAvailable: beforeRefuel.freshBundlesAvailable,
-        },
-        after: {
-          refuellingOperationCount: afterRefuel.refuellingOperationCount,
-          freshBundlesAvailable: afterRefuel.freshBundlesAvailable,
-        },
-        refuellingOperationCountDelta:
-          afterRefuel.refuellingOperationCount - beforeRefuel.refuellingOperationCount,
-        freshBundlesAvailableDelta:
-          afterRefuel.freshBundlesAvailable - beforeRefuel.freshBundlesAvailable,
-        stateChanged: beforeSemantic !== afterSemantic,
-        coreChanged: beforeCore !== afterCore,
-        stateDigestChanged: response.stateDigest !== previousStateDigest,
-        replayDigestChanged: response.replayDigest !== previousReplayDigest,
-      };
-      refuelTransition = stepRefuelTransition;
-    }
-
-    sequence = response.sequence;
-    previousStateDigest = response.stateDigest;
-    previousReplayDigest = response.replayDigest;
-    steps.push({
-      label,
-      command,
-      accepted: response.accepted,
-      sequence: response.sequence,
-      acknowledgedCommandType: response.commandType,
-      responseKind: response.responseKind,
-      stateDigest: response.stateDigest,
-      replayDigest: response.replayDigest,
-      snapshotPatchIncluded: response.snapshotPatchIncluded,
-      coreReplacementIncluded: response.coreReplacementIncluded,
-      refuelTransition: stepRefuelTransition,
-      metric: result.metric,
-    });
+async function captureSnapshot(page, channelIndex, stateDigest, replayDigest) {
+  const capture = await page.evaluate(async ({ selectedChannelIndex, currentStateDigest, currentReplayDigest }) => {
+    const helpers = globalThis.__canduBenchmarkHelpers;
+    const bridge = globalThis.__canduBenchmarkBridge;
+    const snapshot = bridge !== null && bridge !== undefined
+      ? bridge.getSnapshot()
+      : JSON.parse(await globalThis.__canduBenchmarkApi.getSnapshotJson());
+    const semantic = helpers.semanticSnapshot(snapshot);
+    const semanticSha256 = await helpers.sha256Hex(semantic);
+    return {
+      summary: helpers.compactSnapshotSummary(snapshot, selectedChannelIndex),
+      semanticSha256,
+      semanticJson: semanticSha256 === null ? semantic : undefined,
+      semanticBytes: new TextEncoder().encode(semantic).byteLength,
+      snapshotSequence: snapshot.sequence,
+      stateDigest: currentStateDigest,
+      replayDigest: currentReplayDigest,
+    };
+  }, { selectedChannelIndex: channelIndex, currentStateDigest: stateDigest, currentReplayDigest: replayDigest });
+  if (capture.semanticSha256 === null) {
+    capture.semanticSha256 = sha256(capture.semanticJson);
+    delete capture.semanticJson;
   }
-  const snapshot = await getSnapshot(page);
-  const semantic = semanticSnapshot(snapshot);
+  return capture;
+}
+
+function requireAuthoritativeInitialization(initialization, label) {
+  if (initialization.snapshotSequence !== 0) {
+    throw new Error(`${label} did not start at authoritative sequence zero.`);
+  }
+  if (initialization.metric === null) {
+    throw new Error(`${label} did not expose an initialization transport metric.`);
+  }
+  requireMetric(initialization.metric, `${label} initialization`);
+  if (typeof initialization.stateDigest !== "string" || initialization.stateDigest.length === 0 ||
+      typeof initialization.replayDigest !== "string" || initialization.replayDigest.length === 0) {
+    throw new Error(`${label} did not return initialization state and replay digests.`);
+  }
+  const meta = initialization.snapshotMeta;
+  if (meta?.source !== "wasm" || meta.coreChannelCount !== 380 || meta.bundlePositionCount !== 12) {
+    throw new Error(`${label} did not initialize the authoritative 380-channel WASM snapshot.`);
+  }
+}
+
+function selectRepresentativeChannels(snapshot) {
+  if (snapshot.source !== "wasm" || snapshot.core?.channelCount !== 380 ||
+      !Array.isArray(snapshot.core.channels) || snapshot.core.channels.length !== 380) {
+    throw new Error("The benchmark requires an authoritative WASM snapshot with 380 channels.");
+  }
+
+  const target = snapshot.core.channels.find((channel) => channel.channelIndex === REFUEL_CHANNEL_INDEX);
+  if (target === undefined) {
+    throw new Error(`The authoritative snapshot did not contain channel ${REFUEL_CHANNEL_INDEX}.`);
+  }
+
+  const centerX = (snapshot.core.gridWidth - 1) / 2;
+  const centerY = (snapshot.core.gridHeight - 1) / 2;
+  const distanceFromCenter = (channel) =>
+    (channel.gridColumn - centerX) ** 2 + (channel.gridRow - centerY) ** 2;
+  const candidates = snapshot.core.channels.filter((channel) => channel.channelIndex !== REFUEL_CHANNEL_INDEX);
+  const central = [...candidates].sort((left, right) =>
+    distanceFromCenter(left) - distanceFromCenter(right) || left.channelIndex - right.channelIndex)[0];
+  const peripheral = [...candidates].sort((left, right) =>
+    distanceFromCenter(right) - distanceFromCenter(left) || left.channelIndex - right.channelIndex)[0];
+  if (central === undefined || peripheral === undefined || central.channelIndex === peripheral.channelIndex) {
+    throw new Error("The authoritative core did not provide distinct central and peripheral channels.");
+  }
+
+  return [
+    representative("channel-210", target),
+    representative("central", central),
+    representative("peripheral", peripheral),
+  ];
+}
+
+function representative(role, channel) {
   return {
-    steps,
-    finalSequence: sequence,
-    refuelTransition,
-    finalSemanticSnapshotBytes: new TextEncoder().encode(semantic).byteLength,
-    finalSemanticSnapshotSha256: sha256(semantic),
+    role,
+    channelIndex: channel.channelIndex,
+    gridColumn: channel.gridColumn,
+    gridRow: channel.gridRow,
+    flowDirection: channel.flowDirection,
   };
 }
 
-function semanticSnapshot(snapshot) {
-  const copy = JSON.parse(JSON.stringify(snapshot));
-  if (copy.diagnostics?.convergence !== undefined) {
-    delete copy.diagnostics.convergence.lastSolveMilliseconds;
+function createMatrixCases(representatives) {
+  return representatives.flatMap((channel) => MATRIX_CASES.map((entry) => ({
+    caseId: `${channel.role}-ch${channel.channelIndex}-${entry.advanceState}-${directionShortName(entry.directionId)}-${entry.shiftCount}`,
+    channel,
+    advanceState: entry.advanceState,
+    directionId: entry.directionId,
+    shiftCount: entry.shiftCount,
+  })));
+}
+
+async function runCase(page, definition, initialization) {
+  requireAuthoritativeInitialization(initialization, `${definition.caseId} initialization`);
+  let sequence = initialization.snapshotSequence;
+  let stateDigest = initialization.stateDigest;
+  let replayDigest = initialization.replayDigest;
+  const preparation = [];
+  const preparationCommands = definition.advanceState === "paused"
+    ? [
+        { label: "pause", type: "pause" },
+        { label: "advance-while-paused", type: "advance", wallMilliseconds: CASE_ADVANCE_WALL_MILLISECONDS },
+      ]
+    : [
+        { label: "resume", type: "resume" },
+        { label: "advance-while-live", type: "advance", wallMilliseconds: CASE_ADVANCE_WALL_MILLISECONDS },
+      ];
+
+  for (const entry of preparationCommands) {
+    const { label, ...command } = entry;
+    const result = await dispatch(page, { ...command, __baseSequence: sequence });
+    assertCommandResult(result, command.type, sequence, label);
+    sequence = result.response.sequence;
+    stateDigest = result.response.stateDigest;
+    replayDigest = result.response.replayDigest;
+    preparation.push({
+      label,
+      command,
+      response: result.response,
+      metric: requireMetric(result.metric, `${definition.caseId} ${label}`),
+    });
   }
-  return canonicalJson(copy);
+
+  const before = await captureSnapshot(page, definition.channel.channelIndex, stateDigest, replayDigest);
+  if (before.snapshotSequence !== sequence) {
+    throw new Error(`${definition.caseId} before snapshot sequence did not match the command trace.`);
+  }
+  if (before.summary.isPaused !== (definition.advanceState === "paused")) {
+    throw new Error(`${definition.caseId} did not reach its requested ${definition.advanceState} state.`);
+  }
+  if (definition.advanceState === "paused" && before.summary.simulationTimeSeconds !== 0) {
+    throw new Error(`${definition.caseId} advanced simulation time while paused.`);
+  }
+  if (definition.advanceState === "live" && before.summary.simulationTimeSeconds <= 0) {
+    throw new Error(`${definition.caseId} did not advance simulation time while live.`);
+  }
+
+  const command = {
+    type: "commit-refuel",
+    request: {
+      channelIndex: definition.channel.channelIndex,
+      directionId: definition.directionId,
+      shiftCount: definition.shiftCount,
+      fuelTypeId: "NAT-U-SYNTHETIC",
+    },
+  };
+  const result = await dispatch(page, { ...command, __baseSequence: sequence });
+  assertCommandResult(result, command.type, sequence, definition.caseId);
+  if (result.response.coreReplacementIncluded !== true) {
+    throw new Error(`${definition.caseId} did not return the changed core in its compact response.`);
+  }
+  const after = await captureSnapshot(
+    page,
+    definition.channel.channelIndex,
+    result.response.stateDigest,
+    result.response.replayDigest,
+  );
+  if (after.snapshotSequence !== result.response.sequence) {
+    throw new Error(`${definition.caseId} after snapshot sequence did not match the compact response.`);
+  }
+  if (after.summary.freshBundlesAvailable !==
+      before.summary.freshBundlesAvailable - definition.shiftCount) {
+    throw new Error(`${definition.caseId} did not consume the requested fresh inventory.`);
+  }
+  if (after.summary.refuellingOperationCount !== before.summary.refuellingOperationCount + 1) {
+    throw new Error(`${definition.caseId} did not increment refuellingOperationCount exactly once.`);
+  }
+  if (after.semanticSha256 === before.semanticSha256) {
+    throw new Error(`${definition.caseId} did not change the authoritative semantic snapshot.`);
+  }
+  if (result.response.stateDigest === stateDigest || result.response.replayDigest === replayDigest) {
+    throw new Error(`${definition.caseId} did not change the deterministic state and replay digests.`);
+  }
+
+  const metric = requireMetric(result.metric, definition.caseId);
+  return {
+    caseId: definition.caseId,
+    channel: definition.channel,
+    advanceState: definition.advanceState,
+    directionId: definition.directionId,
+    shiftCount: definition.shiftCount,
+    fuelTypeId: command.request.fuelTypeId,
+    initialization: compactInitialization(initialization),
+    preparation,
+    before,
+    after,
+    response: result.response,
+    metric,
+    wasmCallDurationMs: metric.wasmCallDurationMs,
+    jsonParseMaterializationDurationMs: metric.jsonParseMaterializationDurationMs,
+    returnedUtf8PayloadBytes: metric.returnedUtf8PayloadBytes,
+  };
+}
+
+function assertCommandResult(result, commandType, previousSequence, label) {
+  if (result.metric === null) {
+    throw new Error(`${label} did not expose a transport metric.`);
+  }
+  if (result.metric.commandType !== commandType || result.response.commandType !== commandType) {
+    throw new Error(`${label} was not acknowledged as the requested authoritative command.`);
+  }
+  if (result.response.responseKind !== "compact" || result.metric.responseKind !== "compact") {
+    throw new Error(`${label} did not return the requested compact response.`);
+  }
+  if (result.response.snapshotPatchIncluded !== true || result.response.requiresResync) {
+    throw new Error(`${label} did not return a compact snapshot patch without resync.`);
+  }
+  if (result.response.accepted !== true) {
+    throw new Error(`${label} was rejected by the authoritative bridge: ${result.response.message}`);
+  }
+  if (result.response.sequence !== previousSequence + 1) {
+    throw new Error(`${label} did not advance the authoritative sequence exactly once.`);
+  }
+  if (typeof result.response.stateDigest !== "string" || result.response.stateDigest.length === 0 ||
+      typeof result.response.replayDigest !== "string" || result.response.replayDigest.length === 0) {
+    throw new Error(`${label} did not return deterministic state and replay digests.`);
+  }
+}
+
+function requireMetric(metric, label) {
+  if (metric === null ||
+      !Number.isFinite(metric.wasmCallDurationMs) ||
+      !Number.isFinite(metric.jsonParseMaterializationDurationMs) ||
+      !Number.isInteger(metric.returnedUtf8PayloadBytes)) {
+    throw new Error(`${label} did not expose complete WASM, JSON parse, and UTF-8 metrics.`);
+  }
+  return metric;
+}
+
+function compactInitialization(initialization) {
+  return {
+    snapshotSequence: initialization.snapshotSequence,
+    snapshotMeta: initialization.snapshotMeta,
+    stateDigest: initialization.stateDigest,
+    replayDigest: initialization.replayDigest,
+    metric: initialization.metric,
+  };
+}
+
+function summarizeInitialization(initializations) {
+  return {
+    sampleCount: initializations.length,
+    wasmCallDurationMs: initializations.map((item) => item.metric.wasmCallDurationMs),
+    jsonParseMaterializationDurationMs: initializations.map((item) => item.metric.jsonParseMaterializationDurationMs),
+    returnedUtf8PayloadBytes: initializations.map((item) => item.metric.returnedUtf8PayloadBytes),
+    responseKinds: initializations.map((item) => item.metric.responseKind),
+    stateDigests: initializations.map((item) => item.stateDigest),
+    replayDigests: initializations.map((item) => item.replayDigest),
+  };
+}
+
+function summarizeRows(samples) {
+  const rows = samples.flatMap((sample) => sample.rows);
+  return {
+    sampleCount: samples.length,
+    rowCount: rows.length,
+    wasmCallDurationMs: rows.map((row) => row.wasmCallDurationMs),
+    jsonParseMaterializationDurationMs: rows.map((row) => row.jsonParseMaterializationDurationMs),
+    returnedUtf8PayloadBytes: rows.map((row) => row.returnedUtf8PayloadBytes),
+    responseKinds: rows.map((row) => row.response.responseKind),
+    acceptedRows: rows.filter((row) => row.response.accepted).length,
+  };
+}
+
+function matrixFingerprint(rows) {
+  return rows.map((row) => ({
+    caseId: row.caseId,
+    before: {
+      semanticSha256: row.before.semanticSha256,
+      stateDigest: row.before.stateDigest,
+      replayDigest: row.before.replayDigest,
+    },
+    after: {
+      semanticSha256: row.after.semanticSha256,
+      stateDigest: row.after.stateDigest,
+      replayDigest: row.after.replayDigest,
+    },
+    response: {
+      accepted: row.response.accepted,
+      sequence: row.response.sequence,
+      stateDigest: row.response.stateDigest,
+      replayDigest: row.response.replayDigest,
+    },
+  }));
+}
+
+function matrixDigest(rows) {
+  return sha256(canonicalJson(matrixFingerprint(rows)));
+}
+
+function assertDeterministicDigests(samples) {
+  const baseline = samples[0]?.rows ?? [];
+  const baselineFingerprint = canonicalJson(matrixFingerprint(baseline));
+  for (let sampleIndex = 1; sampleIndex < samples.length; sampleIndex += 1) {
+    const current = samples[sampleIndex].rows;
+    if (canonicalJson(matrixFingerprint(current)) !== baselineFingerprint) {
+      throw new Error(`Sample ${sampleIndex} produced a different deterministic refuelling matrix.`);
+    }
+  }
+
+  return {
+    sampleCount: samples.length,
+    rowCount: baseline.length,
+    matched: true,
+    matrixSha256: sha256(baselineFingerprint),
+  };
+}
+
+function representativeCoverage(representatives) {
+  return {
+    channelIndices: representatives.map((channel) => channel.channelIndex),
+    roles: representatives.map((channel) => channel.role),
+    directions: ["toward-end-a", "toward-end-b"],
+    shiftCounts: [4, 8],
+    advanceStates: ["paused", "live"],
+    directionShiftPairs: MATRIX_CASES.map((entry) => ({
+      directionId: entry.directionId,
+      shiftCount: entry.shiftCount,
+    })),
+    casesPerRepresentative: MATRIX_CASES.length,
+    caseCount: representatives.length * MATRIX_CASES.length,
+  };
+}
+
+function directionShortName(directionId) {
+  return directionId === "toward-end-a" ? "end-a" : "end-b";
 }
 
 function canonicalJson(value) {
@@ -336,52 +729,6 @@ function canonicalJson(value) {
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function summarize(samples) {
-  const byLabel = {};
-  for (const sample of samples) {
-    for (const step of sample.trace.steps) {
-      const values = byLabel[step.label] ??= [];
-      values.push(step.metric);
-    }
-  }
-  return Object.fromEntries(Object.entries(byLabel).map(([label, metrics]) => [label, {
-    wasmCallDurationMs: metrics.map((metric) => metric.wasmCallDurationMs),
-    jsonParseMaterializationDurationMs: metrics.map((metric) => metric.jsonParseMaterializationDurationMs),
-    returnedUtf8PayloadBytes: metrics.map((metric) => metric.returnedUtf8PayloadBytes),
-    responseKinds: metrics.map((metric) => metric.responseKind),
-  }]));
-}
-
-function assertDeterministicDigests(samples) {
-  const baseline = samples[0]?.trace;
-  if (baseline === undefined) return { sampleCount: 0, matched: true };
-
-  for (let sampleIndex = 1; sampleIndex < samples.length; sampleIndex += 1) {
-    const current = samples[sampleIndex].trace;
-    if (current.finalSemanticSnapshotSha256 !== baseline.finalSemanticSnapshotSha256) {
-      throw new Error(`Sample ${sampleIndex} produced a different final semantic snapshot digest.`);
-    }
-    if (current.steps.length !== baseline.steps.length) {
-      throw new Error(`Sample ${sampleIndex} produced a different command trace length.`);
-    }
-    for (let stepIndex = 0; stepIndex < baseline.steps.length; stepIndex += 1) {
-      for (const digestName of ["stateDigest", "replayDigest"]) {
-        if (current.steps[stepIndex][digestName] !== baseline.steps[stepIndex][digestName]) {
-          throw new Error(
-            `Sample ${sampleIndex} step ${stepIndex} produced a different ${digestName}.`,
-          );
-        }
-      }
-    }
-  }
-
-  return {
-    sampleCount: samples.length,
-    matched: true,
-    finalSemanticSnapshotSha256: baseline.finalSemanticSnapshotSha256,
-  };
 }
 
 function parseOptions(argumentsList) {
@@ -420,45 +767,85 @@ function toOptionName(value) {
 }
 
 let report;
+let appContext;
+let benchmarkContext;
 try {
   const buildInfoResponse = await fetch(buildInfoUrl);
   const buildInfo = buildInfoResponse.ok ? await buildInfoResponse.json() : null;
-  const appContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  if (expectedCommitSha !== null && buildInfo?.gitCommitSha !== expectedCommitSha) {
+    throw new Error(
+      `Deployed bridge commit ${buildInfo?.gitCommitSha ?? "unavailable"} does not match expected source ${expectedCommitSha}.`,
+    );
+  }
+  appContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
   const appPage = await appContext.newPage();
   const application = await checkApplication(appPage);
 
-  const benchmarkContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  benchmarkContext = await browser.newContext({ viewport: { width: 1600, height: 900 } });
   const benchmarkPage = await benchmarkContext.newPage();
   const measurementMode = await loadBenchmarkBridge(benchmarkPage);
-  const samples = [];
+  await installPageHelpers(benchmarkPage);
 
+  // The first initialization both measures cold startup and supplies the
+  // authoritative topology used to choose central/peripheral representatives.
   const coldInitialization = await initialize(benchmarkPage);
-  const coldTrace = await runTrace(benchmarkPage);
-  samples.push({ kind: "cold", initialization: coldInitialization, trace: coldTrace });
+  requireAuthoritativeInitialization(coldInitialization, "cold initialization");
+  const coldSnapshot = await getSnapshot(benchmarkPage);
+  const representatives = selectRepresentativeChannels(coldSnapshot);
+  const matrixCases = createMatrixCases(representatives);
+  const samples = [];
+  const warmInitializations = [];
 
-  for (let index = 0; index < warmSamples; index += 1) {
-    const warmInitialization = await initialize(benchmarkPage);
-    const warmTrace = await runTrace(benchmarkPage);
-    samples.push({ kind: "warm", sample: index + 1, initialization: warmInitialization, trace: warmTrace });
+  for (let sampleIndex = 0; sampleIndex <= warmSamples; sampleIndex += 1) {
+    const rows = [];
+    for (let caseIndex = 0; caseIndex < matrixCases.length; caseIndex += 1) {
+      let initialization;
+      if (sampleIndex === 0 && caseIndex === 0) {
+        initialization = coldInitialization;
+      } else {
+        initialization = await initialize(benchmarkPage);
+        requireAuthoritativeInitialization(initialization, `${matrixCases[caseIndex].caseId} initialization`);
+        warmInitializations.push(initialization);
+      }
+      rows.push(await runCase(benchmarkPage, matrixCases[caseIndex], initialization));
+    }
+    samples.push({
+      sample: sampleIndex,
+      kind: sampleIndex === 0 ? "cold+warm" : "warm",
+      rows,
+      matrixSha256: matrixDigest(rows),
+    });
   }
 
   const deterministicDigestChecks = assertDeterministicDigests(samples);
-
   report = {
-    label: options.label ?? "current",
+    format: "candu-playtest-reproduction-matrix-v1",
+    label: options.label ?? "refuelling-matrix",
     url: targetUrl.toString(),
     measurementMode,
+    bridgeAuthority: "authoritative-csharp-wasm",
     buildInfo,
+    provenance: {
+      expectedCommitSha,
+      deployedCommitSha: buildInfo?.gitCommitSha ?? null,
+      sourceCommitMatched: expectedCommitSha === null ? null : true,
+    },
     application,
+    coverage: representativeCoverage(representatives),
+    representatives,
+    initialization: {
+      cold: compactInitialization(coldInitialization),
+      warm: summarizeInitialization(warmInitializations),
+    },
     samples,
-    commandSummary: summarize(samples),
+    commandSummary: summarizeRows(samples),
     deterministicDigestChecks,
     consoleErrors,
     pageErrors,
   };
-  await appContext.close();
-  await benchmarkContext.close();
 } finally {
+  await appContext?.close();
+  await benchmarkContext?.close();
   await browser.close();
 }
 

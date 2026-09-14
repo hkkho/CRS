@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "benchmark": "node scripts/benchmark-wasm.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0",
