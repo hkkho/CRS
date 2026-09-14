@@ -9,8 +9,8 @@ stable operation and useful discharged burnup. The game should become more
 realistic after this loop is enjoyable and reliable.
 
 Read [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md) for the
-current product contract, architecture boundaries, physics provenance, and
-development priorities.
+current product contract, architecture boundaries, and physics provenance.
+The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
 
 ## Current product
 
@@ -156,23 +156,8 @@ The Phaser client is a static companion. Its bridge runs in a worker, the
 runtime never invokes DRAGON5, DONJON5, or another analysis executable, and
 local command history/replay and feedback notes remain local to the browser.
 
-## Next priorities
+## Active work plan
 
-In order, keep the work focused on the live browser player loop and its Vercel
-deployment:
-
-- Tune the browser dashboard, refuelling feedback, pacing, accessibility, and
-  debug/playtest controls using the existing authoritative snapshot; keep the
-  RUN STAKES bargain legible during normal play and at terminal RRS exhaustion.
-- Improve live operation readability and diagnostics without duplicating
-  `GameSession` rules or adding presentation-owned simulation rules.
-- Validate scoring and practice pacing against stable-power, reserve, inventory,
-  and discharged-burnup behavior through focused checks and owner playthroughs
-  of the deployed web game.
-- Admit a compact, versioned offline DRAGON5/DONJON5-derived data pack behind
-  the existing runtime seam only after provenance, licensing, units, group
-  ordering, topology, convergence, and power-balance checks are documented.
-
-Unity feature development remains paused during this web-first phase. Richer
-reactor physics can follow those priorities as a separate validated data/model
-effort; it is not a prerequisite for making the current browser run playable.
+Follow [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md) for the ordered web-first
+roadmap, completion stages, acceptance path, and exclusions. Unity feature
+development remains paused during this phase.

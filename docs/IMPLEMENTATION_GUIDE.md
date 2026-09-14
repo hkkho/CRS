@@ -213,29 +213,12 @@ npm test
 npm run build
 ```
 
-## Next priorities
+## Active work plan
 
-Work on these priorities in order, keeping the live browser loop and Vercel
-deployment first:
-
-- Tune browser dashboard readability, terminal feedback, refuelling feedback,
-  pacing, accessibility, and debug/playtest controls using the existing
-  snapshot values.
-- Improve operation feedback and owner diagnostics while leaving authority in
-  `GameSession`; do not add presentation-owned simulation rules to make the
-  loop legible.
-- Validate scoring and practice pacing against stable power, RRS reserve,
-  finite inventory, operation count, and useful discharged burnup with focused
-  checks and owner playthroughs of the deployed web game.
-- Prepare and admit a compact offline DRAGON5/DONJON5-derived pack behind the
-  existing data seam. Record source identities, tool/data versions, deck or
-  export hashes, units, group ordering, topology, convergence, and power
-  balance before comparing gameplay trends.
-
-Unity feature development remains paused during this phase. Additional
-reactor-model detail can follow as a separate validated data/model effort. It
-is not the next gameplay requirement and must not displace the readable browser
-refuelling loop.
+Follow [`WEB_ROADMAP.md`](WEB_ROADMAP.md) for the sole active web-first
+roadmap, ordered slices, completion stages, deployed acceptance path, and
+exclusions. This guide remains the product contract and architecture reference;
+Unity feature development remains paused.
 
 ## Testing and launch checks
 
