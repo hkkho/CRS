@@ -154,3 +154,9 @@ jobs:
           PLAYTEST_WASM_PATH: ${{ steps.vercel-output.outputs.wasm_path }}
         run: npm run smoke
 
+      - name: Benchmark authoritative reproduction matrix
+        working-directory: web/candu-playtest
+        env:
+          PLAYTEST_URL: https://crs-candu-playtest.vercel.app
+          PLAYTEST_EXPECTED_COMMIT_SHA: ${{ github.sha }}
+        run: npm run benchmark -- --label=stable --warm-samples=1
