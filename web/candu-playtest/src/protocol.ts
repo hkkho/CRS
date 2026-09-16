@@ -1159,6 +1159,24 @@ function isProtocolResponseEnvelope(value: unknown): value is Record<string, unk
       isRecord(value.snapshotPatch));
 }
 
+function normalizeInitializeResponse(value: unknown): unknown {
+  if (!isRecord(value) || value.operation !== "initialize" ||
+      (hasOwn(value, "command") && value.command !== null)) {
+    return value;
+  }
+
+  return { ...value, command: { type: "reset" } };
+}
+
+function normalizeInitialSnapshot(value: unknown): unknown {
+  if (!isRecord(value) || hasOwn(value, "lastRefuellingDirectionId") ||
+      value.refuellingOperationCount !== 0) {
+    return value;
+  }
+
+  return { ...value, lastRefuellingDirectionId: null };
+}
+
 function isCanduSnapshotPatch(value: unknown): value is CanduSnapshotPatch {
   return isRecord(value) && hasValidSnapshotStateFields(value) &&
     isCanduPhysicsSnapshot(value.physics) && isCanduXenonSnapshot(value.xenon) &&
@@ -1184,7 +1202,9 @@ export function isProtocolSnapshot(value: unknown): value is CanduSnapshot {
 }
 
 export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {
-  const value = unwrapPayload(parseJson(raw), "snapshot");
+  const value = normalizeInitialSnapshot(
+    unwrapPayload(parseJson(raw), "snapshot"),
+  );
   if (!isProtocolSnapshot(value)) {
     throw new Error("candu-playtest-v1 snapshot is malformed or incomplete.");
   }
@@ -1204,7 +1224,9 @@ function parseProtocolResponseWithBase(
   previousSnapshot?: CanduSnapshot,
   resyncSnapshot?: CanduSnapshot,
 ): CanduCommandResponse {
-  const value = unwrapPayload(parseJson(raw), "response");
+  const value = normalizeInitializeResponse(
+    unwrapPayload(parseJson(raw), "response"),
+  );
   if (!isProtocolResponseEnvelope(value)) {
     throw new Error("candu-playtest-v1 response envelope is malformed.");
   }
@@ -1250,10 +1272,11 @@ function parseProtocolResponseWithBase(
   if (!isRecord(value.snapshot)) {
     throw new Error("candu-playtest-v1 response is missing a snapshot.");
   }
-  if (!isProtocolSnapshot(value.snapshot)) {
+  const snapshot = normalizeInitialSnapshot(value.snapshot);
+  if (!isProtocolSnapshot(snapshot)) {
     throw new Error("candu-playtest-v1 response snapshot is malformed.");
   }
-  return value as unknown as CanduCommandResponse;
+  return { ...value, snapshot } as unknown as CanduCommandResponse;
 }
 
 export function parseProtocolResponseWithSnapshot(

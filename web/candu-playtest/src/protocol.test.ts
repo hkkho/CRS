@@ -36,6 +36,36 @@ describe("candu-playtest-v1 protocol validation", () => {
     expect(response.responseKind).toBe("compact");
   });
 
+  it("normalizes initialize command metadata to reset when null or omitted", () => {
+    const snapshot = createSnapshot();
+    const response: Record<string, unknown> = {
+      ...responseEnvelope(snapshot, snapshot.sequence),
+      operation: "initialize",
+      command: null,
+    };
+
+    expect(parseProtocolResponse(JSON.stringify(response)).command).toEqual({ type: "reset" });
+
+    delete response.command;
+    expect(parseProtocolResponse(JSON.stringify(response)).command).toEqual({ type: "reset" });
+  });
+
+  it("normalizes an omitted initial refuelling direction to null", () => {
+    const snapshot = createSnapshot();
+    const omittedSnapshot = structuredClone(snapshot) as unknown as Record<string, unknown>;
+    delete omittedSnapshot.lastRefuellingDirectionId;
+
+    expect(parseProtocolSnapshot(omittedSnapshot).lastRefuellingDirectionId).toBeNull();
+
+    const response: Record<string, unknown> = {
+      ...responseEnvelope(snapshot, snapshot.sequence),
+      operation: "initialize",
+      command: null,
+      snapshot: omittedSnapshot,
+    };
+    expect(parseProtocolResponse(JSON.stringify(response)).snapshot.lastRefuellingDirectionId).toBeNull();
+  });
+
   it.each(["physics", "xenon"] as const)("rejects an empty %s snapshot", (field) => {
     const malformed = structuredClone(createSnapshot()) as unknown as Record<string, unknown>;
     malformed[field] = {};
@@ -49,6 +79,10 @@ describe("candu-playtest-v1 protocol validation", () => {
     ["nonfinite direct-object value", (snapshot: Record<string, unknown>) => { snapshot.simulationTimeSeconds = Number.POSITIVE_INFINITY; }],
     ["invalid playback mode", (snapshot: Record<string, unknown>) => { snapshot.playbackModeId = "warp"; }],
     ["invalid refuelling direction", (snapshot: Record<string, unknown>) => { snapshot.lastRefuellingDirectionId = "sideways"; }],
+    ["omitted post-refuelling direction", (snapshot: Record<string, unknown>) => {
+      delete snapshot.lastRefuellingDirectionId;
+      snapshot.refuellingOperationCount = 1;
+    }],
     ["invalid refuelling count", (snapshot: Record<string, unknown>) => { snapshot.lastRefuellingShiftCount = 6; }],
     ["malformed nested UI value", (snapshot: Record<string, unknown>) => {
       (snapshot.physics as Record<string, unknown>).actualPowerFraction = "not-a-number";
@@ -87,6 +121,10 @@ describe("candu-playtest-v1 protocol validation", () => {
     ["accepted", (response: Record<string, unknown>) => { response.accepted = "true"; }],
     ["sequence", (response: Record<string, unknown>) => { response.sequence = Number.NaN; }],
     ["command", (response: Record<string, unknown>) => { response.command = { type: "unknown" }; }],
+    ["null dispatch command", (response: Record<string, unknown>) => {
+      response.operation = "dispatch";
+      response.command = null;
+    }],
     ["message", (response: Record<string, unknown>) => { response.message = 42; }],
   ])("rejects a malformed response envelope: %s", (_name, mutate) => {
     const snapshot = createSnapshot();
