@@ -39,6 +39,7 @@ export class BridgeSessionController {
   private pendingCount = 0;
   private foregroundPendingCount = 0;
   private active = false;
+  private disposed = false;
   private lastError: string | null = null;
   private lastResponse: CanduCommandResponse | null = null;
 
@@ -152,9 +153,15 @@ export class BridgeSessionController {
   }
 
   public dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.disposed = true;
     this.active = false;
     this.unsubscribeBridge();
     this.scheduler.dispose();
+    this.bridge.dispose?.();
     this.listeners.clear();
   }
 
@@ -163,7 +170,8 @@ export class BridgeSessionController {
       this.statusValue.isWasmAvailable &&
       this.pendingCount === 0 &&
       !this.snapshotValue.isPaused &&
-      this.snapshotValue.playbackModeId !== "pause";
+      this.snapshotValue.playbackModeId !== "pause" &&
+      !this.snapshotValue.rrs.isGameOver;
   }
 
   private syncScheduler(): void {

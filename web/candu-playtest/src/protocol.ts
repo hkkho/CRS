@@ -436,7 +436,7 @@ export interface CanduReplayArchive {
   commands: ReplayCommandRecord[];
 }
 
-export function isPlaybackModeId(value: string): value is PlaybackModeId {
+export function isPlaybackModeId(value: unknown): value is PlaybackModeId {
   return value === "pause" || value === "1x" || value === "10x" || value === "60x";
 }
 
@@ -450,6 +450,60 @@ export function formatProtocolNumber(value: number, digits = 6): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
+function hasOwn(value: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function hasOwnProperties(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key));
+}
+
+function hasFiniteNumberFields(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key) && isFiniteNumber(value[key]));
+}
+
+function hasIntegerFields(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key) && isInteger(value[key]));
+}
+
+function hasNonNegativeIntegerFields(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key) && isNonNegativeInteger(value[key]));
+}
+
+function hasStringFields(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key) && isString(value[key]));
+}
+
+function hasBooleanFields(
+  value: Record<string, unknown>,
+  keys: readonly string[],
+): boolean {
+  return keys.every((key) => hasOwn(value, key) && isBoolean(value[key]));
 }
 
 function canonicalize(value: unknown): unknown {
@@ -546,29 +600,587 @@ function isInteger(value: unknown): value is number {
   return isFiniteNumber(value) && Number.isInteger(value);
 }
 
+function isNonNegativeInteger(value: unknown): value is number {
+  return isInteger(value) && value >= 0;
+}
+
+function isProtocolSource(value: unknown): value is ProtocolSource {
+  return value === "wasm" || value === "synthetic-fixture";
+}
+
+function isRefuellingDirection(value: unknown): value is RefuellingDirection {
+  return value === "toward-end-a" || value === "toward-end-b";
+}
+
+function isDiagnosticLevel(value: unknown): value is DiagnosticLevel {
+  return value === "info" || value === "warning" || value === "error";
+}
+
+function isEventTone(value: unknown): value is EventTone {
+  return value === "info" || value === "positive" || value === "warning";
+}
+
+function isResponseKind(value: unknown): value is ResponseKind {
+  return value === "full" || value === "compact";
+}
+
+function isRefuellingShiftCount(value: unknown): value is 0 | 4 | 8 {
+  return value === 0 || value === 4 || value === 8;
+}
+
+function isChannelIndex(value: unknown): value is number {
+  return isNonNegativeInteger(value) && value < CORE_CHANNEL_COUNT;
+}
+
+function isCanduXenonChannelSnapshot(
+  value: unknown,
+  expectedChannelIndex?: number,
+): value is CanduXenonChannelSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "channelIndex",
+    "meanI135NumberDensityM3",
+    "maxI135NumberDensityM3",
+    "meanXe135NumberDensityM3",
+    "maxXe135NumberDensityM3",
+    "meanDynamicAbsorptionGroup1PerM",
+    "maxDynamicAbsorptionGroup1PerM",
+    "meanDynamicAbsorptionGroup2PerM",
+    "maxDynamicAbsorptionGroup2PerM",
+  ]) || !isChannelIndex(value.channelIndex) ||
+      (expectedChannelIndex !== undefined && value.channelIndex !== expectedChannelIndex)) {
+    return false;
+  }
+
+  return hasFiniteNumberFields(value, [
+    "meanI135NumberDensityM3",
+    "maxI135NumberDensityM3",
+    "meanXe135NumberDensityM3",
+    "maxXe135NumberDensityM3",
+    "meanDynamicAbsorptionGroup1PerM",
+    "maxDynamicAbsorptionGroup1PerM",
+    "meanDynamicAbsorptionGroup2PerM",
+    "maxDynamicAbsorptionGroup2PerM",
+  ]);
+}
+
+function isCanduBundleSnapshot(
+  value: unknown,
+  expectedPosition?: number,
+): value is CanduBundleSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "position",
+    "bundleId",
+    "fuelTypeId",
+    "currentBurnupMwdPerKg",
+    "powerWatts",
+    "localPowerFraction",
+    "insertedAtSeconds",
+    "stateVersion",
+    "isFresh",
+  ]) || !isNonNegativeInteger(value.position) ||
+      (expectedPosition !== undefined && value.position !== expectedPosition) ||
+      !hasStringFields(value, ["bundleId", "fuelTypeId"]) ||
+      !hasFiniteNumberFields(value, [
+        "currentBurnupMwdPerKg",
+        "powerWatts",
+        "localPowerFraction",
+        "insertedAtSeconds",
+      ]) || !hasNonNegativeIntegerFields(value, ["stateVersion"]) ||
+      !hasBooleanFields(value, ["isFresh"])) {
+    return false;
+  }
+
+  return true;
+}
+
+function isCanduChannelSnapshot(
+  value: unknown,
+  expectedChannelIndex: number,
+): value is CanduChannelSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "channelIndex",
+    "gridColumn",
+    "gridRow",
+    "flowDirection",
+    "averageBurnupMwdPerKg",
+    "powerWatts",
+    "localPowerFraction",
+    "localTiltFraction",
+    "xenon",
+    "bundles",
+  ]) || value.channelIndex !== expectedChannelIndex ||
+      !isNonNegativeInteger(value.gridColumn) || value.gridColumn >= CORE_GRID_WIDTH ||
+      !isNonNegativeInteger(value.gridRow) || value.gridRow >= CORE_GRID_HEIGHT ||
+      !isRefuellingDirection(value.flowDirection) ||
+      !hasFiniteNumberFields(value, [
+        "averageBurnupMwdPerKg",
+        "powerWatts",
+        "localPowerFraction",
+        "localTiltFraction",
+      ]) || !isCanduXenonChannelSnapshot(value.xenon, expectedChannelIndex) ||
+      !Array.isArray(value.bundles) || value.bundles.length !== CORE_BUNDLE_POSITION_COUNT) {
+    return false;
+  }
+
+  return value.bundles.every((bundle, position) =>
+    isCanduBundleSnapshot(bundle, position));
+}
+
+function isCanduCoreSnapshot(value: unknown): value is CanduCoreSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "channelCount",
+    "bundlePositionCount",
+    "gridWidth",
+    "gridHeight",
+    "channels",
+  ]) || value.channelCount !== CORE_CHANNEL_COUNT ||
+      value.bundlePositionCount !== CORE_BUNDLE_POSITION_COUNT ||
+      value.gridWidth !== CORE_GRID_WIDTH || value.gridHeight !== CORE_GRID_HEIGHT ||
+      !Array.isArray(value.channels) || value.channels.length !== CORE_CHANNEL_COUNT) {
+    return false;
+  }
+
+  return value.channels.every((channel, channelIndex) =>
+    isCanduChannelSnapshot(channel, channelIndex));
+}
+
+function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!hasOwnProperties(value, [
+    "sourceId",
+    "formulationId",
+    "shapeMethodId",
+    "amplitudeMethodId",
+    "reactivityMethodId",
+    "solveState",
+    "isAuthoritative",
+    "bindingVersion",
+    "referencePowerWatts",
+    "powerAmplitude",
+    "actualPowerFraction",
+    "targetPowerWatts",
+    "totalPowerWatts",
+    "meanChannelPowerWatts",
+    "meanBundlePowerWatts",
+    "effectiveK",
+    "reactivity",
+    "staticReactivity",
+    "staticReactivityMethodId",
+    "weightedPerturbationReactivity",
+    "reactivityNumerator",
+    "reactivityDenominator",
+    "reactivityIdentity",
+    "reactivityBindingDigestHex",
+    "coreReactivity",
+    "compensatedNetReactivity",
+    "compensationState",
+    "compensationCommand",
+    "compensationLowerBound",
+    "compensationUpperBound",
+    "compensationSaturated",
+    "compensationResponseTimeSeconds",
+    "cadenceIdentity",
+    "powerBalanceRelativeError",
+    "solverIdentity",
+    "solverIterationCount",
+    "solverResidualRelativeInfinity",
+  ]) || !hasStringFields(value, [
+    "sourceId",
+    "formulationId",
+    "shapeMethodId",
+    "amplitudeMethodId",
+    "reactivityMethodId",
+    "solveState",
+    "staticReactivityMethodId",
+    "reactivityIdentity",
+    "reactivityBindingDigestHex",
+    "cadenceIdentity",
+    "solverIdentity",
+  ]) || !hasBooleanFields(value, ["isAuthoritative", "compensationSaturated"]) ||
+      !hasNonNegativeIntegerFields(value, ["bindingVersion", "solverIterationCount"]) ||
+      !hasFiniteNumberFields(value, [
+        "referencePowerWatts",
+        "powerAmplitude",
+        "actualPowerFraction",
+        "targetPowerWatts",
+        "totalPowerWatts",
+        "meanChannelPowerWatts",
+        "meanBundlePowerWatts",
+        "effectiveK",
+        "reactivity",
+        "staticReactivity",
+        "weightedPerturbationReactivity",
+        "reactivityNumerator",
+        "reactivityDenominator",
+        "coreReactivity",
+        "compensatedNetReactivity",
+        "compensationState",
+        "compensationCommand",
+        "compensationLowerBound",
+        "compensationUpperBound",
+        "compensationResponseTimeSeconds",
+        "powerBalanceRelativeError",
+        "solverResidualRelativeInfinity",
+      ])) {
+    return false;
+  }
+
+  return (!hasOwn(value, "adjointNormalizationIdentity") ||
+      isString(value.adjointNormalizationIdentity)) &&
+    (!hasOwn(value, "adjointDigestHex") || isString(value.adjointDigestHex)) &&
+    (!hasOwn(value, "adjointIterationCount") || isNonNegativeInteger(value.adjointIterationCount)) &&
+    (!hasOwn(value, "adjointTransposeResidualRelativeInfinity") ||
+      isFiniteNumber(value.adjointTransposeResidualRelativeInfinity));
+}
+
+function isCanduXenonSnapshot(value: unknown): value is CanduXenonSnapshot {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!hasOwnProperties(value, [
+    "stateIdentity",
+    "stateDigestHex",
+    "stateVersion",
+    "simulationTimeSeconds",
+    "nodeCount",
+    "couplingIdentity",
+    "hasCoupling",
+    "baseCoefficientDigestHex",
+    "dynamicXenonDigestHex",
+    "effectiveCoefficientDigestHex",
+    "meanI135NumberDensityM3",
+    "maxI135NumberDensityM3",
+    "meanXe135NumberDensityM3",
+    "maxXe135NumberDensityM3",
+    "meanDynamicAbsorptionGroup1PerM",
+    "maxDynamicAbsorptionGroup1PerM",
+    "meanDynamicAbsorptionGroup2PerM",
+    "maxDynamicAbsorptionGroup2PerM",
+    "selectedChannelIndex",
+    "selectedChannel",
+  ]) || !hasStringFields(value, [
+    "stateIdentity",
+    "stateDigestHex",
+    "couplingIdentity",
+    "baseCoefficientDigestHex",
+    "dynamicXenonDigestHex",
+    "effectiveCoefficientDigestHex",
+  ]) || !hasBooleanFields(value, ["hasCoupling"]) ||
+      !hasNonNegativeIntegerFields(value, ["stateVersion", "nodeCount"]) ||
+      !isFiniteNumber(value.simulationTimeSeconds) ||
+      !hasFiniteNumberFields(value, [
+        "meanI135NumberDensityM3",
+        "maxI135NumberDensityM3",
+        "meanXe135NumberDensityM3",
+        "maxXe135NumberDensityM3",
+        "meanDynamicAbsorptionGroup1PerM",
+        "maxDynamicAbsorptionGroup1PerM",
+        "meanDynamicAbsorptionGroup2PerM",
+        "maxDynamicAbsorptionGroup2PerM",
+      ]) || !isInteger(value.selectedChannelIndex) ||
+      (value.selectedChannelIndex !== -1 && !isChannelIndex(value.selectedChannelIndex))) {
+    return false;
+  }
+
+  return value.selectedChannel === null ||
+    isCanduXenonChannelSnapshot(value.selectedChannel, value.selectedChannelIndex);
+}
+
+function isCanduRrsZoneSnapshot(
+  value: unknown,
+  expectedZoneId: number,
+): value is CanduRrsZoneSnapshot {
+  return isRecord(value) && hasOwnProperties(value, [
+    "logicalZoneId",
+    "fillFraction",
+    "referencePowerFraction",
+    "targetPowerFraction",
+    "measuredPowerFraction",
+    "shapeError",
+  ]) && value.logicalZoneId === expectedZoneId &&
+    hasFiniteNumberFields(value, [
+      "fillFraction",
+      "referencePowerFraction",
+      "targetPowerFraction",
+      "measuredPowerFraction",
+      "shapeError",
+    ]);
+}
+
+function isCanduRrsSnapshot(value: unknown): value is CanduRrsSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "controllerIdentity",
+    "mappingIdentity",
+    "mappingDigestHex",
+    "overlayIdentity",
+    "overlayDigestHex",
+    "stateDigestHex",
+    "simulationTimeSeconds",
+    "nodeCount",
+    "averageFillFraction",
+    "minimumFillFraction",
+    "maximumFillFraction",
+    "measuredPowerWatts",
+    "targetPowerWatts",
+    "powerErrorWatts",
+    "coreReactivity",
+    "compensatedNetReactivity",
+    "commonModeRhoCorrection",
+    "controllerIterationCount",
+    "controllerConverged",
+    "responseModelIdentity",
+    "responseModelDigestHex",
+    "appliedFillCommand",
+    "controlledBaselineWeightedResidual",
+    "combinedWeightedResidual",
+    "candidateSolveCount",
+    "verificationSolveCount",
+    "correctionSolveCount",
+    "correctionApplied",
+    "lowExhaustion",
+    "highExhaustion",
+    "isGameOver",
+    "gameOverReason",
+    "cadenceIdentity",
+    "zones",
+  ]) || !hasStringFields(value, [
+    "controllerIdentity",
+    "mappingIdentity",
+    "mappingDigestHex",
+    "overlayIdentity",
+    "overlayDigestHex",
+    "stateDigestHex",
+    "responseModelIdentity",
+    "responseModelDigestHex",
+    "gameOverReason",
+    "cadenceIdentity",
+  ]) || !hasBooleanFields(value, [
+    "controllerConverged",
+    "correctionApplied",
+    "lowExhaustion",
+    "highExhaustion",
+    "isGameOver",
+  ]) || !hasNonNegativeIntegerFields(value, [
+    "nodeCount",
+    "controllerIterationCount",
+    "candidateSolveCount",
+    "verificationSolveCount",
+    "correctionSolveCount",
+  ]) || !hasFiniteNumberFields(value, [
+    "simulationTimeSeconds",
+    "averageFillFraction",
+    "minimumFillFraction",
+    "maximumFillFraction",
+    "measuredPowerWatts",
+    "targetPowerWatts",
+    "powerErrorWatts",
+    "coreReactivity",
+    "compensatedNetReactivity",
+    "commonModeRhoCorrection",
+    "controlledBaselineWeightedResidual",
+    "combinedWeightedResidual",
+  ]) || !Array.isArray(value.appliedFillCommand) ||
+      value.appliedFillCommand.length !== 14 ||
+      !value.appliedFillCommand.every(isFiniteNumber) ||
+      !Array.isArray(value.zones) ||
+      (value.zones.length !== 0 && value.zones.length !== 14)) {
+    return false;
+  }
+
+  return value.zones.every((zone, zoneIndex) =>
+    isCanduRrsZoneSnapshot(zone, zoneIndex));
+}
+
+function isCanduConvergenceStatus(value: unknown): value is CanduConvergenceStatus {
+  return isRecord(value) && hasOwnProperties(value, [
+    "state",
+    "iterations",
+    "residual",
+    "relativePowerError",
+    "lastSolveMilliseconds",
+    "solverLabel",
+  ]) && (value.state === "converged" || value.state === "settling" ||
+    value.state === "pending" || value.state === "unavailable") &&
+    isNonNegativeInteger(value.iterations) &&
+    isFiniteNumber(value.residual) &&
+    isFiniteNumber(value.relativePowerError) &&
+    isFiniteNumber(value.lastSolveMilliseconds) &&
+    isString(value.solverLabel);
+}
+
+function isCanduDiagnosticCheck(value: unknown): boolean {
+  return isRecord(value) && hasOwnProperties(value, ["label", "value", "status"]) &&
+    isString(value.label) && isString(value.value) &&
+    (value.status === "pass" || value.status === "watch" || value.status === "info");
+}
+
+function isCanduDiagnostics(value: unknown): value is CanduDiagnostics {
+  return isRecord(value) && hasOwnProperties(value, ["convergence", "checks"]) &&
+    isCanduConvergenceStatus(value.convergence) && Array.isArray(value.checks) &&
+    value.checks.every(isCanduDiagnosticCheck);
+}
+
+function isCanduEvent(value: unknown): value is CanduEvent {
+  return isRecord(value) && hasOwnProperties(value, [
+    "eventId",
+    "timeSeconds",
+    "title",
+    "detail",
+    "tone",
+  ]) && hasStringFields(value, ["eventId", "title", "detail"]) &&
+    isFiniteNumber(value.timeSeconds) && isEventTone(value.tone);
+}
+
+const SNAPSHOT_STATE_FIELDS = [
+  "scenarioId",
+  "dataPackId",
+  "simulationTimeSeconds",
+  "wallElapsedSeconds",
+  "normalizedPowerFraction",
+  "targetPowerFraction",
+  "absoluteTiltFraction",
+  "targetTiltFraction",
+  "controlMarginFraction",
+  "deviceAvailableFraction",
+  "pendingActionCount",
+  "scoreTotal",
+  "scoreDelta",
+  "isPaused",
+  "playbackModeId",
+  "freshBundlesAvailable",
+  "refuellingOperationCount",
+  "lastRefuelledChannel",
+  "lastRefuellingDirectionId",
+  "lastRefuellingShiftCount",
+  "physics",
+  "xenon",
+  "rrs",
+  "diagnostics",
+  "lastEvent",
+] as const;
+
+function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
+  return hasOwnProperties(value, SNAPSHOT_STATE_FIELDS) &&
+    hasStringFields(value, ["scenarioId", "dataPackId"]) &&
+    hasFiniteNumberFields(value, [
+      "simulationTimeSeconds",
+      "wallElapsedSeconds",
+      "normalizedPowerFraction",
+      "targetPowerFraction",
+      "absoluteTiltFraction",
+      "targetTiltFraction",
+      "controlMarginFraction",
+      "deviceAvailableFraction",
+      "scoreTotal",
+      "scoreDelta",
+    ]) && isNonNegativeInteger(value.pendingActionCount) &&
+    isBoolean(value.isPaused) && isPlaybackModeId(value.playbackModeId) &&
+    isNonNegativeInteger(value.freshBundlesAvailable) &&
+    isNonNegativeInteger(value.refuellingOperationCount) &&
+    isInteger(value.lastRefuelledChannel) &&
+    value.lastRefuelledChannel >= -1 && value.lastRefuelledChannel < CORE_CHANNEL_COUNT &&
+    (value.lastRefuellingDirectionId === null ||
+      isRefuellingDirection(value.lastRefuellingDirectionId)) &&
+    isRefuellingShiftCount(value.lastRefuellingShiftCount) &&
+    (value.lastEvent === null || isCanduEvent(value.lastEvent));
+}
+
+function isRefuelRequest(value: unknown): value is RefuelRequest {
+  return isRecord(value) && hasOwnProperties(value, [
+    "channelIndex",
+    "directionId",
+    "shiftCount",
+    "fuelTypeId",
+  ]) && isChannelIndex(value.channelIndex) &&
+    isRefuellingDirection(value.directionId) &&
+    (value.shiftCount === 4 || value.shiftCount === 8) &&
+    isString(value.fuelTypeId);
+}
+
+function isCanduCommand(value: unknown): value is CanduCommand {
+  if (!isRecord(value) || !hasOwn(value, "type") || !isString(value.type)) {
+    return false;
+  }
+
+  switch (value.type) {
+    case "advance":
+      return hasOwn(value, "wallMilliseconds") && isFiniteNumber(value.wallMilliseconds);
+    case "step":
+      return hasOwn(value, "simulationSeconds") && isFiniteNumber(value.simulationSeconds);
+    case "set-playback-mode":
+      return hasOwn(value, "modeId") && isPlaybackModeId(value.modeId);
+    case "pause":
+    case "resume":
+    case "reset":
+      return true;
+    case "queue-power-target":
+      return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
+    case "queue-tilt-target":
+      return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
+    case "commit-refuel":
+      return hasOwn(value, "request") && isRefuelRequest(value.request);
+    default:
+      return false;
+  }
+}
+
+function isProtocolDiagnostic(value: unknown): boolean {
+  return isRecord(value) && hasOwnProperties(value, ["level", "code", "message"]) &&
+    isDiagnosticLevel(value.level) && isString(value.code) && isString(value.message);
+}
+
+function isProtocolResponseEnvelope(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "protocol",
+    "accepted",
+    "sequence",
+    "command",
+    "message",
+    "diagnostics",
+  ]) || value.protocol !== PROTOCOL_VERSION || !isBoolean(value.accepted) ||
+      !isInteger(value.sequence) || !isCanduCommand(value.command) ||
+      !isString(value.message) || !Array.isArray(value.diagnostics) ||
+      !value.diagnostics.every(isProtocolDiagnostic)) {
+    return false;
+  }
+
+  return (!hasOwn(value, "responseKind") || isResponseKind(value.responseKind)) &&
+    (!hasOwn(value, "baseSequence") || isInteger(value.baseSequence)) &&
+    (!hasOwn(value, "requiresResync") || isBoolean(value.requiresResync)) &&
+    (!hasOwn(value, "stateDigest") || isString(value.stateDigest)) &&
+    (!hasOwn(value, "replayDigest") || isString(value.replayDigest)) &&
+    (!hasOwn(value, "coreReplacement") || value.coreReplacement === null ||
+      isCanduCoreSnapshot(value.coreReplacement)) &&
+    (!hasOwn(value, "snapshotPatch") || value.snapshotPatch === null ||
+      isRecord(value.snapshotPatch));
+}
+
+function isCanduSnapshotPatch(value: unknown): value is CanduSnapshotPatch {
+  return isRecord(value) && hasValidSnapshotStateFields(value) &&
+    isCanduPhysicsSnapshot(value.physics) && isCanduXenonSnapshot(value.xenon) &&
+    isCanduRrsSnapshot(value.rrs) && isCanduDiagnostics(value.diagnostics);
+}
+
 export function isProtocolSnapshot(value: unknown): value is CanduSnapshot {
-  if (!isRecord(value) || value.protocol !== PROTOCOL_VERSION ||
-      (value.source !== "wasm" && value.source !== "synthetic-fixture") ||
-      !isInteger(value.sequence) || !isFiniteNumber(value.simulationTimeSeconds) ||
-      !isInteger(value.lastRefuelledChannel) || !isRecord(value.core)) {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "protocol",
+    "source",
+    "sequence",
+    "core",
+    ...SNAPSHOT_STATE_FIELDS,
+  ]) || value.protocol !== PROTOCOL_VERSION || !isProtocolSource(value.source) ||
+      !isNonNegativeInteger(value.sequence) || !hasValidSnapshotStateFields(value) ||
+      !isCanduPhysicsSnapshot(value.physics) || !isCanduXenonSnapshot(value.xenon) ||
+      !isCanduRrsSnapshot(value.rrs) || !isCanduDiagnostics(value.diagnostics) ||
+      !isCanduCoreSnapshot(value.core)) {
     return false;
   }
 
-  const core = value.core;
-  if (core.channelCount !== CORE_CHANNEL_COUNT ||
-      core.bundlePositionCount !== CORE_BUNDLE_POSITION_COUNT ||
-      core.gridWidth !== CORE_GRID_WIDTH || core.gridHeight !== CORE_GRID_HEIGHT ||
-      !Array.isArray(core.channels) || core.channels.length !== CORE_CHANNEL_COUNT) {
-    return false;
-  }
-
-  if (value.lastRefuelledChannel < -1 || value.lastRefuelledChannel >= core.channels.length) {
-    return false;
-  }
-
-  return core.channels.every((channel, channelIndex) =>
-    isRecord(channel) && channel.channelIndex === channelIndex &&
-    Array.isArray(channel.bundles) && channel.bundles.length === CORE_BUNDLE_POSITION_COUNT);
+  return !hasOwn(value, "lab") || value.lab === null || isRecord(value.lab);
 }
 
 export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {
@@ -593,17 +1205,22 @@ function parseProtocolResponseWithBase(
   resyncSnapshot?: CanduSnapshot,
 ): CanduCommandResponse {
   const value = unwrapPayload(parseJson(raw), "response");
-  assertProtocol(value);
+  if (!isProtocolResponseEnvelope(value)) {
+    throw new Error("candu-playtest-v1 response envelope is malformed.");
+  }
 
   const isCompact = value.responseKind === "compact" ||
-    "snapshotPatch" in value ||
-    "coreReplacement" in value;
+    hasOwn(value, "snapshotPatch") ||
+    hasOwn(value, "coreReplacement");
   if (isCompact) {
     if (value.requiresResync === true ||
         !isInteger(value.baseSequence) ||
         previousSnapshot === undefined ||
         value.baseSequence !== previousSnapshot.sequence) {
       if (resyncSnapshot !== undefined) {
+        if (!isProtocolSnapshot(resyncSnapshot)) {
+          throw new Error("candu-playtest-v1 resync snapshot is malformed.");
+        }
         return {
           ...value,
           responseKind: "compact",
@@ -614,7 +1231,7 @@ function parseProtocolResponseWithBase(
     }
 
     const patch = value.snapshotPatch;
-    if (!isRecord(patch)) {
+    if (!isCanduSnapshotPatch(patch)) {
       throw new Error("candu-playtest-v1 compact response is missing snapshotPatch.");
     }
 
@@ -633,7 +1250,9 @@ function parseProtocolResponseWithBase(
   if (!isRecord(value.snapshot)) {
     throw new Error("candu-playtest-v1 response is missing a snapshot.");
   }
-  parseProtocolSnapshot(value.snapshot);
+  if (!isProtocolSnapshot(value.snapshot)) {
+    throw new Error("candu-playtest-v1 response snapshot is malformed.");
+  }
   return value as unknown as CanduCommandResponse;
 }
 
@@ -650,59 +1269,26 @@ export function materializeCompactSnapshot(
   response: Record<string, unknown>,
   patchValue: Record<string, unknown>,
 ): CanduSnapshot {
-  if (!isInteger(response.sequence) ||
-      !isRecord(patchValue.physics) ||
-      !isRecord(patchValue.xenon) ||
-      !isRecord(patchValue.rrs) ||
-      !isRecord(patchValue.diagnostics) ||
-      !isFiniteNumber(patchValue.simulationTimeSeconds) ||
-      !isFiniteNumber(patchValue.wallElapsedSeconds) ||
-      typeof patchValue.scenarioId !== "string" ||
-      typeof patchValue.dataPackId !== "string" ||
-      typeof patchValue.playbackModeId !== "string" ||
-      ("coreReplacement" in response &&
-        response.coreReplacement !== null &&
-        !isRecord(response.coreReplacement))) {
+  if (!isNonNegativeInteger(response.sequence) || !isCanduSnapshotPatch(patchValue)) {
     throw new Error("candu-playtest-v1 compact snapshot patch is malformed.");
   }
 
-  const replacement = response.coreReplacement;
-  const core = replacement === undefined || replacement === null
-    ? base.core
-    : replacement as CanduCoreSnapshot;
+  let core = base.core;
+  if (hasOwn(response, "coreReplacement")) {
+    if (!isCanduCoreSnapshot(response.coreReplacement)) {
+      if (response.coreReplacement !== null) {
+        throw new Error("candu-playtest-v1 compact core replacement is malformed.");
+      }
+    } else {
+      core = response.coreReplacement;
+    }
+  }
+
   const snapshot: CanduSnapshot = {
     ...base,
     sequence: response.sequence,
-    scenarioId: patchValue.scenarioId as string,
-    dataPackId: patchValue.dataPackId as string,
-    simulationTimeSeconds: patchValue.simulationTimeSeconds as number,
-    wallElapsedSeconds: patchValue.wallElapsedSeconds as number,
-    normalizedPowerFraction: patchValue.normalizedPowerFraction as number,
-    targetPowerFraction: patchValue.targetPowerFraction as number,
-    absoluteTiltFraction: patchValue.absoluteTiltFraction as number,
-    targetTiltFraction: patchValue.targetTiltFraction as number,
-    controlMarginFraction: patchValue.controlMarginFraction as number,
-    deviceAvailableFraction: patchValue.deviceAvailableFraction as number,
-    pendingActionCount: patchValue.pendingActionCount as number,
-    scoreTotal: patchValue.scoreTotal as number,
-    scoreDelta: patchValue.scoreDelta as number,
-    isPaused: patchValue.isPaused as boolean,
-    playbackModeId: patchValue.playbackModeId as PlaybackModeId,
-    freshBundlesAvailable: patchValue.freshBundlesAvailable as number,
-    refuellingOperationCount: patchValue.refuellingOperationCount as number,
-    lastRefuelledChannel: patchValue.lastRefuelledChannel as number,
-    lastRefuellingDirectionId: "lastRefuellingDirectionId" in patchValue
-      ? patchValue.lastRefuellingDirectionId as RefuellingDirection | null
-      : base.lastRefuellingDirectionId,
-    lastRefuellingShiftCount: patchValue.lastRefuellingShiftCount as number,
-    physics: patchValue.physics as unknown as CanduPhysicsSnapshot,
-    xenon: patchValue.xenon as unknown as CanduXenonSnapshot,
-    rrs: patchValue.rrs as unknown as CanduRrsSnapshot,
+    ...patchValue,
     core,
-    diagnostics: patchValue.diagnostics as unknown as CanduDiagnostics,
-    lastEvent: "lastEvent" in patchValue
-      ? patchValue.lastEvent as CanduEvent | null
-      : base.lastEvent,
   };
 
   if (!isProtocolSnapshot(snapshot)) {

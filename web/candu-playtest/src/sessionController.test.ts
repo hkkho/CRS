@@ -130,6 +130,36 @@ describe("bridge session controller", () => {
     clock.advanceBy(10_000);
 
     expect(bridge.calls).toEqual([]);
+    expect(bridge.disposeCalls).toBe(1);
+  });
+
+  it("does not schedule or issue live-clock advances for a terminal snapshot", () => {
+    const bridge = createSerializedFakeBridge({
+      ...createSnapshot(),
+      rrs: {
+        ...createUnavailableRrsSnapshot(),
+        isGameOver: true,
+        gameOverReason: "RRS reserve exhausted",
+      },
+    });
+    const clock = createClockHarness();
+    const controller = new BridgeSessionController(bridge, clock.options);
+
+    controller.startShift();
+    clock.advanceBy(10_000);
+
+    expect(bridge.calls).toEqual([]);
+    controller.dispose();
+  });
+
+  it("disposes the bridge lifecycle once", () => {
+    const bridge = createSerializedFakeBridge();
+    const controller = new BridgeSessionController(bridge);
+
+    controller.dispose();
+    controller.dispose();
+
+    expect(bridge.disposeCalls).toBe(1);
   });
 
   it("surfaces command responses and errors as scene-friendly state", async () => {
@@ -155,10 +185,13 @@ interface QueuedCommand {
   reject: (error: unknown) => void;
 }
 
-function createSerializedFakeBridge(): CanduPlaytestBridgeLifecycle & {
+function createSerializedFakeBridge(
+  initialSnapshot: CanduSnapshot = createSnapshot(),
+): CanduPlaytestBridgeLifecycle & {
   calls: CanduCommand[];
   activeCommand: CanduCommand | null;
   activeCompactBaseSequence: number | null;
+  disposeCalls: number;
   resolveActive: () => void;
 } {
   const status: BridgeStatus = {
@@ -173,7 +206,8 @@ function createSerializedFakeBridge(): CanduPlaytestBridgeLifecycle & {
   const queued: QueuedCommand[] = [];
   let active: QueuedCommand | null = null;
   let activeCompactBaseSequence: number | null = null;
-  let snapshot = createSnapshot();
+  let snapshot = initialSnapshot;
+  let disposeCalls = 0;
 
   const pump = (): void => {
     if (active !== null || queued.length === 0) {
@@ -222,18 +256,23 @@ function createSerializedFakeBridge(): CanduPlaytestBridgeLifecycle & {
     calls: CanduCommand[];
     activeCommand: CanduCommand | null;
     activeCompactBaseSequence: number | null;
+    disposeCalls: number;
     resolveActive: () => void;
   } = {
     status,
     calls,
     activeCommand: null,
     activeCompactBaseSequence: null,
+    disposeCalls: 0,
     getSnapshot: () => snapshot,
     dispatch,
     initializeMode: async () => snapshot,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    dispose: () => {
+      disposeCalls += 1;
     },
     resolveActive,
   };
@@ -245,6 +284,10 @@ function createSerializedFakeBridge(): CanduPlaytestBridgeLifecycle & {
   Object.defineProperty(bridge, "activeCompactBaseSequence", {
     enumerable: true,
     get: () => activeCompactBaseSequence,
+  });
+  Object.defineProperty(bridge, "disposeCalls", {
+    enumerable: true,
+    get: () => disposeCalls,
   });
   void listeners;
   return bridge;

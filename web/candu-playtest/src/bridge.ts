@@ -50,6 +50,7 @@ export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
   initializeMode: (mode: "play") => Promise<CanduSnapshot>;
   subscribe: (listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void) => () => void;
   getTransportMetrics?: () => readonly TransportMetric[];
+  dispose?: () => void;
 }
 
 export interface TransportMetric {
@@ -275,6 +276,20 @@ interface WorkerReadyMessage {
 
 type WorkerMessage = WorkerResultMessage | WorkerErrorMessage | WorkerReadyMessage;
 
+export interface WorkerProtocolWorker {
+  onmessage: ((event: MessageEvent) => void) | null;
+  onerror: ((event: ErrorEvent) => void) | null;
+  postMessage(message: unknown): void;
+  terminate(): void;
+}
+
+export type WorkerProtocolWorkerFactory = () => WorkerProtocolWorker;
+
+export interface WorkerProtocolBridgeOptions {
+  createWorker?: WorkerProtocolWorkerFactory;
+  onFatalError?: (error: Error) => void;
+}
+
 interface PendingWorkerRequest {
   resolve: (value: WorkerResultMessage) => void;
   reject: (reason: unknown) => void;
@@ -288,7 +303,8 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   readonly status = authoritativeWasmStatus;
   readonly ready: Promise<void>;
 
-  private readonly worker: Worker;
+  private readonly worker: WorkerProtocolWorker;
+  private readonly onFatalError: (error: Error) => void;
   private readonly pending = new Map<number, PendingWorkerRequest>();
   private nextRequestId = 1;
   private operationQueue: Promise<unknown> = Promise.resolve();
@@ -296,15 +312,19 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   private resolveReady!: () => void;
   private rejectReady!: (reason: unknown) => void;
   private readySettled = false;
+  private lifecycleState: "active" | "failed" | "disposed" = "active";
+  private terminalError: Error | null = null;
+  private workerTerminated = false;
   private readonly metrics: TransportMetric[] = [];
 
-  constructor() {
+  constructor(options: WorkerProtocolBridgeOptions = {}) {
+    this.onFatalError = options.onFatalError ?? (() => undefined);
     this.ready = new Promise<void>((resolve, reject) => {
       this.resolveReady = resolve;
       this.rejectReady = reject;
     });
-    this.worker = new Worker(new URL("./wasmWorker.ts", import.meta.url), { type: "module" });
-    this.worker.onmessage = (event: MessageEvent<WorkerMessage>) => this.handleMessage(event.data);
+    this.worker = (options.createWorker ?? createDefaultWorker)();
+    this.worker.onmessage = (event: MessageEvent) => this.handleMessage(event.data as WorkerMessage);
     this.worker.onerror = (event: ErrorEvent) => {
       this.failReady(new Error(event.message || "The browser WASM worker failed to load."));
     };
@@ -319,6 +339,22 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
 
   getTransportMetrics(): readonly TransportMetric[] {
     return this.metrics.slice();
+  }
+
+  dispose(): void {
+    if (this.lifecycleState !== "active") {
+      return;
+    }
+
+    const error = new Error("The browser WASM bridge was disposed.");
+    this.lifecycleState = "disposed";
+    this.terminalError = error;
+    if (!this.readySettled) {
+      this.readySettled = true;
+      this.rejectReady(error);
+    }
+    this.rejectPending(error);
+    this.terminateWorker();
   }
 
   initialize(mode: "play"): Promise<CanduSnapshot> {
@@ -436,10 +472,26 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   }
 
   private request(request: WorkerRequest): Promise<WorkerResultMessage> {
+    if (this.terminalError !== null) {
+      return Promise.reject(this.terminalError);
+    }
+
     const id = this.nextRequestId++;
     return new Promise<WorkerResultMessage>((resolve, reject) => {
+      if (this.terminalError !== null) {
+        reject(this.terminalError);
+        return;
+      }
+
       this.pending.set(id, { resolve, reject });
-      this.worker.postMessage({ ...request, id });
+      try {
+        this.worker.postMessage({ ...request, id });
+      } catch (error) {
+        this.pending.delete(id);
+        const reason = toError(error, "The browser WASM worker could not accept a request.");
+        this.failReady(reason);
+        reject(this.terminalError ?? reason);
+      }
     });
   }
 
@@ -474,16 +526,55 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   }
 
   private failReady(error: Error): void {
+    if (this.lifecycleState !== "active") {
+      return;
+    }
+
+    this.lifecycleState = "failed";
+    this.terminalError = error;
     if (!this.readySettled) {
       this.readySettled = true;
       this.rejectReady(error);
     }
 
+    this.rejectPending(error);
+    this.terminateWorker();
+    try {
+      this.onFatalError(error);
+    } catch {
+      // Fatal-state cleanup must not depend on subscriber behavior.
+    }
+  }
+
+  private rejectPending(error: Error): void {
     for (const pending of this.pending.values()) {
       pending.reject(error);
     }
     this.pending.clear();
   }
+
+  private terminateWorker(): void {
+    if (this.workerTerminated) {
+      return;
+    }
+
+    this.workerTerminated = true;
+    this.worker.onmessage = null;
+    this.worker.onerror = null;
+    try {
+      this.worker.terminate();
+    } catch {
+      // The bridge is already terminal even if a host-specific terminate call fails.
+    }
+  }
+}
+
+function createDefaultWorker(): WorkerProtocolWorker {
+  return new Worker(new URL("./wasmWorker.ts", import.meta.url), { type: "module" });
+}
+
+function toError(error: unknown, fallback: string): Error {
+  return error instanceof Error ? error : new Error(error === undefined ? fallback : String(error));
 }
 
 class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
@@ -494,8 +585,10 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private activeStatus: BridgeStatus;
   private selectedMode: "play" = "play";
   private readonly settled: Promise<void>;
+  private failedClosed = false;
+  private disposed = false;
 
-  constructor() {
+  constructor(options: Pick<WorkerProtocolBridgeOptions, "createWorker"> = {}) {
     // Keep a shape-compatible snapshot available while the authoritative
     // module loads. It is never an active bridge or a fallback data source.
     const placeholderSnapshot = createUnavailableSnapshot();
@@ -504,13 +597,17 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     this.activeStatus = loadingStatus;
 
     try {
-      this.wasm = new WorkerProtocolBridge();
+      this.wasm = new WorkerProtocolBridge({
+        createWorker: options.createWorker,
+        onFatalError: (error) => this.transitionToUnavailable(error),
+      });
     } catch {
       this.wasm = null;
     }
 
     if (this.wasm === null) {
       this.settled = Promise.resolve();
+      this.failedClosed = true;
       this.activeStatus = unavailableStatus;
       return;
     }
@@ -518,18 +615,15 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     this.settled = this.wasm.ready
       .then(() => this.wasm!.initialize(this.selectedMode))
       .then((snapshot) => {
+        if (this.disposed || this.failedClosed) {
+          return;
+        }
         this.active = this.wasm!;
         this.activeStatus = this.wasm!.status;
         this.notify(snapshot);
       })
       .catch((error: unknown) => {
-        const reason = error instanceof Error ? error.message : "module unavailable";
-        this.active = this.unavailable;
-        this.activeStatus = {
-          ...unavailableStatus,
-          detail: `${AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}. ${reason}`,
-        };
-        this.notify(this.active.getSnapshot());
+        this.transitionToUnavailable(error);
       });
   }
 
@@ -550,6 +644,18 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     return this.wasm?.getTransportMetrics() ?? [];
   }
 
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.disposed = true;
+    this.active = this.unavailable;
+    this.activeStatus = unavailableStatus;
+    this.listeners.clear();
+    this.wasm?.dispose();
+  }
+
   async initializeMode(mode: "play"): Promise<CanduSnapshot> {
     this.selectedMode = mode;
     await this.settled;
@@ -565,6 +671,21 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   subscribe(listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  private transitionToUnavailable(error: unknown): void {
+    if (this.disposed || this.failedClosed) {
+      return;
+    }
+
+    this.failedClosed = true;
+    const reason = error instanceof Error ? error.message : "module unavailable";
+    this.active = this.unavailable;
+    this.activeStatus = {
+      ...unavailableStatus,
+      detail: `${AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE}. ${reason}`,
+    };
+    this.notify(this.active.getSnapshot());
   }
 
   private notify(snapshot: CanduSnapshot): void {
@@ -697,8 +818,10 @@ function createUnavailableSnapshot(): CanduSnapshot {
   };
 }
 
-export function createCanduPlaytestBridge(): CanduPlaytestBridgeLifecycle {
-  return new AuthoritativeProtocolBridge();
+export function createCanduPlaytestBridge(
+  options: Pick<WorkerProtocolBridgeOptions, "createWorker"> = {},
+): CanduPlaytestBridgeLifecycle {
+  return new AuthoritativeProtocolBridge(options);
 }
 
 export const protocolDescriptor = {
