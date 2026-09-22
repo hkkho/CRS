@@ -190,12 +190,12 @@ namespace ReactorSim.Core
                     "channel_count must be a positive representable count.");
             }
 
-            if (bundlePositionCount < 2 || bundlePositionCount > int.MaxValue)
+            if (bundlePositionCount == 0 || bundlePositionCount > int.MaxValue)
             {
                 return ContractValidationResult<CoreTopology>.Invalid(
                     "Topology.BundlePositionCount.Invalid",
                     "bundle_position_count",
-                    "bundle_position_count must be at least two and representable.");
+                    "bundle_position_count must be positive and representable.");
             }
 
             if ((ulong)channelCount * bundlePositionCount > int.MaxValue)

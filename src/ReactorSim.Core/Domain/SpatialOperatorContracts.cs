@@ -12,6 +12,83 @@ namespace ReactorSim.Core
     }
 
     /// <summary>
+    /// Optional direct flux-to-power response for a node.  The reference
+    /// lattice table supplies H factors, but does not supply Sigma_f.  The
+    /// factors are stored in SI watts per (neutron m^-2 s^-1); unlike the
+    /// Sigma_f/E_fission path, they already represent the node power response
+    /// and are therefore not multiplied by node volume.
+    /// </summary>
+    public sealed class SpatialFluxPowerResponseV1
+    {
+        private SpatialFluxPowerResponseV1(
+            double group1WattsPerFluxDensity,
+            double group2WattsPerFluxDensity)
+        {
+            Group1WattsPerFluxDensity = group1WattsPerFluxDensity;
+            Group2WattsPerFluxDensity = group2WattsPerFluxDensity;
+        }
+
+        public double Group1WattsPerFluxDensity { get; }
+
+        public double Group2WattsPerFluxDensity { get; }
+
+        public static ContractValidationResult<SpatialFluxPowerResponseV1> TryCreate(
+            double group1WattsPerFluxDensity,
+            double group2WattsPerFluxDensity)
+        {
+            if (!ContractValidation.IsFinite(group1WattsPerFluxDensity) ||
+                !ContractValidation.IsFinite(group2WattsPerFluxDensity) ||
+                group1WattsPerFluxDensity < 0.0 ||
+                group2WattsPerFluxDensity < 0.0)
+            {
+                return ContractValidationResult<SpatialFluxPowerResponseV1>.Invalid(
+                    "SpatialFluxPowerResponse.NonFiniteOrNegative",
+                    "power_response",
+                    "Direct flux-to-power factors must be finite and nonnegative SI values.");
+            }
+
+            if (group1WattsPerFluxDensity <= 0.0 &&
+                group2WattsPerFluxDensity <= 0.0)
+            {
+                return ContractValidationResult<SpatialFluxPowerResponseV1>.Invalid(
+                    "SpatialFluxPowerResponse.Zero",
+                    "power_response",
+                    "A direct flux-to-power response must have positive support in at least one group.");
+            }
+
+            return ContractValidationResult<SpatialFluxPowerResponseV1>.Valid(
+                new SpatialFluxPowerResponseV1(
+                    group1WattsPerFluxDensity,
+                    group2WattsPerFluxDensity));
+        }
+
+        internal ContractDiagnostic? Validate(string path)
+        {
+            if (!ContractValidation.IsFinite(Group1WattsPerFluxDensity) ||
+                !ContractValidation.IsFinite(Group2WattsPerFluxDensity) ||
+                Group1WattsPerFluxDensity < 0.0 ||
+                Group2WattsPerFluxDensity < 0.0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialFluxPowerResponse.NonFiniteOrNegative",
+                    path,
+                    "Direct flux-to-power factors must be finite and nonnegative SI values.");
+            }
+
+            if (Group1WattsPerFluxDensity <= 0.0 &&
+                Group2WattsPerFluxDensity <= 0.0)
+            {
+                return new ContractDiagnostic(
+                    "SpatialFluxPowerResponse.Zero",
+                    path,
+                    "A direct flux-to-power response must have positive support in at least one group.");
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
     /// In-memory node coefficients for the two-group static diffusion model.
     /// Loading, versioning, hashing, and serialization are handled by the
     /// full-core data-pack adapter at the composition boundary.
@@ -31,6 +108,71 @@ namespace ReactorSim.Core
             double chiGroup1,
             double chiGroup2,
             double energyPerFissionJ)
+            : this(
+                node,
+                volumeM3,
+                absorptionGroup1PerM,
+                absorptionGroup2PerM,
+                downscatterGroup1To2PerM,
+                fissionGroup1PerM,
+                fissionGroup2PerM,
+                nuFissionGroup1PerM,
+                nuFissionGroup2PerM,
+                chiGroup1,
+                chiGroup2,
+                energyPerFissionJ,
+                null,
+                true)
+        {
+        }
+
+        public SpatialNodeCoefficients(
+            NodeKey node,
+            double volumeM3,
+            double absorptionGroup1PerM,
+            double absorptionGroup2PerM,
+            double downscatterGroup1To2PerM,
+            double fissionGroup1PerM,
+            double fissionGroup2PerM,
+            double nuFissionGroup1PerM,
+            double nuFissionGroup2PerM,
+            double chiGroup1,
+            double chiGroup2,
+            double energyPerFissionJ,
+            SpatialFluxPowerResponseV1? powerResponse)
+            : this(
+                node,
+                volumeM3,
+                absorptionGroup1PerM,
+                absorptionGroup2PerM,
+                downscatterGroup1To2PerM,
+                fissionGroup1PerM,
+                fissionGroup2PerM,
+                nuFissionGroup1PerM,
+                nuFissionGroup2PerM,
+                chiGroup1,
+                chiGroup2,
+                energyPerFissionJ,
+                powerResponse,
+                powerResponse == null)
+        {
+        }
+
+        public SpatialNodeCoefficients(
+            NodeKey node,
+            double volumeM3,
+            double absorptionGroup1PerM,
+            double absorptionGroup2PerM,
+            double downscatterGroup1To2PerM,
+            double fissionGroup1PerM,
+            double fissionGroup2PerM,
+            double nuFissionGroup1PerM,
+            double nuFissionGroup2PerM,
+            double chiGroup1,
+            double chiGroup2,
+            double energyPerFissionJ,
+            SpatialFluxPowerResponseV1? powerResponse,
+            bool hasFissionCrossSections)
         {
             Node = node;
             VolumeM3 = volumeM3;
@@ -44,6 +186,8 @@ namespace ReactorSim.Core
             ChiGroup1 = chiGroup1;
             ChiGroup2 = chiGroup2;
             EnergyPerFissionJ = energyPerFissionJ;
+            PowerResponse = powerResponse;
+            HasFissionCrossSections = hasFissionCrossSections;
         }
 
         public NodeKey Node { get; }
@@ -69,6 +213,20 @@ namespace ReactorSim.Core
         public double ChiGroup2 { get; }
 
         public double EnergyPerFissionJ { get; }
+
+        /// <summary>
+        /// When present, this is the explicit power path for a row that does
+        /// not provide Sigma_f.  It is mutually exclusive with the legacy
+        /// Sigma_f times energy-per-fission path.
+        /// </summary>
+        public SpatialFluxPowerResponseV1? PowerResponse { get; }
+
+        /// <summary>
+        /// True for legacy rows that provide Sigma_f explicitly. A reference
+        /// lattice row may instead provide nuSigma_f and H factors while
+        /// leaving Sigma_f absent.
+        /// </summary>
+        public bool HasFissionCrossSections { get; }
     }
 
     /// <summary>
@@ -670,12 +828,39 @@ namespace ReactorSim.Core
                     "Node volume must be strictly positive SI cubic metres.");
             }
 
-            if (record.EnergyPerFissionJ <= 0)
+            if (record.HasFissionCrossSections && record.EnergyPerFissionJ <= 0)
             {
                 return new ContractDiagnostic(
                     "SpatialCoefficients.EnergyPerFission.Invalid",
                     path + ".energy_per_fission_j",
                     "Energy per fission must be strictly positive SI joules.");
+            }
+
+            if (record.PowerResponse != null)
+            {
+                ContractDiagnostic? powerResponseFailure = record.PowerResponse.Validate(
+                    path + ".power_response");
+                if (powerResponseFailure != null)
+                {
+                    return powerResponseFailure;
+                }
+
+                if (record.EnergyPerFissionJ != 0.0 ||
+                    record.FissionGroup1PerM != 0.0 ||
+                    record.FissionGroup2PerM != 0.0)
+                {
+                    return new ContractDiagnostic(
+                        "SpatialCoefficients.Node.PowerResponse.MixedPath",
+                        path,
+                        "A direct flux-to-power response cannot be combined with legacy Sigma_f or energy-per-fission power terms.");
+                }
+            }
+            else if (!record.HasFissionCrossSections)
+            {
+                return new ContractDiagnostic(
+                    "SpatialCoefficients.Node.FissionCrossSections.Missing",
+                    path,
+                    "A Sigma_f-free row must provide an explicit H power response.");
             }
 
             if (record.AbsorptionGroup1PerM < 0 ||
@@ -694,8 +879,9 @@ namespace ReactorSim.Core
                     "Cross sections, fission spectrum, and downscatter must be nonnegative.");
             }
 
-            if (record.AbsorptionGroup1PerM < record.FissionGroup1PerM ||
-                record.AbsorptionGroup2PerM < record.FissionGroup2PerM)
+            if (record.HasFissionCrossSections &&
+                (record.AbsorptionGroup1PerM < record.FissionGroup1PerM ||
+                 record.AbsorptionGroup2PerM < record.FissionGroup2PerM))
             {
                 return new ContractDiagnostic(
                     "SpatialCoefficients.AbsorptionBelowFission",
@@ -715,8 +901,9 @@ namespace ReactorSim.Core
             bool group1NuFissionZero = record.NuFissionGroup1PerM == 0;
             bool group2FissionZero = record.FissionGroup2PerM == 0;
             bool group2NuFissionZero = record.NuFissionGroup2PerM == 0;
-            if (group1FissionZero != group1NuFissionZero ||
-                group2FissionZero != group2NuFissionZero)
+            if (record.HasFissionCrossSections &&
+                (group1FissionZero != group1NuFissionZero ||
+                 group2FissionZero != group2NuFissionZero))
             {
                 return new ContractDiagnostic(
                     "SpatialCoefficients.FissionSupportMismatch",

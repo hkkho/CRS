@@ -1003,12 +1003,31 @@ namespace ReactorSim.Core
             for (int nodeIndex = 0; nodeIndex < _stencil.NodeCount; nodeIndex++)
             {
                 SpatialNodeCoefficients coefficients = coefficientSet.Nodes[nodeIndex];
-                double fissionRate =
-                    coefficients.FissionGroup1PerM * finalState.Group1Flux[nodeIndex] +
-                    coefficients.FissionGroup2PerM * finalState.Group2Flux[nodeIndex];
-                double power = coefficients.VolumeM3 * coefficients.EnergyPerFissionJ * fissionRate;
-                if (!ContractValidation.IsFinite(fissionRate) || fissionRate < 0.0 ||
-                    !ContractValidation.IsFinite(power) || power < 0.0)
+                double power;
+                if (coefficients.PowerResponse != null)
+                {
+                    power =
+                        coefficients.PowerResponse.Group1WattsPerFluxDensity *
+                            finalState.Group1Flux[nodeIndex] +
+                        coefficients.PowerResponse.Group2WattsPerFluxDensity *
+                            finalState.Group2Flux[nodeIndex];
+                }
+                else
+                {
+                    double fissionRate =
+                        coefficients.FissionGroup1PerM * finalState.Group1Flux[nodeIndex] +
+                        coefficients.FissionGroup2PerM * finalState.Group2Flux[nodeIndex];
+                    power = coefficients.VolumeM3 * coefficients.EnergyPerFissionJ * fissionRate;
+                    if (!ContractValidation.IsFinite(fissionRate) || fissionRate < 0.0)
+                    {
+                        return InvalidSolve(
+                            "FullCoreDiffusionSolve.Power.NonFinite",
+                            ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".power_w"),
+                            "The converged node fission rate must be finite and nonnegative.");
+                    }
+                }
+
+                if (!ContractValidation.IsFinite(power) || power < 0.0)
                 {
                     return InvalidSolve(
                         "FullCoreDiffusionSolve.Power.NonFinite",
@@ -1355,7 +1374,8 @@ namespace ReactorSim.Core
                     baseNode.NuFissionGroup2PerM,
                     baseNode.ChiGroup1,
                     baseNode.ChiGroup2,
-                    baseNode.EnergyPerFissionJ));
+                    baseNode.EnergyPerFissionJ,
+                    baseNode.PowerResponse));
             }
 
             return baseCoefficients.TryRebindCanonicalNodeCoefficients(effectiveNodes);

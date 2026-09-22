@@ -13,8 +13,9 @@ public sealed class SpatialSolveTests
     [Fact]
     public void ManufacturedTwoAndThreeNodeSolvesAreFiniteNormalizedAndSymmetric()
     {
-        // CoreTopology deliberately requires at least two axial positions, so
-        // a one-channel/two-position stencil is the smallest public fixture.
+        // A one-channel/two-position stencil keeps the manufactured fixture
+        // connected while the topology contract also supports one-position
+        // lattice references.
         foreach (int positionCount in new[] { 2, 3 })
         {
             ManufacturedSolveFixture fixture = CreateFixture(positionCount);

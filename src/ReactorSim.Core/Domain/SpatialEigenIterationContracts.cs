@@ -862,16 +862,30 @@ namespace ReactorSim.Core
             for (int nodeIndex = 0; nodeIndex < _stencil.NodeCount; nodeIndex++)
             {
                 SpatialNodeCoefficients coefficients = _coefficients.Nodes[nodeIndex];
-                double fissionRate =
-                    coefficients.FissionGroup1PerM * group1Flux[nodeIndex] +
-                    coefficients.FissionGroup2PerM * group2Flux[nodeIndex];
-                double localPower = coefficients.VolumeM3 *
-                                    coefficients.EnergyPerFissionJ *
-                                    fissionRate;
-                if (!ContractValidation.IsFinite(fissionRate) ||
-                    fissionRate < 0 ||
-                    !ContractValidation.IsFinite(localPower) ||
-                    localPower < 0)
+                double localPower;
+                if (coefficients.PowerResponse != null)
+                {
+                    localPower =
+                        coefficients.PowerResponse.Group1WattsPerFluxDensity *
+                            group1Flux[nodeIndex] +
+                        coefficients.PowerResponse.Group2WattsPerFluxDensity *
+                            group2Flux[nodeIndex];
+                }
+                else
+                {
+                    double fissionRate =
+                        coefficients.FissionGroup1PerM * group1Flux[nodeIndex] +
+                        coefficients.FissionGroup2PerM * group2Flux[nodeIndex];
+                    localPower = coefficients.VolumeM3 *
+                                 coefficients.EnergyPerFissionJ *
+                                 fissionRate;
+                    if (!ContractValidation.IsFinite(fissionRate) || fissionRate < 0)
+                    {
+                        return double.NaN;
+                    }
+                }
+
+                if (!ContractValidation.IsFinite(localPower) || localPower < 0)
                 {
                     return double.NaN;
                 }
