@@ -140,6 +140,46 @@ namespace ReactorSim.Core
         }
 
         /// <summary>
+        /// Four-factor fast-fission factor from the supplied extraction model.
+        /// </summary>
+        public double EpsilonFastFission
+        {
+            get
+            {
+                return 1.0 +
+                       NuFissionGroup1PerCm /
+                       (NuFissionGroup2PerCm * ThermalFluxToFastFluxRatio);
+            }
+        }
+
+        /// <summary>
+        /// Resonance escape probability in the supplied extraction model.
+        /// </summary>
+        public double ResonanceEscapeProbability
+        {
+            get { return DownscatterGroup1To2PerCm / FastRemovalPerCm; }
+        }
+
+        /// <summary>
+        /// The supplied table labels this factor eta*f. It is the thermal
+        /// nu-fission production divided by thermal absorption.
+        /// </summary>
+        public double EtaFThermalUtilization
+        {
+            get { return NuFissionGroup2PerCm / AbsorptionGroup2PerCm; }
+        }
+
+        public double L1SquaredCm2
+        {
+            get { return DiffusionGroup1Cm / FastRemovalPerCm; }
+        }
+
+        public double L2SquaredCm2
+        {
+            get { return DiffusionGroup2Cm / AbsorptionGroup2PerCm; }
+        }
+
+        /// <summary>
         /// k-infinity for chi_1 = 1 and chi_2 = 0:
         /// (nuSigma_f1 + nuSigma_f2 * Sigma_1_to_2 / Sigma_a2) /
         /// (Sigma_a1 + Sigma_1_to_2).
@@ -148,10 +188,9 @@ namespace ReactorSim.Core
         {
             get
             {
-                return (NuFissionGroup1PerCm +
-                        (NuFissionGroup2PerCm * DownscatterGroup1To2PerCm /
-                         AbsorptionGroup2PerCm)) /
-                       FastRemovalPerCm;
+                return EpsilonFastFission *
+                       ResonanceEscapeProbability *
+                       EtaFThermalUtilization;
             }
         }
 
@@ -313,6 +352,7 @@ namespace ReactorSim.Core
     {
         public const uint CurrentSchemaVersion = 1;
         public const double RequiredThermalCutoffElectronVolts = 0.625;
+        public const double ReferenceGeometricBucklingInverseCmSquared = 0.0003;
         public const string EnergyGroupOrderId = "fast,thermal";
 
         // The supplied D and Sigma_tr values are independently published to four

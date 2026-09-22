@@ -101,7 +101,12 @@ public sealed class CanduTwoGroupLatticeReferenceTests
     {
         CanduTwoGroupLatticeReferenceV1 reference = Require(
             CanduTwoGroupLatticeReferenceV1.TryCreateUserSupplied());
+        double[] expectedEpsilon = { 1.2306, 1.2210, 1.2637, 1.3050 };
+        double[] expectedResonanceEscape = { 0.6269, 0.6258, 0.6247, 0.6234 };
+        double[] expectedEtaF = { 1.1758, 1.2187, 1.0130, 0.8683 };
         double[] expectedKInfinite = { 0.9071, 0.9312, 0.7997, 0.7064 };
+        double[] expectedL1Squared = { 56.73, 56.72, 56.75, 56.77 };
+        double[] expectedL2Squared = { 166.46, 159.96, 150.93, 143.42 };
         double[] expectedEffectiveK = { 0.8495, 0.8737, 0.7523, 0.6660 };
 
         Assert.Equal(expectedKInfinite.Length, reference.States.Count);
@@ -111,9 +116,15 @@ public sealed class CanduTwoGroupLatticeReferenceTests
             CanduTwoGroupReflectiveLatticeV1 lattice = Require(
                 CanduTwoGroupReflectiveLatticeV1.TryCreate(row));
             CanduTwoGroupLeakageResultV1 leakage = lattice.CalculateFourFactorLeakage(
-                0.0003 * 10000.0);
+                CanduTwoGroupLatticeReferenceV1.ReferenceGeometricBucklingInverseCmSquared *
+                10000.0);
 
+            Assert.Equal(expectedEpsilon[index], row.EpsilonFastFission, 4);
+            Assert.Equal(expectedResonanceEscape[index], row.ResonanceEscapeProbability, 4);
+            Assert.Equal(expectedEtaF[index], row.EtaFThermalUtilization, 4);
             Assert.Equal(expectedKInfinite[index], row.KInfinite, 4);
+            Assert.Equal(expectedL1Squared[index], row.L1SquaredCm2, 2);
+            Assert.Equal(expectedL2Squared[index], row.L2SquaredCm2, 2);
             Assert.Equal(expectedEffectiveK[index], leakage.KEffective, 4);
         }
     }
