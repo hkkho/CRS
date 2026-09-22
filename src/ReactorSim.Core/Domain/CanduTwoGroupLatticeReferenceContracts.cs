@@ -195,9 +195,9 @@ namespace ReactorSim.Core
             if (irradiationNkb < 0.0 ||
                 diffusionGroup1Cm <= 0.0 || diffusionGroup2Cm <= 0.0 ||
                 transportGroup1PerCm <= 0.0 || transportGroup2PerCm <= 0.0 ||
-                absorptionGroup1PerCm < 0.0 || absorptionGroup2PerCm <= 0.0 ||
-                nuFissionGroup1PerCm < 0.0 || nuFissionGroup2PerCm < 0.0 ||
-                downscatterGroup1To2PerCm < 0.0 ||
+                absorptionGroup1PerCm <= 0.0 || absorptionGroup2PerCm <= 0.0 ||
+                nuFissionGroup1PerCm <= 0.0 || nuFissionGroup2PerCm <= 0.0 ||
+                downscatterGroup1To2PerCm <= 0.0 ||
                 hGroup1KilowattPerFluxCm2Second < 0.0 ||
                 hGroup2KilowattPerFluxCm2Second < 0.0)
             {
