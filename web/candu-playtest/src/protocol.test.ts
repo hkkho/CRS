@@ -40,6 +40,46 @@ describe("candu-playtest-v1 protocol validation", () => {
     expect(response.snapshot.lab?.spatialSolve.finalState?.group1Flux).toHaveLength(16);
   });
 
+  it("accepts and validates the authoritative single-cell benchmark", () => {
+    const lab = createLabSnapshot();
+    lab.singleCell = createSingleCellSnapshot();
+    const snapshot = {
+      ...createSnapshot(),
+      dataPackId: "lab-single-cell-fresh-v1",
+      lab,
+    };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+
+    const response = parseProtocolResponse(JSON.stringify({
+      ...responseEnvelope(snapshot, snapshot.sequence),
+      operation: "initialize",
+      command: null,
+      mode: "lab",
+      snapshot,
+      lab,
+    }));
+
+    expect(response.snapshot.lab?.singleCell?.reflectiveFaces).toHaveLength(6);
+    expect(response.snapshot.lab?.singleCell?.energyGroupOrder).toEqual(["fast", "thermal"]);
+    expect(response.snapshot.lab?.singleCell?.packVersion).toContain("candu6-two-group");
+    expect(response.snapshot.lab?.singleCell?.spatialSolve.isConverged).toBe(true);
+    expect(response.snapshot.lab?.singleCell?.coefficients.energyPerFissionJ).toBeGreaterThan(0);
+  });
+
+  it("rejects a single-cell result without all reflective faces or solver diagnostics", () => {
+    const snapshot = createSnapshot();
+    const malformed = structuredClone(snapshot) as unknown as Record<string, unknown>;
+    const lab = createLabSnapshot() as unknown as Record<string, unknown>;
+    const singleCell = createSingleCellSnapshot() as unknown as Record<string, unknown>;
+    singleCell.reflectiveFaces = ["north", "east"];
+    delete singleCell.spatialSolve;
+    lab.singleCell = singleCell;
+    malformed.lab = lab;
+
+    expect(isProtocolSnapshot(malformed)).toBe(false);
+    expect(() => parseProtocolSnapshot(malformed)).toThrow();
+  });
+
   it("preserves a valid full snapshot and compact response", () => {
     const base = createSnapshot();
 
@@ -250,6 +290,79 @@ function createLabSnapshot(): CanduLabSnapshot {
         convergenceReason: "converged",
         innerSolveStatus: "succeeded",
       },
+    },
+  };
+}
+
+function createSingleCellSnapshot(): NonNullable<CanduLabSnapshot["singleCell"]> {
+  return {
+    fixtureId: "lab-single-cell-fresh-reflective-v1",
+    packVersion: "candu6-two-group-diffusion-v1-infinite-cell-calibrated",
+    dataPackId: "lab-single-cell-fresh-v1",
+    evidenceClass: "synthetic-calibrated",
+    sourceProvenance: "project-authored fresh-fuel surrogate",
+    energyGroupOrder: ["fast", "thermal"],
+    materialId: "NAT-U-SYNTHETIC",
+    fuelTypeId: "NAT-U-SYNTHETIC",
+    burnupJPerKgHm: 0,
+    volumeM3: 0.05,
+    reflectiveFaces: ["north", "east", "south", "west", "end-a", "end-b"],
+    targetPowerWatts: 0.4,
+    coefficients: {
+      absorptionGroup1PerM: 0.3,
+      absorptionGroup2PerM: 0.16,
+      fissionGroup1PerM: 0.035,
+      fissionGroup2PerM: 0.155,
+      nuFissionGroup1PerM: 0.084,
+      nuFissionGroup2PerM: 0.37665,
+      downscatterGroup1To2PerM: 0.2,
+      chiGroup1: 1,
+      chiGroup2: 0,
+      energyPerFissionJ: 3.204353268e-11,
+    },
+    effectiveK: 1.234,
+    group1Flux: [1.25],
+    group2Flux: [3.5],
+    totalPowerWatts: 0.4,
+    fissionProductionRate: 2.5e9,
+    spatialSolve: {
+      status: "converged",
+      isConverged: true,
+      hasUsableState: true,
+      finalState: {
+        iteration: 7,
+        eigenvalue: 1.234,
+        totalPowerW: 0.4,
+        group1Flux: [1.25],
+        group2Flux: [3.5],
+      },
+      diagnostics: {
+        iterationCount: 7,
+        residualRelativeInfinity: 1e-13,
+        sourceShapeChangeInfinity: 1e-13,
+        powerBalanceRelative: 0,
+        convergenceReason: "converged",
+        innerSolveStatus: "succeeded",
+      },
+    },
+    diagnostics: {
+      iterationCount: 7,
+      eigenvalueChangeAbsolute: 1e-13,
+      eigenvalueChangeRelative: 1e-13,
+      residualAbsoluteInfinity: 1e-13,
+      residualRelativeInfinity: 1e-13,
+      sourceShapeChangeInfinity: 1e-13,
+      powerBalanceRelative: 0,
+      innerSolveStatus: "succeeded",
+      convergenceReason: "converged",
+      failureDiagnostics: [],
+      invalidCoefficientCount: 0,
+      negativeFluxCount: 0,
+      nonFiniteValueCount: 0,
+      failedInnerSolveCount: 0,
+      rejectedUpscatterCount: 0,
+      clampCount: 0,
+      forbiddenClampCount: 0,
     },
   };
 }

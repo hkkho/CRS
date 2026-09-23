@@ -10,6 +10,8 @@ realistic after this loop is enjoyable and reliable.
 
 Read [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md) for the
 current product contract, architecture boundaries, and physics provenance.
+The exact active finite-volume and two-group eigen equations are documented in
+[`docs/physics/active-two-group-solver.md`](docs/physics/active-two-group-solver.md).
 The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
 
 ## Current product
@@ -40,21 +42,23 @@ The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
   authorities.
 - `src/ReactorSim.Cli` runs synthetic scenarios headlessly for validation and
   long-horizon checks.
-- `data` and `reference` contain synthetic packs, design context, and the
-  offline DRAGON5/DONJON5 integration material.
+- `data` and `reference` contain project-authored synthetic packs and design
+  context; external DRAGON5/DONJON5 material is reference context only.
 
 ## Simulation contract
 
 The practice session uses the project-authored
 `candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is a
-surrogate, not a plant rating or an external DRAGON/DONJON result. The shared
-full-core adapter publishes explicit SI watts, normalized power, `k`, and
-`rho = (k - 1) / k`, along with solve identity and diagnostics. Its static
-flux shape is normalized to the operator target; short operation intervals
-reuse the retained equilibrium projection for deterministic burnup integration.
-This is a regulated steady-state practice model, not a sub-second transient
-claim. This project-authored pack is the active simulation and acceptance path;
-no external DRAGON5/DONJON5 validation is required.
+synthetic-calibrated surrogate, not validated CANDU data, a plant rating, or an
+external DRAGON/DONJON result. The shared full-core adapter publishes explicit
+SI watts, normalized power, `k`, and `rho = (k - 1) / k`, along with solve
+identity and diagnostics. Its static flux shape is normalized to the operator
+target; short operation intervals reuse the retained equilibrium projection for
+deterministic burnup integration. This is a regulated steady-state practice
+model, not a sub-second transient claim. The project-authored pack is the
+active simulation and acceptance path; no external solver or validation pack
+is required. See the [active solver equations](docs/physics/active-two-group-solver.md)
+for the exact operator and iteration.
 
 The Core repository includes iodine/xenon contracts, but the current
 `GameSession` practice projection intentionally exposes xenon as an unavailable
@@ -156,8 +160,8 @@ npm run build
 The Phaser client is a static companion. Its bridge runs in a worker, the
 runtime never invokes DRAGON5, DONJON5, or another analysis executable, and
 local command history/replay and feedback notes remain local to the browser.
-Offline DRAGON5/DONJON5 material remains optional reference context and does
-not gate the project-authored model or browser acceptance.
+External solver material remains optional reference context and does not gate
+the project-authored model or browser acceptance.
 
 ### Browser Lab
 
@@ -165,11 +169,17 @@ Select `Lab` (or press `L`) in the browser playtest to open the deterministic
 `lab-2x8-synthetic-v1` fixture. Inspect the two-channel by eight-position
 (`2 × 8`) two-group diffusion cells, including each cell's fuel/nonfuel state
 and reflective faces; use the cell controls to change those inputs. Run `Solve`
-to refresh the authoritative convergence,
-eigenvalue, flux, power, and residual readouts; use `Reset` to restore the
-fixture. The Lab is a compact analytic sanity check for the spatial solver.
-Its project-authored coefficients and small synthetic topology are not a full
-CANDU benchmark or a plant model.
+to refresh the authoritative convergence, eigenvalue, flux, power, and
+residual readouts; use `Reset` to restore the fixture. Lab also displays the
+fixed `single-cell-reflective-nat-u-synthetic-v1` benchmark from Core: one
+fresh `NAT-U-SYNTHETIC` cell, six reflective faces, pack-bound coefficients,
+and the real one-watt `SpatialEigenSolve` result. The panel reports `k`, both
+group fluxes, power, residual, balance, and provenance. It reports an
+unavailable state when the authoritative Core result is unavailable. The
+project-authored coefficients and small synthetic topologies are not a full
+CANDU benchmark or a plant model. See the [solver math
+document](docs/physics/active-two-group-solver.md) for the equations and
+benchmark values.
 
 ## Active work plan
 

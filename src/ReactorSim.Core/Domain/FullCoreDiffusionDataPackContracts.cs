@@ -33,9 +33,8 @@ namespace ReactorSim.Core
     /// <summary>
     /// Versioned full-core two-group diffusion data. The pack is intentionally
     /// compact: one material table per material variant plus uniform geometry
-    /// conductances for the fixed CANDU-6 lattice. A future offline
-    /// DRAGON5/DONJON5 export can replace the JSON without changing the
-    /// runtime solver or either presentation host.
+    /// conductances for the fixed CANDU-6 lattice. The active embedded pack is
+    /// project-authored surrogate data consumed directly by the runtime solver.
     /// </summary>
     public sealed class FullCoreDiffusionDataPackV1
     {

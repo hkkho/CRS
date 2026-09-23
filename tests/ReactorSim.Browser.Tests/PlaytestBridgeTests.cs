@@ -28,6 +28,20 @@ namespace ReactorSim.Browser.Tests
             "Initialize",
             "Dispatch"
         };
+        private static readonly string[] ExpectedSingleCellEnergyGroups =
+        {
+            "fast",
+            "thermal"
+        };
+        private static readonly string[] ExpectedSingleCellReflectiveFaces =
+        {
+            "north",
+            "east",
+            "south",
+            "west",
+            "end-a",
+            "end-b"
+        };
 
         [Fact]
         public void CapabilitiesAndValidInitializationsExposeAuthoritativeContracts()
@@ -101,6 +115,44 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(JsonValueKind.Null, labDirection.ValueKind);
             Assert.True(labSnapshot.GetProperty("spatialSolve").GetProperty("isConverged").GetBoolean());
             Assert.True(labSnapshot.GetProperty("spatialSolve").GetProperty("hasUsableState").GetBoolean());
+
+            JsonElement singleCell = labSnapshot.GetProperty("singleCell");
+            Assert.Equal(
+                SingleCellReflectiveDiffusionFixtureV1.FixtureId,
+                singleCell.GetProperty("fixtureId").GetString());
+            Assert.Equal(
+                PracticeGameSessionFactory.DiffusionDataPackVersion,
+                singleCell.GetProperty("packVersion").GetString());
+            Assert.Equal(
+                "00000000-0000-0000-0000-000000000601",
+                singleCell.GetProperty("dataPackId").GetString());
+            Assert.Equal("synthetic-calibrated", singleCell.GetProperty("evidenceClass").GetString());
+            Assert.Contains("project-authored", singleCell.GetProperty("sourceProvenance").GetString());
+            Assert.Equal(
+                ExpectedSingleCellEnergyGroups,
+                singleCell.GetProperty("energyGroupOrder")
+                    .EnumerateArray()
+                    .Select(value => value.GetString())
+                    .ToArray());
+            Assert.Equal("NAT-U-SYNTHETIC", singleCell.GetProperty("materialId").GetString());
+            Assert.Equal("NAT-U-SYNTHETIC", singleCell.GetProperty("fuelTypeId").GetString());
+            Assert.Equal(0.0, singleCell.GetProperty("burnupJPerKgHm").GetDouble(), 12);
+            Assert.Equal(0.05, singleCell.GetProperty("volumeM3").GetDouble(), 12);
+            Assert.Equal(
+                ExpectedSingleCellReflectiveFaces,
+                singleCell.GetProperty("reflectiveFaces")
+                    .EnumerateArray()
+                    .Select(value => value.GetString())
+                    .ToArray());
+            Assert.Equal(1.0, singleCell.GetProperty("targetPowerWatts").GetDouble(), 12);
+            Assert.Equal(1.109625, singleCell.GetProperty("effectiveK").GetDouble(), 10);
+            Assert.Equal(1.0, singleCell.GetProperty("totalPowerWatts").GetDouble(), 10);
+            double group1Flux = singleCell.GetProperty("group1Flux")[0].GetDouble();
+            double group2Flux = singleCell.GetProperty("group2Flux")[0].GetDouble();
+            Assert.True(group1Flux > 0.0);
+            Assert.Equal(1.25, group2Flux / group1Flux, 10);
+            Assert.True(singleCell.GetProperty("spatialSolve").GetProperty("isConverged").GetBoolean());
+            Assert.True(singleCell.GetProperty("diagnostics").GetProperty("iterationCount").GetInt32() > 0);
         }
 
         [Fact]
@@ -534,7 +586,7 @@ namespace ReactorSim.Browser.Tests
 
             JsonElement lab = response.GetProperty("lab");
             JsonElement finalState = lab.GetProperty("spatialSolve").GetProperty("finalState");
-            Assert.Equal(0.6875, finalState.GetProperty("eigenvalue").GetDouble(), 1e-6);
+            Assert.Equal(1.109625, finalState.GetProperty("eigenvalue").GetDouble(), 1e-6);
             double group1Reference = finalState.GetProperty("group1Flux")[0].GetDouble();
             double group2Reference = finalState.GetProperty("group2Flux")[0].GetDouble();
             foreach (JsonElement flux in finalState.GetProperty("group1Flux").EnumerateArray())

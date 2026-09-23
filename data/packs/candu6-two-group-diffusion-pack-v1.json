@@ -10,8 +10,8 @@
   "model_id": "candu6-two-group-full-core-diffusion-v1",
   "solver_id": "spatial-eigen-jacobi-v1",
   "evidence_class": "synthetic-calibrated",
-  "source_provenance": "synthetic-calibrated; project-authored two-group infinite-cell surrogate; replace with offline DRAGON5 and DONJON5 export",
-  "source_toolchain": "DRAGON5/DONJON5 offline-admission-boundary-v1",
+  "source_provenance": "synthetic-calibrated; project-authored two-group infinite-cell surrogate used by the deterministic runtime; not validated CANDU plant data",
+  "source_toolchain": "project-authored deterministic pack-construction-v1",
   "transform_id": "two-group-m1-scalar-node-centred-v1",
   "geometry": {
     "node_volume_m3": 0.05,

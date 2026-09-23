@@ -102,23 +102,31 @@ Vercel-deployed Phaser 3 browser playtest  Retained/frozen Unity views and contr
 
 `ReactorSim.Core` owns deterministic state transitions, bundle inventory,
 burnup, topology, regulating-system contracts, and spatial solving.
+The exact active finite-volume operator, source iteration, normalization, and
+convergence metrics are documented in
+[`physics/active-two-group-solver.md`](physics/active-two-group-solver.md).
 `ReactorSim.Game` owns reusable session construction, player commands, and
 immutable presentation projections. Unity and Phaser format those projections
 and dispatch input; neither presentation layer duplicates simulation rules.
 
 The active runtime uses the project-authored deterministic two-group pack.
-DRAGON5 and DONJON5 remain optional offline reference tools; runtime code never
-launches either executable, and no external validation is required for the
-active path. Preserve units, energy-group ordering, topology identity, pack
-checksums, source identity, and licensing boundaries when physics data changes.
+The pack is synthetic-calibrated surrogate data and is not validated CANDU
+data or a plant prediction. DRAGON5 and DONJON5 remain optional offline
+reference context; runtime code never launches either executable, and no
+external validation pack is required for the active path. Preserve units,
+energy-group ordering, topology identity, pack checksums, source identity, and
+licensing boundaries when physics data changes.
 
 ## Current physics and provenance
 
 The practice session loads the project-authored
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is an
-infinite-cell-calibrated surrogate with explicit provenance, not a plant rating
-and not an external DRAGON5/DONJON5 result. This pack is the active simulation
-and acceptance path; the game does not depend on an external validated source.
+`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is a
+synthetic-calibrated infinite-cell surrogate with explicit provenance, not
+validated CANDU data, a plant rating, or an external DRAGON5/DONJON5 result.
+This pack is the active simulation and acceptance path; the game does not
+depend on an external validated source. The fresh NAT-U-SYNTHETIC row and the
+finite-volume/eigen equations are specified in the
+[active solver math document](physics/active-two-group-solver.md).
 
 The shared two-group full-core path currently:
 
@@ -210,12 +218,24 @@ two-group diffusion cells per channel. The Lab view makes each cell's
 fuel/nonfuel state and reflective faces visible and editable. It sends
 `configure-cell` for those changes and `solve` to run the authoritative spatial
 solver and show its convergence, eigenvalue, flux, power, and residual
-diagnostics. `Reset` restores the deterministic fixture; a Lab
-refuel uses the explicit synthetic fresh-fuel variant and is accepted only
-when the replacement solve is usable. Treat this as a compact analytic solver
-check for topology, material binding, and boundary handling. It is not a full
-CANDU benchmark, a plant prediction, or a substitute for the 380-channel Play
-session.
+diagnostics. `Reset` restores the deterministic fixture; a Lab refuel uses the
+explicit synthetic fresh-fuel variant and is accepted only when the
+replacement solve is usable.
+
+Lab also includes the fixed Core
+`single-cell-reflective-nat-u-synthetic-v1` readout: a fresh
+`NAT-U-SYNTHETIC` row from the embedded pack, one node, six explicit
+reflective faces, zero reflective leakage conductance, and a real one-watt
+`SpatialEigenSolve`. The panel exposes its pack provenance, cross-sections,
+volume, `k`, group fluxes, power, fission production, outer iteration count,
+residual, and power balance. The result is copied from Core; the browser does
+not compute a replacement value. The benchmark converges at
+`k = 1.109625`, `Phi_1 = 2.72852855714132e12 n/m^2/s`,
+`Phi_2 = 3.41066069642665e12 n/m^2/s`, and `1 W`. The exact equations and
+interpretation boundary are in [active two-group solver math](physics/active-two-group-solver.md).
+These project-authored fixtures are compact solver checks for topology,
+material binding, and boundary handling. They are not a full CANDU benchmark,
+a plant prediction, or a substitute for the 380-channel Play session.
 
 For a production-shaped browser build, stage the bridge from the repository
 root and run:

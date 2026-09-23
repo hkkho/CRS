@@ -12,16 +12,17 @@ namespace ReactorSim.Browser
 {
     internal sealed class LabSolverOptions
     {
-        public const int DefaultMaximumIterations = 512;
-        public const int DefaultInnerMaximumIterations = 512;
+        // These are the active embedded-pack solver controls.  The one-cell
+        // fixture below has its own tighter convergence policy in Core.
+        public const int DefaultMaximumIterations = 300;
+        public const int DefaultInnerMaximumIterations = 64;
         public const double DefaultTargetPowerW = 0.4;
         public const double DefaultInitialEigenvalue = 1.0;
-        public const double DefaultKAbsoluteTolerance = 0.01;
-        public const double DefaultKRelativeTolerance = 0.01;
-        public const double DefaultResidualTolerance = 1e-12;
-        public const double DefaultSourceShapeTolerance = 1e-12;
+        public const double DefaultKAbsoluteTolerance = 1e-4;
+        public const double DefaultKRelativeTolerance = 1e-3;
+        public const double DefaultResidualTolerance = 2e-3;
+        public const double DefaultSourceShapeTolerance = 1e-3;
         public const double DefaultPowerBalanceTolerance = 1e-12;
-        public const double DefaultEdgeConductanceM2 = 0.5;
 
         public int MaximumIterations { get; init; } = DefaultMaximumIterations;
 
@@ -41,8 +42,6 @@ namespace ReactorSim.Browser
 
         public double PowerBalanceTolerance { get; init; } = DefaultPowerBalanceTolerance;
 
-        public double EdgeConductanceM2 { get; init; } = DefaultEdgeConductanceM2;
-
         public string ToCanonicalString()
         {
             return string.Join(
@@ -55,8 +54,7 @@ namespace ReactorSim.Browser
                 KRelativeTolerance.ToString("R", CultureInfo.InvariantCulture),
                 ResidualTolerance.ToString("R", CultureInfo.InvariantCulture),
                 SourceShapeTolerance.ToString("R", CultureInfo.InvariantCulture),
-                PowerBalanceTolerance.ToString("R", CultureInfo.InvariantCulture),
-                EdgeConductanceM2.ToString("R", CultureInfo.InvariantCulture));
+                PowerBalanceTolerance.ToString("R", CultureInfo.InvariantCulture));
         }
     }
 
@@ -92,6 +90,118 @@ namespace ReactorSim.Browser
     }
 
     public sealed class LabSpatialDiagnosticsSnapshotDto
+    {
+        public int IterationCount { get; set; }
+
+        public double? EigenvalueChangeAbsolute { get; set; }
+
+        public double? EigenvalueChangeRelative { get; set; }
+
+        public double? ResidualAbsoluteInfinity { get; set; }
+
+        public double? ResidualRelativeInfinity { get; set; }
+
+        public double? SourceShapeChangeInfinity { get; set; }
+
+        public double? PowerBalanceRelative { get; set; }
+
+        public string InnerSolveStatus { get; set; } = string.Empty;
+
+        public string ConvergenceReason { get; set; } = string.Empty;
+
+        public List<BridgeDiagnosticDto> FailureDiagnostics { get; set; } =
+            new List<BridgeDiagnosticDto>();
+
+        public int InvalidCoefficientCount { get; set; }
+
+        public int NegativeFluxCount { get; set; }
+
+        public int NonFiniteValueCount { get; set; }
+
+        public int FailedInnerSolveCount { get; set; }
+
+        public int RejectedUpscatterCount { get; set; }
+
+        public int ClampCount { get; set; }
+
+        public int ForbiddenClampCount { get; set; }
+    }
+
+    /// <summary>
+    /// Authoritative one-cell composition result.  Every value in this DTO is
+    /// copied from SingleCellReflectiveDiffusionFixtureV1 and its real
+    /// SpatialEigenSolve result; the browser does not reconstruct the result.
+    /// </summary>
+    public sealed class LabSingleCellSnapshotDto
+    {
+        public string FixtureId { get; set; } = string.Empty;
+
+        public string PackVersion { get; set; } = string.Empty;
+
+        public string DataPackId { get; set; } = string.Empty;
+
+        public string EvidenceClass { get; set; } = string.Empty;
+
+        public string SourceProvenance { get; set; } = string.Empty;
+
+        public List<string> EnergyGroupOrder { get; set; } = new List<string>();
+
+        public string MaterialId { get; set; } = string.Empty;
+
+        public string FuelTypeId { get; set; } = string.Empty;
+
+        public double BurnupJPerKgHm { get; set; }
+
+        public double VolumeM3 { get; set; }
+
+        public List<string> ReflectiveFaces { get; set; } = new List<string>();
+
+        public double TargetPowerWatts { get; set; }
+
+        public LabSingleCellCoefficientsSnapshotDto Coefficients { get; set; } =
+            new LabSingleCellCoefficientsSnapshotDto();
+
+        public double EffectiveK { get; set; }
+
+        public double TotalPowerWatts { get; set; }
+
+        public double FissionProductionRate { get; set; }
+
+        public List<double> Group1Flux { get; set; } = new List<double>();
+
+        public List<double> Group2Flux { get; set; } = new List<double>();
+
+        public LabSpatialSolveSnapshotDto SpatialSolve { get; set; } =
+            new LabSpatialSolveSnapshotDto();
+
+        public LabSingleCellDiagnosticsSnapshotDto Diagnostics { get; set; } =
+            new LabSingleCellDiagnosticsSnapshotDto();
+    }
+
+    public sealed class LabSingleCellCoefficientsSnapshotDto
+    {
+        public double AbsorptionGroup1PerM { get; set; }
+
+        public double AbsorptionGroup2PerM { get; set; }
+
+        public double FissionGroup1PerM { get; set; }
+
+        public double FissionGroup2PerM { get; set; }
+
+        public double NuFissionGroup1PerM { get; set; }
+
+        public double NuFissionGroup2PerM { get; set; }
+
+        public double DownscatterGroup1To2PerM { get; set; }
+
+        public double ChiGroup1 { get; set; }
+
+        public double ChiGroup2 { get; set; }
+
+        public double EnergyPerFissionJ { get; set; }
+    }
+
+    public sealed class LabSingleCellDiagnosticsSnapshotDto
     {
         public int IterationCount { get; set; }
 
@@ -214,6 +324,9 @@ namespace ReactorSim.Browser
 
         public LabCoreSnapshotDto Core { get; set; } = new LabCoreSnapshotDto();
 
+        public LabSingleCellSnapshotDto SingleCell { get; set; } =
+            new LabSingleCellSnapshotDto();
+
         public LabSpatialSolveSnapshotDto SpatialSolve { get; set; } =
             new LabSpatialSolveSnapshotDto();
     }
@@ -304,6 +417,8 @@ namespace ReactorSim.Browser
         public const string FixtureId = "lab-2x8-synthetic-v1";
         public const string OldFuelTypeId = "LAB-FUEL-SYNTHETIC";
         public const string FreshFuelTypeId = "LAB-FRESH-SYNTHETIC";
+        private const string PackFuelMaterialVariantId =
+            SingleCellReflectiveDiffusionFixtureV1.MaterialVariant;
         public const string FuelMaterialId = "fuel";
         public const string ModeratorMaterialId = "moderator";
         public const ushort RefuelShiftCount = 4;
@@ -317,6 +432,8 @@ namespace ReactorSim.Browser
         private IReadOnlyList<LabCellConfiguration> _cellConfigurations;
         private BundleInventory _inventory;
         private SpatialSolveResult _spatialSolve;
+        private readonly SingleCellReflectiveDiffusionFixtureV1 _singleCellFixture;
+        private SpatialSolveResult _singleCellSolve;
         private LabSolverOptions _options;
         private uint _freshBundlesAvailable;
         private uint _refuellingOperationCount;
@@ -331,6 +448,8 @@ namespace ReactorSim.Browser
             IReadOnlyList<LabCellConfiguration> cellConfigurations,
             BundleInventory inventory,
             SpatialSolveResult spatialSolve,
+            SingleCellReflectiveDiffusionFixtureV1 singleCellFixture,
+            SpatialSolveResult singleCellSolve,
             LabSolverOptions options)
         {
             _topology = topology;
@@ -338,6 +457,8 @@ namespace ReactorSim.Browser
             _cellConfigurations = cellConfigurations;
             _inventory = inventory;
             _spatialSolve = spatialSolve;
+            _singleCellFixture = singleCellFixture;
+            _singleCellSolve = singleCellSolve;
             _options = options;
             _freshBundlesAvailable = InitialFreshBundles;
         }
@@ -366,6 +487,7 @@ namespace ReactorSim.Browser
             AppendCellConfigurationCanonical(canonical, _cellConfigurations);
             AppendInventoryCanonical(canonical, _inventory);
             AppendSolveCanonical(canonical, _spatialSolve);
+            AppendSolveCanonical(canonical, _singleCellSolve);
             return PlaytestProtocolV1.ComputeDigest(canonical.ToString());
         }
 
@@ -381,6 +503,7 @@ namespace ReactorSim.Browser
                 LastRefuellingDirectionId = _lastRefuellingDirectionId,
                 LastRefuellingShiftCount = _lastRefuellingShiftCount,
                 Core = CreateCoreSnapshot(),
+                SingleCell = CreateSingleCellSnapshot(_singleCellFixture, _singleCellSolve),
                 SpatialSolve = CreateSpatialSolveSnapshot(_spatialSolve)
             };
         }
@@ -409,6 +532,46 @@ namespace ReactorSim.Browser
             out LabPlaytestSession? session,
             out BridgeDiagnosticDto? failure)
         {
+            ContractValidationResult<FullCoreDiffusionDataPackV1> dataPackResult =
+                FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6();
+            if (!dataPackResult.IsValid)
+            {
+                session = null;
+                failure = PlaytestProtocolV1.Diagnostic(dataPackResult.FirstDiagnostic);
+                return false;
+            }
+
+            ContractValidationResult<SingleCellReflectiveDiffusionFixtureV1> singleCellFixtureResult =
+                SingleCellReflectiveDiffusionFixtureV1.TryCreate(dataPackResult.Value);
+            if (!singleCellFixtureResult.IsValid)
+            {
+                session = null;
+                failure = PlaytestProtocolV1.Diagnostic(singleCellFixtureResult.FirstDiagnostic);
+                return false;
+            }
+
+            ContractValidationResult<SpatialSolveResult> singleCellSolveResult =
+                singleCellFixtureResult.Value.TrySolve();
+            if (!singleCellSolveResult.IsValid)
+            {
+                session = null;
+                failure = PlaytestProtocolV1.Diagnostic(singleCellSolveResult.FirstDiagnostic);
+                return false;
+            }
+
+            SpatialSolveResult singleCellSolve = singleCellSolveResult.Value;
+            if (!singleCellSolve.HasUsableState)
+            {
+                session = null;
+                failure = singleCellSolve.Diagnostics.FailureDiagnostic == null
+                    ? PlaytestProtocolV1.Diagnostic(
+                        "SingleCell.Solve.Nonconverged",
+                        "singleCell",
+                        "The one-cell reflective spatial solve did not converge.")
+                    : PlaytestProtocolV1.Diagnostic(singleCellSolve.Diagnostics.FailureDiagnostic);
+                return false;
+            }
+
             CoreTopology topology = CreateTopology();
             ContractValidationResult<SpatialStencil> stencilResult = SpatialStencil.TryCreate(topology);
             if (!stencilResult.IsValid)
@@ -433,6 +596,7 @@ namespace ReactorSim.Browser
             LabSolveAttempt solve = TrySolve(
                 stencil,
                 inventoryResult.Value,
+                dataPackResult.Value,
                 options,
                 cellConfigurations);
             if (!solve.IsSuccessful)
@@ -451,6 +615,8 @@ namespace ReactorSim.Browser
                 cellConfigurations,
                 inventoryResult.Value,
                 solve.Result!,
+                singleCellFixtureResult.Value,
+                singleCellSolve,
                 options);
             failure = null;
             return true;
@@ -459,6 +625,7 @@ namespace ReactorSim.Browser
         private static LabSolveAttempt TrySolve(
             SpatialStencil stencil,
             BundleInventory inventory,
+            FullCoreDiffusionDataPackV1 dataPack,
             LabSolverOptions options,
             IReadOnlyList<LabCellConfiguration> cellConfigurations)
         {
@@ -467,7 +634,7 @@ namespace ReactorSim.Browser
                 CreateCoefficients(
                     stencil,
                     inventory,
-                    options,
+                    dataPack,
                     cellConfigurations,
                     out coefficients);
             if (!coefficientsResult.IsValid)
@@ -577,6 +744,7 @@ namespace ReactorSim.Browser
             LabSolveAttempt solve = TrySolve(
                 _stencil,
                 _inventory,
+                _singleCellFixture.DataPack,
                 requestedOptions,
                 _cellConfigurations);
             if (!solve.IsSuccessful)
@@ -588,8 +756,24 @@ namespace ReactorSim.Browser
                         "The Lab spatial solve was rejected without changing Lab state."));
             }
 
+            ContractValidationResult<SpatialSolveResult> singleCellSolve =
+                _singleCellFixture.TrySolve();
+            if (!singleCellSolve.IsValid || !singleCellSolve.Value.HasUsableState)
+            {
+                BridgeDiagnosticDto diagnostic = !singleCellSolve.IsValid
+                    ? PlaytestProtocolV1.Diagnostic(singleCellSolve.FirstDiagnostic)
+                    : singleCellSolve.Value.Diagnostics.FailureDiagnostic == null
+                        ? PlaytestProtocolV1.Diagnostic(
+                            "SingleCell.Solve.Nonconverged",
+                            "singleCell",
+                            "The one-cell reflective spatial solve did not converge.")
+                        : PlaytestProtocolV1.Diagnostic(singleCellSolve.Value.Diagnostics.FailureDiagnostic);
+                return BridgeCommandExecution.Failure(diagnostic);
+            }
+
             _options = requestedOptions;
             _spatialSolve = solve.Result!;
+            _singleCellSolve = singleCellSolve.Value;
             return BridgeCommandExecution.Success(
                 "Lab spatial solve converged.",
                 CreateSpatialSolveSnapshot(_spatialSolve));
@@ -627,6 +811,7 @@ namespace ReactorSim.Browser
             LabSolveAttempt solve = TrySolve(
                 stencilResult.Value,
                 _inventory,
+                _singleCellFixture.DataPack,
                 _options,
                 candidateConfigurations);
             if (!solve.IsSuccessful)
@@ -763,6 +948,7 @@ namespace ReactorSim.Browser
             LabSolveAttempt solve = TrySolve(
                 _stencil,
                 transition.Value.ResultingInventory,
+                _singleCellFixture.DataPack,
                 _options,
                 _cellConfigurations);
             if (!solve.IsSuccessful)
@@ -1211,6 +1397,79 @@ namespace ReactorSim.Browser
             };
         }
 
+        private static LabSingleCellSnapshotDto CreateSingleCellSnapshot(
+            SingleCellReflectiveDiffusionFixtureV1 fixture,
+            SpatialSolveResult solve)
+        {
+            SpatialNodeCoefficients node = fixture.Coefficients.Nodes[0];
+            BurnupCoefficientValuesV1 values = fixture.MaterialLookup.Coefficients;
+            LabSpatialSolveSnapshotDto spatialSolve = CreateSpatialSolveSnapshot(solve);
+            SpatialEigenIterationState? finalState = solve.FinalState;
+            SpatialSolveDiagnostics diagnostics = solve.Diagnostics;
+            var failureDiagnostics = new List<BridgeDiagnosticDto>();
+            if (diagnostics.FailureDiagnostic != null)
+            {
+                failureDiagnostics.Add(PlaytestProtocolV1.Diagnostic(diagnostics.FailureDiagnostic));
+            }
+
+            return new LabSingleCellSnapshotDto
+            {
+                FixtureId = SingleCellReflectiveDiffusionFixtureV1.FixtureId,
+                PackVersion = fixture.DataPack.Descriptor.DataPackVersion,
+                DataPackId = fixture.DataPack.Descriptor.DataPackId.ToString(),
+                EvidenceClass = fixture.DataPack.EvidenceClass,
+                SourceProvenance = fixture.DataPack.SourceProvenance,
+                EnergyGroupOrder = fixture.DataPack.EnergyGroupOrder.ToList(),
+                MaterialId = fixture.MaterialVariantId.Value,
+                FuelTypeId = fixture.MaterialVariantId.Value,
+                BurnupJPerKgHm = fixture.FreshBurnupJPerKgHm,
+                VolumeM3 = node.VolumeM3,
+                ReflectiveFaces = fixture.Stencil.Nodes[0].BoundaryTerms
+                    .Select(boundary => FaceId(boundary.Face))
+                    .ToList(),
+                TargetPowerWatts = SingleCellReflectiveDiffusionFixtureV1.TargetPowerWatts,
+                Coefficients = new LabSingleCellCoefficientsSnapshotDto
+                {
+                    AbsorptionGroup1PerM = values.AbsorptionGroup1PerM,
+                    AbsorptionGroup2PerM = values.AbsorptionGroup2PerM,
+                    FissionGroup1PerM = values.FissionGroup1PerM,
+                    FissionGroup2PerM = values.FissionGroup2PerM,
+                    NuFissionGroup1PerM = values.NuFissionGroup1PerM,
+                    NuFissionGroup2PerM = values.NuFissionGroup2PerM,
+                    DownscatterGroup1To2PerM = values.DownscatterGroup1To2PerM,
+                    ChiGroup1 = values.ChiGroup1,
+                    ChiGroup2 = values.ChiGroup2,
+                    EnergyPerFissionJ = values.EnergyPerFissionJ
+                },
+                EffectiveK = finalState?.Eigenvalue ?? 0.0,
+                TotalPowerWatts = finalState?.TotalPowerW ?? 0.0,
+                FissionProductionRate = finalState?.FissionProductionRate ?? 0.0,
+                Group1Flux = finalState?.Group1Flux.ToList() ?? new List<double>(),
+                Group2Flux = finalState?.Group2Flux.ToList() ?? new List<double>(),
+                SpatialSolve = spatialSolve,
+                Diagnostics = new LabSingleCellDiagnosticsSnapshotDto
+                {
+                    IterationCount = diagnostics.IterationCount,
+                    EigenvalueChangeAbsolute = diagnostics.EigenvalueChangeAbsolute,
+                    EigenvalueChangeRelative = diagnostics.EigenvalueChangeRelative,
+                    ResidualAbsoluteInfinity = diagnostics.ResidualAbsoluteInfinity,
+                    ResidualRelativeInfinity = diagnostics.ResidualRelativeInfinity,
+                    SourceShapeChangeInfinity = diagnostics.SourceShapeChangeInfinity,
+                    PowerBalanceRelative = diagnostics.PowerBalanceRelative,
+                    InnerSolveStatus = PlaytestProtocolV1.EnumId(diagnostics.InnerSolveStatus),
+                    ConvergenceReason = diagnostics.ConvergenceReason,
+                    FailureDiagnostics = failureDiagnostics,
+                    InvalidCoefficientCount = diagnostics.InvalidCoefficientCount,
+                    NegativeFluxCount = diagnostics.NegativeFluxCount,
+                    NonFiniteValueCount = diagnostics.NonFiniteValueCount,
+                    FailedInnerSolveCount = diagnostics.FailedInnerSolveCount,
+                    RejectedUpscatterCount = diagnostics.RejectedUpscatterCount,
+                    ClampCount = diagnostics.ClampCount,
+                    ForbiddenClampCount = diagnostics.ForbiddenClampCount
+                }
+            };
+        }
+
         private static bool AreFinite(SpatialEigenIterationState state)
         {
             if (!double.IsFinite(state.Eigenvalue) ||
@@ -1227,10 +1486,19 @@ namespace ReactorSim.Browser
         private static ContractValidationResult<SpatialCoefficientSet> CreateCoefficients(
             SpatialStencil stencil,
             BundleInventory inventory,
-            LabSolverOptions options,
+            FullCoreDiffusionDataPackV1 dataPack,
             IReadOnlyList<LabCellConfiguration> cellConfigurations,
             out SpatialCoefficientSet? coefficients)
         {
+            if (dataPack == null)
+            {
+                coefficients = null;
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "Lab.Solve.DataPack.Missing",
+                    "dataPack",
+                    "The Lab solver requires the active embedded diffusion data pack.");
+            }
+
             if (cellConfigurations.Count != ChannelCount * BundlePositionCount)
             {
                 coefficients = null;
@@ -1254,11 +1522,49 @@ namespace ReactorSim.Browser
                 }
 
                 LabCellConfiguration configuration = cellConfigurations[node.FlatIndex];
-                bool fresh = string.Equals(
-                    bundle.MaterialVariantId.Value,
-                    FreshFuelTypeId,
-                    StringComparison.Ordinal);
-                nodes.Add(CreateNodeCoefficients(node.Node, configuration.HasFuel, fresh));
+                if (!configuration.HasFuel)
+                {
+                    nodes.Add(CreateNodeCoefficients(
+                        node.Node,
+                        dataPack.NodeVolumeM3,
+                        hasFuel: false,
+                        values: null));
+                    continue;
+                }
+
+                string materialVariantId = ResolvePackMaterialVariantId(
+                    bundle.MaterialVariantId.Value);
+                BurnupCoefficientTableV1? table = dataPack.CoefficientTables
+                    .SingleOrDefault(candidate => string.Equals(
+                        candidate.MaterialVariantId.Value,
+                        materialVariantId,
+                        StringComparison.Ordinal));
+                if (table == null)
+                {
+                    coefficients = null;
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        "Lab.Solve.MaterialTable.Missing",
+                        "bundle[" + bundle.BundleId + "].material_variant_id",
+                        "The active diffusion pack has no material table for " +
+                        materialVariantId + ".");
+                }
+
+                ContractValidationResult<BurnupCoefficientLookupResultV1> lookup =
+                    table.TryLookup(bundle.CurrentBurnupJPerKgHm);
+                if (!lookup.IsValid)
+                {
+                    coefficients = null;
+                    return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                        lookup.FirstDiagnostic.Code,
+                        "bundle[" + bundle.BundleId + "]." + lookup.FirstDiagnostic.Path,
+                        lookup.FirstDiagnostic.Message);
+                }
+
+                nodes.Add(CreateNodeCoefficients(
+                    node.Node,
+                    dataPack.NodeVolumeM3,
+                    hasFuel: true,
+                    values: lookup.Value.Coefficients));
             }
 
             var edges = new List<SpatialEdgeConductance>();
@@ -1276,11 +1582,14 @@ namespace ReactorSim.Browser
                     string key = first + "|" + second;
                     if (seenEdges.Add(key))
                     {
+                        TwoGroupConductanceV1 conductance = IsAxial(neighbor.Direction)
+                            ? dataPack.AxialConductance
+                            : dataPack.TransverseConductance;
                         edges.Add(new SpatialEdgeConductance(
                             first,
                             second,
-                            options.EdgeConductanceM2,
-                            options.EdgeConductanceM2));
+                            conductance.Group1M2,
+                            conductance.Group2M2));
                     }
                 }
             }
@@ -1290,11 +1599,22 @@ namespace ReactorSim.Browser
             {
                 foreach (SpatialBoundaryTerm boundary in node.BoundaryTerms)
                 {
-                    boundaries.Add(new SpatialBoundaryConductance(
-                        node.Node,
-                        boundary.Face,
-                        0.0,
-                        0.0));
+                    if (boundary.Classification == BoundaryClassification.Reflective)
+                    {
+                        boundaries.Add(new SpatialBoundaryConductance(
+                            node.Node,
+                            boundary.Face,
+                            0.0,
+                            0.0));
+                    }
+                    else
+                    {
+                        boundaries.Add(new SpatialBoundaryConductance(
+                            node.Node,
+                            boundary.Face,
+                            dataPack.VacuumBoundaryConductance.Group1M2,
+                            dataPack.VacuumBoundaryConductance.Group2M2));
+                    }
                 }
             }
 
@@ -1309,8 +1629,9 @@ namespace ReactorSim.Browser
 
         private static SpatialNodeCoefficients CreateNodeCoefficients(
             NodeKey node,
+            double volumeM3,
             bool hasFuel,
-            bool fresh)
+            BurnupCoefficientValuesV1? values)
         {
             if (!hasFuel)
             {
@@ -1319,7 +1640,7 @@ namespace ReactorSim.Browser
                 // production or power response of its own.
                 return new SpatialNodeCoefficients(
                     node,
-                    1.0,
+                    volumeM3,
                     0.025,
                     0.012,
                     0.080,
@@ -1332,23 +1653,43 @@ namespace ReactorSim.Browser
                     1.0);
             }
 
-            double absorptionGroup1 = fresh ? 0.31 : 0.30;
-            double absorptionGroup2 = fresh ? 0.205 : 0.20;
-            double fissionGroup1 = fresh ? 0.105 : 0.10;
-            double nuFissionGroup1 = fresh ? 0.158 : 0.15;
+            if (values == null)
+            {
+                throw new InvalidOperationException(
+                    "A fuel Lab node requires a validated pack coefficient row.");
+            }
+
             return new SpatialNodeCoefficients(
                 node,
-                1.0,
-                absorptionGroup1,
-                absorptionGroup2,
-                0.1,
-                fissionGroup1,
-                0.1,
-                nuFissionGroup1,
-                0.25,
-                1.0,
-                0.0,
-                1.0);
+                volumeM3,
+                values.AbsorptionGroup1PerM,
+                values.AbsorptionGroup2PerM,
+                values.DownscatterGroup1To2PerM,
+                values.FissionGroup1PerM,
+                values.FissionGroup2PerM,
+                values.NuFissionGroup1PerM,
+                values.NuFissionGroup2PerM,
+                values.ChiGroup1,
+                values.ChiGroup2,
+                values.EnergyPerFissionJ);
+        }
+
+        private static string ResolvePackMaterialVariantId(string materialVariantId)
+        {
+            if (string.Equals(materialVariantId, OldFuelTypeId, StringComparison.Ordinal) ||
+                string.Equals(materialVariantId, FreshFuelTypeId, StringComparison.Ordinal) ||
+                string.Equals(materialVariantId, PackFuelMaterialVariantId, StringComparison.Ordinal))
+            {
+                return PackFuelMaterialVariantId;
+            }
+
+            return materialVariantId;
+        }
+
+        private static bool IsAxial(NeighborDirection direction)
+        {
+            return direction == NeighborDirection.TowardEndA ||
+                   direction == NeighborDirection.TowardEndB;
         }
 
         private static ReadOnlyCollection<LabCellConfiguration> CreateDefaultCellConfigurations()
@@ -1658,7 +1999,6 @@ namespace ReactorSim.Browser
             double residualTolerance = baseline.ResidualTolerance;
             double sourceShapeTolerance = baseline.SourceShapeTolerance;
             double powerBalanceTolerance = baseline.PowerBalanceTolerance;
-            double edgeConductanceM2 = baseline.EdgeConductanceM2;
 
             BridgeDiagnosticDto? diagnostic = null;
             diagnostic ??= TryReadPositiveInt(
@@ -1706,11 +2046,6 @@ namespace ReactorSim.Browser
                 "powerBalanceTolerance",
                 "power_balance_tolerance",
                 ref powerBalanceTolerance);
-            diagnostic ??= TryReadNonnegativeFinite(
-                solver,
-                "edgeConductanceM2",
-                "edge_conductance_m2",
-                ref edgeConductanceM2);
             if (diagnostic != null)
             {
                 return diagnostic;
@@ -1726,8 +2061,7 @@ namespace ReactorSim.Browser
                 KRelativeTolerance = kRelativeTolerance,
                 ResidualTolerance = residualTolerance,
                 SourceShapeTolerance = sourceShapeTolerance,
-                PowerBalanceTolerance = powerBalanceTolerance,
-                EdgeConductanceM2 = edgeConductanceM2
+                PowerBalanceTolerance = powerBalanceTolerance
             };
             return null;
         }

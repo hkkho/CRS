@@ -276,6 +276,77 @@ export interface CanduLabSpatialSolveSnapshot {
   };
 }
 
+/**
+ * The material row used by the authoritative one-cell benchmark. These are
+ * macroscopic two-group coefficients in SI units; the browser only displays
+ * the row returned by Core and never computes a replacement row.
+ */
+export interface CanduLabSingleCellCoefficientSnapshot {
+  absorptionGroup1PerM: number;
+  absorptionGroup2PerM: number;
+  fissionGroup1PerM: number;
+  fissionGroup2PerM: number;
+  nuFissionGroup1PerM: number;
+  nuFissionGroup2PerM: number;
+  downscatterGroup1To2PerM: number;
+  chiGroup1: number;
+  chiGroup2: number;
+  energyPerFissionJ: number;
+}
+
+export interface CanduLabSingleCellDiagnosticsSnapshot {
+  iterationCount: number;
+  eigenvalueChangeAbsolute: number | null;
+  eigenvalueChangeRelative: number | null;
+  residualAbsoluteInfinity: number | null;
+  residualRelativeInfinity: number | null;
+  sourceShapeChangeInfinity: number | null;
+  powerBalanceRelative: number | null;
+  innerSolveStatus: string;
+  convergenceReason: string;
+  failureDiagnostics: Array<{
+    code: string;
+    path: string;
+    message: string;
+  }>;
+  invalidCoefficientCount: number;
+  negativeFluxCount: number;
+  nonFiniteValueCount: number;
+  failedInnerSolveCount: number;
+  rejectedUpscatterCount: number;
+  clampCount: number;
+  forbiddenClampCount: number;
+}
+
+/**
+ * Authoritative fresh-fuel, all-reflective one-cell result. The group flux
+ * arrays contain one value for this one-node solve. `spatialSolve` is retained
+ * beside the compact result so the Lab can identify the same Core
+ * solver/diagnostics used by the 2 × 8 fixture.
+ */
+export interface CanduLabSingleCellSnapshot {
+  fixtureId: string;
+  packVersion: string;
+  dataPackId: string;
+  evidenceClass: string;
+  sourceProvenance: string;
+  energyGroupOrder: string[];
+  materialId: string;
+  fuelTypeId: string;
+  burnupJPerKgHm: number;
+  volumeM3: number;
+  reflectiveFaces: LabBoundaryFace[];
+  targetPowerWatts: number;
+  coefficients: CanduLabSingleCellCoefficientSnapshot;
+  effectiveK: number;
+  group1Flux: number[];
+  group2Flux: number[];
+  totalPowerWatts: number;
+  fissionProductionRate: number;
+  spatialSolve: CanduLabSpatialSolveSnapshot;
+  diagnostics: CanduLabSingleCellDiagnosticsSnapshot;
+}
+
 export interface CanduLabCellSnapshot {
   /** Present on flat core cell lists; omitted when the cell is nested in a channel. */
   channelIndex?: number;
@@ -322,6 +393,7 @@ export interface CanduLabSnapshot {
   lastRefuellingShiftCount: number;
   core: CanduLabCoreSnapshot;
   spatialSolve: CanduLabSpatialSolveSnapshot;
+  singleCell?: CanduLabSingleCellSnapshot;
 }
 
 export interface CanduSnapshot {
@@ -1171,6 +1243,140 @@ function isCanduLabSpatialSolveSnapshot(value: unknown): value is CanduLabSpatia
     ].every((key) => !hasOwn(diagnostics, key) || diagnostics[key] === null || isFiniteNumber(diagnostics[key]));
 }
 
+function isCanduLabSingleCellCoefficientSnapshot(
+  value: unknown,
+): value is CanduLabSingleCellCoefficientSnapshot {
+  return isRecord(value) && hasOwnProperties(value, [
+    "absorptionGroup1PerM",
+    "absorptionGroup2PerM",
+    "fissionGroup1PerM",
+    "fissionGroup2PerM",
+    "nuFissionGroup1PerM",
+    "nuFissionGroup2PerM",
+    "downscatterGroup1To2PerM",
+    "chiGroup1",
+    "chiGroup2",
+    "energyPerFissionJ",
+  ]) && hasFiniteNumberFields(value, [
+    "absorptionGroup1PerM",
+    "absorptionGroup2PerM",
+    "fissionGroup1PerM",
+    "fissionGroup2PerM",
+    "nuFissionGroup1PerM",
+    "nuFissionGroup2PerM",
+    "downscatterGroup1To2PerM",
+    "chiGroup1",
+    "chiGroup2",
+    "energyPerFissionJ",
+  ]);
+}
+
+function isCanduLabSingleCellDiagnosticsSnapshot(
+  value: unknown,
+): value is CanduLabSingleCellDiagnosticsSnapshot {
+  return isRecord(value) && hasOwnProperties(value, [
+    "iterationCount",
+    "eigenvalueChangeAbsolute",
+    "eigenvalueChangeRelative",
+    "residualAbsoluteInfinity",
+    "residualRelativeInfinity",
+    "sourceShapeChangeInfinity",
+    "powerBalanceRelative",
+    "innerSolveStatus",
+    "convergenceReason",
+    "failureDiagnostics",
+    "invalidCoefficientCount",
+    "negativeFluxCount",
+    "nonFiniteValueCount",
+    "failedInnerSolveCount",
+    "rejectedUpscatterCount",
+    "clampCount",
+    "forbiddenClampCount",
+  ]) && isNonNegativeInteger(value.iterationCount) &&
+    (value.eigenvalueChangeAbsolute === null || isFiniteNumber(value.eigenvalueChangeAbsolute)) &&
+    (value.eigenvalueChangeRelative === null || isFiniteNumber(value.eigenvalueChangeRelative)) &&
+    (value.residualAbsoluteInfinity === null || isFiniteNumber(value.residualAbsoluteInfinity)) &&
+    (value.residualRelativeInfinity === null || isFiniteNumber(value.residualRelativeInfinity)) &&
+    (value.sourceShapeChangeInfinity === null || isFiniteNumber(value.sourceShapeChangeInfinity)) &&
+    (value.powerBalanceRelative === null || isFiniteNumber(value.powerBalanceRelative)) &&
+    isString(value.innerSolveStatus) && isString(value.convergenceReason) &&
+    Array.isArray(value.failureDiagnostics) &&
+    value.failureDiagnostics.every((diagnostic) => isRecord(diagnostic) &&
+      hasOwnProperties(diagnostic, ["code", "path", "message"]) &&
+      hasStringFields(diagnostic, ["code", "path", "message"])) &&
+    hasNonNegativeIntegerFields(value, [
+      "invalidCoefficientCount",
+      "negativeFluxCount",
+      "nonFiniteValueCount",
+      "failedInnerSolveCount",
+      "rejectedUpscatterCount",
+      "clampCount",
+      "forbiddenClampCount",
+    ]);
+}
+
+function isCanduLabSingleCellSnapshot(value: unknown): value is CanduLabSingleCellSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "fixtureId",
+    "packVersion",
+    "dataPackId",
+    "evidenceClass",
+    "sourceProvenance",
+    "energyGroupOrder",
+    "materialId",
+    "fuelTypeId",
+    "burnupJPerKgHm",
+    "volumeM3",
+    "reflectiveFaces",
+    "coefficients",
+    "targetPowerWatts",
+    "effectiveK",
+    "group1Flux",
+    "group2Flux",
+    "totalPowerWatts",
+    "fissionProductionRate",
+    "spatialSolve",
+    "diagnostics",
+  ]) || !hasStringFields(value, [
+    "fixtureId",
+    "packVersion",
+    "dataPackId",
+    "evidenceClass",
+    "sourceProvenance",
+    "materialId",
+    "fuelTypeId",
+  ]) || !Array.isArray(value.energyGroupOrder) ||
+      value.energyGroupOrder.length !== 2 ||
+      !value.energyGroupOrder.every((group) => isString(group) && group.length > 0) ||
+      !hasFiniteNumberFields(value, [
+        "burnupJPerKgHm",
+        "volumeM3",
+        "targetPowerWatts",
+        "effectiveK",
+        "totalPowerWatts",
+        "fissionProductionRate",
+      ]) ||
+      !Array.isArray(value.group1Flux) || !Array.isArray(value.group2Flux) ||
+      value.group1Flux.length === 0 || value.group2Flux.length === 0 ||
+      !value.group1Flux.every(isFiniteNumber) || !value.group2Flux.every(isFiniteNumber) ||
+      !Array.isArray(value.reflectiveFaces) ||
+      value.reflectiveFaces.length !== 6 ||
+      !value.reflectiveFaces.every(isLabBoundaryFace) ||
+      new Set(value.reflectiveFaces).size !== 6 ||
+      !isCanduLabSingleCellCoefficientSnapshot(value.coefficients) ||
+      !isCanduLabSpatialSolveSnapshot(value.spatialSolve) ||
+      !isCanduLabSingleCellDiagnosticsSnapshot(value.diagnostics)) {
+    return false;
+  }
+
+  return isFiniteNumber(value.burnupJPerKgHm) && value.burnupJPerKgHm >= 0 &&
+    isFiniteNumber(value.volumeM3) && value.volumeM3 > 0 &&
+    isFiniteNumber(value.targetPowerWatts) && value.targetPowerWatts >= 0 &&
+    isFiniteNumber(value.effectiveK) && value.effectiveK > 0 &&
+    isFiniteNumber(value.totalPowerWatts) && value.totalPowerWatts >= 0 &&
+    isFiniteNumber(value.fissionProductionRate) && value.fissionProductionRate >= 0;
+}
+
 function isCanduLabSnapshot(value: unknown): value is CanduLabSnapshot {
   if (!isRecord(value) || !hasOwnProperties(value, [
     "fixtureId",
@@ -1201,7 +1407,8 @@ function isCanduLabSnapshot(value: unknown): value is CanduLabSnapshot {
       (!Array.isArray(value.core.cells) || !value.core.cells.every(isCanduLabCellSnapshot))) {
     return false;
   }
-  return true;
+  return !hasOwn(value, "singleCell") ||
+    value.singleCell === undefined || isCanduLabSingleCellSnapshot(value.singleCell);
 }
 
 const SNAPSHOT_STATE_FIELDS = [

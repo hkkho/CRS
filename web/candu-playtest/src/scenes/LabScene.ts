@@ -64,6 +64,13 @@ export class LabScene extends Phaser.Scene {
   private unsubscribe: (() => void) | null = null;
   private gridGraphics: Phaser.GameObjects.Graphics | null = null;
   private selectionGraphics: Phaser.GameObjects.Graphics | null = null;
+  private singleCellHeader: Phaser.GameObjects.Text | null = null;
+  private singleCellPack: Phaser.GameObjects.Text | null = null;
+  private singleCellProvenance: Phaser.GameObjects.Text | null = null;
+  private singleCellMaterial: Phaser.GameObjects.Text | null = null;
+  private singleCellCoefficients: Phaser.GameObjects.Text | null = null;
+  private singleCellResult: Phaser.GameObjects.Text | null = null;
+  private singleCellDiagnostics: Phaser.GameObjects.Text | null = null;
   private headerMode: Phaser.GameObjects.Text | null = null;
   private headerSolve: Phaser.GameObjects.Text | null = null;
   private selectedText: Phaser.GameObjects.Text | null = null;
@@ -164,6 +171,56 @@ export class LabScene extends Phaser.Scene {
       color: colorString(COLORS.gold),
       letterSpacing: 1,
     }).setOrigin(1, 0).setDepth(20);
+
+    const singleCellPanel = this.add.graphics().setDepth(1);
+    drawPanelFrame(singleCellPanel, GRID.x + 24, GRID.y + 52, GRID.width - 48, 54, {
+      fill: COLORS.indigo,
+      alpha: 0.92,
+      accent: COLORS.gold,
+      lineWidth: 1,
+    });
+    this.singleCellHeader = makeText(
+      this,
+      GRID.x + 38,
+      GRID.y + 57,
+      "SINGLE-CELL BENCHMARK  /  AUTHORITATIVE CORE SOLVER",
+      {
+        fontFamily: FONTS.mono,
+        fontSize: "9px",
+        color: colorString(COLORS.gold),
+        letterSpacing: 0.8,
+      },
+    ).setDepth(20);
+    this.singleCellPack = makeText(this, GRID.x + 38, GRID.y + 68, "PACK  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "7px",
+      color: colorString(COLORS.ivoryMuted),
+    }).setDepth(20);
+    this.singleCellProvenance = makeText(this, GRID.x + 560, GRID.y + 68, "PROV  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "7px",
+      color: colorString(COLORS.ivoryMuted),
+    }).setDepth(20);
+    this.singleCellMaterial = makeText(this, GRID.x + 38, GRID.y + 79, "MATERIAL  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "7px",
+      color: colorString(COLORS.ivoryMuted),
+    }).setDepth(20);
+    this.singleCellCoefficients = makeText(this, GRID.x + 560, GRID.y + 79, "XS  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "7px",
+      color: colorString(COLORS.ivoryMuted),
+    }).setDepth(20);
+    this.singleCellResult = makeText(this, GRID.x + 38, GRID.y + 90, "RESULT  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "8px",
+      color: colorString(COLORS.ivory),
+    }).setDepth(20);
+    this.singleCellDiagnostics = makeText(this, GRID.x + 560, GRID.y + 90, "SOLVER  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "8px",
+      color: colorString(COLORS.ivory),
+    }).setDepth(20);
 
     for (let position = 0; position < 8; position += 1) {
       makeText(this, CELL_GRID.x + cellWidth * (position + 0.5), CELL_GRID.y - 23, `P${position + 1}`, {
@@ -426,6 +483,7 @@ export class LabScene extends Phaser.Scene {
 
   private refresh(): void {
     this.refreshGrid();
+    this.refreshSingleCellPanel();
     this.refreshSidePanel();
     const lab = this.snapshot.lab;
     const unavailable = !this.session.status.isWasmAvailable || lab === undefined;
@@ -433,6 +491,56 @@ export class LabScene extends Phaser.Scene {
     this.unavailableDetail?.setText(!this.session.status.isWasmAvailable
       ? this.session.status.detail
       : "The authoritative Lab session did not return a 2 × 8 topology.");
+  }
+
+  private refreshSingleCellPanel(): void {
+    const singleCell = this.snapshot.lab?.singleCell;
+    if (singleCell === undefined) {
+      this.singleCellHeader?.setText("SINGLE-CELL BENCHMARK  /  AUTHORITATIVE RESULT UNAVAILABLE")
+        .setColor(colorString(COLORS.red));
+      this.singleCellPack?.setText("PACK  —  Waiting for the Core fresh-fuel, six-face reflective solve.");
+      this.singleCellProvenance?.setText("PROV  —");
+      this.singleCellMaterial?.setText("MATERIAL  —");
+      this.singleCellCoefficients?.setText("XS  —  No browser-side coefficient row is substituted.");
+      this.singleCellResult?.setText("RESULT  —  No single-cell result returned by the authoritative bridge.");
+      this.singleCellDiagnostics?.setText("SOLVER  —");
+      return;
+    }
+
+    const group1Flux = singleCell.group1Flux[0] ?? Number.NaN;
+    const group2Flux = singleCell.group2Flux[0] ?? Number.NaN;
+    const ratio = group1Flux > 0
+      ? group2Flux / group1Flux
+      : Number.NaN;
+    const faces = singleCell.reflectiveFaces.map((face) => face.toUpperCase()).join(" · ");
+    const c = singleCell.coefficients;
+    const diagnostics = singleCell.diagnostics;
+    const residual = diagnostics.residualRelativeInfinity === null
+      ? "—"
+      : diagnostics.residualRelativeInfinity.toExponential(2);
+    const balance = diagnostics.powerBalanceRelative === null
+      ? "—"
+      : diagnostics.powerBalanceRelative.toExponential(2);
+    this.singleCellHeader?.setText("SINGLE-CELL BENCHMARK  /  AUTHORITATIVE CORE SOLVER")
+      .setColor(colorString(COLORS.gold));
+    this.singleCellPack?.setText(
+      `PACK ${compactSingleCellText(singleCell.packVersion, 38)} · EVID ${compactSingleCellText(singleCell.evidenceClass, 18)} · G1 ${compactSingleCellText(singleCell.energyGroupOrder[0] ?? "—", 10)} / G2 ${compactSingleCellText(singleCell.energyGroupOrder[1] ?? "—", 10)}`,
+    );
+    this.singleCellProvenance?.setText(
+      `PROV ${compactSingleCellText(singleCell.sourceProvenance, 42)} · DATA ${compactSingleCellText(singleCell.dataPackId, 20)}`,
+    );
+    this.singleCellMaterial?.setText(
+      `MAT ${compactSingleCellText(singleCell.materialId, 20)} · FUEL ${compactSingleCellText(singleCell.fuelTypeId, 18)} · BU ${formatSingleCellValue(singleCell.burnupJPerKgHm)} · V ${formatSingleCellValue(singleCell.volumeM3)}m³ · REFL ${faces}`,
+    );
+    this.singleCellCoefficients?.setText(
+      `XS Σa ${formatSingleCellValue(c.absorptionGroup1PerM)}/${formatSingleCellValue(c.absorptionGroup2PerM)} · Σf ${formatSingleCellValue(c.fissionGroup1PerM)}/${formatSingleCellValue(c.fissionGroup2PerM)} · νΣf ${formatSingleCellValue(c.nuFissionGroup1PerM)}/${formatSingleCellValue(c.nuFissionGroup2PerM)} · ↓₁₂ ${formatSingleCellValue(c.downscatterGroup1To2PerM)} · χ ${formatSingleCellValue(c.chiGroup1)}/${formatSingleCellValue(c.chiGroup2)}`,
+    );
+    this.singleCellResult?.setText(
+      `RESULT K ${formatSingleCellValue(singleCell.effectiveK, 6)} · FLUX G1/G2 ${formatSingleCellValue(group1Flux)}/${formatSingleCellValue(group2Flux)} · RATIO ${formatSingleCellValue(ratio)}`,
+    );
+    this.singleCellDiagnostics?.setText(
+      `SOLVER ${singleCell.spatialSolve.isConverged ? "CONVERGED" : singleCell.spatialSolve.status.toUpperCase()} · P ${formatSingleCellValue(singleCell.totalPowerWatts)}/${formatSingleCellValue(singleCell.targetPowerWatts)}W · FISSION ${formatSingleCellValue(singleCell.fissionProductionRate)} · IT ${diagnostics.iterationCount} · RES ${residual} · BAL ${balance}`,
+    );
   }
 
   private refreshGrid(): void {
@@ -649,4 +757,22 @@ export class LabScene extends Phaser.Scene {
     this.session.stopShift();
     this.scene.start("TitleScene");
   }
+}
+
+function formatSingleCellValue(value: number, fixedDigits = 4): string {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+  const magnitude = Math.abs(value);
+  if (magnitude !== 0 && (magnitude < 1e-3 || magnitude >= 1e4)) {
+    return value.toExponential(2).replace("e+", "e");
+  }
+  return value.toFixed(fixedDigits);
+}
+
+function compactSingleCellText(value: string, maximumLength: number): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length <= maximumLength
+    ? normalized
+    : `${normalized.slice(0, Math.max(1, maximumLength - 1))}…`;
 }
