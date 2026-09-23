@@ -53,7 +53,8 @@ full-core adapter publishes explicit SI watts, normalized power, `k`, and
 flux shape is normalized to the operator target; short operation intervals
 reuse the retained equilibrium projection for deterministic burnup integration.
 This is a regulated steady-state practice model, not a sub-second transient
-claim.
+claim. This project-authored pack is the active simulation and acceptance path;
+no external DRAGON5/DONJON5 validation is required.
 
 The Core repository includes iodine/xenon contracts, but the current
 `GameSession` practice projection intentionally exposes xenon as an unavailable
@@ -155,6 +156,20 @@ npm run build
 The Phaser client is a static companion. Its bridge runs in a worker, the
 runtime never invokes DRAGON5, DONJON5, or another analysis executable, and
 local command history/replay and feedback notes remain local to the browser.
+Offline DRAGON5/DONJON5 material remains optional reference context and does
+not gate the project-authored model or browser acceptance.
+
+### Browser Lab
+
+Select `Lab` (or press `L`) in the browser playtest to open the deterministic
+`lab-2x8-synthetic-v1` fixture. Inspect the two-channel by eight-position
+(`2 × 8`) two-group diffusion cells, including each cell's fuel/nonfuel state
+and reflective faces; use the cell controls to change those inputs. Run `Solve`
+to refresh the authoritative convergence,
+eigenvalue, flux, power, and residual readouts; use `Reset` to restore the
+fixture. The Lab is a compact analytic sanity check for the spatial solver.
+Its project-authored coefficients and small synthetic topology are not a full
+CANDU benchmark or a plant model.
 
 ## Active work plan
 

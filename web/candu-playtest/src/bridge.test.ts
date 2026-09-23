@@ -64,6 +64,25 @@ describe("WorkerProtocolBridge lifecycle", () => {
     expect(harness.terminateCalls).toBe(1);
   });
 
+  it("sends Lab mode through the worker initialize transport", async () => {
+    const harness = createWorkerHarness();
+    const bridge = new WorkerProtocolBridge({
+      createWorker: () => harness.worker,
+    });
+
+    harness.emitReady();
+    const pending = bridge.initialize("lab");
+    await flushMicrotasks();
+
+    expect(harness.postedMessages).toContainEqual(expect.objectContaining({
+      type: "initialize",
+      mode: "lab",
+    }));
+
+    bridge.dispose();
+    await expect(pending).rejects.toThrow("disposed");
+  });
+
   it("fails the authoritative lifecycle closed and notifies on a fatal worker error", async () => {
     const harness = createWorkerHarness();
     const bridge = createCanduPlaytestBridge({

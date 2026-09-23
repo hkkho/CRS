@@ -4,6 +4,7 @@ import { BridgeSessionController } from "./sessionController";
 import { setRuntimeSession } from "./runtime";
 import { BootScene } from "./scenes/BootScene";
 import { OperationsScene } from "./scenes/OperationsScene";
+import { LabScene } from "./scenes/LabScene";
 import { TitleScene } from "./scenes/TitleScene";
 
 const session = new BridgeSessionController();
@@ -16,7 +17,9 @@ session.subscribe((update) => {
   }
   const selected = update.snapshot.core.channels[0];
   statusMirror.textContent = update.status.isWasmAvailable
-    ? `CANDU play mode online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}`
+    ? update.snapshot.lab === undefined
+      ? `CANDU play mode online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}`
+      : `CANDU Lab mode online. ${update.snapshot.lab.core.channelCount} × ${update.snapshot.lab.core.bundlePositionCount} cells available.`
     : `${update.status.title}. ${update.status.detail}`;
 });
 
@@ -26,7 +29,7 @@ const game = new Phaser.Game({
   width: 1600,
   height: 900,
   backgroundColor: colorString(COLORS.void),
-  scene: [BootScene, TitleScene, OperationsScene],
+  scene: [BootScene, TitleScene, OperationsScene, LabScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

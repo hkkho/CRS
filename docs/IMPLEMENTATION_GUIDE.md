@@ -95,10 +95,9 @@ Vercel-deployed Phaser 3 browser playtest  Retained/frozen Unity views and contr
                     |                                  |
                          GameSession
                               |
-                 ReactorSim.Core state and solver
+                         ReactorSim.Core state and solver
                               |
-              project-authored pack first; offline
-                 DRAGON5/DONJON5 pack later
+              project-authored deterministic two-group pack
 ```
 
 `ReactorSim.Core` owns deterministic state transitions, bundle inventory,
@@ -107,17 +106,19 @@ burnup, topology, regulating-system contracts, and spatial solving.
 immutable presentation projections. Unity and Phaser format those projections
 and dispatch input; neither presentation layer duplicates simulation rules.
 
-DRAGON5 and DONJON5 remain offline tools. Runtime code consumes compact,
-versioned data packs and never launches either executable. Preserve units,
-energy-group ordering, topology identity, pack checksums, source identity, and
-licensing boundaries when physics data changes.
+The active runtime uses the project-authored deterministic two-group pack.
+DRAGON5 and DONJON5 remain optional offline reference tools; runtime code never
+launches either executable, and no external validation is required for the
+active path. Preserve units, energy-group ordering, topology identity, pack
+checksums, source identity, and licensing boundaries when physics data changes.
 
 ## Current physics and provenance
 
 The practice session loads the project-authored
 `candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is an
 infinite-cell-calibrated surrogate with explicit provenance, not a plant rating
-and not an external DRAGON5/DONJON5 result.
+and not an external DRAGON5/DONJON5 result. This pack is the active simulation
+and acceptance path; the game does not depend on an external validated source.
 
 The shared two-group full-core path currently:
 
@@ -133,7 +134,7 @@ The shared two-group full-core path currently:
 
 This is a regulated steady-state practice projection. Its short-interval
 behavior is not a sub-second kinetics or transient claim. The existing Core
-tree contains iodine/xenon contracts for later validated work, but the current
+tree contains iodine/xenon contracts for future extension work, but the current
 `GameSession` practice projection deliberately uses
 `xenon-unavailable-static-compatibility-v1`, reports `HasCoupling = false`, and
 does not expose coupled xenon dynamics to gameplay.
@@ -201,6 +202,20 @@ bridge. If the bridge is absent, the title and unavailable scenes explain the
 locked state and disable simulation controls. Local command history, state
 digests, replay JSON, and feedback notes are appropriate companion tooling;
 they are not a second authority.
+
+The browser also exposes `Lab` mode through the same bridge. Select the
+`LAB / 2 × 8 CELLS` start button or press `L`. Lab uses the
+project-authored `lab-2x8-synthetic-v1` fixture: two channels with eight
+two-group diffusion cells per channel. The Lab view makes each cell's
+fuel/nonfuel state and reflective faces visible and editable. It sends
+`configure-cell` for those changes and `solve` to run the authoritative spatial
+solver and show its convergence, eigenvalue, flux, power, and residual
+diagnostics. `Reset` restores the deterministic fixture; a Lab
+refuel uses the explicit synthetic fresh-fuel variant and is accepted only
+when the replacement solve is usable. Treat this as a compact analytic solver
+check for topology, material binding, and boundary handling. It is not a full
+CANDU benchmark, a plant prediction, or a substitute for the 380-channel Play
+session.
 
 For a production-shaped browser build, stage the bridge from the repository
 root and run:

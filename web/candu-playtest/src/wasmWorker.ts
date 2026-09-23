@@ -1,11 +1,12 @@
 import {
   findWasmExports,
   PROTOCOL_VERSION,
+  type BridgeModeId,
   type CanduPlaytestWasmExports,
 } from "./protocol";
 
 type WorkerRequest =
-  | { id: number; type: "initialize"; mode: "play" }
+  | { id: number; type: "initialize"; mode: BridgeModeId }
   | { id: number; type: "get-snapshot" }
   | { id: number; type: "dispatch"; commandJson: string };
 

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using ReactorSim.Core;
 
 namespace ReactorSim.Browser
@@ -157,6 +159,24 @@ namespace ReactorSim.Browser
         public List<LabBundleSnapshotDto> Bundles { get; set; } = new List<LabBundleSnapshotDto>();
     }
 
+    /// <summary>
+    /// Authoritative material and boundary state for one of the sixteen Lab
+    /// diffusion cells. Cells are serialized in channel-major order so their
+    /// index is stable with the two-group flux arrays.
+    /// </summary>
+    public sealed class LabCellSnapshotDto
+    {
+        public uint ChannelIndex { get; set; }
+
+        public uint Position { get; set; }
+
+        public bool HasFuel { get; set; }
+
+        public string MaterialId { get; set; } = string.Empty;
+
+        public List<string> ReflectiveFaces { get; set; } = new List<string>();
+    }
+
     public sealed class LabCoreSnapshotDto
     {
         public string FixtureId { get; set; } = string.Empty;
@@ -164,6 +184,9 @@ namespace ReactorSim.Browser
         public uint ChannelCount { get; set; }
 
         public uint BundlePositionCount { get; set; }
+
+        public List<LabCellSnapshotDto> Cells { get; set; } =
+            new List<LabCellSnapshotDto>();
 
         public List<LabChannelSnapshotDto> Channels { get; set; } =
             new List<LabChannelSnapshotDto>();
@@ -181,6 +204,10 @@ namespace ReactorSim.Browser
 
         public int LastRefuelledChannel { get; set; } = -1;
 
+        // The TypeScript protocol validator requires the nullable field to be
+        // present on an initial Lab snapshot. The bridge-wide serializer
+        // ignores nulls by default, so keep this explicit null on the wire.
+        [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public string? LastRefuellingDirectionId { get; set; }
 
         public ushort LastRefuellingShiftCount { get; set; }
@@ -221,11 +248,64 @@ namespace ReactorSim.Browser
         }
     }
 
+    /// <summary>
+    /// Immutable configuration for one Lab cell. The public bridge keeps the
+    /// wire representation as canonical face strings; the solver uses the
+    /// validated topology face enum.
+    /// </summary>
+    internal sealed class LabCellConfiguration
+    {
+        private readonly HashSet<TopologyFace> _reflectiveFaceSet;
+
+        public LabCellConfiguration(bool hasFuel, IEnumerable<TopologyFace> reflectiveFaces)
+        {
+            HasFuel = hasFuel;
+            TopologyFace[] orderedFaces = reflectiveFaces
+                .Distinct()
+                .OrderBy(FaceRank)
+                .ToArray();
+            ReflectiveFaces = Array.AsReadOnly(orderedFaces);
+            _reflectiveFaceSet = new HashSet<TopologyFace>(orderedFaces);
+        }
+
+        public bool HasFuel { get; }
+
+        public IReadOnlyList<TopologyFace> ReflectiveFaces { get; }
+
+        public bool IsReflective(TopologyFace face)
+        {
+            return _reflectiveFaceSet.Contains(face);
+        }
+
+        private static byte FaceRank(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return 0;
+                case TopologyFace.East:
+                    return 1;
+                case TopologyFace.South:
+                    return 2;
+                case TopologyFace.West:
+                    return 3;
+                case TopologyFace.EndA:
+                    return 4;
+                case TopologyFace.EndB:
+                    return 5;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
+        }
+    }
+
     internal sealed class LabPlaytestSession
     {
         public const string FixtureId = "lab-2x8-synthetic-v1";
         public const string OldFuelTypeId = "LAB-FUEL-SYNTHETIC";
         public const string FreshFuelTypeId = "LAB-FRESH-SYNTHETIC";
+        public const string FuelMaterialId = "fuel";
+        public const string ModeratorMaterialId = "moderator";
         public const ushort RefuelShiftCount = 4;
         public const uint InitialFreshBundles = 32;
         private const uint BundlePositionCount = 8;
@@ -233,7 +313,8 @@ namespace ReactorSim.Browser
         private const double JoulesPerMegaWattDayPerKilogram = 8.64e10;
 
         private readonly CoreTopology _topology;
-        private readonly SpatialStencil _stencil;
+        private SpatialStencil _stencil;
+        private IReadOnlyList<LabCellConfiguration> _cellConfigurations;
         private BundleInventory _inventory;
         private SpatialSolveResult _spatialSolve;
         private LabSolverOptions _options;
@@ -247,12 +328,14 @@ namespace ReactorSim.Browser
         private LabPlaytestSession(
             CoreTopology topology,
             SpatialStencil stencil,
+            IReadOnlyList<LabCellConfiguration> cellConfigurations,
             BundleInventory inventory,
             SpatialSolveResult spatialSolve,
             LabSolverOptions options)
         {
             _topology = topology;
             _stencil = stencil;
+            _cellConfigurations = cellConfigurations;
             _inventory = inventory;
             _spatialSolve = spatialSolve;
             _options = options;
@@ -280,6 +363,7 @@ namespace ReactorSim.Browser
             canonical.Append(_lastRefuellingDirectionId ?? string.Empty);
             canonical.Append('|');
             canonical.Append(_lastRefuellingShiftCount.ToString(CultureInfo.InvariantCulture));
+            AppendCellConfigurationCanonical(canonical, _cellConfigurations);
             AppendInventoryCanonical(canonical, _inventory);
             AppendSolveCanonical(canonical, _spatialSolve);
             return PlaytestProtocolV1.ComputeDigest(canonical.ToString());
@@ -307,6 +391,8 @@ namespace ReactorSim.Browser
             {
                 case "refuel":
                     return TryRefuel(command);
+                case "configure-cell":
+                    return TryConfigureCell(command);
                 case "solve":
                     return TrySolve(command);
                 default:
@@ -314,7 +400,7 @@ namespace ReactorSim.Browser
                         PlaytestProtocolV1.Diagnostic(
                             "Lab.Command.Unsupported",
                             "type",
-                            "Lab supports refuel and solve commands."));
+                        "Lab supports configure-cell, refuel, and solve commands."));
             }
         }
 
@@ -333,6 +419,8 @@ namespace ReactorSim.Browser
             }
 
             SpatialStencil stencil = stencilResult.Value;
+            IReadOnlyList<LabCellConfiguration> cellConfigurations =
+                CreateDefaultCellConfigurations();
             ContractValidationResult<BundleInventory> inventoryResult =
                 BundleInventory.TryCreate(topology, CreateInitialBundles(topology));
             if (!inventoryResult.IsValid)
@@ -342,7 +430,11 @@ namespace ReactorSim.Browser
                 return false;
             }
 
-            LabSolveAttempt solve = TrySolve(stencil, inventoryResult.Value, options);
+            LabSolveAttempt solve = TrySolve(
+                stencil,
+                inventoryResult.Value,
+                options,
+                cellConfigurations);
             if (!solve.IsSuccessful)
             {
                 session = null;
@@ -356,6 +448,7 @@ namespace ReactorSim.Browser
             session = new LabPlaytestSession(
                 topology,
                 stencil,
+                cellConfigurations,
                 inventoryResult.Value,
                 solve.Result!,
                 options);
@@ -366,11 +459,17 @@ namespace ReactorSim.Browser
         private static LabSolveAttempt TrySolve(
             SpatialStencil stencil,
             BundleInventory inventory,
-            LabSolverOptions options)
+            LabSolverOptions options,
+            IReadOnlyList<LabCellConfiguration> cellConfigurations)
         {
             SpatialCoefficientSet? coefficients;
             ContractValidationResult<SpatialCoefficientSet> coefficientsResult =
-                CreateCoefficients(stencil, inventory, options, out coefficients);
+                CreateCoefficients(
+                    stencil,
+                    inventory,
+                    options,
+                    cellConfigurations,
+                    out coefficients);
             if (!coefficientsResult.IsValid)
             {
                 return LabSolveAttempt.Failed(
@@ -475,7 +574,11 @@ namespace ReactorSim.Browser
                 return BridgeCommandExecution.Failure(optionsFailure);
             }
 
-            LabSolveAttempt solve = TrySolve(_stencil, _inventory, requestedOptions);
+            LabSolveAttempt solve = TrySolve(
+                _stencil,
+                _inventory,
+                requestedOptions,
+                _cellConfigurations);
             if (!solve.IsSuccessful)
             {
                 return BridgeCommandExecution.Failure(
@@ -489,6 +592,61 @@ namespace ReactorSim.Browser
             _spatialSolve = solve.Result!;
             return BridgeCommandExecution.Success(
                 "Lab spatial solve converged.",
+                CreateSpatialSolveSnapshot(_spatialSolve));
+        }
+
+        private BridgeCommandExecution TryConfigureCell(JsonElement command)
+        {
+            BridgeDiagnosticDto? diagnostic = TryReadCellConfiguration(
+                command,
+                out uint channelIndex,
+                out uint position,
+                out bool hasFuel,
+                out IReadOnlyList<TopologyFace> reflectiveFaces);
+            if (diagnostic != null)
+            {
+                return BridgeCommandExecution.Failure(diagnostic);
+            }
+
+            int flatIndex = checked((int)(channelIndex * BundlePositionCount + position));
+            List<LabCellConfiguration> candidateConfigurations =
+                _cellConfigurations.ToList();
+            candidateConfigurations[flatIndex] = new LabCellConfiguration(
+                hasFuel,
+                reflectiveFaces);
+
+            CoreTopology candidateTopology = CreateTopology(candidateConfigurations);
+            ContractValidationResult<SpatialStencil> stencilResult =
+                SpatialStencil.TryCreate(candidateTopology);
+            if (!stencilResult.IsValid)
+            {
+                return BridgeCommandExecution.Failure(
+                    PlaytestProtocolV1.Diagnostic(stencilResult.FirstDiagnostic));
+            }
+
+            LabSolveAttempt solve = TrySolve(
+                stencilResult.Value,
+                _inventory,
+                _options,
+                candidateConfigurations);
+            if (!solve.IsSuccessful)
+            {
+                return BridgeCommandExecution.Failure(
+                    solve.Failure ?? PlaytestProtocolV1.Diagnostic(
+                        "Lab.ConfigureCell.Solve.Rejected",
+                        "spatialSolve",
+                        "The cell configuration did not produce a usable converged solve; no state changed."));
+            }
+
+            // Commit the candidate only after both topology assembly and the
+            // coupled solve have succeeded. This keeps configuration changes
+            // atomic when a zero-production or nonconvergent candidate is
+            // rejected by the authoritative solver.
+            _cellConfigurations = candidateConfigurations.AsReadOnly();
+            _stencil = stencilResult.Value;
+            _spatialSolve = solve.Result!;
+            return BridgeCommandExecution.Success(
+                "Lab cell configuration committed; the coupled spatial solve converged.",
                 CreateSpatialSolveSnapshot(_spatialSolve));
         }
 
@@ -590,7 +748,23 @@ namespace ReactorSim.Browser
                     PlaytestProtocolV1.Diagnostic(transition.FirstDiagnostic));
             }
 
-            LabSolveAttempt solve = TrySolve(_stencil, transition.Value.ResultingInventory, _options);
+            if (_cellConfigurations
+                .Skip((int)channelIndex * (int)BundlePositionCount)
+                .Take((int)BundlePositionCount)
+                .Any(configuration => !configuration.HasFuel))
+            {
+                return BridgeCommandExecution.Failure(
+                    PlaytestProtocolV1.Diagnostic(
+                        "Lab.Refuel.Channel.Nonfuel",
+                        "channelIndex",
+                        "A Lab refuelling operation requires every cell in the channel to contain fuel."));
+            }
+
+            LabSolveAttempt solve = TrySolve(
+                _stencil,
+                transition.Value.ResultingInventory,
+                _options,
+                _cellConfigurations);
             if (!solve.IsSuccessful)
             {
                 return BridgeCommandExecution.Failure(
@@ -702,6 +876,209 @@ namespace ReactorSim.Browser
             return null;
         }
 
+        private static BridgeDiagnosticDto? TryReadCellConfiguration(
+            JsonElement command,
+            out uint channelIndex,
+            out uint position,
+            out bool hasFuel,
+            out IReadOnlyList<TopologyFace> reflectiveFaces)
+        {
+            channelIndex = 0;
+            position = 0;
+            hasFuel = false;
+            reflectiveFaces = Array.Empty<TopologyFace>();
+
+            if (!PlaytestInput.TryGetProperty(command, out JsonElement channel, "channelIndex", "channel_id"))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Channel.Missing",
+                    "channelIndex",
+                    "A Lab cell configuration requires channelIndex.");
+            }
+
+            if (!channel.TryGetUInt32(out channelIndex))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Channel.Invalid",
+                    "channelIndex",
+                    "channelIndex must be a nonnegative JSON integer.");
+            }
+
+            if (channelIndex >= ChannelCount)
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Channel.OutOfRange",
+                    "channelIndex",
+                    "The Lab fixture contains only channels 0 and 1.");
+            }
+
+            if (!PlaytestInput.TryGetProperty(command, out JsonElement positionValue, "position", "bundlePosition", "bundle_position"))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Position.Missing",
+                    "position",
+                    "A Lab cell configuration requires position.");
+            }
+
+            if (!positionValue.TryGetUInt32(out position))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Position.Invalid",
+                    "position",
+                    "position must be a nonnegative JSON integer.");
+            }
+
+            if (position >= BundlePositionCount)
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.Position.OutOfRange",
+                    "position",
+                    "The Lab fixture contains bundle positions 0 through 7.");
+            }
+
+            if (!PlaytestInput.TryGetProperty(command, out JsonElement fuelValue, "hasFuel", "has_fuel"))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.HasFuel.Missing",
+                    "hasFuel",
+                    "A Lab cell configuration requires hasFuel.");
+            }
+
+            if (fuelValue.ValueKind != JsonValueKind.True && fuelValue.ValueKind != JsonValueKind.False)
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.HasFuel.Invalid",
+                    "hasFuel",
+                    "hasFuel must be a JSON boolean.");
+            }
+
+            hasFuel = fuelValue.GetBoolean();
+
+            if (!PlaytestInput.TryGetProperty(command, out JsonElement facesValue, "reflectiveFaces", "reflective_faces"))
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.ReflectiveFaces.Missing",
+                    "reflectiveFaces",
+                    "A Lab cell configuration requires reflectiveFaces.");
+            }
+
+            if (facesValue.ValueKind != JsonValueKind.Array)
+            {
+                return PlaytestProtocolV1.Diagnostic(
+                    "Lab.ConfigureCell.ReflectiveFaces.Invalid",
+                    "reflectiveFaces",
+                    "reflectiveFaces must be an array of face strings.");
+            }
+
+            var parsedFaces = new List<TopologyFace>();
+            foreach (JsonElement faceValue in facesValue.EnumerateArray())
+            {
+                if (faceValue.ValueKind != JsonValueKind.String || faceValue.GetString() == null)
+                {
+                    return PlaytestProtocolV1.Diagnostic(
+                        "Lab.ConfigureCell.ReflectiveFaces.Invalid",
+                        "reflectiveFaces",
+                        "Every reflective face must be a string.");
+                }
+
+                string faceId = PlaytestInput.NormalizeType(faceValue.GetString()!);
+                if (!TryParseFace(faceId, out TopologyFace face))
+                {
+                    return PlaytestProtocolV1.Diagnostic(
+                        "Lab.ConfigureCell.ReflectiveFaces.Unknown",
+                        "reflectiveFaces",
+                        "Face IDs must be north, east, south, west, end-a, or end-b.");
+                }
+
+                if (parsedFaces.Contains(face))
+                {
+                    return PlaytestProtocolV1.Diagnostic(
+                        "Lab.ConfigureCell.ReflectiveFaces.Duplicate",
+                        "reflectiveFaces",
+                        "A reflective face may be listed only once.");
+                }
+
+                parsedFaces.Add(face);
+            }
+
+            reflectiveFaces = parsedFaces
+                .OrderBy(FaceRank)
+                .ToArray();
+            return null;
+        }
+
+        private static bool TryParseFace(string faceId, out TopologyFace face)
+        {
+            switch (faceId)
+            {
+                case "north":
+                    face = TopologyFace.North;
+                    return true;
+                case "east":
+                    face = TopologyFace.East;
+                    return true;
+                case "south":
+                    face = TopologyFace.South;
+                    return true;
+                case "west":
+                    face = TopologyFace.West;
+                    return true;
+                case "end-a":
+                case "enda":
+                    face = TopologyFace.EndA;
+                    return true;
+                case "end-b":
+                case "endb":
+                    face = TopologyFace.EndB;
+                    return true;
+                default:
+                    face = default;
+                    return false;
+            }
+        }
+
+        private static string FaceId(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return "north";
+                case TopologyFace.East:
+                    return "east";
+                case TopologyFace.South:
+                    return "south";
+                case TopologyFace.West:
+                    return "west";
+                case TopologyFace.EndA:
+                    return "end-a";
+                case TopologyFace.EndB:
+                    return "end-b";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
+        }
+
+        private static byte FaceRank(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return 0;
+                case TopologyFace.East:
+                    return 1;
+                case TopologyFace.South:
+                    return 2;
+                case TopologyFace.West:
+                    return 3;
+                case TopologyFace.EndA:
+                    return 4;
+                case TopologyFace.EndB:
+                    return 5;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
+        }
+
         private LabCoreSnapshotDto CreateCoreSnapshot()
         {
             return CreateCoreSnapshot(_inventory);
@@ -710,11 +1087,37 @@ namespace ReactorSim.Browser
         private LabCoreSnapshotDto CreateCoreSnapshot(BundleInventory inventory)
         {
             var channels = new List<LabChannelSnapshotDto>(_topology.Channels.Count);
+            var cells = new List<LabCellSnapshotDto>((int)(ChannelCount * BundlePositionCount));
             foreach (ChannelTopology channel in _topology.Channels.OrderBy(value => value.ChannelId.Value))
             {
                 var bundles = new List<LabBundleSnapshotDto>((int)BundlePositionCount);
                 for (uint position = 0; position < BundlePositionCount; position++)
                 {
+                    LabCellConfiguration configuration = _cellConfigurations[
+                        checked((int)(channel.ChannelId.Value * BundlePositionCount + position))];
+                    cells.Add(new LabCellSnapshotDto
+                    {
+                        ChannelIndex = channel.ChannelId.Value,
+                        Position = position,
+                        HasFuel = configuration.HasFuel,
+                        MaterialId = configuration.HasFuel
+                            ? FuelMaterialId
+                            : ModeratorMaterialId,
+                        ReflectiveFaces = configuration.ReflectiveFaces
+                            .Select(FaceId)
+                        .ToList()
+                    });
+
+                    if (!configuration.HasFuel)
+                    {
+                        // The inventory remains an internal deterministic
+                        // backing store so a later fuel reconfiguration can
+                        // restore the bundle without inventing a refuelling
+                        // transition. A moderator cell has no fuel bundle in
+                        // the authoritative Lab projection.
+                        continue;
+                    }
+
                     BundleState? bundle = inventory.Get(
                         new NodeKey(channel.ChannelId, new BundlePosition(position)));
                     if (bundle == null)
@@ -750,6 +1153,7 @@ namespace ReactorSim.Browser
                 FixtureId = FixtureId,
                 ChannelCount = ChannelCount,
                 BundlePositionCount = BundlePositionCount,
+                Cells = cells,
                 Channels = channels
             };
         }
@@ -824,8 +1228,18 @@ namespace ReactorSim.Browser
             SpatialStencil stencil,
             BundleInventory inventory,
             LabSolverOptions options,
+            IReadOnlyList<LabCellConfiguration> cellConfigurations,
             out SpatialCoefficientSet? coefficients)
         {
+            if (cellConfigurations.Count != ChannelCount * BundlePositionCount)
+            {
+                coefficients = null;
+                return ContractValidationResult<SpatialCoefficientSet>.Invalid(
+                    "Lab.Solve.Configuration.DimensionMismatch",
+                    "cellConfigurations",
+                    "The Lab fixture requires one material configuration for each of its sixteen cells.");
+            }
+
             var nodes = new List<SpatialNodeCoefficients>(stencil.NodeCount);
             foreach (SpatialNodeStencil node in stencil.Nodes)
             {
@@ -839,11 +1253,12 @@ namespace ReactorSim.Browser
                         "Every Lab spatial node must contain one bundle.");
                 }
 
+                LabCellConfiguration configuration = cellConfigurations[node.FlatIndex];
                 bool fresh = string.Equals(
                     bundle.MaterialVariantId.Value,
                     FreshFuelTypeId,
                     StringComparison.Ordinal);
-                nodes.Add(CreateNodeCoefficients(node.Node, fresh));
+                nodes.Add(CreateNodeCoefficients(node.Node, configuration.HasFuel, fresh));
             }
 
             var edges = new List<SpatialEdgeConductance>();
@@ -892,8 +1307,31 @@ namespace ReactorSim.Browser
             return result;
         }
 
-        private static SpatialNodeCoefficients CreateNodeCoefficients(NodeKey node, bool fresh)
+        private static SpatialNodeCoefficients CreateNodeCoefficients(
+            NodeKey node,
+            bool hasFuel,
+            bool fresh)
         {
+            if (!hasFuel)
+            {
+                // Synthetic heavy-water moderator row. It transports both
+                // groups and downscatters fast neutrons, but has no fission
+                // production or power response of its own.
+                return new SpatialNodeCoefficients(
+                    node,
+                    1.0,
+                    0.025,
+                    0.012,
+                    0.080,
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.0,
+                    1.0);
+            }
+
             double absorptionGroup1 = fresh ? 0.31 : 0.30;
             double absorptionGroup2 = fresh ? 0.205 : 0.20;
             double fissionGroup1 = fresh ? 0.105 : 0.10;
@@ -911,6 +1349,18 @@ namespace ReactorSim.Browser
                 1.0,
                 0.0,
                 1.0);
+        }
+
+        private static ReadOnlyCollection<LabCellConfiguration> CreateDefaultCellConfigurations()
+        {
+            var configurations = new List<LabCellConfiguration>(
+                checked((int)(ChannelCount * BundlePositionCount)));
+            for (int index = 0; index < ChannelCount * BundlePositionCount; index++)
+            {
+                configurations.Add(new LabCellConfiguration(true, Array.Empty<TopologyFace>()));
+            }
+
+            return configurations.AsReadOnly();
         }
 
         private static IEnumerable<BundleState> CreateInitialBundles(CoreTopology topology)
@@ -987,6 +1437,26 @@ namespace ReactorSim.Browser
             }
         }
 
+        private static void AppendCellConfigurationCanonical(
+            StringBuilder builder,
+            IReadOnlyList<LabCellConfiguration> configurations)
+        {
+            builder.Append("|cell-config");
+            for (int index = 0; index < configurations.Count; index++)
+            {
+                LabCellConfiguration configuration = configurations[index];
+                builder.Append('|');
+                builder.Append(index.ToString(CultureInfo.InvariantCulture));
+                builder.Append(':');
+                builder.Append(configuration.HasFuel ? "fuel" : "moderator");
+                foreach (TopologyFace face in configuration.ReflectiveFaces)
+                {
+                    builder.Append(':');
+                    builder.Append(FaceId(face));
+                }
+            }
+        }
+
         private static void AppendSolveCanonical(StringBuilder builder, SpatialSolveResult solve)
         {
             builder.Append('|');
@@ -1016,7 +1486,8 @@ namespace ReactorSim.Browser
             }
         }
 
-        private static CoreTopology CreateTopology()
+        private static CoreTopology CreateTopology(
+            IReadOnlyList<LabCellConfiguration>? configurations = null)
         {
             var channels = new List<ChannelTopology>((int)ChannelCount);
             for (uint channelIndex = 0; channelIndex < ChannelCount; channelIndex++)
@@ -1030,29 +1501,69 @@ namespace ReactorSim.Browser
 
                 for (uint position = 0; position + 1 < BundlePositionCount; position++)
                 {
-                    neighbors.Add(new NeighborRecord(
-                        channel,
-                        new BundlePosition(position),
-                        channel,
-                        new BundlePosition(position + 1),
-                        NeighborDirection.TowardEndB));
-                    neighbors.Add(new NeighborRecord(
-                        channel,
-                        new BundlePosition(position + 1),
-                        channel,
-                        new BundlePosition(position),
-                        NeighborDirection.TowardEndA));
+                    bool reflected = configurations != null &&
+                        (IsReflective(configurations, channelIndex, position, TopologyFace.EndB) ||
+                         IsReflective(configurations, channelIndex, position + 1, TopologyFace.EndA));
+                    if (reflected)
+                    {
+                        boundaries.Add(new BoundaryFaceRecord(
+                            channel,
+                            new BundlePosition(position),
+                            TopologyFace.EndB,
+                            BoundaryClassification.Reflective));
+                        boundaries.Add(new BoundaryFaceRecord(
+                            channel,
+                            new BundlePosition(position + 1),
+                            TopologyFace.EndA,
+                            BoundaryClassification.Reflective));
+                    }
+                    else
+                    {
+                        neighbors.Add(new NeighborRecord(
+                            channel,
+                            new BundlePosition(position),
+                            channel,
+                            new BundlePosition(position + 1),
+                            NeighborDirection.TowardEndB));
+                        neighbors.Add(new NeighborRecord(
+                            channel,
+                            new BundlePosition(position + 1),
+                            channel,
+                            new BundlePosition(position),
+                            NeighborDirection.TowardEndA));
+                    }
                 }
 
                 for (uint position = 0; position < BundlePositionCount; position++)
                 {
                     ChannelId otherChannel = new ChannelId(channelIndex == 0 ? 1u : 0u);
-                    neighbors.Add(new NeighborRecord(
-                        channel,
-                        new BundlePosition(position),
-                        otherChannel,
-                        new BundlePosition(position),
-                        channelIndex == 0 ? NeighborDirection.East : NeighborDirection.West));
+                    TopologyFace transverseFace = channelIndex == 0
+                        ? TopologyFace.East
+                        : TopologyFace.West;
+                    bool reflected = configurations != null &&
+                        (IsReflective(configurations, channelIndex, position, transverseFace) ||
+                         IsReflective(
+                             configurations,
+                             channelIndex == 0 ? 1u : 0u,
+                             position,
+                             channelIndex == 0 ? TopologyFace.West : TopologyFace.East));
+                    if (reflected)
+                    {
+                        boundaries.Add(new BoundaryFaceRecord(
+                            channel,
+                            new BundlePosition(position),
+                            transverseFace,
+                            BoundaryClassification.Reflective));
+                    }
+                    else
+                    {
+                        neighbors.Add(new NeighborRecord(
+                            channel,
+                            new BundlePosition(position),
+                            otherChannel,
+                            new BundlePosition(position),
+                            channelIndex == 0 ? NeighborDirection.East : NeighborDirection.West));
+                    }
                     boundaries.Add(new BoundaryFaceRecord(
                         channel,
                         new BundlePosition(position),
@@ -1106,6 +1617,16 @@ namespace ReactorSim.Browser
             }
 
             return result.Value;
+        }
+
+        private static bool IsReflective(
+            IReadOnlyList<LabCellConfiguration> configurations,
+            uint channelIndex,
+            uint position,
+            TopologyFace face)
+        {
+            int flatIndex = checked((int)(channelIndex * BundlePositionCount + position));
+            return configurations[flatIndex].IsReflective(face);
         }
 
         internal static BridgeDiagnosticDto? TryReadSolverOptions(

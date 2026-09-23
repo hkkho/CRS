@@ -14,8 +14,9 @@ These instructions apply to the whole repository.
   changes are allowed only when they are strictly required by the web path.
 - Keep shutdown, scram, accident progression, and operator-training scenarios
   out of scope.
-- Start with the deterministic project-authored model. Add realism afterward
-  using lawfully usable, offline DRAGON5/DONJON5-derived data packs.
+- Use the project-authored deterministic two-group diffusion model as the
+  active path. Do not add external-source validation or data-pack prerequisites
+  to web work.
 
 Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
 
@@ -61,8 +62,9 @@ Read `README.md` and `docs/IMPLEMENTATION_GUIDE.md` before substantial work.
   simulation state transitions.
 - `unity/ReactorGame` is the interactive presentation and input layer; do not
   duplicate simulation rules there.
-- DRAGON5 and DONJON5 remain offline tools. Unity consumes compact, versioned
-  data packs and never invokes those programs at runtime.
+- The active runtime consumes the project-authored compact, versioned data
+  pack. Unity and the browser never invoke external analysis programs at
+  runtime.
 - Preserve units, energy-group ordering, provenance, licensing boundaries, and
   deterministic behavior when physics data changes.
 

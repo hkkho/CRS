@@ -4,6 +4,7 @@ import {
   CORE_GRID_HEIGHT,
   CORE_GRID_WIDTH,
   type BridgeStatus,
+  type BridgeModeId,
   type CanduCommand,
   type CanduCommandResponse,
   type CanduDispatchOptions,
@@ -47,7 +48,7 @@ const unavailableStatus: BridgeStatus = {
 };
 
 export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
-  initializeMode: (mode: "play") => Promise<CanduSnapshot>;
+  initializeMode: (mode: BridgeModeId) => Promise<CanduSnapshot>;
   subscribe: (listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void) => () => void;
   getTransportMetrics?: () => readonly TransportMetric[];
   dispose?: () => void;
@@ -126,7 +127,7 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
     return this.metrics.slice();
   }
 
-  async initialize(mode: "play"): Promise<CanduSnapshot> {
+  async initialize(mode: BridgeModeId): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
@@ -251,7 +252,7 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
 interface WorkerRequest {
   id: number;
   type: "initialize" | "get-snapshot" | "dispatch";
-  mode?: "play";
+  mode?: BridgeModeId;
   commandJson?: string;
 }
 
@@ -357,7 +358,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     this.terminateWorker();
   }
 
-  initialize(mode: "play"): Promise<CanduSnapshot> {
+  initialize(mode: BridgeModeId): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
       const result = await this.request({ id: 0, type: "initialize", mode });
@@ -583,7 +584,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private readonly unavailable: CanduPlaytestBridge;
   private active: CanduPlaytestBridge;
   private activeStatus: BridgeStatus;
-  private selectedMode: "play" = "play";
+  private selectedMode: BridgeModeId = "play";
   private readonly settled: Promise<void>;
   private failedClosed = false;
   private disposed = false;
@@ -656,7 +657,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     this.wasm?.dispose();
   }
 
-  async initializeMode(mode: "play"): Promise<CanduSnapshot> {
+  async initializeMode(mode: BridgeModeId): Promise<CanduSnapshot> {
     this.selectedMode = mode;
     await this.settled;
     if (this.active === this.wasm && this.wasm !== null) {

@@ -315,12 +315,29 @@ namespace ReactorSim.Core
                         channel,
                         position + 1,
                         NeighborDirection.TowardEndA);
-                    if (forwardCount != 1 || reverseCount != 1)
+                    int forwardBoundaryCount = CountBoundary(channel, position, TopologyFace.EndB);
+                    int reverseBoundaryCount = CountBoundary(
+                        channel,
+                        position + 1,
+                        TopologyFace.EndA);
+                    bool hasNeighborPair = forwardCount == 1 && reverseCount == 1;
+                    bool hasBoundaryPair = forwardBoundaryCount == 1 && reverseBoundaryCount == 1;
+                    bool hasNeighbor = forwardCount != 0 || reverseCount != 0;
+                    bool hasBoundary = forwardBoundaryCount != 0 || reverseBoundaryCount != 0;
+                    if (hasNeighbor && hasBoundary)
+                    {
+                        return ContractValidationResult<CoreTopology>.Invalid(
+                            "Topology.WithinChannel.BoundaryNeighborOverlap",
+                            ContractValidation.ChannelPath(channel.ChannelId, ".faces"),
+                            "An axial face pair may be represented by neighbors or boundaries, but not both.");
+                    }
+
+                    if (!hasNeighborPair && !hasBoundaryPair)
                     {
                         return ContractValidationResult<CoreTopology>.Invalid(
                             "Topology.WithinChannel.PairMissing",
-                            ContractValidation.ChannelPath(channel.ChannelId, ".neighbors"),
-                            "Every adjacent position pair must have exactly one reciprocal within-channel relation.");
+                            ContractValidation.ChannelPath(channel.ChannelId, ".faces"),
+                            "Every adjacent position pair must have exactly one reciprocal within-channel relation or boundary pair.");
                     }
                 }
             }
@@ -619,21 +636,6 @@ namespace ReactorSim.Core
                         "Boundary face and classification labels must be known v1 values.");
                 }
 
-                if (boundary.Face == TopologyFace.EndA && boundary.Position.Value != 0)
-                {
-                    return ContractValidationResult<CoreTopology>.Invalid(
-                        "Topology.Boundary.EndAPosition.Invalid",
-                        ContractValidation.ChannelPath(channel.ChannelId, ".boundary_faces"),
-                        "EndA is valid only at position zero.");
-                }
-
-                if (boundary.Face == TopologyFace.EndB && boundary.Position.Value != bundlePositionCount - 1)
-                {
-                    return ContractValidationResult<CoreTopology>.Invalid(
-                        "Topology.Boundary.EndBPosition.Invalid",
-                        ContractValidation.ChannelPath(channel.ChannelId, ".boundary_faces"),
-                        "EndB is valid only at the final bundle position.");
-                }
             }
 
             var boundaryKeys = new HashSet<string>(StringComparer.Ordinal);

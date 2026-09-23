@@ -97,6 +97,8 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(2, labSnapshot.GetProperty("core").GetProperty("channelCount").GetInt32());
             Assert.Equal(8, labSnapshot.GetProperty("core").GetProperty("bundlePositionCount").GetInt32());
             Assert.Equal(2, labSnapshot.GetProperty("core").GetProperty("channels").GetArrayLength());
+            Assert.True(labSnapshot.TryGetProperty("lastRefuellingDirectionId", out JsonElement labDirection));
+            Assert.Equal(JsonValueKind.Null, labDirection.ValueKind);
             Assert.True(labSnapshot.GetProperty("spatialSolve").GetProperty("isConverged").GetBoolean());
             Assert.True(labSnapshot.GetProperty("spatialSolve").GetProperty("hasUsableState").GetBoolean());
         }
@@ -399,6 +401,151 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(committedLab.GetProperty("spatialSolve").GetRawText(), failed.GetProperty("lab").GetProperty("spatialSolve").GetRawText());
             Assert.Equal(1, failed.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
             Assert.Equal(28, failed.GetProperty("lab").GetProperty("freshBundlesAvailable").GetInt32());
+        }
+
+        [Fact]
+        public void LabConfigureCellRemovesFuelAndChangesEigenvalueAndFlux()
+        {
+            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement baselineSolve = initialized.GetProperty("lab").GetProperty("spatialSolve");
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+
+            AssertAccepted(configured);
+            JsonElement lab = configured.GetProperty("lab");
+            JsonElement cell = lab.GetProperty("core").GetProperty("cells")[0];
+            Assert.False(cell.GetProperty("hasFuel").GetBoolean());
+            Assert.Equal("moderator", cell.GetProperty("materialId").GetString());
+            Assert.Empty(cell.GetProperty("reflectiveFaces").EnumerateArray());
+            Assert.DoesNotContain(
+                lab.GetProperty("core").GetProperty("channels")[0]
+                    .GetProperty("bundles").EnumerateArray(),
+                bundle => bundle.GetProperty("position").GetUInt32() == 0);
+            Assert.NotEqual(
+                baselineSolve.GetProperty("finalState").GetProperty("eigenvalue").GetDouble(),
+                lab.GetProperty("spatialSolve").GetProperty("finalState").GetProperty("eigenvalue").GetDouble());
+            Assert.NotEqual(
+                initialized.GetProperty("lab").GetProperty("spatialSolve").GetProperty("finalState").GetProperty("group1Flux").GetRawText(),
+                lab.GetProperty("spatialSolve").GetProperty("finalState").GetProperty("group1Flux").GetRawText());
+            Assert.NotEqual(
+                initialized.GetProperty("stateDigest").GetString(),
+                configured.GetProperty("stateDigest").GetString());
+        }
+
+        [Fact]
+        public void LabResetRebuildsLabFixtureWithoutRebuildingPlaySession()
+        {
+            Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+            AssertAccepted(configured);
+            Assert.False(configured.GetProperty("lab").GetProperty("core").GetProperty("cells")[0]
+                .GetProperty("hasFuel").GetBoolean());
+
+            JsonElement reset = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"reset\"}"));
+
+            AssertAccepted(reset);
+            Assert.Equal("lab", reset.GetProperty("mode").GetString());
+            JsonElement lab = reset.GetProperty("lab");
+            Assert.True(lab.GetProperty("core").GetProperty("cells")[0]
+                .GetProperty("hasFuel").GetBoolean());
+            Assert.Equal(0, lab.GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Equal(-1, lab.GetProperty("lastRefuelledChannel").GetInt32());
+            Assert.True(lab.GetProperty("spatialSolve").GetProperty("isConverged").GetBoolean());
+            Assert.True(lab.GetProperty("spatialSolve").GetProperty("hasUsableState").GetBoolean());
+        }
+
+        [Fact]
+        public void LabConfigureCellReflectiveInternalFaceRemovesCouplingSymmetrically()
+        {
+            Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement noReflection = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+            AssertAccepted(noReflection);
+
+            Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement reflected = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"east\"]}"));
+            AssertAccepted(reflected);
+
+            JsonElement noReflectionSolve = noReflection.GetProperty("lab").GetProperty("spatialSolve");
+            JsonElement reflectedSolve = reflected.GetProperty("lab").GetProperty("spatialSolve");
+            Assert.NotEqual(
+                noReflectionSolve.GetProperty("finalState").GetProperty("eigenvalue").GetDouble(),
+                reflectedSolve.GetProperty("finalState").GetProperty("eigenvalue").GetDouble());
+            Assert.NotEqual(
+                noReflectionSolve.GetProperty("finalState").GetProperty("group1Flux").GetRawText(),
+                reflectedSolve.GetProperty("finalState").GetProperty("group1Flux").GetRawText());
+
+            JsonElement reflectedCell = reflected.GetProperty("lab").GetProperty("core").GetProperty("cells")[0];
+            JsonElement reflectedFaces = reflectedCell.GetProperty("reflectiveFaces");
+            Assert.Equal(1, reflectedFaces.GetArrayLength());
+            Assert.Equal("east", reflectedFaces[0].GetString());
+            Assert.Empty(
+                reflected.GetProperty("lab").GetProperty("core").GetProperty("cells")[8]
+                    .GetProperty("reflectiveFaces").EnumerateArray());
+        }
+
+        [Fact]
+        public void LabRefuelRejectsChannelContainingNonfuelCellWithoutChangingState()
+        {
+            Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+            AssertAccepted(configured);
+
+            JsonElement rejected = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"LAB-FRESH-SYNTHETIC\"}"));
+            AssertRejected(rejected);
+            Assert.Contains(
+                rejected.GetProperty("diagnostics").EnumerateArray(),
+                diagnostic => diagnostic.GetProperty("code").GetString() == "Lab.Refuel.Channel.Nonfuel");
+            Assert.Equal(
+                configured.GetProperty("lab").GetRawText(),
+                rejected.GetProperty("lab").GetRawText());
+        }
+
+        [Fact]
+        public void LabAllReflectiveUniformFuelMatchesInfiniteMediumTwoGroupCheck()
+        {
+            Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            const string faces = "[\"north\",\"east\",\"south\",\"west\",\"end-a\",\"end-b\"]";
+            JsonElement response = default;
+            for (int channelIndex = 0; channelIndex < 2; channelIndex++)
+            {
+                for (int position = 0; position < 8; position++)
+                {
+                    response = Parse(
+                        PlaytestBridgeV1.Dispatch(
+                            "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":" +
+                            channelIndex + ",\"position\":" + position +
+                            ",\"hasFuel\":true,\"reflectiveFaces\":" + faces + "}"));
+                    AssertAccepted(response);
+                }
+            }
+
+            JsonElement lab = response.GetProperty("lab");
+            JsonElement finalState = lab.GetProperty("spatialSolve").GetProperty("finalState");
+            Assert.Equal(0.6875, finalState.GetProperty("eigenvalue").GetDouble(), 1e-6);
+            double group1Reference = finalState.GetProperty("group1Flux")[0].GetDouble();
+            double group2Reference = finalState.GetProperty("group2Flux")[0].GetDouble();
+            foreach (JsonElement flux in finalState.GetProperty("group1Flux").EnumerateArray())
+            {
+                Assert.Equal(group1Reference, flux.GetDouble(), 10);
+            }
+
+            foreach (JsonElement flux in finalState.GetProperty("group2Flux").EnumerateArray())
+            {
+                Assert.Equal(group2Reference, flux.GetDouble(), 10);
+            }
         }
 
         private const string LabPlaytestSessionFixtureId = "lab-2x8-synthetic-v1";

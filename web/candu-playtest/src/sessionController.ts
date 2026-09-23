@@ -8,6 +8,7 @@ import {
   type LiveClockSchedulerOptions,
 } from "./liveClock";
 import type {
+  BridgeModeId,
   BridgeStatus,
   CanduCommand,
   CanduCommandResponse,
@@ -38,6 +39,8 @@ export class BridgeSessionController {
   private snapshotValue: CanduSnapshot;
   private pendingCount = 0;
   private foregroundPendingCount = 0;
+  private modePending = false;
+  private modeValue: BridgeModeId;
   private active = false;
   private disposed = false;
   private lastError: string | null = null;
@@ -50,6 +53,7 @@ export class BridgeSessionController {
     this.bridge = bridge;
     this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
+    this.modeValue = this.snapshotValue.lab === undefined ? "play" : "lab";
     this.unsubscribeBridge = bridge.subscribe((status, snapshot) => {
       this.statusValue = status;
       this.snapshotValue = snapshot;
@@ -77,7 +81,11 @@ export class BridgeSessionController {
   }
 
   public get isPending(): boolean {
-    return this.foregroundPendingCount > 0;
+    return this.foregroundPendingCount > 0 || this.modePending;
+  }
+
+  public get mode(): BridgeModeId {
+    return this.modeValue;
   }
 
   public get error(): string | null {
@@ -102,6 +110,38 @@ export class BridgeSessionController {
   public stopShift(): void {
     this.active = false;
     this.syncScheduler();
+  }
+
+  public async initializeMode(mode: BridgeModeId): Promise<CanduSnapshot> {
+    if (!this.statusValue.isWasmAvailable) {
+      throw new Error(
+        this.statusValue.source === "loading"
+          ? "The authoritative bridge is still loading."
+          : AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE,
+      );
+    }
+
+    this.active = false;
+    this.modePending = true;
+    this.lastError = null;
+    this.lastResponse = null;
+    this.syncScheduler();
+    this.emit();
+    try {
+      const snapshot = await this.bridge.initializeMode(mode);
+      this.modeValue = mode;
+      this.snapshotValue = snapshot;
+      this.emit();
+      return snapshot;
+    } catch (error) {
+      this.lastError = formatError(error);
+      this.emit();
+      throw error;
+    } finally {
+      this.modePending = false;
+      this.syncScheduler();
+      this.emit();
+    }
   }
 
   public setVisible(visible: boolean): void {
@@ -168,6 +208,7 @@ export class BridgeSessionController {
   private canAdvance(): boolean {
     return this.active &&
       this.statusValue.isWasmAvailable &&
+      this.modeValue === "play" &&
       this.pendingCount === 0 &&
       !this.snapshotValue.isPaused &&
       this.snapshotValue.playbackModeId !== "pause" &&
@@ -187,7 +228,7 @@ export class BridgeSessionController {
     return {
       status: this.statusValue,
       snapshot: this.snapshotValue,
-      pending: this.foregroundPendingCount > 0,
+      pending: this.foregroundPendingCount > 0 || this.modePending,
       response,
       error: this.lastError,
     };

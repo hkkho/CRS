@@ -123,6 +123,117 @@ public sealed class TopologyInventoryRefuellingTests
     }
 
     [Fact]
+    public void InternalAxialBoundaryPairCanReplaceReciprocalNeighborPair()
+    {
+        CoreTopology original = CreateManufacturedTopology();
+        ChannelTopology channel = original.GetChannel(new ChannelId(0));
+        const uint boundaryPosition = 4;
+
+        ChannelTopology alteredChannel = new ChannelTopology(
+            channel.ChannelId,
+            channel.CoordinateX,
+            channel.CoordinateY,
+            channel.FlowDirection,
+            channel.InletPosition,
+            channel.OutletPosition,
+            channel.Neighbors.Where(neighbor =>
+                !(neighbor.SourcePosition.Value == boundaryPosition &&
+                  neighbor.Direction == NeighborDirection.TowardEndB) &&
+                !(neighbor.SourcePosition.Value == boundaryPosition + 1 &&
+                  neighbor.Direction == NeighborDirection.TowardEndA)),
+            channel.BoundaryFaces.Concat(new[]
+            {
+                new BoundaryFaceRecord(
+                    channel.ChannelId,
+                    new BundlePosition(boundaryPosition),
+                    TopologyFace.EndB,
+                    BoundaryClassification.Reflective),
+                new BoundaryFaceRecord(
+                    channel.ChannelId,
+                    new BundlePosition(boundaryPosition + 1),
+                    TopologyFace.EndA,
+                    BoundaryClassification.Reflective)
+            }));
+
+        ContractValidationResult<CoreTopology> result = CoreTopology.TryCreate(
+            original.ChannelCount,
+            original.BundlePositionCount,
+            new[] { alteredChannel, original.GetChannel(new ChannelId(1)) });
+
+        AssertValid(result);
+        ChannelTopology validated = result.Value.GetChannel(new ChannelId(0));
+        Assert.DoesNotContain(validated.Neighbors, neighbor =>
+            neighbor.SourcePosition.Value == boundaryPosition &&
+            neighbor.Direction == NeighborDirection.TowardEndB);
+        Assert.Contains(validated.BoundaryFaces, boundary =>
+            boundary.Position.Value == boundaryPosition &&
+            boundary.Face == TopologyFace.EndB);
+        Assert.Contains(validated.BoundaryFaces, boundary =>
+            boundary.Position.Value == boundaryPosition + 1 &&
+            boundary.Face == TopologyFace.EndA);
+    }
+
+    [Fact]
+    public void AxialBoundaryAndNeighborCoverageCannotOverlap()
+    {
+        CoreTopology original = CreateManufacturedTopology();
+        ChannelTopology channel = original.GetChannel(new ChannelId(0));
+        const uint boundaryPosition = 4;
+        ChannelTopology alteredChannel = new ChannelTopology(
+            channel.ChannelId,
+            channel.CoordinateX,
+            channel.CoordinateY,
+            channel.FlowDirection,
+            channel.InletPosition,
+            channel.OutletPosition,
+            channel.Neighbors,
+            channel.BoundaryFaces.Concat(new[]
+            {
+                new BoundaryFaceRecord(
+                    channel.ChannelId,
+                    new BundlePosition(boundaryPosition),
+                    TopologyFace.EndB,
+                    BoundaryClassification.Reflective),
+                new BoundaryFaceRecord(
+                    channel.ChannelId,
+                    new BundlePosition(boundaryPosition + 1),
+                    TopologyFace.EndA,
+                    BoundaryClassification.Reflective)
+            }));
+
+        ContractValidationResult<CoreTopology> result = CoreTopology.TryCreate(
+            original.ChannelCount,
+            original.BundlePositionCount,
+            new[] { alteredChannel, original.GetChannel(new ChannelId(1)) });
+
+        AssertInvalid(result, "Topology.WithinChannel.BoundaryNeighborOverlap");
+    }
+
+    [Fact]
+    public void OuterAxialEndpointBoundariesRemainRequired()
+    {
+        CoreTopology original = CreateManufacturedTopology();
+        ChannelTopology channel = original.GetChannel(new ChannelId(0));
+        ChannelTopology alteredChannel = new ChannelTopology(
+            channel.ChannelId,
+            channel.CoordinateX,
+            channel.CoordinateY,
+            channel.FlowDirection,
+            channel.InletPosition,
+            channel.OutletPosition,
+            channel.Neighbors,
+            channel.BoundaryFaces.Where(boundary =>
+                !(boundary.Position.Value == 0 && boundary.Face == TopologyFace.EndA)));
+
+        ContractValidationResult<CoreTopology> result = CoreTopology.TryCreate(
+            original.ChannelCount,
+            original.BundlePositionCount,
+            new[] { alteredChannel, original.GetChannel(new ChannelId(1)) });
+
+        AssertInvalid(result, "Topology.EndpointBoundary.Missing");
+    }
+
+    [Fact]
     public void ManufacturedInventoryKeepsLiveIdentityAndLocationSetsUnique()
     {
         CoreTopology topology = CreateManufacturedTopology();

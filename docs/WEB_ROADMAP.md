@@ -78,8 +78,9 @@ silently presented as success.
 
 The project-authored
 `candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack remains the
-default. DRAGON5/DONJON5 remain offline sources for a later, lawful,
-versioned data-pack decision. Core owns all rules and state transitions;
+active simulation and acceptance path. DRAGON5/DONJON5 material remains
+optional offline reference context and does not gate implementation, testing,
+or acceptance. Core owns all rules and state transitions;
 Game owns session orchestration and immutable presentation snapshots; the
 browser bridge serializes those snapshots; Phaser consumes them without
 reimplementing physics.
@@ -400,6 +401,6 @@ alone is not completion.
 Unity feature development stays frozen. Shutdown, scram, accident progression,
 operator-training scenarios, full plant operations, plant-grade safety claims,
 and a transient-capable true IQS/photoneutron/Krylov research expansion are not
-on this gameplay path. Any future DRAGON5/DONJON5 work remains offline and
-requires a separate lawful provenance, units, topology, convergence, and data
-pack admission decision.
+on this gameplay path. Any future DRAGON5/DONJON5 work remains optional offline
+reference work and is outside this roadmap; it is not required for the
+project-authored model or web acceptance.

@@ -9,8 +9,10 @@ export const BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR = 2 as const;
 
 export type ProtocolSource = "wasm" | "synthetic-fixture";
 export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
+export type BridgeModeId = "play" | "lab";
 export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
+export type LabBoundaryFace = "north" | "east" | "south" | "west" | "end-a" | "end-b";
 export type DiagnosticLevel = "info" | "warning" | "error";
 export type EventTone = "info" | "positive" | "warning";
 export type ResponseKind = "full" | "compact";
@@ -258,6 +260,8 @@ export interface CanduLabSpatialSolveSnapshot {
   finalState: {
     iteration: number;
     eigenvalue: number;
+    normalizationScale?: number;
+    fissionProductionRate?: number;
     totalPowerW: number;
     group1Flux: number[];
     group2Flux: number[];
@@ -272,6 +276,42 @@ export interface CanduLabSpatialSolveSnapshot {
   };
 }
 
+export interface CanduLabCellSnapshot {
+  /** Present on flat core cell lists; omitted when the cell is nested in a channel. */
+  channelIndex?: number;
+  position: number;
+  hasFuel: boolean;
+  materialId?: string;
+  reflectiveFaces: LabBoundaryFace[];
+}
+
+export interface CanduLabChannelSnapshot {
+  channelIndex: number;
+  coordinateX: number;
+  coordinateY: number;
+  flowDirection: string;
+  bundles: Array<{
+    position: number;
+    bundleId: string;
+    fuelTypeId: string;
+    currentBurnupMwDayPerKg: number;
+    currentBurnupJPerKgHm: number;
+    insertedAtSeconds: number;
+    stateVersion: number;
+  }>;
+  /** New Lab topology projection. Nested cells are preferred when present. */
+  cells?: CanduLabCellSnapshot[];
+}
+
+export interface CanduLabCoreSnapshot {
+  fixtureId: string;
+  channelCount: number;
+  bundlePositionCount: number;
+  channels: CanduLabChannelSnapshot[];
+  /** Compatibility with hosts that flatten the 2 × 8 cell projection. */
+  cells?: CanduLabCellSnapshot[];
+}
+
 export interface CanduLabSnapshot {
   fixtureId: string;
   simulationTimeSeconds: number;
@@ -280,26 +320,7 @@ export interface CanduLabSnapshot {
   lastRefuelledChannel: number;
   lastRefuellingDirectionId: string | null;
   lastRefuellingShiftCount: number;
-  core: {
-    fixtureId: string;
-    channelCount: number;
-    bundlePositionCount: number;
-    channels: Array<{
-      channelIndex: number;
-      coordinateX: number;
-      coordinateY: number;
-      flowDirection: string;
-      bundles: Array<{
-        position: number;
-        bundleId: string;
-        fuelTypeId: string;
-        currentBurnupMwDayPerKg: number;
-        currentBurnupJPerKgHm: number;
-        insertedAtSeconds: number;
-        stateVersion: number;
-      }>;
-    }>;
-  };
+  core: CanduLabCoreSnapshot;
   spatialSolve: CanduLabSpatialSolveSnapshot;
 }
 
@@ -379,6 +400,8 @@ export type CanduCommand =
   | { type: "queue-power-target"; targetFraction: number }
   | { type: "queue-tilt-target"; targetFraction: number }
   | { type: "commit-refuel"; request: RefuelRequest }
+  | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: LabBoundaryFace[] }
+  | { type: "solve" }
   | { type: "reset" };
 
 export interface CanduCommandResponse {
@@ -1035,6 +1058,152 @@ function isCanduEvent(value: unknown): value is CanduEvent {
     isFiniteNumber(value.timeSeconds) && isEventTone(value.tone);
 }
 
+function isLabBoundaryFace(value: unknown): value is LabBoundaryFace {
+  return value === "north" || value === "east" || value === "south" ||
+    value === "west" || value === "end-a" || value === "end-b";
+}
+
+function isCanduLabCellSnapshot(value: unknown): value is CanduLabCellSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "position",
+    "hasFuel",
+    "reflectiveFaces",
+  ]) || !isNonNegativeInteger(value.position) ||
+      !isBoolean(value.hasFuel) || !Array.isArray(value.reflectiveFaces) ||
+      !value.reflectiveFaces.every(isLabBoundaryFace)) {
+    return false;
+  }
+
+  return (!hasOwn(value, "channelIndex") || isNonNegativeInteger(value.channelIndex)) &&
+    (!hasOwn(value, "materialId") || isString(value.materialId));
+}
+
+function isCanduLabBundleSnapshot(value: unknown): boolean {
+  return isRecord(value) && hasOwnProperties(value, [
+    "position",
+    "bundleId",
+    "fuelTypeId",
+    "currentBurnupMwDayPerKg",
+    "currentBurnupJPerKgHm",
+    "insertedAtSeconds",
+    "stateVersion",
+  ]) && isNonNegativeInteger(value.position) &&
+    hasStringFields(value, ["bundleId", "fuelTypeId"]) &&
+    hasFiniteNumberFields(value, [
+      "currentBurnupMwDayPerKg",
+      "currentBurnupJPerKgHm",
+      "insertedAtSeconds",
+    ]) && hasNonNegativeIntegerFields(value, ["stateVersion"]);
+}
+
+function isCanduLabChannelSnapshot(value: unknown): value is CanduLabChannelSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "channelIndex",
+    "coordinateX",
+    "coordinateY",
+    "flowDirection",
+  ]) || !isNonNegativeInteger(value.channelIndex) ||
+      !isInteger(value.coordinateX) || !isInteger(value.coordinateY) ||
+      !isString(value.flowDirection)) {
+    return false;
+  }
+
+  if (hasOwn(value, "bundles") &&
+      (!Array.isArray(value.bundles) || !value.bundles.every(isCanduLabBundleSnapshot))) {
+    return false;
+  }
+  if (hasOwn(value, "cells") &&
+      (!Array.isArray(value.cells) || !value.cells.every(isCanduLabCellSnapshot))) {
+    return false;
+  }
+  return hasOwn(value, "bundles") || hasOwn(value, "cells");
+}
+
+function isCanduLabSpatialSolveSnapshot(value: unknown): value is CanduLabSpatialSolveSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "status",
+    "isConverged",
+    "hasUsableState",
+    "finalState",
+    "diagnostics",
+  ]) || !isString(value.status) || !isBoolean(value.isConverged) ||
+      !isBoolean(value.hasUsableState) || !isRecord(value.diagnostics)) {
+    return false;
+  }
+
+  const finalState = value.finalState;
+  if (finalState !== null && (!isRecord(finalState) ||
+      !hasOwnProperties(finalState, [
+        "iteration",
+        "eigenvalue",
+        "totalPowerW",
+        "group1Flux",
+        "group2Flux",
+      ]) || !isNonNegativeInteger(finalState.iteration) ||
+      !hasFiniteNumberFields(finalState, ["eigenvalue", "totalPowerW"]) ||
+      !Array.isArray(finalState.group1Flux) ||
+      !Array.isArray(finalState.group2Flux) ||
+      !finalState.group1Flux.every(isFiniteNumber) ||
+      !finalState.group2Flux.every(isFiniteNumber))) {
+    return false;
+  }
+
+  if (finalState !== null && hasOwn(finalState, "normalizationScale") &&
+      !isFiniteNumber(finalState.normalizationScale)) {
+    return false;
+  }
+  if (finalState !== null && hasOwn(finalState, "fissionProductionRate") &&
+      !isFiniteNumber(finalState.fissionProductionRate)) {
+    return false;
+  }
+
+  const diagnostics = value.diagnostics;
+  return hasOwnProperties(diagnostics, ["iterationCount", "convergenceReason", "innerSolveStatus"]) &&
+    isNonNegativeInteger(diagnostics.iterationCount) &&
+    isString(diagnostics.convergenceReason) && isString(diagnostics.innerSolveStatus) &&
+    [
+      "eigenvalueChangeAbsolute",
+      "eigenvalueChangeRelative",
+      "residualAbsoluteInfinity",
+      "residualRelativeInfinity",
+      "sourceShapeChangeInfinity",
+      "powerBalanceRelative",
+    ].every((key) => !hasOwn(diagnostics, key) || diagnostics[key] === null || isFiniteNumber(diagnostics[key]));
+}
+
+function isCanduLabSnapshot(value: unknown): value is CanduLabSnapshot {
+  if (!isRecord(value) || !hasOwnProperties(value, [
+    "fixtureId",
+    "simulationTimeSeconds",
+    "freshBundlesAvailable",
+    "refuellingOperationCount",
+    "lastRefuelledChannel",
+    "lastRefuellingDirectionId",
+    "lastRefuellingShiftCount",
+    "core",
+    "spatialSolve",
+  ]) || !isString(value.fixtureId) ||
+      !hasFiniteNumberFields(value, ["simulationTimeSeconds"]) ||
+      !isNonNegativeInteger(value.freshBundlesAvailable) ||
+      !isNonNegativeInteger(value.refuellingOperationCount) ||
+      !isInteger(value.lastRefuelledChannel) ||
+      (value.lastRefuellingDirectionId !== null && !isString(value.lastRefuellingDirectionId)) ||
+      !isNonNegativeInteger(value.lastRefuellingShiftCount) || !isRecord(value.core) ||
+      !isString(value.core.fixtureId) || !isNonNegativeInteger(value.core.channelCount) ||
+      !isNonNegativeInteger(value.core.bundlePositionCount) ||
+      !Array.isArray(value.core.channels) ||
+      !value.core.channels.every(isCanduLabChannelSnapshot) ||
+      !isCanduLabSpatialSolveSnapshot(value.spatialSolve)) {
+    return false;
+  }
+
+  if (hasOwn(value.core, "cells") &&
+      (!Array.isArray(value.core.cells) || !value.core.cells.every(isCanduLabCellSnapshot))) {
+    return false;
+  }
+  return true;
+}
+
 const SNAPSHOT_STATE_FIELDS = [
   "scenarioId",
   "dataPackId",
@@ -1123,6 +1292,18 @@ function isCanduCommand(value: unknown): value is CanduCommand {
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
       return hasOwn(value, "request") && isRefuelRequest(value.request);
+    case "configure-cell":
+      return hasOwnProperties(value, [
+        "channelIndex",
+        "position",
+        "hasFuel",
+        "reflectiveFaces",
+      ]) && isNonNegativeInteger(value.channelIndex) &&
+        isNonNegativeInteger(value.position) && isBoolean(value.hasFuel) &&
+        Array.isArray(value.reflectiveFaces) &&
+        value.reflectiveFaces.every(isLabBoundaryFace);
+    case "solve":
+      return true;
     default:
       return false;
   }
@@ -1156,7 +1337,9 @@ function isProtocolResponseEnvelope(value: unknown): value is Record<string, unk
     (!hasOwn(value, "coreReplacement") || value.coreReplacement === null ||
       isCanduCoreSnapshot(value.coreReplacement)) &&
     (!hasOwn(value, "snapshotPatch") || value.snapshotPatch === null ||
-      isRecord(value.snapshotPatch));
+      isRecord(value.snapshotPatch)) &&
+    (!hasOwn(value, "lab") || value.lab === null || isCanduLabSnapshot(value.lab)) &&
+    (!hasOwn(value, "labPreview") || value.labPreview === null || isCanduLabSnapshot(value.labPreview));
 }
 
 function normalizeInitializeResponse(value: unknown): unknown {
@@ -1194,7 +1377,8 @@ export function isProtocolSnapshot(value: unknown): value is CanduSnapshot {
       !isNonNegativeInteger(value.sequence) || !hasValidSnapshotStateFields(value) ||
       !isCanduPhysicsSnapshot(value.physics) || !isCanduXenonSnapshot(value.xenon) ||
       !isCanduRrsSnapshot(value.rrs) || !isCanduDiagnostics(value.diagnostics) ||
-      !isCanduCoreSnapshot(value.core)) {
+      !isCanduCoreSnapshot(value.core) ||
+      (hasOwn(value, "lab") && value.lab !== null && !isCanduLabSnapshot(value.lab))) {
     return false;
   }
 

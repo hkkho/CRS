@@ -9,10 +9,37 @@ import {
   isProtocolSnapshot,
   parseProtocolResponse,
   parseProtocolSnapshot,
+  type CanduLabSnapshot,
   type CanduSnapshot,
 } from "./protocol";
 
 describe("candu-playtest-v1 protocol validation", () => {
+  it("accepts the full Lab initialization envelope with flat cells", () => {
+    const lab = createLabSnapshot();
+    const snapshot = {
+      ...createSnapshot(),
+      dataPackId: "lab-2x8-synthetic-v1",
+      lab,
+    };
+    const response = parseProtocolResponse(JSON.stringify({
+      protocol: PROTOCOL_VERSION,
+      operation: "initialize",
+      ok: true,
+      accepted: true,
+      mode: "lab",
+      sequence: 0,
+      command: null,
+      message: "Deterministic lab playtest session initialized.",
+      snapshot,
+      lab,
+      diagnostics: [],
+    }));
+
+    expect(response.command).toEqual({ type: "reset" });
+    expect(response.snapshot.lab?.core.cells).toHaveLength(16);
+    expect(response.snapshot.lab?.spatialSolve.finalState?.group1Flux).toHaveLength(16);
+  });
+
   it("preserves a valid full snapshot and compact response", () => {
     const base = createSnapshot();
 
@@ -175,6 +202,55 @@ function patchFor(snapshot: CanduSnapshot): Record<string, unknown> {
     rrs: snapshot.rrs,
     diagnostics: snapshot.diagnostics,
     lastEvent: snapshot.lastEvent,
+  };
+}
+
+function createLabSnapshot(): CanduLabSnapshot {
+  const cells = Array.from({ length: 16 }, (_, index) => ({
+    channelIndex: Math.floor(index / 8),
+    position: index % 8,
+    hasFuel: true,
+    materialId: "fuel",
+    reflectiveFaces: [] as Array<"north" | "east" | "south" | "west" | "end-a" | "end-b">,
+  }));
+  return {
+    fixtureId: "lab-2x8-synthetic-v1",
+    simulationTimeSeconds: 0,
+    freshBundlesAvailable: 32,
+    refuellingOperationCount: 0,
+    lastRefuelledChannel: -1,
+    lastRefuellingDirectionId: null,
+    lastRefuellingShiftCount: 0,
+    core: {
+      fixtureId: "lab-2x8-synthetic-v1",
+      channelCount: 2,
+      bundlePositionCount: 8,
+      cells,
+      channels: [
+        { channelIndex: 0, coordinateX: 0, coordinateY: 0, flowDirection: "EndAtoEndB", bundles: [] },
+        { channelIndex: 1, coordinateX: 1, coordinateY: 0, flowDirection: "EndBtoEndA", bundles: [] },
+      ],
+    },
+    spatialSolve: {
+      status: "converged",
+      isConverged: true,
+      hasUsableState: true,
+      finalState: {
+        iteration: 2,
+        eigenvalue: 0.6875,
+        totalPowerW: 0.4,
+        group1Flux: Array.from({ length: 16 }, () => 1 / 6),
+        group2Flux: Array.from({ length: 16 }, () => 1 / 12),
+      },
+      diagnostics: {
+        iterationCount: 2,
+        residualRelativeInfinity: 0,
+        sourceShapeChangeInfinity: 0,
+        powerBalanceRelative: 0,
+        convergenceReason: "converged",
+        innerSolveStatus: "succeeded",
+      },
+    },
   };
 }
 

@@ -111,6 +111,7 @@ namespace ReactorSim.Browser
                         FixtureId = LabPlaytestSession.FixtureId,
                         Commands = new List<string>
                         {
+                            "configure-cell",
                             "solve",
                             "commit-refuel",
                             "reset"
@@ -188,7 +189,18 @@ namespace ReactorSim.Browser
                             _runtime);
                     }
 
-                    BridgeRuntime candidate = CreateRuntime(mode, requestJson ?? "{}");
+                    // The browser starts in Play mode before the operator can
+                    // select Lab. Reuse that already-built play session when
+                    // entering Lab so the mode switch only constructs the
+                    // small Lab fixture and its spatial solve. A Play
+                    // initialization still creates a fresh play session.
+                    GameSession? reusablePlaySession = mode == "lab"
+                        ? _runtimeInstance?.PlaySession
+                        : null;
+                    BridgeRuntime candidate = CreateRuntime(
+                        mode,
+                        requestJson ?? "{}",
+                        reusablePlaySession);
                     if (candidate.InitializationFailure != null)
                     {
                         return SerializeError(
@@ -335,7 +347,17 @@ namespace ReactorSim.Browser
                         : null;
                     if (commandType == "reset")
                     {
-                        BridgeRuntime candidate = CreateRuntime(_runtime.Mode, _runtime.InitializationJson);
+                        // Resetting Lab should rebuild only its small spatial
+                        // fixture. Keep the already initialized Play session
+                        // so the browser worker does not synchronously rebuild
+                        // the full 380-channel session on every Lab reset.
+                        GameSession? reusablePlaySession = _runtime.Mode == "lab"
+                            ? _runtime.PlaySession
+                            : null;
+                        BridgeRuntime candidate = CreateRuntime(
+                            _runtime.Mode,
+                            _runtime.InitializationJson,
+                            reusablePlaySession);
                         if (candidate.InitializationFailure != null)
                         {
                             execution = BridgeCommandExecution.Failure(candidate.InitializationFailure);
@@ -355,7 +377,8 @@ namespace ReactorSim.Browser
                         }
                     }
                     else if (_runtime.Mode == "lab" &&
-                        (commandType == "solve" ||
+                        (commandType == "configure-cell" ||
+                         commandType == "solve" ||
                          commandType == "commit-refuel"))
                     {
                         execution = DispatchLab(_runtime, commandType, payload);
@@ -507,9 +530,13 @@ namespace ReactorSim.Browser
             };
         }
 
-        private static BridgeRuntime CreateRuntime(string mode, string initializationJson)
+        private static BridgeRuntime CreateRuntime(
+            string mode,
+            string initializationJson,
+            GameSession? reusablePlaySession = null)
         {
-            GameSession playSession = PracticeGameSessionFactory.CreateBrowserPlaytest();
+            GameSession playSession = reusablePlaySession ??
+                PracticeGameSessionFactory.CreateBrowserPlaytest();
             LabPlaytestSession? labSession = null;
             BridgeDiagnosticDto? failure = null;
             if (mode == "lab" &&
