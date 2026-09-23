@@ -51,7 +51,7 @@ try {
 
   await page.goto(targetUrl.toString(), { waitUntil: "networkidle" });
   await page.locator("canvas").waitFor({ state: "attached", timeout: 10_000 });
-  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("play mode online"), undefined, { timeout: 60_000 });
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"), undefined, { timeout: 60_000 });
   const mirror = await page.locator("#status-mirror").textContent();
   if (!mirror?.includes("380 channels")) throw new Error(`The browser did not report the full play snapshot: ${mirror}`);
 

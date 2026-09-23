@@ -302,7 +302,7 @@ export class TitleScene extends Phaser.Scene {
       color: colorString(COLORS.gold),
       letterSpacing: 0.9,
     });
-    makeText(this, 1006, 822, "Edit the 2 × 8 topology from inside the live run.", {
+    makeText(this, 1006, 822, "Inspect and configure any live channel cell.", {
       fontFamily: FONTS.body,
       fontSize: "12px",
       color: colorString(COLORS.ivoryMuted),

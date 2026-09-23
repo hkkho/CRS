@@ -207,14 +207,28 @@ namespace ReactorSim.Core
         private readonly FullCoreDiffusionDataPackV1 _dataPack;
         private readonly ReadOnlyCollection<SpatialEdgeConductance> _edgeConductances;
         private readonly ReadOnlyCollection<SpatialBoundaryConductance> _boundaryConductances;
+        private readonly ReadOnlyCollection<NodeKey> _nonfuelNodes;
+        private readonly HashSet<NodeKey> _nonfuelNodeSet;
         private SpatialCoefficientSet? _validatedTopologyConductanceTemplate;
+
+        // Project-authored synthetic heavy-water moderator row.  These are
+        // explicit practice-model constants: transport and downscatter are
+        // retained, while all local fission production and power response are
+        // zero.
+        private const double ModeratorAbsorptionGroup1PerM = 0.025;
+        private const double ModeratorAbsorptionGroup2PerM = 0.012;
+        private const double ModeratorDownscatterGroup1To2PerM = 0.080;
+        private const double ModeratorChiGroup1 = 1.0;
+        private const double ModeratorChiGroup2 = 0.0;
+        private const double ModeratorEnergyPerFissionJ = 1.0;
 
         private FullCoreDiffusionModelV1(
             CoreTopology topology,
             SpatialStencil stencil,
             FullCoreDiffusionDataPackV1 dataPack,
             IEnumerable<SpatialEdgeConductance> edgeConductances,
-            IEnumerable<SpatialBoundaryConductance> boundaryConductances)
+            IEnumerable<SpatialBoundaryConductance> boundaryConductances,
+            IEnumerable<NodeKey> nonfuelNodes)
         {
             _topology = topology;
             _stencil = stencil;
@@ -223,6 +237,11 @@ namespace ReactorSim.Core
                 edgeConductances.ToArray());
             _boundaryConductances = new ReadOnlyCollection<SpatialBoundaryConductance>(
                 boundaryConductances.ToArray());
+            NodeKey[] orderedNonfuelNodes = nonfuelNodes
+                .OrderBy(node => node)
+                .ToArray();
+            _nonfuelNodes = new ReadOnlyCollection<NodeKey>(orderedNonfuelNodes);
+            _nonfuelNodeSet = new HashSet<NodeKey>(orderedNonfuelNodes);
         }
 
         public FullCoreDiffusionDataPackV1 DataPack
@@ -245,8 +264,37 @@ namespace ReactorSim.Core
             get { return _stencil.NodeCount; }
         }
 
+        /// <summary>
+        /// Canonically ordered nodes bound to the explicit moderator-like
+        /// row.  The live bundle inventory still contains one bundle record
+        /// at every node; this set only controls the physical coefficient row
+        /// used by the diffusion solve.
+        /// </summary>
+        public IReadOnlyCollection<NodeKey> NonfuelNodes
+        {
+            get { return _nonfuelNodes; }
+        }
+
+        public bool IsNonfuel(NodeKey node)
+        {
+            return _nonfuelNodeSet.Contains(node);
+        }
+
         public static ContractValidationResult<FullCoreDiffusionModelV1> TryCreateCandu6(
             FullCoreDiffusionDataPackV1 dataPack)
+        {
+            return TryCreateCandu6(dataPack, Array.Empty<NodeKey>());
+        }
+
+        /// <summary>
+        /// Creates the canonical full-core model and binds the supplied nodes
+        /// to the explicit moderator-like coefficient row.  BundleInventory
+        /// remains fully populated at every node so the live bundle identity
+        /// and refuelling contracts do not change.
+        /// </summary>
+        public static ContractValidationResult<FullCoreDiffusionModelV1> TryCreateCandu6(
+            FullCoreDiffusionDataPackV1 dataPack,
+            IEnumerable<NodeKey> nonfuelNodes)
         {
             if (dataPack == null)
             {
@@ -270,13 +318,30 @@ namespace ReactorSim.Core
                 return Invalid(stencilResult.FirstDiagnostic);
             }
 
-            return TryCreate(dataPack, topologyResult.Value, stencilResult.Value);
+            return TryCreate(
+                dataPack,
+                topologyResult.Value,
+                stencilResult.Value,
+                nonfuelNodes);
         }
 
         public static ContractValidationResult<FullCoreDiffusionModelV1> TryCreate(
             FullCoreDiffusionDataPackV1 dataPack,
             CoreTopology topology,
             SpatialStencil stencil)
+        {
+            return TryCreate(
+                dataPack,
+                topology,
+                stencil,
+                Array.Empty<NodeKey>());
+        }
+
+        public static ContractValidationResult<FullCoreDiffusionModelV1> TryCreate(
+            FullCoreDiffusionDataPackV1 dataPack,
+            CoreTopology topology,
+            SpatialStencil stencil,
+            IEnumerable<NodeKey> nonfuelNodes)
         {
             if (dataPack == null)
             {
@@ -300,6 +365,13 @@ namespace ReactorSim.Core
                     "FullCoreDiffusionModel.Stencil.Missing",
                     "stencil",
                     "A full-core diffusion model requires an assembled stencil.");
+            }
+
+            ContractValidationResult<NodeKey[]> nonfuelResult =
+                ValidateNonfuelNodes(topology, nonfuelNodes);
+            if (!nonfuelResult.IsValid)
+            {
+                return Invalid(nonfuelResult.FirstDiagnostic);
             }
 
             ContractValidationResult<bool> compatibility =
@@ -347,7 +419,8 @@ namespace ReactorSim.Core
                     stencil,
                     dataPack,
                     edges,
-                    boundaries));
+                    boundaries,
+                    nonfuelResult.Value));
         }
 
         public ContractValidationResult<FullCoreDiffusionSolveResultV1> TrySolve(
@@ -1405,6 +1478,12 @@ namespace ReactorSim.Core
                         "Every full-core spatial node must contain a live bundle.");
                 }
 
+                if (_nonfuelNodeSet.Contains(node.Node))
+                {
+                    nodeCoefficients.Add(CreateModeratorNodeCoefficients(node.Node));
+                    continue;
+                }
+
                 if (!tables.TryGetValue(bundle.MaterialVariantId, out BurnupCoefficientTableV1? table))
                 {
                     return ContractValidationResult<SpatialCoefficientSet>.Invalid(
@@ -1476,6 +1555,66 @@ namespace ReactorSim.Core
             }
 
             return created;
+        }
+
+        private SpatialNodeCoefficients CreateModeratorNodeCoefficients(NodeKey node)
+        {
+            // BundleInventory remains authoritative for identity and burnup at
+            // this node.  This row only changes the physical material binding
+            // for the current solve and deliberately has no fission response.
+            return new SpatialNodeCoefficients(
+                node,
+                _dataPack.NodeVolumeM3,
+                ModeratorAbsorptionGroup1PerM,
+                ModeratorAbsorptionGroup2PerM,
+                ModeratorDownscatterGroup1To2PerM,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                ModeratorChiGroup1,
+                ModeratorChiGroup2,
+                ModeratorEnergyPerFissionJ);
+        }
+
+        private static ContractValidationResult<NodeKey[]> ValidateNonfuelNodes(
+            CoreTopology topology,
+            IEnumerable<NodeKey> nonfuelNodes)
+        {
+            if (nonfuelNodes == null)
+            {
+                return ContractValidationResult<NodeKey[]>.Invalid(
+                    "FullCoreDiffusionModel.NonfuelNodes.Missing",
+                    "nonfuel_nodes",
+                    "The nonfuel node collection may not be null.");
+            }
+
+            NodeKey[] ordered = nonfuelNodes
+                .OrderBy(node => node)
+                .ToArray();
+            for (int index = 0; index < ordered.Length; index++)
+            {
+                NodeKey node = ordered[index];
+                if (!topology.TryGetFlatIndex(node, out _))
+                {
+                    return ContractValidationResult<NodeKey[]>.Invalid(
+                        "FullCoreDiffusionModel.NonfuelNodes.OutOfRange",
+                        "nonfuel_nodes[" + index.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "Every nonfuel node must belong to the model topology.");
+                }
+
+                if (index > 0 && ordered[index - 1] == node)
+                {
+                    return ContractValidationResult<NodeKey[]>.Invalid(
+                        "FullCoreDiffusionModel.NonfuelNodes.Duplicate",
+                        "nonfuel_nodes[" + index.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "A nonfuel node may be declared only once.");
+                }
+            }
+
+            return ContractValidationResult<NodeKey[]>.Valid(ordered);
         }
 
         private static List<SpatialEdgeConductance> BuildEdgeConductances(

@@ -15,16 +15,15 @@ using ReactorSim.Game;
 namespace ReactorSim.Browser
 {
     /// <summary>
-    /// JSON boundary used by the optional browser-WASM host. The browser sees
-    /// one command/response shape for both modes; Lab diagnostics are carried
-    /// as an additional field so the Play presentation remains reusable.
+    /// JSON boundary used by the optional browser-WASM host. The browser owns
+    /// one live, editable full-core GameSession for both gameplay and Core
+    /// Designer commands.
     /// </summary>
     public static class PlaytestBridgeV1
     {
         private const string DefaultMode = "play";
         private const string DefaultDataPackId =
             PracticeGameSessionFactory.KineticsDataPackVersion;
-        private const string LabDataPackId = "lab-2x8-synthetic-v1";
         private const string TowardEndA = "toward-end-a";
         private const string TowardEndB = "toward-end-b";
 
@@ -102,22 +101,6 @@ namespace ReactorSim.Browser
                         AuthoritativeModel = "ReactorSim.Game.GameSession",
                         FixtureId = PracticeGameSessionFactory.DiffusionDataPackVersion,
                         Commands = PlayCommands()
-                    },
-                    new BridgeModeCapabilityDto
-                    {
-                        Id = "lab",
-                        Label = "Lab",
-                        AuthoritativeModel = "ReactorSim.Core.SpatialEigenSolve",
-                        FixtureId = LabPlaytestSession.FixtureId,
-                        Commands = new List<string>
-                        {
-                            "configure-cell",
-                            "solve",
-                            "commit-refuel",
-                            "lab-refuel",
-                            "reset-lab",
-                            "reset"
-                        }
                     }
                 }
             };
@@ -126,9 +109,9 @@ namespace ReactorSim.Browser
         }
 
         /// <summary>
-        /// Creates a deterministic session. The request accepts {"mode":
-        /// "play"} or {"mode":"lab"}; unknown modes are rejected without
-        /// replacing the current session.
+        /// Creates a deterministic full-core session. The bridge exposes only
+        /// the Play mode; unknown modes are rejected without replacing the
+        /// current session.
         /// </summary>
         public static string Initialize(string requestJson)
         {
@@ -173,44 +156,27 @@ namespace ReactorSim.Browser
                                 PlaytestProtocolV1.Diagnostic(
                                     "Browser.Initialize.Mode.Invalid",
                                     "mode",
-                                    "mode must be the string play or lab."),
+                                    "mode must be the string play."),
                                 _runtime);
                         }
 
                         mode = PlaytestInput.NormalizeMode(modeValue.GetString()!);
                     }
 
-                    if (mode != "play" && mode != "lab")
+                    if (mode != DefaultMode)
                     {
                         return SerializeError(
                             "initialize",
                             PlaytestProtocolV1.Diagnostic(
                                 "Browser.Initialize.Mode.Unsupported",
                                 "mode",
-                                "The browser bridge supports play and lab modes."),
+                                "The browser bridge supports only play mode."),
                             _runtime);
                     }
 
-                    // The browser starts in Play mode before the operator can
-                    // select Lab. Reuse that already-built play session when
-                    // entering Lab so the mode switch only constructs the
-                    // small Lab fixture and its spatial solve. A Play
-                    // initialization still creates a fresh play session.
-                    GameSession? reusablePlaySession = mode == "lab"
-                        ? _runtimeInstance?.PlaySession
-                        : null;
                     BridgeRuntime candidate = CreateRuntime(
                         mode,
-                        requestJson ?? "{}",
-                        reusablePlaySession);
-                    if (candidate.InitializationFailure != null)
-                    {
-                        return SerializeError(
-                            "initialize",
-                            candidate.InitializationFailure,
-                            _runtime);
-                    }
-
+                        requestJson ?? "{}");
                     _runtime = candidate;
                     GameSessionSnapshot game = _runtime.PlaySession.Snapshot;
                     PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
@@ -228,7 +194,6 @@ namespace ReactorSim.Browser
                             Snapshot = snapshot,
                             StateDigest = stateDigest,
                             ReplayDigest = ComputeReplayDigest(_runtime),
-                            Lab = CreateLabSnapshot(_runtime),
                             Diagnostics = new List<PlaytestDiagnosticDto>(),
                             Command = null
                         });
@@ -328,11 +293,10 @@ namespace ReactorSim.Browser
 
                     string commandType = PlaytestInput.NormalizeType(typeValue.GetString()!);
                     string canonicalCommand = PlaytestProtocolV1.CanonicalizeJson(payload);
-                    // Engineering commands update the Lab workspace carried
-                    // by the full snapshot. Keep those responses materialized
-                    // even when the caller asks for compact play responses;
-                    // ordinary game commands retain the existing compact
-                    // transport path.
+                    // Engineering commands update the live full-core session.
+                    // Keep those responses materialized even when the caller
+                    // asks for compact play responses; ordinary game commands
+                    // retain the existing compact transport path.
                     bool engineeringCommand = IsEngineeringCommand(commandType);
                     bool compactRequested = IsCompactResponseRequested(root) &&
                         _runtime.Mode == DefaultMode &&
@@ -351,51 +315,26 @@ namespace ReactorSim.Browser
 
                     BridgeCommandExecution execution;
                     double previousScore = _runtime.LastScore;
-                    object? previousDetailedProjection = _runtime.Mode == DefaultMode
-                        ? _runtime.LastDetailedProjection
-                        : null;
-                    if (commandType == "reset-lab")
+                    object? previousDetailedProjection = _runtime.LastDetailedProjection;
+                    if (commandType == "reset")
                     {
-                        execution = ResetLab(_runtime);
-                    }
-                    else if (commandType == "reset")
-                    {
-                        // The ordinary reset command resets the live Play
-                        // session. Keep the engineering workspace in Play
-                        // mode; reset-lab is the explicit Lab reset command.
-                        // Legacy Lab mode retains its original reset behavior.
-                        GameSession? reusablePlaySession = _runtime.Mode == "lab"
-                            ? _runtime.PlaySession
-                            : null;
-                        LabPlaytestSession? reusableLabSession = _runtime.Mode == DefaultMode
-                            ? _runtime.LabSession
-                            : null;
                         BridgeRuntime candidate = CreateRuntime(
                             _runtime.Mode,
-                            _runtime.InitializationJson,
-                            reusablePlaySession,
-                            reusableLabSession);
-                        if (candidate.InitializationFailure != null)
+                            _runtime.InitializationJson);
+                        _runtime = candidate;
+                        _runtime.LastEvent = new PlaytestEventDto
                         {
-                            execution = BridgeCommandExecution.Failure(candidate.InitializationFailure);
-                        }
-                        else
-                        {
-                            _runtime = candidate;
-                            _runtime.LastEvent = new PlaytestEventDto
-                            {
-                                EventId = "wasm-event-reset",
-                                TimeSeconds = 0.0,
-                                Title = "Run reset",
-                                Detail = "The deterministic browser session was restored.",
-                                Tone = "info"
-                            };
-                            execution = BridgeCommandExecution.Success("Browser playtest run reset.");
-                        }
+                            EventId = "wasm-event-reset",
+                            TimeSeconds = 0.0,
+                            Title = "Run reset",
+                            Detail = "The deterministic browser session was restored.",
+                            Tone = "info"
+                        };
+                        execution = BridgeCommandExecution.Success("Browser playtest run reset.");
                     }
-                    else if (ShouldDispatchToLab(_runtime, commandType))
+                    else if (IsEngineeringCommand(commandType))
                     {
-                        execution = DispatchLab(_runtime, commandType, payload);
+                        execution = DispatchEngineering(_runtime, commandType, payload);
                     }
                     else
                     {
@@ -404,7 +343,7 @@ namespace ReactorSim.Browser
 
                     _runtime.Sequence = checked(_runtime.Sequence + 1);
                     GameSessionSnapshot game = execution.Snapshot ?? GetCurrentGameSnapshot(_runtime);
-                    bool detailedProjectionChanged = _runtime.Mode == DefaultMode &&
+                    bool detailedProjectionChanged =
                         previousDetailedProjection != null &&
                         !ReferenceEquals(
                             previousDetailedProjection,
@@ -431,6 +370,7 @@ namespace ReactorSim.Browser
                             (commandType == "commit-refuel" || detailedProjectionChanged))
                         {
                             coreReplacement = CreateCoreSnapshot(
+                                _runtime,
                                 game.Core,
                                 game.Physics.MeanBundlePowerWatts);
                         }
@@ -484,7 +424,6 @@ namespace ReactorSim.Browser
                                 Sequence = _runtime.Sequence,
                                 Command = payload.Clone(),
                                 Snapshot = snapshot!,
-                                Lab = CreateLabSnapshot(_runtime),
                                 StateDigest = stateDigest,
                                 ReplayDigest = ComputeReplayDigest(_runtime),
                                 Diagnostics = execution.Diagnostics
@@ -542,100 +481,206 @@ namespace ReactorSim.Browser
                 "commit-refuel",
                 "configure-cell",
                 "solve",
-                "lab-refuel",
-                "reset-lab",
                 "reset"
             };
         }
 
         private static BridgeRuntime CreateRuntime(
             string mode,
-            string initializationJson,
-            GameSession? reusablePlaySession = null,
-            LabPlaytestSession? reusableLabSession = null)
+            string initializationJson)
         {
-            GameSession playSession = reusablePlaySession ??
-                PracticeGameSessionFactory.CreateBrowserPlaytest();
-            LabPlaytestSession? labSession = reusableLabSession;
-            BridgeDiagnosticDto? failure = null;
-            if (labSession == null && !LabPlaytestSession.TryCreate(
-                    new LabSolverOptions(),
-                    out labSession,
-                    out failure))
-            {
-                labSession = null;
-            }
-
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                playSession,
-                labSession,
-                failure);
+                PracticeGameSessionFactory.CreateBrowserPlaytest());
         }
 
-        private static BridgeCommandExecution DispatchLab(
+        private static BridgeCommandExecution DispatchEngineering(
             BridgeRuntime runtime,
             string commandType,
             JsonElement payload)
         {
-            if (runtime.LabSession == null)
+            if (commandType == "configure-cell")
             {
-                return BridgeCommandExecution.Failure(
-                    PlaytestProtocolV1.Diagnostic(
-                        "Lab.Session.Unavailable",
-                        "mode",
-                        "The Lab fixture could not initialize a usable spatial session."));
+                if (!TryReadConfiguredCell(
+                        payload,
+                        out uint channelIndex,
+                        out uint position,
+                        out bool hasFuel,
+                        out IReadOnlyCollection<TopologyFace> reflectiveFaces,
+                        out BridgeDiagnosticDto? diagnostic))
+                {
+                    return BridgeCommandExecution.Failure(diagnostic!);
+                }
+
+                return ToExecution(
+                    runtime.PlaySession.ConfigureCell(
+                        channelIndex,
+                        position,
+                        hasFuel,
+                        reflectiveFaces));
             }
 
-            if (commandType == "commit-refuel" || commandType == "lab-refuel")
+            if (commandType == "solve")
             {
-                JsonElement request = PlaytestInput.TryGetProperty(
-                    payload,
-                    out JsonElement nestedRequest,
-                    "request")
-                    ? nestedRequest
-                    : payload;
-                return runtime.LabSession.Dispatch("refuel", request);
+                return ToExecution(runtime.PlaySession.SolveConfiguredCore());
             }
 
-            return runtime.LabSession.Dispatch(commandType, payload);
+            return InvalidCommand(
+                "Browser.Command.Unsupported",
+                "type",
+                "The selected engineering command is not supported by the live Play session.");
         }
 
-        private static bool ShouldDispatchToLab(
-            BridgeRuntime runtime,
-            string commandType)
+        private static bool TryReadConfiguredCell(
+            JsonElement payload,
+            out uint channelIndex,
+            out uint position,
+            out bool hasFuel,
+            out IReadOnlyCollection<TopologyFace> reflectiveFaces,
+            out BridgeDiagnosticDto? diagnostic)
         {
-            return commandType == "configure-cell" ||
-                commandType == "solve" ||
-                commandType == "lab-refuel" ||
-                (runtime.Mode == "lab" && commandType == "commit-refuel");
+            channelIndex = 0;
+            position = 0;
+            hasFuel = false;
+            reflectiveFaces = Array.Empty<TopologyFace>();
+            diagnostic = null;
+
+            if (!TryGetUInt32(payload, out channelIndex, "channelIndex", "channel_index"))
+            {
+                diagnostic = PlaytestProtocolV1.Diagnostic(
+                    "Browser.ConfigureCell.ChannelIndex.Invalid",
+                    "channelIndex",
+                    "channelIndex must be a nonnegative integer.");
+                return false;
+            }
+
+            if (!TryGetUInt32(payload, out position, "position"))
+            {
+                diagnostic = PlaytestProtocolV1.Diagnostic(
+                    "Browser.ConfigureCell.Position.Invalid",
+                    "position",
+                    "position must be a nonnegative integer.");
+                return false;
+            }
+
+            if (!PlaytestInput.TryGetProperty(payload, out JsonElement fuel, "hasFuel", "has_fuel") ||
+                (fuel.ValueKind != JsonValueKind.True && fuel.ValueKind != JsonValueKind.False))
+            {
+                diagnostic = PlaytestProtocolV1.Diagnostic(
+                    "Browser.ConfigureCell.HasFuel.Invalid",
+                    "hasFuel",
+                    "hasFuel must be a JSON boolean.");
+                return false;
+            }
+
+            hasFuel = fuel.GetBoolean();
+            if (!PlaytestInput.TryGetProperty(
+                    payload,
+                    out JsonElement faces,
+                    "reflectiveFaces",
+                    "reflective_faces") ||
+                faces.ValueKind != JsonValueKind.Array)
+            {
+                diagnostic = PlaytestProtocolV1.Diagnostic(
+                    "Browser.ConfigureCell.ReflectiveFaces.Invalid",
+                    "reflectiveFaces",
+                    "reflectiveFaces must be an array of face strings.");
+                return false;
+            }
+
+            var parsedFaces = new List<TopologyFace>();
+            foreach (JsonElement faceValue in faces.EnumerateArray())
+            {
+                if (faceValue.ValueKind != JsonValueKind.String ||
+                    !TryParseTopologyFace(faceValue.GetString(), out TopologyFace face))
+                {
+                    diagnostic = PlaytestProtocolV1.Diagnostic(
+                        "Browser.ConfigureCell.ReflectiveFaces.Invalid",
+                        "reflectiveFaces",
+                        "Each reflective face must be one of north, east, south, west, end-a, or end-b.");
+                    return false;
+                }
+
+                if (parsedFaces.Contains(face))
+                {
+                    diagnostic = PlaytestProtocolV1.Diagnostic(
+                        "Browser.ConfigureCell.ReflectiveFaces.Duplicate",
+                        "reflectiveFaces",
+                        "A reflective face may be listed only once.");
+                    return false;
+                }
+
+                parsedFaces.Add(face);
+            }
+
+            reflectiveFaces = parsedFaces;
+            return true;
+        }
+
+        private static bool TryParseTopologyFace(
+            string? value,
+            out TopologyFace face)
+        {
+            face = default(TopologyFace);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            string normalized = PlaytestInput.NormalizeType(value);
+            switch (normalized)
+            {
+                case "north":
+                    face = TopologyFace.North;
+                    return true;
+                case "east":
+                    face = TopologyFace.East;
+                    return true;
+                case "south":
+                    face = TopologyFace.South;
+                    return true;
+                case "west":
+                    face = TopologyFace.West;
+                    return true;
+                case "end-a":
+                case "enda":
+                    face = TopologyFace.EndA;
+                    return true;
+                case "end-b":
+                case "endb":
+                    face = TopologyFace.EndB;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static string TopologyFaceId(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return "north";
+                case TopologyFace.East:
+                    return "east";
+                case TopologyFace.South:
+                    return "south";
+                case TopologyFace.West:
+                    return "west";
+                case TopologyFace.EndA:
+                    return "end-a";
+                case TopologyFace.EndB:
+                    return "end-b";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
         }
 
         private static bool IsEngineeringCommand(string commandType)
         {
             return commandType == "configure-cell" ||
-                commandType == "solve" ||
-                commandType == "reset-lab" ||
-                commandType == "lab-refuel";
-        }
-
-        private static BridgeCommandExecution ResetLab(BridgeRuntime runtime)
-        {
-            if (!LabPlaytestSession.TryCreate(
-                    new LabSolverOptions(),
-                    out LabPlaytestSession? labSession,
-                    out BridgeDiagnosticDto? failure))
-            {
-                return BridgeCommandExecution.Failure(
-                    failure ?? PlaytestProtocolV1.Diagnostic(
-                        "Lab.Session.Unavailable",
-                        "lab",
-                        "The Lab fixture could not initialize a usable spatial session."));
-            }
-
-            runtime.LabSession = labSession;
-            return BridgeCommandExecution.Success("Lab engineering workspace reset.");
+                commandType == "solve";
         }
 
         private static BridgeCommandExecution DispatchPlay(
@@ -884,9 +929,7 @@ namespace ReactorSim.Browser
         {
             runtime.LastGameSnapshot = snapshot;
             runtime.LastScore = snapshot.ScoreTotal;
-            runtime.LastDetailedProjection = runtime.Mode == DefaultMode
-                ? runtime.PlaySession.CurrentSpatialCandidate
-                : null;
+            runtime.LastDetailedProjection = runtime.PlaySession.CurrentSpatialCandidate;
         }
 
         private static PlaytestSnapshotDto CreateSnapshot(
@@ -908,7 +951,6 @@ namespace ReactorSim.Browser
             }
 
             string playback = GetPlaybackMode(game);
-            LabSnapshotDto? labSnapshot = runtime.LabSession?.CreateSnapshot();
 
             return new PlaytestSnapshotDto
             {
@@ -916,7 +958,7 @@ namespace ReactorSim.Browser
                 Source = "wasm",
                 Sequence = runtime.Sequence,
                 ScenarioId = game.ScenarioId,
-                DataPackId = runtime.Mode == "lab" ? LabDataPackId : DefaultDataPackId,
+                DataPackId = DefaultDataPackId,
                 SimulationTimeSeconds = game.SimulationTimeSeconds,
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,
@@ -944,17 +986,14 @@ namespace ReactorSim.Browser
                 Physics = CreatePhysicsSnapshot(game),
                 Xenon = CreateXenonSnapshot(game),
                 Rrs = CreateRrsSnapshot(game),
-                Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
-                Diagnostics = CreateDiagnosticsSnapshot(
-                    runtime,
-                    game,
-                    runtime.Mode == "lab" ? labSnapshot : null),
-                LastEvent = CreateLastEvent(runtime, game),
-                Lab = labSnapshot
+                Core = CreateCoreSnapshot(runtime, game.Core, game.Physics.MeanBundlePowerWatts),
+                Diagnostics = CreateDiagnosticsSnapshot(runtime, game),
+                LastEvent = CreateLastEvent(runtime, game)
             };
         }
 
         private static PlaytestCoreDto CreateCoreSnapshot(
+            BridgeRuntime runtime,
             GameCorePresentationSnapshot core,
             double meanBundlePowerWatts)
         {
@@ -1003,7 +1042,21 @@ namespace ReactorSim.Browser
                                     : bundle.PowerWatts / meanBundlePowerWatts,
                                 InsertedAtSeconds = bundle.InsertedAtSeconds,
                                 StateVersion = bundle.StateVersion,
-                                IsFresh = bundle.IsFresh
+                                IsFresh = bundle.IsFresh,
+                                HasFuel = runtime.PlaySession.IsFuelCell(
+                                    channel.ChannelIndex,
+                                    bundle.Position),
+                                ReflectiveFaces = runtime.PlaySession.GetReflectiveFaces(
+                                        channel.ChannelIndex,
+                                        bundle.Position)
+                                    .Select(TopologyFaceId)
+                                    .ToList(),
+                                Group1Flux = runtime.PlaySession.GetCellGroup1Flux(
+                                    channel.ChannelIndex,
+                                    bundle.Position),
+                                Group2Flux = runtime.PlaySession.GetCellGroup2Flux(
+                                    channel.ChannelIndex,
+                                    bundle.Position)
                             })
                             .ToList()
                     })
@@ -1025,7 +1078,7 @@ namespace ReactorSim.Browser
             return new PlaytestSnapshotPatchDto
             {
                 ScenarioId = game.ScenarioId,
-                DataPackId = runtime.Mode == "lab" ? LabDataPackId : DefaultDataPackId,
+                DataPackId = DefaultDataPackId,
                 SimulationTimeSeconds = game.SimulationTimeSeconds,
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,
@@ -1053,7 +1106,7 @@ namespace ReactorSim.Browser
                 Physics = CreatePhysicsSnapshot(game),
                 Xenon = CreateXenonSnapshot(game),
                 Rrs = CreateRrsSnapshot(game),
-                Diagnostics = CreateDiagnosticsSnapshot(runtime, game, null),
+                Diagnostics = CreateDiagnosticsSnapshot(runtime, game),
                 LastEvent = CreateLastEvent(runtime, game)
             };
         }
@@ -1170,35 +1223,21 @@ namespace ReactorSim.Browser
 
         private static PlaytestDiagnosticsDto CreateDiagnosticsSnapshot(
             BridgeRuntime runtime,
-            GameSessionSnapshot game,
-            LabSnapshotDto? labSnapshot)
+            GameSessionSnapshot game)
         {
-            LabSpatialSolveSnapshotDto? solve = labSnapshot?.SpatialSolve;
             double relativePowerError = game.Physics.TargetPowerWatts <= 0.0
                 ? 0.0
                 : Math.Abs(game.Physics.TotalPowerWatts - game.Physics.TargetPowerWatts) /
                   game.Physics.TargetPowerWatts;
-            PlaytestConvergenceDto convergence = solve == null
-                ? new PlaytestConvergenceDto
-                {
-                    State = game.Physics.SolveState,
-                    Iterations = game.Physics.SolverIterationCount,
-                    Residual = game.Physics.SolverResidualRelativeInfinity,
-                    RelativePowerError = relativePowerError,
-                    LastSolveMilliseconds = 0.0,
-                    SolverLabel = game.Physics.SolverIdentity
-                }
-                : new PlaytestConvergenceDto
-                {
-                    State = solve.HasUsableState ? "converged" : "pending",
-                    Iterations = solve.Diagnostics.IterationCount,
-                    Residual = solve.Diagnostics.ResidualRelativeInfinity ?? 0.0,
-                    RelativePowerError = solve.FinalState == null
-                        ? relativePowerError
-                        : Math.Abs(solve.FinalState.TotalPowerW - 0.4) / 0.4,
-                    LastSolveMilliseconds = 0.0,
-                    SolverLabel = "Core SpatialEigenSolve / " + LabPlaytestSession.FixtureId
-                };
+            PlaytestConvergenceDto convergence = new PlaytestConvergenceDto
+            {
+                State = game.Physics.SolveState,
+                Iterations = game.Physics.SolverIterationCount,
+                Residual = game.Physics.SolverResidualRelativeInfinity,
+                RelativePowerError = relativePowerError,
+                LastSolveMilliseconds = 0.0,
+                SolverLabel = game.Physics.SolverIdentity
+            };
 
             return new PlaytestDiagnosticsDto
             {
@@ -1220,9 +1259,7 @@ namespace ReactorSim.Browser
                     new PlaytestCheckDto
                     {
                         Label = "Data provenance",
-                        Value = runtime.Mode == "lab"
-                            ? "synthetic Lab fixture"
-                            : "synthetic-calibrated full-core pack",
+                        Value = "synthetic-calibrated full-core pack",
                         Status = "info"
                     }
                 }
@@ -1291,11 +1328,6 @@ namespace ReactorSim.Browser
             };
         }
 
-        private static LabSnapshotDto? CreateLabSnapshot(BridgeRuntime runtime)
-        {
-            return runtime.LabSession?.CreateSnapshot();
-        }
-
         private static string ComputeStateDigest(
             BridgeRuntime runtime,
             PlaytestSnapshotDto snapshot)
@@ -1303,11 +1335,6 @@ namespace ReactorSim.Browser
             string snapshotJson = PlaytestProtocolV1.Serialize(snapshot);
             using JsonDocument document = JsonDocument.Parse(snapshotJson);
             string canonical = PlaytestProtocolV1.CanonicalizeJson(document.RootElement);
-            if (runtime.LabSession != null)
-            {
-                canonical += "|" + runtime.LabSession.ComputeStateDigest();
-            }
-
             return PlaytestProtocolV1.ComputeDigest(canonical);
         }
 
@@ -1471,7 +1498,6 @@ namespace ReactorSim.Browser
                     {
                         ToWireDiagnostic(diagnostic)
                     },
-                    Lab = CreateLabSnapshot(runtime),
                     Command = null
                 });
         }
@@ -1610,18 +1636,12 @@ namespace ReactorSim.Browser
             public BridgeRuntime(
                 string mode,
                 string initializationJson,
-                GameSession playSession,
-                LabPlaytestSession? labSession,
-                BridgeDiagnosticDto? initializationFailure)
+                GameSession playSession)
             {
                 Mode = mode;
                 InitializationJson = initializationJson;
                 PlaySession = playSession;
-                LabSession = labSession;
-                InitializationFailure = initializationFailure;
-                LastDetailedProjection = mode == DefaultMode
-                    ? playSession.CurrentSpatialCandidate
-                    : null;
+                LastDetailedProjection = playSession.CurrentSpatialCandidate;
             }
 
             public string Mode { get; }
@@ -1629,10 +1649,6 @@ namespace ReactorSim.Browser
             public string InitializationJson { get; }
 
             public GameSession PlaySession { get; set; }
-
-            public LabPlaytestSession? LabSession { get; set; }
-
-            public BridgeDiagnosticDto? InitializationFailure { get; }
 
             public ulong Sequence { get; set; }
 
@@ -1681,8 +1697,6 @@ namespace ReactorSim.Browser
         public PlaytestSnapshotPatchDto? SnapshotPatch { get; set; }
 
         public PlaytestCoreDto? CoreReplacement { get; set; }
-
-        public LabSnapshotDto? Lab { get; set; }
 
         public string StateDigest { get; set; } = string.Empty;
 
@@ -1821,7 +1835,6 @@ namespace ReactorSim.Browser
 
         public PlaytestEventDto? LastEvent { get; set; }
 
-        public LabSnapshotDto? Lab { get; set; }
     }
 
     internal sealed class PlaytestCoreDto
@@ -1879,6 +1892,14 @@ namespace ReactorSim.Browser
         public ulong StateVersion { get; set; }
 
         public bool IsFresh { get; set; }
+
+        public bool HasFuel { get; set; }
+
+        public List<string> ReflectiveFaces { get; set; } = new List<string>();
+
+        public double Group1Flux { get; set; }
+
+        public double Group2Flux { get; set; }
     }
 
     internal sealed class PlaytestXenonDto

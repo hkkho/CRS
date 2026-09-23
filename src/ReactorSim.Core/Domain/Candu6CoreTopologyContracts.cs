@@ -1,8 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ReactorSim.Core
 {
+    /// <summary>
+    /// Requests a reflective boundary on one explicit spatial face.
+    ///
+    /// For an interior face, the CANDU-6 topology factory applies the same
+    /// reflection to both orientations of the shared face.  Callers can
+    /// therefore store either orientation for a selected cell and receive a
+    /// reciprocal topology that remains valid for stencil assembly.
+    /// </summary>
+    public sealed class ReflectiveFaceOverrideV1
+    {
+        public ReflectiveFaceOverrideV1(NodeKey node, TopologyFace face)
+        {
+            Node = node;
+            Face = face;
+        }
+
+        public NodeKey Node { get; }
+
+        public TopologyFace Face { get; }
+    }
+
     /// <summary>
     /// The fixed face geometry used by the first full-core CANDU-6 solve.
     /// Coordinates are a 22 by 22 cartesian lattice with the top display row
@@ -40,6 +62,98 @@ namespace ReactorSim.Core
 
         public static ContractValidationResult<CoreTopology> TryCreate()
         {
+            return TryCreate(Array.Empty<ReflectiveFaceOverrideV1>());
+        }
+
+        /// <summary>
+        /// Creates the canonical 380 by 12 topology with an optional set of
+        /// reflective face overrides.  The input order is not observable in
+        /// the returned topology: overrides are validated and applied by
+        /// NodeKey/face order.
+        /// </summary>
+        public static ContractValidationResult<CoreTopology> TryCreate(
+            IEnumerable<ReflectiveFaceOverrideV1> reflectiveFaceOverrides)
+        {
+            if (reflectiveFaceOverrides == null)
+            {
+                return ContractValidationResult<CoreTopology>.Invalid(
+                    "Topology.ReflectiveOverride.Missing",
+                    "reflective_face_overrides",
+                    "The reflective face override collection may not be null.");
+            }
+
+            ReflectiveFaceOverrideV1[] overrides = reflectiveFaceOverrides.ToArray();
+            var facesByNode = new Dictionary<NodeKey, HashSet<TopologyFace>>();
+            ReflectiveFaceOverrideV1[] orderedOverrides = overrides
+                .Where(overrideRecord => overrideRecord != null)
+                .OrderBy(overrideRecord => overrideRecord.Node)
+                .ThenBy(overrideRecord => (byte)overrideRecord.Face)
+                .ToArray();
+
+            if (orderedOverrides.Length != overrides.Length)
+            {
+                return ContractValidationResult<CoreTopology>.Invalid(
+                    "Topology.ReflectiveOverride.Null",
+                    "reflective_face_overrides",
+                    "A reflective face override may not be null.");
+            }
+
+            for (int index = 0; index < orderedOverrides.Length; index++)
+            {
+                ReflectiveFaceOverrideV1 overrideRecord = orderedOverrides[index];
+                if (overrideRecord.Node.ChannelId.Value >= ChannelCount ||
+                    overrideRecord.Node.Position.Value >= BundlePositionCount)
+                {
+                    return ContractValidationResult<CoreTopology>.Invalid(
+                        "Topology.ReflectiveOverride.Node.OutOfRange",
+                        "reflective_face_overrides[" + index.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "A reflective face override must name a canonical channel and bundle position.");
+                }
+
+                if (!Enum.IsDefined(typeof(TopologyFace), overrideRecord.Face))
+                {
+                    return ContractValidationResult<CoreTopology>.Invalid(
+                        "Topology.ReflectiveOverride.Face.Invalid",
+                        "reflective_face_overrides[" + index.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "A reflective face override must use a known topology face.");
+                }
+
+                if (!facesByNode.TryGetValue(overrideRecord.Node, out HashSet<TopologyFace>? faces))
+                {
+                    faces = new HashSet<TopologyFace>();
+                    facesByNode.Add(overrideRecord.Node, faces);
+                }
+
+                if (!faces.Add(overrideRecord.Face))
+                {
+                    return ContractValidationResult<CoreTopology>.Invalid(
+                        "Topology.ReflectiveOverride.Duplicate",
+                        "reflective_face_overrides[" + index.ToString(
+                            System.Globalization.CultureInfo.InvariantCulture) + "]",
+                        "A reflective face override may be declared only once for a node and face.");
+                }
+            }
+
+            return TryCreateCore(facesByNode);
+        }
+
+        public static CoreTopology Create(
+            IEnumerable<ReflectiveFaceOverrideV1> reflectiveFaceOverrides)
+        {
+            ContractValidationResult<CoreTopology> result = TryCreate(reflectiveFaceOverrides);
+            if (!result.IsValid)
+            {
+                throw new InvalidOperationException(result.FirstDiagnostic.ToString());
+            }
+
+            return result.Value;
+        }
+
+        private static ContractValidationResult<CoreTopology> TryCreateCore(
+            IReadOnlyDictionary<NodeKey, HashSet<TopologyFace>> reflectiveFaces)
+        {
             var channels = new List<ChannelTopology>((int)ChannelCount);
             for (uint channelIndex = 0; channelIndex < ChannelCount; channelIndex++)
             {
@@ -49,69 +163,107 @@ namespace ReactorSim.Core
                 var boundaries = new List<BoundaryFaceRecord>();
 
                 for (uint bundlePosition = 0;
-                     bundlePosition < BundlePositionCount;
+                     bundlePosition + 1 < BundlePositionCount;
                      bundlePosition++)
                 {
-                    if (bundlePosition > 0)
+                    NodeKey source = new NodeKey(
+                        new ChannelId(channelIndex),
+                        new BundlePosition(bundlePosition));
+                    NodeKey target = new NodeKey(
+                        new ChannelId(channelIndex),
+                        new BundlePosition(bundlePosition + 1));
+                    if (IsReflective(reflectiveFaces, source, TopologyFace.EndB) ||
+                        IsReflective(reflectiveFaces, target, TopologyFace.EndA))
+                    {
+                        boundaries.Add(new BoundaryFaceRecord(
+                            source.ChannelId,
+                            source.Position,
+                            TopologyFace.EndB,
+                            BoundaryClassification.Reflective));
+                        boundaries.Add(new BoundaryFaceRecord(
+                            target.ChannelId,
+                            target.Position,
+                            TopologyFace.EndA,
+                            BoundaryClassification.Reflective));
+                    }
+                    else
                     {
                         neighbors.Add(new NeighborRecord(
-                            new ChannelId(channelIndex),
-                            new BundlePosition(bundlePosition),
-                            new ChannelId(channelIndex),
-                            new BundlePosition(bundlePosition - 1),
+                            source.ChannelId,
+                            source.Position,
+                            target.ChannelId,
+                            target.Position,
+                            NeighborDirection.TowardEndB));
+                        neighbors.Add(new NeighborRecord(
+                            target.ChannelId,
+                            target.Position,
+                            source.ChannelId,
+                            source.Position,
                             NeighborDirection.TowardEndA));
                     }
 
-                    if (bundlePosition + 1 < BundlePositionCount)
-                    {
-                        neighbors.Add(new NeighborRecord(
-                            new ChannelId(channelIndex),
-                            new BundlePosition(bundlePosition),
-                            new ChannelId(channelIndex),
-                            new BundlePosition(bundlePosition + 1),
-                            NeighborDirection.TowardEndB));
-                    }
+                }
 
+                for (uint bundlePosition = 0;
+                     bundlePosition < BundlePositionCount;
+                     bundlePosition++)
+                {
                     AddCardinalRelationOrBoundary(
                         channelIndex,
                         bundlePosition,
                         position,
                         NeighborDirection.North,
                         boundaries,
-                        neighbors);
+                        neighbors,
+                        reflectiveFaces);
                     AddCardinalRelationOrBoundary(
                         channelIndex,
                         bundlePosition,
                         position,
                         NeighborDirection.East,
                         boundaries,
-                        neighbors);
+                        neighbors,
+                        reflectiveFaces);
                     AddCardinalRelationOrBoundary(
                         channelIndex,
                         bundlePosition,
                         position,
                         NeighborDirection.South,
                         boundaries,
-                        neighbors);
+                        neighbors,
+                        reflectiveFaces);
                     AddCardinalRelationOrBoundary(
                         channelIndex,
                         bundlePosition,
                         position,
                         NeighborDirection.West,
                         boundaries,
-                        neighbors);
+                        neighbors,
+                        reflectiveFaces);
                 }
 
                 boundaries.Add(new BoundaryFaceRecord(
                     new ChannelId(channelIndex),
                     new BundlePosition(0),
                     TopologyFace.EndA,
-                    BoundaryClassification.Vacuum));
+                    IsReflective(
+                        reflectiveFaces,
+                        new NodeKey(new ChannelId(channelIndex), new BundlePosition(0)),
+                        TopologyFace.EndA)
+                        ? BoundaryClassification.Reflective
+                        : BoundaryClassification.Vacuum));
                 boundaries.Add(new BoundaryFaceRecord(
                     new ChannelId(channelIndex),
                     new BundlePosition(BundlePositionCount - 1),
                     TopologyFace.EndB,
-                    BoundaryClassification.Vacuum));
+                    IsReflective(
+                        reflectiveFaces,
+                        new NodeKey(
+                            new ChannelId(channelIndex),
+                            new BundlePosition(BundlePositionCount - 1)),
+                        TopologyFace.EndB)
+                        ? BoundaryClassification.Reflective
+                        : BoundaryClassification.Vacuum));
 
                 BundlePosition inlet = flowDirection == FlowDirection.EndAtoEndB
                     ? new BundlePosition(0)
@@ -202,7 +354,8 @@ namespace ReactorSim.Core
             Candu6GridPositionV1 position,
             NeighborDirection direction,
             List<BoundaryFaceRecord> boundaries,
-            List<NeighborRecord> neighbors)
+            List<NeighborRecord> neighbors,
+            IReadOnlyDictionary<NodeKey, HashSet<TopologyFace>> reflectiveFaces)
         {
             int column = position.Column;
             int displayRow = position.DisplayRow;
@@ -224,22 +377,74 @@ namespace ReactorSim.Core
                     throw new ArgumentOutOfRangeException(nameof(direction));
             }
 
+            NodeKey source = new NodeKey(
+                new ChannelId(channelIndex),
+                new BundlePosition(bundlePosition));
+            TopologyFace face = (TopologyFace)(byte)direction;
             if (TryGetChannelIndex(column, displayRow, out uint targetChannel))
             {
-                neighbors.Add(new NeighborRecord(
-                    new ChannelId(channelIndex),
-                    new BundlePosition(bundlePosition),
+                NodeKey target = new NodeKey(
                     new ChannelId(targetChannel),
-                    new BundlePosition(bundlePosition),
-                    direction));
+                    new BundlePosition(bundlePosition));
+                TopologyFace inverseFace = Inverse(face);
+                if (IsReflective(reflectiveFaces, source, face) ||
+                    IsReflective(reflectiveFaces, target, inverseFace))
+                {
+                    boundaries.Add(new BoundaryFaceRecord(
+                        source.ChannelId,
+                        source.Position,
+                        face,
+                        BoundaryClassification.Reflective));
+                }
+                else
+                {
+                    neighbors.Add(new NeighborRecord(
+                        source.ChannelId,
+                        source.Position,
+                        target.ChannelId,
+                        target.Position,
+                        direction));
+                }
                 return;
             }
 
             boundaries.Add(new BoundaryFaceRecord(
-                new ChannelId(channelIndex),
-                new BundlePosition(bundlePosition),
-                (TopologyFace)(byte)direction,
-                BoundaryClassification.Vacuum));
+                source.ChannelId,
+                source.Position,
+                face,
+                IsReflective(reflectiveFaces, source, face)
+                    ? BoundaryClassification.Reflective
+                    : BoundaryClassification.Vacuum));
+        }
+
+        private static bool IsReflective(
+            IReadOnlyDictionary<NodeKey, HashSet<TopologyFace>> reflectiveFaces,
+            NodeKey node,
+            TopologyFace face)
+        {
+            return reflectiveFaces.TryGetValue(node, out HashSet<TopologyFace>? faces) &&
+                   faces.Contains(face);
+        }
+
+        private static TopologyFace Inverse(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return TopologyFace.South;
+                case TopologyFace.East:
+                    return TopologyFace.West;
+                case TopologyFace.South:
+                    return TopologyFace.North;
+                case TopologyFace.West:
+                    return TopologyFace.East;
+                case TopologyFace.EndA:
+                    return TopologyFace.EndB;
+                case TopologyFace.EndB:
+                    return TopologyFace.EndA;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
         }
 
         private static Candu6GridPositionV1[] CreatePositions()

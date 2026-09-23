@@ -53,9 +53,8 @@ export class BridgeSessionController {
     this.bridge = bridge;
     this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
-    // Play is the only live session mode. The designer fixture is carried as
-    // an optional projection on the play snapshot, so its presence must not
-    // gate the wall-clock pump or turn a scene transition into a mode switch.
+    // Play is the only live session mode. Core Designer stays inside this
+    // session and does not initialize a second fixture or mode.
     this.modeValue = "play";
     this.unsubscribeBridge = bridge.subscribe((status, snapshot) => {
       this.statusValue = status;
@@ -248,8 +247,6 @@ export class BridgeSessionController {
 function isEngineeringCommand(command: CanduCommand): boolean {
   return command.type === "configure-cell" ||
     command.type === "solve" ||
-    command.type === "reset-lab" ||
-    command.type === "lab-refuel" ||
     command.type === "reset";
 }
 

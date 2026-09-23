@@ -53,7 +53,7 @@ async function checkApplication(page) {
   await page.goto(targetUrl.toString(), { waitUntil: "domcontentloaded" });
   await page.locator("canvas").waitFor({ state: "attached", timeout: 10_000 });
   await page.waitForFunction(
-    () => document.querySelector("#status-mirror")?.textContent?.includes("play mode online"),
+    () => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"),
     undefined,
     { timeout: 60_000 },
   );

@@ -165,6 +165,10 @@ function createSnapshot(): CanduSnapshot {
       insertedAtSeconds: 0,
       stateVersion: 0,
       isFresh: true,
+      hasFuel: true,
+      reflectiveFaces: [],
+      group1Flux: 1,
+      group2Flux: 1,
     })),
   }));
 

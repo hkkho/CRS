@@ -4,7 +4,7 @@ import { BridgeSessionController } from "./sessionController";
 import { setRuntimeSession } from "./runtime";
 import { BootScene } from "./scenes/BootScene";
 import { OperationsScene } from "./scenes/OperationsScene";
-import { LabScene } from "./scenes/LabScene";
+import { CoreDesignerScene } from "./scenes/CoreDesignerScene";
 import { TitleScene } from "./scenes/TitleScene";
 
 const session = new BridgeSessionController();
@@ -17,9 +17,7 @@ session.subscribe((update) => {
   }
   const selected = update.snapshot.core.channels[0];
   statusMirror.textContent = update.status.isWasmAvailable
-    ? session.mode === "play"
-      ? `CANDU play mode online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}${update.snapshot.lab === undefined ? "" : " Core Designer available."}`
-      : `CANDU Lab mode online. ${update.snapshot.lab?.core.channelCount ?? 0} × ${update.snapshot.lab?.core.bundlePositionCount ?? 0} cells available.`
+    ? `CANDU live reactor online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}`
     : `${update.status.title}. ${update.status.detail}`;
 });
 
@@ -29,7 +27,7 @@ const game = new Phaser.Game({
   width: 1600,
   height: 900,
   backgroundColor: colorString(COLORS.void),
-  scene: [BootScene, TitleScene, OperationsScene, LabScene],
+  scene: [BootScene, TitleScene, OperationsScene, CoreDesignerScene],
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

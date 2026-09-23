@@ -20,11 +20,10 @@ The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
   Vercel deployment exposes the live browser refuelling loop and feedback. It
   is one Phaser 3 canvas using the same `ReactorSim.Game` session through the
   versioned browser bridge. The title has one Play start; Operations then
-  contains the live 380-channel run and an in-run Core Designer workspace.
-  The bridge keeps the full-core `GameSession` and the 2 × 8
-  `LabPlaytestSession` together, fails closed when the authoritative WASM
-  bridge is unavailable, and never substitutes a browser simulator for the
-  shared authorities.
+  contains the live 380-channel run and an in-run Core Designer for that same
+  reactor. The bridge owns one full-core `GameSession`, fails closed when the
+  authoritative WASM bridge is unavailable, and never substitutes a browser
+  simulator for the shared authorities.
 - `unity/ReactorGame` is retained as a runnable Unity presentation and input
   surface, but Unity feature development is paused while the web game becomes
   highly functional. It starts a project-authored practice session and binds the
@@ -39,11 +38,11 @@ The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
   a selected channel. Refuelling commits through `GameSession`, and the shared
   projection supplies the resulting power, tilt, burnup, and score feedback.
 - Core Designer is an engineering view opened from Operations during the same
-  run. It exposes the 2 × 8 workspace topology and authoritative solve
-  readouts. The bridge's `configure-cell`, `solve`, `reset-lab`, and
-  `lab-refuel` commands update the workspace snapshot only; returning to
-  Operations preserves the live 380-channel run, including its clock,
-  inventory, and score.
+  run. It edits the live 380-channel by 12-position topology and shows the
+  authoritative two-group solve. Its `configure-cell` command changes a
+  selected cell's fuel state and reflective faces, and `solve` recomputes the
+  same full-core `GameSession`; returning to Operations preserves the same
+  clock, inventory, and score.
 - `src/ReactorSim.Core` owns engine-neutral deterministic state transitions,
   inventory, burnup, topology, control contracts, and the two-group spatial
   solve. `src/ReactorSim.Game` owns the reusable session, commands, and
@@ -51,24 +50,21 @@ The sole active work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
   authorities.
 - `src/ReactorSim.Cli` runs practice scenarios headlessly for validation and
   long-horizon checks.
-- `data` and `reference` contain project-authored packs and design
-  context; external DRAGON5/DONJON5 material is reference context only.
+- `data` and `reference` contain project-authored packs and design context.
 
 ## Simulation contract
 
 The practice session uses the project-authored
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is a
-project-authored surrogate with explicit provenance, not validated CANDU data,
-a plant rating, or an external DRAGON/DONJON result. The shared full-core
-adapter publishes explicit
+`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is the
+deterministic game model, with explicit provenance and SI units. The shared
+full-core adapter publishes explicit
 SI watts, normalized power, `k`, and `rho = (k - 1) / k`, along with solve
 identity and diagnostics. Its static flux shape is normalized to the operator
 target; short operation intervals reuse the retained equilibrium projection for
 deterministic burnup integration. This is a regulated steady-state practice
 model, not a sub-second transient claim. The project-authored pack is the
-active simulation and acceptance path; no external solver or validation pack
-is required. See the [active solver equations](docs/physics/active-two-group-solver.md)
-for the exact operator and iteration.
+active simulation and acceptance path. See the [active solver equations](docs/physics/active-two-group-solver.md)
+for the exact operator, editable material overlay, and iteration.
 
 The Core repository includes iodine/xenon contracts, but the current
 `GameSession` practice projection intentionally exposes xenon as an unavailable
@@ -168,31 +164,30 @@ npm test
 npm run build
 ```
 
-The Phaser client is a static companion. Its bridge runs in a worker, the
-runtime never invokes DRAGON5, DONJON5, or another analysis executable, and
-local command history/replay and feedback notes remain local to the browser.
-External solver material remains optional reference context and does not gate
-the project-authored model or browser acceptance.
+The Phaser client is a static companion. Its bridge runs in a worker, uses the
+same Core solver as the live game session, and keeps local command
+history/replay and feedback notes local to the browser. The compact
+project-authored data pack ships with the authoritative bridge.
 
 ### Browser Operations and Core Designer
 
-The title has one `PLAY` entry. It initializes the live 380-channel
-`GameSession` and its paired 2 × 8 `LabPlaytestSession`, then opens Operations.
-Operations is the main game surface: run the clock, inspect channels and bundle
-positions, refuel, and read the authoritative power, RRS, score, burnup, and
-inventory feedback.
+The title has one `PLAY` entry. It initializes one live 380-channel by
+12-position `GameSession`, then opens Operations. Operations is the main game
+surface: run the clock, inspect channels and bundle positions, refuel, and
+read the authoritative power, RRS, score, burnup, and inventory feedback.
 
-Open Core Designer from Operations when you need to inspect the compact
-engineering workspace. The workspace shows each cell's fuel state, boundary
-faces, flux, convergence, eigenvalue, power, and residual diagnostics. Its
-visible controls include cell configuration, solve/reset, and `LAB REFUEL ×4 / B`.
-The bridge accepts `configure-cell`, `solve`, `reset-lab`, and `lab-refuel`; each
-updates the workspace snapshot while leaving the live full-core run unchanged.
-Return to Operations to continue the same run. The workspace is an inspection
-and solver workbench for the 2 × 8 topology; its edits do not rewrite
-full-core channels, fuel inventory, score, or live play feedback. See the
-[solver math document](docs/physics/active-two-group-solver.md) for the
-equations and boundary conditions.
+Open Core Designer from Operations to edit the live reactor. The workspace
+shows all 380 channels, the 12 axial positions in the selected channel, each
+cell's fuel state, reflective faces, group fluxes, local power, convergence,
+eigenvalue, and residual diagnostics. `configure-cell` commits a cell edit as
+an atomic full-core transaction; `solve` reruns the same two-group diffusion
+solver with the current design. A nonfuel cell receives the model's moderator
+coefficient row, so it carries no fission source or power while retaining its
+bundle identity. Reflective interior faces are applied to both sides of the
+shared edge; an outer reflective face has zero leakage. Return to Operations to
+continue the same run with the edited reactor state. See the [solver math
+document](docs/physics/active-two-group-solver.md) for the equations and
+boundary conditions.
 
 ## Active work plan
 

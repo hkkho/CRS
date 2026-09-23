@@ -2,13 +2,13 @@
 
 This document describes the equations used by the active `ReactorSim.Core`
 spatial path. The browser and the retained Unity client consume the result of
-this Core solver; neither client implements a second physics calculation.
+this Core solver; neither client implements a second physics calculation. The
+browser Core Designer and Operations view use one `GameSession` with one live
+380-channel by 12-position topology.
 
-The coefficients in the active pack are project-authored,
-synthetic-calibrated surrogate data. They are useful for a deterministic
-practice model and solver checks. They are not validated CANDU cross sections,
-a plant prediction, or a reproduced DRAGON5/DONJON5 case. The runtime does not
-require either external program.
+The active pack is the project-authored compact coefficient table used by the
+game. Its values, units, material rows, topology, and solver policy are part of
+the deterministic runtime contract.
 
 ## Pack and fresh material row
 
@@ -44,11 +44,40 @@ conductances used by the 380-channel by 12-position model:
 | Transverse interior edge | `0.0012` | `0.0006` | m^2 |
 | Vacuum boundary face | `0.0024` | `0.0012` | m^2 |
 
-Reflective faces have zero boundary conductance. The one-cell fixture used by
-the Lab creates one node, six explicit reflective faces (`North`, `East`,
-`South`, `West`, `EndA`, `EndB`), no neighbors, and six zero conductance
-records. The six records are still retained in the topology and stencil, so a
-missing face cannot silently become an implicit boundary condition.
+## Live 380 × 12 design
+
+The live game maps every `(channel, position)` pair to one diffusion node, for
+`380 × 12 = 4560` nodes. The bundle inventory remains present at every node so
+that identity, burnup, refuelling, and presentation state stay aligned with
+the spatial solve.
+
+When Core Designer sets `hasFuel = false`, the solver keeps the inventory record
+but replaces the fuel coefficient row with the explicit moderator row below.
+The zero fission terms make the configured cell carry no fission source or
+local power; its flux still participates in leakage and downscatter.
+
+| Quantity | Nonfuel value | Units | Role |
+| --- | ---: | --- | --- |
+| `Sigma_a1` | `0.025` | m^-1 | Fast absorption |
+| `Sigma_a2` | `0.012` | m^-1 | Thermal absorption |
+| `Sigma_f1`, `Sigma_f2` | `0`, `0` | m^-1 | No local fission power |
+| `nuSigma_f1`, `nuSigma_f2` | `0`, `0` | m^-1 | No local neutron production |
+| `Sigma_s12` | `0.080` | m^-1 | Fast-to-thermal downscatter |
+| `chi1`, `chi2` | `1.0`, `0.0` | dimensionless | Fission spectrum row |
+| `E_fission` | `1.0` | J/fission | Inactive power conversion |
+
+Reflective face selections are also part of the live design. A selected outer
+face is retained as an explicit reflective boundary with zero boundary
+conductance. A selected interior face removes the shared neighbor edge and
+creates reciprocal reflective boundary records on both cells, so the leakage
+term is zero from either side. Unselected outer faces remain vacuum boundaries;
+unselected interior faces retain their reciprocal neighbor edge. The game
+builds and solves a candidate topology, stencil, coefficient binding, and
+equilibrium projection before committing the design as one transaction.
+
+The fixed one-cell model described below is a Core benchmark for these same
+operator and boundary records. It is not a second browser reactor or a
+separate game mode.
 
 ## Finite-volume operator
 
@@ -158,7 +187,7 @@ acceptance settings: `1e-13` inner absolute and relative residual tolerances,
 `1e-12` for each outer metric, 2048 inner iterations, and 256 outer
 iterations.
 
-## Independent one-cell check
+## Fixed one-cell Core benchmark
 
 For the fresh row and six reflective faces, every leakage term is zero. The
 operator therefore reduces to
@@ -215,19 +244,15 @@ analytic expression.
 | Relative residual infinity | `8.94770275946045e-17` |
 | Relative power balance | `1.11022302462516e-16` |
 
-The browser's Lab `singleCell` readout is populated from this Core result. It
-shows the pack version and evidence class, material and fresh burnup, node
-volume, all six reflective faces, the fresh-row coefficients, both fluxes,
-`k`, total power, fission production, iteration count, residual, and balance.
-The readout is labelled `AUTHORITATIVE CORE SOLVER`; if the Core fixture or
-solve is unavailable, the browser reports that state instead of inventing a
-placeholder result. The existing `2 x 8` Lab controls remain available for
-topology and material experiments, while this fixed one-cell result provides
-the direct reflective-boundary benchmark.
+`SingleCellReflectiveDiffusionFixtureV1` is a Core regression benchmark for
+the six-face reflective boundary assembly. It runs the same
+`SpatialEigenIteration` and `SpatialEigenSolve` implementation used by the
+live full-core session. The browser does not create a second one-cell solver;
+Core Designer displays the live 380 × 12 solve and its per-cell fields.
 
 ## Interpretation boundary
 
-The project-authored pack is a deterministic surrogate selected for gameplay,
-debugging, and solver acceptance. Its metadata, cross sections, conductances,
-and the one-cell result do not establish agreement with measured CANDU data,
-an operating reactor, a safety limit, or a full-core engineering analysis.
+The pack metadata, coefficient rows, conductances, and one-cell result define
+the deterministic solver contract used by the game. The one-cell result is a
+small regression check for the assembled equations; the live game result comes
+from solving all 4560 nodes in the configured 380 × 12 topology.

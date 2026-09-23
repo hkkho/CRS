@@ -9,10 +9,10 @@ export const BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR = 2 as const;
 
 export type ProtocolSource = "wasm" | "synthetic-fixture";
 export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
-export type BridgeModeId = "play" | "lab";
+export type BridgeModeId = "play";
 export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
-export type LabBoundaryFace = "north" | "east" | "south" | "west" | "end-a" | "end-b";
+export type CoreBoundaryFace = "north" | "east" | "south" | "west" | "end-a" | "end-b";
 export type DiagnosticLevel = "info" | "warning" | "error";
 export type EventTone = "info" | "positive" | "warning";
 export type ResponseKind = "full" | "compact";
@@ -40,6 +40,11 @@ export interface CanduBundleSnapshot {
   insertedAtSeconds: number;
   stateVersion: number;
   isFresh: boolean;
+  /** Live Core Designer fields projected by the authoritative GameSession. */
+  hasFuel: boolean;
+  reflectiveFaces: CoreBoundaryFace[];
+  group1Flux: number;
+  group2Flux: number;
 }
 
 export interface CanduChannelSnapshot {
@@ -253,149 +258,6 @@ export interface CanduCoreSnapshot {
   channels: CanduChannelSnapshot[];
 }
 
-export interface CanduLabSpatialSolveSnapshot {
-  status: string;
-  isConverged: boolean;
-  hasUsableState: boolean;
-  finalState: {
-    iteration: number;
-    eigenvalue: number;
-    normalizationScale?: number;
-    fissionProductionRate?: number;
-    totalPowerW: number;
-    group1Flux: number[];
-    group2Flux: number[];
-  } | null;
-  diagnostics: {
-    iterationCount: number;
-    residualRelativeInfinity: number | null;
-    sourceShapeChangeInfinity: number | null;
-    powerBalanceRelative: number | null;
-    convergenceReason: string;
-    innerSolveStatus: string;
-  };
-}
-
-/**
- * The material row used by the authoritative one-cell benchmark. These are
- * macroscopic two-group coefficients in SI units; the browser only displays
- * the row returned by Core and never computes a replacement row.
- */
-export interface CanduLabSingleCellCoefficientSnapshot {
-  absorptionGroup1PerM: number;
-  absorptionGroup2PerM: number;
-  fissionGroup1PerM: number;
-  fissionGroup2PerM: number;
-  nuFissionGroup1PerM: number;
-  nuFissionGroup2PerM: number;
-  downscatterGroup1To2PerM: number;
-  chiGroup1: number;
-  chiGroup2: number;
-  energyPerFissionJ: number;
-}
-
-export interface CanduLabSingleCellDiagnosticsSnapshot {
-  iterationCount: number;
-  eigenvalueChangeAbsolute: number | null;
-  eigenvalueChangeRelative: number | null;
-  residualAbsoluteInfinity: number | null;
-  residualRelativeInfinity: number | null;
-  sourceShapeChangeInfinity: number | null;
-  powerBalanceRelative: number | null;
-  innerSolveStatus: string;
-  convergenceReason: string;
-  failureDiagnostics: Array<{
-    code: string;
-    path: string;
-    message: string;
-  }>;
-  invalidCoefficientCount: number;
-  negativeFluxCount: number;
-  nonFiniteValueCount: number;
-  failedInnerSolveCount: number;
-  rejectedUpscatterCount: number;
-  clampCount: number;
-  forbiddenClampCount: number;
-}
-
-/**
- * Authoritative fresh-fuel, all-reflective one-cell result. The group flux
- * arrays contain one value for this one-node solve. `spatialSolve` is retained
- * beside the compact result so the Lab can identify the same Core
- * solver/diagnostics used by the 2 × 8 fixture.
- */
-export interface CanduLabSingleCellSnapshot {
-  fixtureId: string;
-  packVersion: string;
-  dataPackId: string;
-  evidenceClass: string;
-  sourceProvenance: string;
-  energyGroupOrder: string[];
-  materialId: string;
-  fuelTypeId: string;
-  burnupJPerKgHm: number;
-  volumeM3: number;
-  reflectiveFaces: LabBoundaryFace[];
-  targetPowerWatts: number;
-  coefficients: CanduLabSingleCellCoefficientSnapshot;
-  effectiveK: number;
-  group1Flux: number[];
-  group2Flux: number[];
-  totalPowerWatts: number;
-  fissionProductionRate: number;
-  spatialSolve: CanduLabSpatialSolveSnapshot;
-  diagnostics: CanduLabSingleCellDiagnosticsSnapshot;
-}
-
-export interface CanduLabCellSnapshot {
-  /** Present on flat core cell lists; omitted when the cell is nested in a channel. */
-  channelIndex?: number;
-  position: number;
-  hasFuel: boolean;
-  materialId?: string;
-  reflectiveFaces: LabBoundaryFace[];
-}
-
-export interface CanduLabChannelSnapshot {
-  channelIndex: number;
-  coordinateX: number;
-  coordinateY: number;
-  flowDirection: string;
-  bundles: Array<{
-    position: number;
-    bundleId: string;
-    fuelTypeId: string;
-    currentBurnupMwDayPerKg: number;
-    currentBurnupJPerKgHm: number;
-    insertedAtSeconds: number;
-    stateVersion: number;
-  }>;
-  /** New Lab topology projection. Nested cells are preferred when present. */
-  cells?: CanduLabCellSnapshot[];
-}
-
-export interface CanduLabCoreSnapshot {
-  fixtureId: string;
-  channelCount: number;
-  bundlePositionCount: number;
-  channels: CanduLabChannelSnapshot[];
-  /** Compatibility with hosts that flatten the 2 × 8 cell projection. */
-  cells?: CanduLabCellSnapshot[];
-}
-
-export interface CanduLabSnapshot {
-  fixtureId: string;
-  simulationTimeSeconds: number;
-  freshBundlesAvailable: number;
-  refuellingOperationCount: number;
-  lastRefuelledChannel: number;
-  lastRefuellingDirectionId: string | null;
-  lastRefuellingShiftCount: number;
-  core: CanduLabCoreSnapshot;
-  spatialSolve: CanduLabSpatialSolveSnapshot;
-  singleCell?: CanduLabSingleCellSnapshot;
-}
-
 export interface CanduSnapshot {
   protocol: typeof PROTOCOL_VERSION;
   source: ProtocolSource;
@@ -426,7 +288,6 @@ export interface CanduSnapshot {
   core: CanduCoreSnapshot;
   diagnostics: CanduDiagnostics;
   lastEvent: CanduEvent | null;
-  lab?: CanduLabSnapshot;
 }
 
 export type CanduSnapshotPatch = Pick<CanduSnapshot,
@@ -472,11 +333,7 @@ export type CanduCommand =
   | { type: "queue-power-target"; targetFraction: number }
   | { type: "queue-tilt-target"; targetFraction: number }
   | { type: "commit-refuel"; request: RefuelRequest }
-  /** Edit only the deterministic 2 × 8 designer fixture. */
-  | { type: "reset-lab" }
-  /** Refuel only the deterministic 2 × 8 designer fixture. */
-  | { type: "lab-refuel"; request: RefuelRequest }
-  | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: LabBoundaryFace[] }
+  | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: CoreBoundaryFace[] }
   | { type: "solve" }
   | { type: "reset" };
 
@@ -499,8 +356,6 @@ export interface CanduCommandResponse {
     message: string;
   }>;
   snapshot: CanduSnapshot;
-  lab?: CanduLabSnapshot;
-  labPreview?: CanduLabSnapshot | null;
 }
 
 export interface CanduPlaytestWasmExports {
@@ -776,6 +631,10 @@ function isCanduBundleSnapshot(
     "insertedAtSeconds",
     "stateVersion",
     "isFresh",
+    "hasFuel",
+    "reflectiveFaces",
+    "group1Flux",
+    "group2Flux",
   ]) || !isNonNegativeInteger(value.position) ||
       (expectedPosition !== undefined && value.position !== expectedPosition) ||
       !hasStringFields(value, ["bundleId", "fuelTypeId"]) ||
@@ -789,7 +648,9 @@ function isCanduBundleSnapshot(
     return false;
   }
 
-  return true;
+  return isBoolean(value.hasFuel) &&
+    Array.isArray(value.reflectiveFaces) && value.reflectiveFaces.every(isCoreBoundaryFace) &&
+    isFiniteNumber(value.group1Flux) && isFiniteNumber(value.group2Flux);
 }
 
 function isCanduChannelSnapshot(
@@ -1134,285 +995,9 @@ function isCanduEvent(value: unknown): value is CanduEvent {
     isFiniteNumber(value.timeSeconds) && isEventTone(value.tone);
 }
 
-function isLabBoundaryFace(value: unknown): value is LabBoundaryFace {
+function isCoreBoundaryFace(value: unknown): value is CoreBoundaryFace {
   return value === "north" || value === "east" || value === "south" ||
     value === "west" || value === "end-a" || value === "end-b";
-}
-
-function isCanduLabCellSnapshot(value: unknown): value is CanduLabCellSnapshot {
-  if (!isRecord(value) || !hasOwnProperties(value, [
-    "position",
-    "hasFuel",
-    "reflectiveFaces",
-  ]) || !isNonNegativeInteger(value.position) ||
-      !isBoolean(value.hasFuel) || !Array.isArray(value.reflectiveFaces) ||
-      !value.reflectiveFaces.every(isLabBoundaryFace)) {
-    return false;
-  }
-
-  return (!hasOwn(value, "channelIndex") || isNonNegativeInteger(value.channelIndex)) &&
-    (!hasOwn(value, "materialId") || isString(value.materialId));
-}
-
-function isCanduLabBundleSnapshot(value: unknown): boolean {
-  return isRecord(value) && hasOwnProperties(value, [
-    "position",
-    "bundleId",
-    "fuelTypeId",
-    "currentBurnupMwDayPerKg",
-    "currentBurnupJPerKgHm",
-    "insertedAtSeconds",
-    "stateVersion",
-  ]) && isNonNegativeInteger(value.position) &&
-    hasStringFields(value, ["bundleId", "fuelTypeId"]) &&
-    hasFiniteNumberFields(value, [
-      "currentBurnupMwDayPerKg",
-      "currentBurnupJPerKgHm",
-      "insertedAtSeconds",
-    ]) && hasNonNegativeIntegerFields(value, ["stateVersion"]);
-}
-
-function isCanduLabChannelSnapshot(value: unknown): value is CanduLabChannelSnapshot {
-  if (!isRecord(value) || !hasOwnProperties(value, [
-    "channelIndex",
-    "coordinateX",
-    "coordinateY",
-    "flowDirection",
-  ]) || !isNonNegativeInteger(value.channelIndex) ||
-      !isInteger(value.coordinateX) || !isInteger(value.coordinateY) ||
-      !isString(value.flowDirection)) {
-    return false;
-  }
-
-  if (hasOwn(value, "bundles") &&
-      (!Array.isArray(value.bundles) || !value.bundles.every(isCanduLabBundleSnapshot))) {
-    return false;
-  }
-  if (hasOwn(value, "cells") &&
-      (!Array.isArray(value.cells) || !value.cells.every(isCanduLabCellSnapshot))) {
-    return false;
-  }
-  return hasOwn(value, "bundles") || hasOwn(value, "cells");
-}
-
-function isCanduLabSpatialSolveSnapshot(value: unknown): value is CanduLabSpatialSolveSnapshot {
-  if (!isRecord(value) || !hasOwnProperties(value, [
-    "status",
-    "isConverged",
-    "hasUsableState",
-    "finalState",
-    "diagnostics",
-  ]) || !isString(value.status) || !isBoolean(value.isConverged) ||
-      !isBoolean(value.hasUsableState) || !isRecord(value.diagnostics)) {
-    return false;
-  }
-
-  const finalState = value.finalState;
-  if (finalState !== null && (!isRecord(finalState) ||
-      !hasOwnProperties(finalState, [
-        "iteration",
-        "eigenvalue",
-        "totalPowerW",
-        "group1Flux",
-        "group2Flux",
-      ]) || !isNonNegativeInteger(finalState.iteration) ||
-      !hasFiniteNumberFields(finalState, ["eigenvalue", "totalPowerW"]) ||
-      !Array.isArray(finalState.group1Flux) ||
-      !Array.isArray(finalState.group2Flux) ||
-      !finalState.group1Flux.every(isFiniteNumber) ||
-      !finalState.group2Flux.every(isFiniteNumber))) {
-    return false;
-  }
-
-  if (finalState !== null && hasOwn(finalState, "normalizationScale") &&
-      !isFiniteNumber(finalState.normalizationScale)) {
-    return false;
-  }
-  if (finalState !== null && hasOwn(finalState, "fissionProductionRate") &&
-      !isFiniteNumber(finalState.fissionProductionRate)) {
-    return false;
-  }
-
-  const diagnostics = value.diagnostics;
-  return hasOwnProperties(diagnostics, ["iterationCount", "convergenceReason", "innerSolveStatus"]) &&
-    isNonNegativeInteger(diagnostics.iterationCount) &&
-    isString(diagnostics.convergenceReason) && isString(diagnostics.innerSolveStatus) &&
-    [
-      "eigenvalueChangeAbsolute",
-      "eigenvalueChangeRelative",
-      "residualAbsoluteInfinity",
-      "residualRelativeInfinity",
-      "sourceShapeChangeInfinity",
-      "powerBalanceRelative",
-    ].every((key) => !hasOwn(diagnostics, key) || diagnostics[key] === null || isFiniteNumber(diagnostics[key]));
-}
-
-function isCanduLabSingleCellCoefficientSnapshot(
-  value: unknown,
-): value is CanduLabSingleCellCoefficientSnapshot {
-  return isRecord(value) && hasOwnProperties(value, [
-    "absorptionGroup1PerM",
-    "absorptionGroup2PerM",
-    "fissionGroup1PerM",
-    "fissionGroup2PerM",
-    "nuFissionGroup1PerM",
-    "nuFissionGroup2PerM",
-    "downscatterGroup1To2PerM",
-    "chiGroup1",
-    "chiGroup2",
-    "energyPerFissionJ",
-  ]) && hasFiniteNumberFields(value, [
-    "absorptionGroup1PerM",
-    "absorptionGroup2PerM",
-    "fissionGroup1PerM",
-    "fissionGroup2PerM",
-    "nuFissionGroup1PerM",
-    "nuFissionGroup2PerM",
-    "downscatterGroup1To2PerM",
-    "chiGroup1",
-    "chiGroup2",
-    "energyPerFissionJ",
-  ]);
-}
-
-function isCanduLabSingleCellDiagnosticsSnapshot(
-  value: unknown,
-): value is CanduLabSingleCellDiagnosticsSnapshot {
-  return isRecord(value) && hasOwnProperties(value, [
-    "iterationCount",
-    "eigenvalueChangeAbsolute",
-    "eigenvalueChangeRelative",
-    "residualAbsoluteInfinity",
-    "residualRelativeInfinity",
-    "sourceShapeChangeInfinity",
-    "powerBalanceRelative",
-    "innerSolveStatus",
-    "convergenceReason",
-    "failureDiagnostics",
-    "invalidCoefficientCount",
-    "negativeFluxCount",
-    "nonFiniteValueCount",
-    "failedInnerSolveCount",
-    "rejectedUpscatterCount",
-    "clampCount",
-    "forbiddenClampCount",
-  ]) && isNonNegativeInteger(value.iterationCount) &&
-    (value.eigenvalueChangeAbsolute === null || isFiniteNumber(value.eigenvalueChangeAbsolute)) &&
-    (value.eigenvalueChangeRelative === null || isFiniteNumber(value.eigenvalueChangeRelative)) &&
-    (value.residualAbsoluteInfinity === null || isFiniteNumber(value.residualAbsoluteInfinity)) &&
-    (value.residualRelativeInfinity === null || isFiniteNumber(value.residualRelativeInfinity)) &&
-    (value.sourceShapeChangeInfinity === null || isFiniteNumber(value.sourceShapeChangeInfinity)) &&
-    (value.powerBalanceRelative === null || isFiniteNumber(value.powerBalanceRelative)) &&
-    isString(value.innerSolveStatus) && isString(value.convergenceReason) &&
-    Array.isArray(value.failureDiagnostics) &&
-    value.failureDiagnostics.every((diagnostic) => isRecord(diagnostic) &&
-      hasOwnProperties(diagnostic, ["code", "path", "message"]) &&
-      hasStringFields(diagnostic, ["code", "path", "message"])) &&
-    hasNonNegativeIntegerFields(value, [
-      "invalidCoefficientCount",
-      "negativeFluxCount",
-      "nonFiniteValueCount",
-      "failedInnerSolveCount",
-      "rejectedUpscatterCount",
-      "clampCount",
-      "forbiddenClampCount",
-    ]);
-}
-
-function isCanduLabSingleCellSnapshot(value: unknown): value is CanduLabSingleCellSnapshot {
-  if (!isRecord(value) || !hasOwnProperties(value, [
-    "fixtureId",
-    "packVersion",
-    "dataPackId",
-    "evidenceClass",
-    "sourceProvenance",
-    "energyGroupOrder",
-    "materialId",
-    "fuelTypeId",
-    "burnupJPerKgHm",
-    "volumeM3",
-    "reflectiveFaces",
-    "coefficients",
-    "targetPowerWatts",
-    "effectiveK",
-    "group1Flux",
-    "group2Flux",
-    "totalPowerWatts",
-    "fissionProductionRate",
-    "spatialSolve",
-    "diagnostics",
-  ]) || !hasStringFields(value, [
-    "fixtureId",
-    "packVersion",
-    "dataPackId",
-    "evidenceClass",
-    "sourceProvenance",
-    "materialId",
-    "fuelTypeId",
-  ]) || !Array.isArray(value.energyGroupOrder) ||
-      value.energyGroupOrder.length !== 2 ||
-      !value.energyGroupOrder.every((group) => isString(group) && group.length > 0) ||
-      !hasFiniteNumberFields(value, [
-        "burnupJPerKgHm",
-        "volumeM3",
-        "targetPowerWatts",
-        "effectiveK",
-        "totalPowerWatts",
-        "fissionProductionRate",
-      ]) ||
-      !Array.isArray(value.group1Flux) || !Array.isArray(value.group2Flux) ||
-      value.group1Flux.length === 0 || value.group2Flux.length === 0 ||
-      !value.group1Flux.every(isFiniteNumber) || !value.group2Flux.every(isFiniteNumber) ||
-      !Array.isArray(value.reflectiveFaces) ||
-      value.reflectiveFaces.length !== 6 ||
-      !value.reflectiveFaces.every(isLabBoundaryFace) ||
-      new Set(value.reflectiveFaces).size !== 6 ||
-      !isCanduLabSingleCellCoefficientSnapshot(value.coefficients) ||
-      !isCanduLabSpatialSolveSnapshot(value.spatialSolve) ||
-      !isCanduLabSingleCellDiagnosticsSnapshot(value.diagnostics)) {
-    return false;
-  }
-
-  return isFiniteNumber(value.burnupJPerKgHm) && value.burnupJPerKgHm >= 0 &&
-    isFiniteNumber(value.volumeM3) && value.volumeM3 > 0 &&
-    isFiniteNumber(value.targetPowerWatts) && value.targetPowerWatts >= 0 &&
-    isFiniteNumber(value.effectiveK) && value.effectiveK > 0 &&
-    isFiniteNumber(value.totalPowerWatts) && value.totalPowerWatts >= 0 &&
-    isFiniteNumber(value.fissionProductionRate) && value.fissionProductionRate >= 0;
-}
-
-function isCanduLabSnapshot(value: unknown): value is CanduLabSnapshot {
-  if (!isRecord(value) || !hasOwnProperties(value, [
-    "fixtureId",
-    "simulationTimeSeconds",
-    "freshBundlesAvailable",
-    "refuellingOperationCount",
-    "lastRefuelledChannel",
-    "lastRefuellingDirectionId",
-    "lastRefuellingShiftCount",
-    "core",
-    "spatialSolve",
-  ]) || !isString(value.fixtureId) ||
-      !hasFiniteNumberFields(value, ["simulationTimeSeconds"]) ||
-      !isNonNegativeInteger(value.freshBundlesAvailable) ||
-      !isNonNegativeInteger(value.refuellingOperationCount) ||
-      !isInteger(value.lastRefuelledChannel) ||
-      (value.lastRefuellingDirectionId !== null && !isString(value.lastRefuellingDirectionId)) ||
-      !isNonNegativeInteger(value.lastRefuellingShiftCount) || !isRecord(value.core) ||
-      !isString(value.core.fixtureId) || !isNonNegativeInteger(value.core.channelCount) ||
-      !isNonNegativeInteger(value.core.bundlePositionCount) ||
-      !Array.isArray(value.core.channels) ||
-      !value.core.channels.every(isCanduLabChannelSnapshot) ||
-      !isCanduLabSpatialSolveSnapshot(value.spatialSolve)) {
-    return false;
-  }
-
-  if (hasOwn(value.core, "cells") &&
-      (!Array.isArray(value.core.cells) || !value.core.cells.every(isCanduLabCellSnapshot))) {
-    return false;
-  }
-  return !hasOwn(value, "singleCell") ||
-    value.singleCell === undefined || isCanduLabSingleCellSnapshot(value.singleCell);
 }
 
 const SNAPSHOT_STATE_FIELDS = [
@@ -1496,15 +1081,12 @@ function isCanduCommand(value: unknown): value is CanduCommand {
     case "pause":
     case "resume":
     case "reset":
-    case "reset-lab":
       return true;
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "queue-tilt-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
-      return hasOwn(value, "request") && isRefuelRequest(value.request);
-    case "lab-refuel":
       return hasOwn(value, "request") && isRefuelRequest(value.request);
     case "configure-cell":
       return hasOwnProperties(value, [
@@ -1515,7 +1097,7 @@ function isCanduCommand(value: unknown): value is CanduCommand {
       ]) && isNonNegativeInteger(value.channelIndex) &&
         isNonNegativeInteger(value.position) && isBoolean(value.hasFuel) &&
         Array.isArray(value.reflectiveFaces) &&
-        value.reflectiveFaces.every(isLabBoundaryFace);
+        value.reflectiveFaces.every(isCoreBoundaryFace);
     case "solve":
       return true;
     default:
@@ -1543,7 +1125,8 @@ function isProtocolResponseEnvelope(value: unknown): value is Record<string, unk
     return false;
   }
 
-  return (!hasOwn(value, "responseKind") || isResponseKind(value.responseKind)) &&
+  return !hasOwn(value, "lab") && !hasOwn(value, "labPreview") &&
+    (!hasOwn(value, "responseKind") || isResponseKind(value.responseKind)) &&
     (!hasOwn(value, "baseSequence") || isInteger(value.baseSequence)) &&
     (!hasOwn(value, "requiresResync") || isBoolean(value.requiresResync)) &&
     (!hasOwn(value, "stateDigest") || isString(value.stateDigest)) &&
@@ -1551,9 +1134,7 @@ function isProtocolResponseEnvelope(value: unknown): value is Record<string, unk
     (!hasOwn(value, "coreReplacement") || value.coreReplacement === null ||
       isCanduCoreSnapshot(value.coreReplacement)) &&
     (!hasOwn(value, "snapshotPatch") || value.snapshotPatch === null ||
-      isRecord(value.snapshotPatch)) &&
-    (!hasOwn(value, "lab") || value.lab === null || isCanduLabSnapshot(value.lab)) &&
-    (!hasOwn(value, "labPreview") || value.labPreview === null || isCanduLabSnapshot(value.labPreview));
+      isRecord(value.snapshotPatch));
 }
 
 function normalizeInitializeResponse(value: unknown): unknown {
@@ -1591,12 +1172,11 @@ export function isProtocolSnapshot(value: unknown): value is CanduSnapshot {
       !isNonNegativeInteger(value.sequence) || !hasValidSnapshotStateFields(value) ||
       !isCanduPhysicsSnapshot(value.physics) || !isCanduXenonSnapshot(value.xenon) ||
       !isCanduRrsSnapshot(value.rrs) || !isCanduDiagnostics(value.diagnostics) ||
-      !isCanduCoreSnapshot(value.core) ||
-      (hasOwn(value, "lab") && value.lab !== null && !isCanduLabSnapshot(value.lab))) {
+      !isCanduCoreSnapshot(value.core) || hasOwn(value, "lab")) {
     return false;
   }
 
-  return !hasOwn(value, "lab") || value.lab === null || isRecord(value.lab);
+  return true;
 }
 
 export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {

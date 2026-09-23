@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -195,16 +196,93 @@ namespace ReactorSim.Game
             internal ulong PowerProjectionVersion;
         }
 
+        private sealed class ConfiguredCoreDesign
+        {
+            internal ConfiguredCoreDesign(
+                IEnumerable<NodeKey> nonfuelNodes,
+                IEnumerable<KeyValuePair<NodeKey, IEnumerable<TopologyFace>>> reflectiveFaceOverrides)
+            {
+                NodeKey[] orderedNonfuelNodes = (nonfuelNodes ?? throw new ArgumentNullException(nameof(nonfuelNodes)))
+                    .Distinct()
+                    .OrderBy(node => node)
+                    .ToArray();
+                _nonfuelNodes = new ReadOnlyCollection<NodeKey>(orderedNonfuelNodes);
+
+                var map = new Dictionary<NodeKey, IReadOnlyList<TopologyFace>>();
+                if (reflectiveFaceOverrides == null)
+                {
+                    throw new ArgumentNullException(nameof(reflectiveFaceOverrides));
+                }
+
+                foreach (KeyValuePair<NodeKey, IEnumerable<TopologyFace>> entry in
+                    reflectiveFaceOverrides.OrderBy(item => item.Key))
+                {
+                    TopologyFace[] faces = (entry.Value ?? throw new ArgumentNullException(nameof(reflectiveFaceOverrides)))
+                        .Distinct()
+                        .OrderBy(GameSession.FaceRank)
+                        .ToArray();
+                    if (faces.Length > 0)
+                    {
+                        map[entry.Key] = new ReadOnlyCollection<TopologyFace>(faces);
+                    }
+                }
+
+                _reflectiveFaceOverrides =
+                    new ReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>(map);
+            }
+
+            private readonly IReadOnlyList<NodeKey> _nonfuelNodes;
+            private readonly IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
+                _reflectiveFaceOverrides;
+
+            internal IReadOnlyList<NodeKey> NonfuelNodes
+            {
+                get { return _nonfuelNodes; }
+            }
+
+            internal IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
+                ReflectiveFaceOverrides
+            {
+                get { return _reflectiveFaceOverrides; }
+            }
+        }
+
+        private sealed class ConfiguredCoreTransaction
+        {
+            internal ConfiguredCoreTransaction(
+                EquilibriumCoreSolverV1 solver,
+                PracticeLiquidZoneRrsV1 rrs,
+                ConfiguredCoreDesign design,
+                ulong powerProjectionVersion)
+            {
+                Solver = solver;
+                Rrs = rrs;
+                Design = design;
+                PowerProjectionVersion = powerProjectionVersion;
+            }
+
+            internal EquilibriumCoreSolverV1 Solver;
+
+            internal PracticeLiquidZoneRrsV1 Rrs;
+
+            internal ConfiguredCoreDesign Design;
+
+            internal ulong PowerProjectionVersion;
+        }
+
         private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
-        private readonly EquilibriumCoreSolverV1 _equilibriumSolver;
+        private EquilibriumCoreSolverV1 _equilibriumSolver;
         private PracticeLiquidZoneRrsV1 _practiceRrs;
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private double _scoreResetBaseline;
         private ulong _powerProjectionVersion;
+        private IReadOnlyList<NodeKey> _nonfuelNodes;
+        private IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
+            _reflectiveFaceOverrides;
 
         internal GameSession(
             Phase8ScoredScenarioRuntimeV1 runtime,
@@ -221,6 +299,10 @@ namespace ReactorSim.Game
             _equilibriumSolver = equilibriumSolver ?? throw new ArgumentNullException(nameof(equilibriumSolver));
             _practiceRrs = practiceRrs ?? throw new ArgumentNullException(nameof(practiceRrs));
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
+            _nonfuelNodes = new ReadOnlyCollection<NodeKey>(Array.Empty<NodeKey>());
+            _reflectiveFaceOverrides =
+                new ReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>(
+                    new Dictionary<NodeKey, IReadOnlyList<TopologyFace>>());
         }
 
         public GameSessionSnapshot Snapshot
@@ -246,6 +328,102 @@ namespace ReactorSim.Game
         public PracticeLiquidZoneRrsV1 CurrentLiquidZoneRrs
         {
             get { return _practiceRrs; }
+        }
+
+        public bool IsFuelCell(uint channelIndex, uint position)
+        {
+            NodeKey node = GetNodeKey(channelIndex, position);
+            return !_nonfuelNodes.Contains(node);
+        }
+
+        public IReadOnlyCollection<TopologyFace> GetReflectiveFaces(
+            uint channelIndex,
+            uint position)
+        {
+            NodeKey node = GetNodeKey(channelIndex, position);
+            if (_reflectiveFaceOverrides.TryGetValue(node, out IReadOnlyList<TopologyFace>? faces))
+            {
+                return faces;
+            }
+
+            return Array.Empty<TopologyFace>();
+        }
+
+        public double GetCellGroup1Flux(uint channelIndex, uint position)
+        {
+            return GetCellFlux(_equilibriumSolver.CurrentProjection.ShapeGroup1, channelIndex, position);
+        }
+
+        public double GetCellGroup2Flux(uint channelIndex, uint position)
+        {
+            return GetCellFlux(_equilibriumSolver.CurrentProjection.ShapeGroup2, channelIndex, position);
+        }
+
+        public GameSessionCommandResult ConfigureCell(
+            uint channelIndex,
+            uint position,
+            bool hasFuel,
+            IReadOnlyCollection<TopologyFace> reflectiveFaces)
+        {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
+            ContractValidationResult<ConfiguredCoreDesign> design =
+                TryBuildConfiguredCoreDesign(
+                    channelIndex,
+                    position,
+                    hasFuel,
+                    reflectiveFaces);
+            if (!design.IsValid)
+            {
+                return Rejected(
+                    design.FirstDiagnostic.Code,
+                    design.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<ConfiguredCoreTransaction> transaction =
+                TryBuildConfiguredCoreTransaction(design.Value);
+            if (!transaction.IsValid)
+            {
+                return Rejected(
+                    transaction.FirstDiagnostic.Code,
+                    transaction.FirstDiagnostic.Message);
+            }
+
+            ApplyConfiguredCoreTransaction(transaction.Value);
+            return AcceptedMessage(
+                "Core cell " + channelIndex.ToString(CultureInfo.InvariantCulture) +
+                ":" + position.ToString(CultureInfo.InvariantCulture) +
+                " configuration committed.");
+        }
+
+        public GameSessionCommandResult SolveConfiguredCore()
+        {
+            if (_practiceRrs.IsGameOver)
+            {
+                return RejectGameOver();
+            }
+
+            ConfiguredCoreDesign design =
+                new ConfiguredCoreDesign(
+                    _nonfuelNodes,
+                    _reflectiveFaceOverrides.Select(
+                        entry => new KeyValuePair<NodeKey, IEnumerable<TopologyFace>>(
+                            entry.Key,
+                            entry.Value)));
+            ContractValidationResult<ConfiguredCoreTransaction> transaction =
+                TryBuildConfiguredCoreTransaction(design);
+            if (!transaction.IsValid)
+            {
+                return Rejected(
+                    transaction.FirstDiagnostic.Code,
+                    transaction.FirstDiagnostic.Message);
+            }
+
+            ApplyConfiguredCoreTransaction(transaction.Value);
+            return AcceptedMessage("Configured full-core equilibrium solve committed.");
         }
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
@@ -457,6 +635,13 @@ namespace ReactorSim.Game
                 return Rejected(
                     "GameSession.Refuelling.Direction.Invalid",
                     "Choose either toward-end-a or toward-end-b.");
+            }
+
+            if (_nonfuelNodes.Any(node => node.ChannelId.Value == channelIndex))
+            {
+                return Rejected(
+                    "GameSession.Refuelling.Channel.Nonfuel",
+                    "A channel containing a configured nonfuel cell cannot be refuelled until every cell in that channel is fuel.");
             }
 
             ContractValidationResult<GameRefuellingResultV1> result = TryRefuel(
@@ -686,6 +871,406 @@ namespace ReactorSim.Game
                 : _equilibriumSolver.TrySolveCandidate(
                 coreState.EnumerateBundles(),
                 initialSpatialSolve);
+        }
+
+        private ContractValidationResult<ConfiguredCoreDesign>
+            TryBuildConfiguredCoreDesign(
+                uint channelIndex,
+                uint position,
+                bool hasFuel,
+                IReadOnlyCollection<TopologyFace> reflectiveFaces)
+        {
+            if (channelIndex >= GameCorePresentationConstants.ChannelCount)
+            {
+                return InvalidConfiguredDesign(
+                    "GameSession.ConfigureCell.Channel.OutOfRange",
+                    "channelIndex",
+                    "The configured channel index must identify one of the 380 full-core channels.");
+            }
+
+            if (position >= GameCorePresentationConstants.BundlePositionCount)
+            {
+                return InvalidConfiguredDesign(
+                    "GameSession.ConfigureCell.Position.OutOfRange",
+                    "position",
+                    "The configured position must identify one of the 12 bundle positions.");
+            }
+
+            if (reflectiveFaces == null)
+            {
+                return InvalidConfiguredDesign(
+                    "GameSession.ConfigureCell.ReflectiveFaces.Missing",
+                    "reflectiveFaces",
+                    "A cell configuration requires an explicit reflective face collection.");
+            }
+
+            var requestedFaces = new HashSet<TopologyFace>();
+            foreach (TopologyFace face in reflectiveFaces)
+            {
+                if (!Enum.IsDefined(typeof(TopologyFace), face))
+                {
+                    return InvalidConfiguredDesign(
+                        "GameSession.ConfigureCell.ReflectiveFaces.Invalid",
+                        "reflectiveFaces",
+                        "Every reflective face must be a known topology face.");
+                }
+
+                if (!requestedFaces.Add(face))
+                {
+                    return InvalidConfiguredDesign(
+                        "GameSession.ConfigureCell.ReflectiveFaces.Duplicate",
+                        "reflectiveFaces",
+                        "A reflective face may be listed only once.");
+                }
+            }
+
+            NodeKey node = new NodeKey(
+                new ChannelId(channelIndex),
+                new BundlePosition(position));
+            var nonfuelNodes = new HashSet<NodeKey>(_nonfuelNodes);
+            if (hasFuel)
+            {
+                nonfuelNodes.Remove(node);
+            }
+            else
+            {
+                nonfuelNodes.Add(node);
+            }
+
+            var faceMap = new Dictionary<NodeKey, List<TopologyFace>>();
+            foreach (KeyValuePair<NodeKey, IReadOnlyList<TopologyFace>> entry in
+                _reflectiveFaceOverrides)
+            {
+                faceMap[entry.Key] = entry.Value.ToList();
+            }
+
+            if (faceMap.TryGetValue(node, out List<TopologyFace>? currentFaces))
+            {
+                foreach (TopologyFace currentFace in currentFaces.ToArray())
+                {
+                    RemoveFace(faceMap, node, currentFace);
+                    if (TryGetInteriorNeighbor(
+                            node,
+                            currentFace,
+                            out NodeKey neighbor))
+                    {
+                        RemoveFace(faceMap, neighbor, InverseFace(currentFace));
+                    }
+                }
+            }
+
+            foreach (TopologyFace face in requestedFaces)
+            {
+                AddFace(faceMap, node, face);
+                if (TryGetInteriorNeighbor(node, face, out NodeKey neighbor))
+                {
+                    AddFace(faceMap, neighbor, InverseFace(face));
+                }
+            }
+
+            return ContractValidationResult<ConfiguredCoreDesign>.Valid(
+                new ConfiguredCoreDesign(
+                    nonfuelNodes,
+                    faceMap.Select(entry =>
+                        new KeyValuePair<NodeKey, IEnumerable<TopologyFace>>(
+                            entry.Key,
+                            entry.Value))));
+        }
+
+        private ContractValidationResult<ConfiguredCoreTransaction>
+            TryBuildConfiguredCoreTransaction(ConfiguredCoreDesign design)
+        {
+            if (design == null)
+            {
+                return InvalidConfiguredTransaction(
+                    "GameSession.ConfigureCell.Design.Missing",
+                    "design",
+                    "A configured full-core solve requires an explicit immutable design.");
+            }
+
+            ContractValidationResult<bool> timeBinding =
+                ValidateCommittedTime(_runtime.SimulationTimeSeconds);
+            if (!timeBinding.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    timeBinding.FirstDiagnostic.Code,
+                    timeBinding.FirstDiagnostic.Path,
+                    timeBinding.FirstDiagnostic.Message);
+            }
+
+            var overrides = design.ReflectiveFaceOverrides
+                .OrderBy(entry => entry.Key)
+                .SelectMany(entry => entry.Value.Select(face =>
+                    new ReflectiveFaceOverrideV1(entry.Key, face)))
+                .ToArray();
+            ContractValidationResult<CoreTopology> topology =
+                Candu6CoreTopologyFactoryV1.TryCreate(overrides);
+            if (!topology.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    topology.FirstDiagnostic.Code,
+                    topology.FirstDiagnostic.Path,
+                    topology.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<SpatialStencil> stencil =
+                SpatialStencil.TryCreate(topology.Value);
+            if (!stencil.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    stencil.FirstDiagnostic.Code,
+                    stencil.FirstDiagnostic.Path,
+                    stencil.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<FullCoreDiffusionModelV1> model =
+                FullCoreDiffusionModelV1.TryCreate(
+                    _equilibriumSolver.DataPack,
+                    topology.Value,
+                    stencil.Value,
+                    design.NonfuelNodes);
+            if (!model.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    model.FirstDiagnostic.Code,
+                    model.FirstDiagnostic.Path,
+                    model.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<EquilibriumCoreSolverV1> solver =
+                EquilibriumCoreSolverV1.TryCreate(
+                    model.Value,
+                    _coreState.EnumerateBundles(),
+                    _equilibriumSolver.TargetPowerWatts);
+            if (!solver.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    solver.FirstDiagnostic.Code,
+                    solver.FirstDiagnostic.Path,
+                    solver.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
+                PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                    solver.Value,
+                    _coreState.EnumerateBundles(),
+                    _practiceRrs,
+                    _runtime.SimulationTimeSeconds);
+            if (!regulated.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    regulated.FirstDiagnostic.Code,
+                    regulated.FirstDiagnostic.Path,
+                    regulated.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<bool> committed =
+                solver.Value.TryCommitCandidate(regulated.Value.Projection);
+            if (!committed.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    committed.FirstDiagnostic.Code,
+                    committed.FirstDiagnostic.Path,
+                    committed.FirstDiagnostic.Message);
+            }
+
+            ContractValidationResult<ulong> nextProjectionVersion =
+                TryNextPowerProjectionVersion(_powerProjectionVersion);
+            if (!nextProjectionVersion.IsValid)
+            {
+                return InvalidConfiguredTransaction(
+                    nextProjectionVersion.FirstDiagnostic.Code,
+                    nextProjectionVersion.FirstDiagnostic.Path,
+                    nextProjectionVersion.FirstDiagnostic.Message);
+            }
+
+            return ContractValidationResult<ConfiguredCoreTransaction>.Valid(
+                new ConfiguredCoreTransaction(
+                    solver.Value,
+                    regulated.Value.State,
+                    design,
+                    nextProjectionVersion.Value));
+        }
+
+        private void ApplyConfiguredCoreTransaction(
+            ConfiguredCoreTransaction transaction)
+        {
+            _equilibriumSolver = transaction.Solver;
+            _practiceRrs = transaction.Rrs;
+            _nonfuelNodes = transaction.Design.NonfuelNodes;
+            _reflectiveFaceOverrides = transaction.Design.ReflectiveFaceOverrides;
+            _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
+            _powerProjectionVersion = transaction.PowerProjectionVersion;
+        }
+
+        private static ContractValidationResult<ConfiguredCoreDesign>
+            InvalidConfiguredDesign(string code, string path, string message)
+        {
+            return ContractValidationResult<ConfiguredCoreDesign>.Invalid(
+                code,
+                path,
+                message);
+        }
+
+        private static ContractValidationResult<ConfiguredCoreTransaction>
+            InvalidConfiguredTransaction(string code, string path, string message)
+        {
+            return ContractValidationResult<ConfiguredCoreTransaction>.Invalid(
+                code,
+                path,
+                message);
+        }
+
+        private static NodeKey GetNodeKey(uint channelIndex, uint position)
+        {
+            if (channelIndex >= GameCorePresentationConstants.ChannelCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(channelIndex));
+            }
+
+            if (position >= GameCorePresentationConstants.BundlePositionCount)
+            {
+                throw new ArgumentOutOfRangeException(nameof(position));
+            }
+
+            return new NodeKey(
+                new ChannelId(channelIndex),
+                new BundlePosition(position));
+        }
+
+        private double GetCellFlux(
+            IReadOnlyList<double> flux,
+            uint channelIndex,
+            uint position)
+        {
+            NodeKey node = GetNodeKey(channelIndex, position);
+            return flux[_equilibriumSolver.SpatialModel.Topology.GetFlatIndex(node)];
+        }
+
+        private static void AddFace(
+            Dictionary<NodeKey, List<TopologyFace>> faceMap,
+            NodeKey node,
+            TopologyFace face)
+        {
+            if (!faceMap.TryGetValue(node, out List<TopologyFace>? faces))
+            {
+                faces = new List<TopologyFace>();
+                faceMap[node] = faces;
+            }
+
+            if (!faces.Contains(face))
+            {
+                faces.Add(face);
+                faces.Sort((left, right) => FaceRank(left).CompareTo(FaceRank(right)));
+            }
+        }
+
+        private static void RemoveFace(
+            Dictionary<NodeKey, List<TopologyFace>> faceMap,
+            NodeKey node,
+            TopologyFace face)
+        {
+            if (!faceMap.TryGetValue(node, out List<TopologyFace>? faces))
+            {
+                return;
+            }
+
+            faces.Remove(face);
+            if (faces.Count == 0)
+            {
+                faceMap.Remove(node);
+            }
+        }
+
+        private static bool TryGetInteriorNeighbor(
+            NodeKey node,
+            TopologyFace face,
+            out NodeKey neighbor)
+        {
+            neighbor = default(NodeKey);
+            int column;
+            int displayRow;
+            switch (face)
+            {
+                case TopologyFace.North:
+                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column;
+                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow - 1;
+                    break;
+                case TopologyFace.East:
+                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column + 1;
+                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow;
+                    break;
+                case TopologyFace.South:
+                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column;
+                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow + 1;
+                    break;
+                case TopologyFace.West:
+                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column - 1;
+                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow;
+                    break;
+                case TopologyFace.EndA:
+                    if (node.Position.Value == 0)
+                    {
+                        return false;
+                    }
+
+                    neighbor = new NodeKey(
+                        node.ChannelId,
+                        new BundlePosition(node.Position.Value - 1));
+                    return true;
+                case TopologyFace.EndB:
+                    if (node.Position.Value + 1 >=
+                        GameCorePresentationConstants.BundlePositionCount)
+                    {
+                        return false;
+                    }
+
+                    neighbor = new NodeKey(
+                        node.ChannelId,
+                        new BundlePosition(node.Position.Value + 1));
+                    return true;
+                default:
+                    return false;
+            }
+
+            if (!Candu6CoreTopologyFactoryV1.TryGetChannelIndex(
+                    column,
+                    displayRow,
+                    out uint neighborChannel))
+            {
+                return false;
+            }
+
+            neighbor = new NodeKey(
+                new ChannelId(neighborChannel),
+                node.Position);
+            return true;
+        }
+
+        private static TopologyFace InverseFace(TopologyFace face)
+        {
+            switch (face)
+            {
+                case TopologyFace.North:
+                    return TopologyFace.South;
+                case TopologyFace.East:
+                    return TopologyFace.West;
+                case TopologyFace.South:
+                    return TopologyFace.North;
+                case TopologyFace.West:
+                    return TopologyFace.East;
+                case TopologyFace.EndA:
+                    return TopologyFace.EndB;
+                case TopologyFace.EndB:
+                    return TopologyFace.EndA;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(face));
+            }
+        }
+
+        private static int FaceRank(TopologyFace face)
+        {
+            return (byte)face;
         }
 
         private ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>

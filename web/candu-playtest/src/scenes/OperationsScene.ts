@@ -580,8 +580,7 @@ export class OperationsScene extends Phaser.Scene {
     this.designerButton?.setEnabled(
       !this.pending &&
       this.session.status.isWasmAvailable &&
-      this.snapshot.core.channels.length === 380 &&
-      this.snapshot.lab !== undefined,
+      this.snapshot.core.channels.length === 380,
     );
   }
 
@@ -876,14 +875,14 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private openDesigner(): void {
-    if (this.pending || !this.session.status.isWasmAvailable || this.snapshot.lab === undefined) {
+    if (this.pending || !this.session.status.isWasmAvailable || this.snapshot.core.channels.length !== 380) {
       return;
     }
     // Keep the authoritative play session alive and pause only the browser
-    // wall-clock pump while the designer has focus. Lab commands update the
-    // optional fixture projection; they never initialize or replace Play.
+    // wall-clock pump while the designer has focus. Designer commands update
+    // the same live core snapshot used by Operations.
     this.session.stopShift();
-    this.scene.start("LabScene", { returnChannelIndex: this.selectedChannelIndex });
+    this.scene.start("CoreDesignerScene", { returnChannelIndex: this.selectedChannelIndex });
   }
 
   private createModalFrame(title: string, subtitle: string): void {

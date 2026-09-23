@@ -29,8 +29,8 @@ npm test
 npm run build
 ```
 
-`public/wasm` is generated deployment input. The runtime never invokes
-DRAGON5, DONJON5, or any analysis executable.
+`public/wasm` is generated deployment input. The runtime uses the bundled
+authoritative bridge and project-authored physics pack.
 
 ## Controls
 
