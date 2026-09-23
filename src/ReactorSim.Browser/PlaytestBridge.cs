@@ -114,6 +114,8 @@ namespace ReactorSim.Browser
                             "configure-cell",
                             "solve",
                             "commit-refuel",
+                            "lab-refuel",
+                            "reset-lab",
                             "reset"
                         }
                     }
@@ -287,8 +289,6 @@ namespace ReactorSim.Browser
                         payload = envelopePayload;
                     }
 
-                    bool compactRequested = IsCompactResponseRequested(root) &&
-                        _runtime.Mode == DefaultMode;
                     bool hasBaseSequence = PlaytestInput.TryGetProperty(
                         root,
                         out JsonElement baseSequenceValue,
@@ -328,6 +328,15 @@ namespace ReactorSim.Browser
 
                     string commandType = PlaytestInput.NormalizeType(typeValue.GetString()!);
                     string canonicalCommand = PlaytestProtocolV1.CanonicalizeJson(payload);
+                    // Engineering commands update the Lab workspace carried
+                    // by the full snapshot. Keep those responses materialized
+                    // even when the caller asks for compact play responses;
+                    // ordinary game commands retain the existing compact
+                    // transport path.
+                    bool engineeringCommand = IsEngineeringCommand(commandType);
+                    bool compactRequested = IsCompactResponseRequested(root) &&
+                        _runtime.Mode == DefaultMode &&
+                        !engineeringCommand;
 
                     if (compactRequested &&
                         commandType != "reset" &&
@@ -345,19 +354,27 @@ namespace ReactorSim.Browser
                     object? previousDetailedProjection = _runtime.Mode == DefaultMode
                         ? _runtime.LastDetailedProjection
                         : null;
-                    if (commandType == "reset")
+                    if (commandType == "reset-lab")
                     {
-                        // Resetting Lab should rebuild only its small spatial
-                        // fixture. Keep the already initialized Play session
-                        // so the browser worker does not synchronously rebuild
-                        // the full 380-channel session on every Lab reset.
+                        execution = ResetLab(_runtime);
+                    }
+                    else if (commandType == "reset")
+                    {
+                        // The ordinary reset command resets the live Play
+                        // session. Keep the engineering workspace in Play
+                        // mode; reset-lab is the explicit Lab reset command.
+                        // Legacy Lab mode retains its original reset behavior.
                         GameSession? reusablePlaySession = _runtime.Mode == "lab"
                             ? _runtime.PlaySession
+                            : null;
+                        LabPlaytestSession? reusableLabSession = _runtime.Mode == DefaultMode
+                            ? _runtime.LabSession
                             : null;
                         BridgeRuntime candidate = CreateRuntime(
                             _runtime.Mode,
                             _runtime.InitializationJson,
-                            reusablePlaySession);
+                            reusablePlaySession,
+                            reusableLabSession);
                         if (candidate.InitializationFailure != null)
                         {
                             execution = BridgeCommandExecution.Failure(candidate.InitializationFailure);
@@ -376,10 +393,7 @@ namespace ReactorSim.Browser
                             execution = BridgeCommandExecution.Success("Browser playtest run reset.");
                         }
                     }
-                    else if (_runtime.Mode == "lab" &&
-                        (commandType == "configure-cell" ||
-                         commandType == "solve" ||
-                         commandType == "commit-refuel"))
+                    else if (ShouldDispatchToLab(_runtime, commandType))
                     {
                         execution = DispatchLab(_runtime, commandType, payload);
                     }
@@ -526,6 +540,10 @@ namespace ReactorSim.Browser
                 "queue-power-target",
                 "queue-tilt-target",
                 "commit-refuel",
+                "configure-cell",
+                "solve",
+                "lab-refuel",
+                "reset-lab",
                 "reset"
             };
         }
@@ -533,14 +551,14 @@ namespace ReactorSim.Browser
         private static BridgeRuntime CreateRuntime(
             string mode,
             string initializationJson,
-            GameSession? reusablePlaySession = null)
+            GameSession? reusablePlaySession = null,
+            LabPlaytestSession? reusableLabSession = null)
         {
             GameSession playSession = reusablePlaySession ??
                 PracticeGameSessionFactory.CreateBrowserPlaytest();
-            LabPlaytestSession? labSession = null;
+            LabPlaytestSession? labSession = reusableLabSession;
             BridgeDiagnosticDto? failure = null;
-            if (mode == "lab" &&
-                !LabPlaytestSession.TryCreate(
+            if (labSession == null && !LabPlaytestSession.TryCreate(
                     new LabSolverOptions(),
                     out labSession,
                     out failure))
@@ -570,12 +588,54 @@ namespace ReactorSim.Browser
                         "The Lab fixture could not initialize a usable spatial session."));
             }
 
-            if (commandType == "commit-refuel")
+            if (commandType == "commit-refuel" || commandType == "lab-refuel")
             {
-                return runtime.LabSession.Dispatch("refuel", payload);
+                JsonElement request = PlaytestInput.TryGetProperty(
+                    payload,
+                    out JsonElement nestedRequest,
+                    "request")
+                    ? nestedRequest
+                    : payload;
+                return runtime.LabSession.Dispatch("refuel", request);
             }
 
             return runtime.LabSession.Dispatch(commandType, payload);
+        }
+
+        private static bool ShouldDispatchToLab(
+            BridgeRuntime runtime,
+            string commandType)
+        {
+            return commandType == "configure-cell" ||
+                commandType == "solve" ||
+                commandType == "lab-refuel" ||
+                (runtime.Mode == "lab" && commandType == "commit-refuel");
+        }
+
+        private static bool IsEngineeringCommand(string commandType)
+        {
+            return commandType == "configure-cell" ||
+                commandType == "solve" ||
+                commandType == "reset-lab" ||
+                commandType == "lab-refuel";
+        }
+
+        private static BridgeCommandExecution ResetLab(BridgeRuntime runtime)
+        {
+            if (!LabPlaytestSession.TryCreate(
+                    new LabSolverOptions(),
+                    out LabPlaytestSession? labSession,
+                    out BridgeDiagnosticDto? failure))
+            {
+                return BridgeCommandExecution.Failure(
+                    failure ?? PlaytestProtocolV1.Diagnostic(
+                        "Lab.Session.Unavailable",
+                        "lab",
+                        "The Lab fixture could not initialize a usable spatial session."));
+            }
+
+            runtime.LabSession = labSession;
+            return BridgeCommandExecution.Success("Lab engineering workspace reset.");
         }
 
         private static BridgeCommandExecution DispatchPlay(
@@ -885,7 +945,10 @@ namespace ReactorSim.Browser
                 Xenon = CreateXenonSnapshot(game),
                 Rrs = CreateRrsSnapshot(game),
                 Core = CreateCoreSnapshot(game.Core, game.Physics.MeanBundlePowerWatts),
-                Diagnostics = CreateDiagnosticsSnapshot(runtime, game, labSnapshot),
+                Diagnostics = CreateDiagnosticsSnapshot(
+                    runtime,
+                    game,
+                    runtime.Mode == "lab" ? labSnapshot : null),
                 LastEvent = CreateLastEvent(runtime, game),
                 Lab = labSnapshot
             };
@@ -1567,7 +1630,7 @@ namespace ReactorSim.Browser
 
             public GameSession PlaySession { get; set; }
 
-            public LabPlaytestSession? LabSession { get; }
+            public LabPlaytestSession? LabSession { get; set; }
 
             public BridgeDiagnosticDto? InitializationFailure { get; }
 

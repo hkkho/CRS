@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 import { getRuntimeSession } from "../runtime";
 import type { SessionUpdate } from "../sessionController";
-import type { BridgeModeId } from "../protocol";
 import { COLORS, FONTS, colorString, drawCornerBrackets, makeButton, makeText, type TacticalButton } from "../drawing";
 
 interface TitleParticle {
@@ -22,9 +21,6 @@ export class TitleScene extends Phaser.Scene {
   private titleStatus: Phaser.GameObjects.Text | null = null;
   private titleAvailability: Phaser.GameObjects.Text | null = null;
   private beginButton: TacticalButton | null = null;
-  private modeButtons: Record<BridgeModeId, TacticalButton | null> = { play: null, lab: null };
-  private selectedMode: BridgeModeId = "play";
-  private modeError: string | null = null;
   private readyForShift = false;
   private shiftTransitionStarted = false;
   private fadeCamera: Phaser.Cameras.Scene2D.Camera | null = null;
@@ -36,15 +32,13 @@ export class TitleScene extends Phaser.Scene {
 
   public create(): void {
     this.shiftTransitionStarted = false;
-    this.selectedMode = this.session.mode;
-    this.modeError = null;
     this.cameras.main.setBackgroundColor(colorString(COLORS.void));
     this.drawBackdrop();
     this.createParticles();
     this.drawCrest();
     this.createTitleCopy();
     this.createBeginButton();
-    this.createModeButtons();
+    this.createWorkspaceBrief();
     this.renderSessionState({
       status: this.session.status,
       snapshot: this.session.snapshot,
@@ -56,15 +50,11 @@ export class TitleScene extends Phaser.Scene {
     this.events.once("shutdown", () => this.unsubscribe?.());
     this.input.keyboard?.on("keydown-ENTER", this.beginShift, this);
     this.input.keyboard?.on("keydown-SPACE", this.beginShift, this);
-    this.input.keyboard?.on("keydown-P", this.selectPlayMode, this);
-    this.input.keyboard?.on("keydown-L", this.selectLabMode, this);
     this.events.once("shutdown", () => {
       this.fadeCamera?.off(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, this.handleFadeOutComplete, this);
       this.fadeCamera = null;
       this.input.keyboard?.off("keydown-ENTER", this.beginShift, this);
       this.input.keyboard?.off("keydown-SPACE", this.beginShift, this);
-      this.input.keyboard?.off("keydown-P", this.selectPlayMode, this);
-      this.input.keyboard?.off("keydown-L", this.selectLabMode, this);
     });
     this.cameras.main.fadeIn(500, 7, 11, 27);
   }
@@ -287,59 +277,43 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
-  private createModeButtons(): void {
-    makeText(this, 1050, 756, "START MODE  /  P PLAY · L LAB", {
+  private createWorkspaceBrief(): void {
+    const graphics = this.add.graphics();
+    graphics.fillStyle(COLORS.panel, 0.82);
+    graphics.fillRoundedRect(760, 752, 620, 112, 9);
+    graphics.lineStyle(1.25, COLORS.cyan, 0.48);
+    graphics.strokeRoundedRect(760, 752, 620, 112, 9);
+    drawCornerBrackets(graphics, 760, 752, 620, 112, COLORS.gold);
+    makeText(this, 786, 770, "LIVE CORE WORKSPACE", {
+      fontFamily: FONTS.mono,
+      fontSize: "11px",
+      color: colorString(COLORS.cyan),
+      letterSpacing: 1.5,
+    });
+    makeText(this, 786, 795, "380 CHANNELS  ·  ON-POWER SHIFT LOOP  ·  AUTHORITATIVE TELEMETRY", {
       fontFamily: FONTS.mono,
       fontSize: "10px",
-      color: colorString(COLORS.ivoryMuted),
-      letterSpacing: 1,
-    }).setOrigin(0.5);
-    this.modeButtons.play = makeButton(
-      this,
-      880,
-      820,
-      250,
-      58,
-      "PLAY  /  380 CHANNELS",
-      () => this.selectMode("play"),
-      { tone: "cyan", fontSize: 11 },
-    );
-    this.modeButtons.lab = makeButton(
-      this,
-      1170,
-      820,
-      250,
-      58,
-      "LAB  /  2 × 8 CELLS",
-      () => this.selectMode("lab"),
-      { tone: "magenta", fontSize: 11 },
-    );
-    makeText(this, 880, 858, "FULL CORE LOOP", {
+      color: colorString(COLORS.ivory),
+      letterSpacing: 0.45,
+    });
+    makeText(this, 786, 822, "CORE DESIGNER  /  F2", {
       fontFamily: FONTS.mono,
-      fontSize: "9px",
+      fontSize: "10px",
+      color: colorString(COLORS.gold),
+      letterSpacing: 0.9,
+    });
+    makeText(this, 1006, 822, "Edit the 2 × 8 topology from inside the live run.", {
+      fontFamily: FONTS.body,
+      fontSize: "12px",
       color: colorString(COLORS.ivoryMuted),
-      letterSpacing: 0.8,
-    }).setOrigin(0.5);
-    makeText(this, 1170, 858, "TOPOLOGY WORKBENCH", {
-      fontFamily: FONTS.mono,
-      fontSize: "9px",
-      color: colorString(COLORS.ivoryMuted),
-      letterSpacing: 0.8,
-    }).setOrigin(0.5);
+    });
   }
 
   private renderSessionState(update: SessionUpdate): void {
-    const labReady = update.snapshot.lab?.core.channelCount === 2 &&
-      update.snapshot.lab.core.bundlePositionCount === 8 &&
-      update.snapshot.lab.core.cells !== undefined;
     this.readyForShift = update.status.isWasmAvailable &&
-      (this.selectedMode === "lab" ? labReady : update.snapshot.core.channels.length === 380);
+      update.snapshot.core.channels.length === 380;
     this.beginButton?.setEnabled(this.readyForShift && !update.pending);
-    for (const [mode, button] of Object.entries(this.modeButtons) as Array<[BridgeModeId, TacticalButton | null]>) {
-      button?.setEnabled(update.status.isWasmAvailable && !update.pending && !this.shiftTransitionStarted);
-      button?.gameObject.setAlpha(mode === this.selectedMode ? 1 : 0.68);
-    }
-    this.beginButton?.setLabel(this.selectedMode === "lab" ? "BEGIN LAB  ↗" : "BEGIN SHIFT  ↗");
+    this.beginButton?.setLabel("BEGIN SHIFT  ↗");
     if (this.titleStatus === null || this.titleAvailability === null) {
       return;
     }
@@ -350,57 +324,13 @@ export class TitleScene extends Phaser.Scene {
     } else if (!update.status.isWasmAvailable) {
       this.titleStatus.setText("AUTHORITY LINK / UNAVAILABLE").setColor(colorString(COLORS.red));
       this.titleAvailability.setText("SHIFT LOCKED · The authoritative browser bridge is unavailable. Reload after the WASM pack is staged.");
-    } else if (this.modeError !== null) {
-      this.titleStatus.setText("AUTHORITY LINK / ERROR").setColor(colorString(COLORS.red));
-      this.titleAvailability.setText(`MODE SWITCH FAILED · ${this.modeError}`);
     } else if (this.readyForShift) {
       this.titleStatus.setText("AUTHORITY LINK / ONLINE").setColor(colorString(COLORS.green));
-      this.titleAvailability.setText(this.selectedMode === "lab"
-        ? "LAB MODE READY · 2 × 8 CELLS · CONFIGURE FUEL AND REFLECTIVE BOUNDARIES"
-        : "PLAY MODE READY · 380 CHANNELS · SELECT A PATH AND HOLD POWER");
+      this.titleAvailability.setText("PLAY MODE READY · 380 CHANNELS · SELECT A PATH AND HOLD POWER");
     } else {
       this.titleStatus.setText("AUTHORITY LINK / SYNCING").setColor(colorString(COLORS.gold));
-      this.titleAvailability.setText(this.selectedMode === "lab"
-        ? "Waiting for the Lab spatial solve…"
-        : "Waiting for the full reactor snapshot…");
+      this.titleAvailability.setText("Waiting for the full reactor snapshot…");
     }
-  }
-
-  private selectPlayMode(): void {
-    this.selectMode("play");
-  }
-
-  private selectLabMode(): void {
-    this.selectMode("lab");
-  }
-
-  private selectMode(mode: BridgeModeId): void {
-    if (this.shiftTransitionStarted || this.session.isPending || !this.session.status.isWasmAvailable) {
-      return;
-    }
-    this.modeError = null;
-    this.selectedMode = mode;
-    this.renderSessionState({
-      status: this.session.status,
-      snapshot: this.session.snapshot,
-      pending: this.session.isPending,
-      response: null,
-      error: this.session.error,
-    });
-    if (this.session.mode === mode) {
-      return;
-    }
-    void this.session.initializeMode(mode).catch((error: unknown) => {
-      this.modeError = error instanceof Error ? error.message : String(error);
-      this.selectedMode = this.session.mode;
-      this.renderSessionState({
-        status: this.session.status,
-        snapshot: this.session.snapshot,
-        pending: this.session.isPending,
-        response: null,
-        error: this.session.error,
-      });
-    });
   }
 
   private beginShift(): void {
@@ -409,11 +339,7 @@ export class TitleScene extends Phaser.Scene {
     }
     this.shiftTransitionStarted = true;
     this.beginButton?.setEnabled(false);
-    if (this.selectedMode === "play") {
-      this.session.startShift();
-    } else {
-      this.session.stopShift();
-    }
+    this.session.startShift();
     const fadeCamera = this.cameras.main;
     this.fadeCamera = fadeCamera;
     fadeCamera.once(
@@ -428,6 +354,6 @@ export class TitleScene extends Phaser.Scene {
     if (!this.shiftTransitionStarted) {
       return;
     }
-    this.scene.start(this.selectedMode === "lab" ? "LabScene" : "OperationsScene");
+    this.scene.start("OperationsScene");
   }
 }

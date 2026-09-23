@@ -83,6 +83,7 @@ export class OperationsScene extends Phaser.Scene {
   private layout: CoreFaceLayout = createCoreFaceLayout(MAP.x, MAP.y, MAP.width, MAP.height);
   private unsubscribe: (() => void) | null = null;
   private pending = false;
+  private initialSelectedChannelIndex: number | null = null;
   private modalKind: ModalKind | null = null;
   private refuelDraft: RefuelDraft | null = null;
   private controlPowerTarget = 1;
@@ -139,6 +140,7 @@ export class OperationsScene extends Phaser.Scene {
   private refuelEightButton: TacticalButton | null = null;
   private refuelButton: TacticalButton | null = null;
   private controlButton: TacticalButton | null = null;
+  private designerButton: TacticalButton | null = null;
   private playbackButtons: TacticalButton[] = [];
   private unavailableOverlay: Phaser.GameObjects.Container | null = null;
   private unavailableTitleText: Phaser.GameObjects.Text | null = null;
@@ -148,9 +150,30 @@ export class OperationsScene extends Phaser.Scene {
     super("OperationsScene");
   }
 
+  public init(data: unknown): void {
+    this.initialSelectedChannelIndex = isSceneChannelIndex(data)
+      ? data.selectedChannelIndex
+      : null;
+  }
+
   public create(): void {
+    // Phaser reuses a stopped scene instance when Designer returns to Ops.
+    // Rebuild only from live display objects; stale Text references from the
+    // previous display list must not be touched by the first refresh.
+    this.destroyModal();
+    this.tiles.clear();
+    this.sideProfileNumbers.length = 0;
+    this.sideProfileValues.length = 0;
+    this.playbackButtons = [];
+    this.motion = null;
+    this.pending = false;
     this.snapshot = this.session.snapshot;
-    this.selectedChannelIndex = chooseInitialChannel(this.snapshot);
+    const requestedChannel = this.initialSelectedChannelIndex;
+    this.initialSelectedChannelIndex = null;
+    this.selectedChannelIndex = requestedChannel !== null &&
+      this.snapshot.core.channels.some((channel) => channel.channelIndex === requestedChannel)
+      ? requestedChannel
+      : chooseInitialChannel(this.snapshot);
     const initialChannel = this.getSelectedChannel();
     this.refuelDraft = initialChannel === undefined ? null : createRefuelDraft(initialChannel);
     this.createBackdrop();
@@ -257,7 +280,7 @@ export class OperationsScene extends Phaser.Scene {
     graphics.fillStyle(COLORS.cyan, 0.26);
     graphics.fillCircle(this.layout.centerX, this.layout.centerY, 3);
 
-    makeText(this, MAP.x + 22, MAP.y + 18, "TACTICAL CORE", {
+    makeText(this, MAP.x + 22, MAP.y + 18, "LIVE CORE  /  TACTICAL MAP", {
       fontFamily: FONTS.mono,
       fontSize: "12px",
       color: colorString(COLORS.cyan),
@@ -393,7 +416,7 @@ export class OperationsScene extends Phaser.Scene {
     graphics.lineStyle(1.5, COLORS.gold, 0.7);
     graphics.lineBetween(0, HUD_HEIGHT - 2, VIEW_WIDTH, HUD_HEIGHT - 2);
     graphics.lineStyle(1, COLORS.ivory, 0.16);
-    for (const x of [226, 455, 680, 890, 1128, 1270]) {
+    for (const x of [226, 455, 680, 890, 1128, 1430]) {
       graphics.lineBetween(x, 22, x, 94);
     }
     graphics.fillStyle(COLORS.magenta, 0.8);
@@ -434,15 +457,27 @@ export class OperationsScene extends Phaser.Scene {
     this.hudScore = makeText(this, 915, 39, "000000", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.gold), fontStyle: "bold" }).setDepth(190);
     this.hudFresh = makeText(this, 915, 75, "128 FRESH BUNDLES", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
 
-    this.hudStatus = makeText(this, 1150, 31, "STABLE", { fontFamily: FONTS.mono, fontSize: "14px", color: colorString(COLORS.green), fontStyle: "bold", align: "right" }).setOrigin(1, 0).setDepth(190);
-    this.hudSpeed = makeText(this, 1150, 59, "10x / LIVE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
-    makeText(this, 1150, 80, "R  REFUEL    C  CONTROL", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
+    this.hudStatus = makeText(this, 1580, 20, "STABLE", { fontFamily: FONTS.mono, fontSize: "14px", color: colorString(COLORS.green), fontStyle: "bold", align: "right" }).setOrigin(1, 0).setDepth(190);
+    this.hudSpeed = makeText(this, 1580, 42, "10x / LIVE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
+    makeText(this, 1580, 80, "R  REFUEL    C  CONTROL    F2  DESIGNER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
+
+    this.designerButton = makeButton(
+      this,
+      1285,
+      22,
+      290,
+      30,
+      "CORE DESIGNER  /  F2",
+      () => this.openDesigner(),
+      { tone: "magenta", compact: true, fontSize: 10 },
+    );
+    this.designerButton.gameObject.setDepth(195);
 
     const modes: Array<{ id: PlaybackModeId; label: string }> = [
       { id: "pause", label: "Ⅱ" }, { id: "1x", label: "1X" }, { id: "10x", label: "10X" }, { id: "60x", label: "60X" },
     ];
     this.playbackButtons = modes.map((mode, index) => {
-      const button = makeButton(this, 1294 + index * 67, 59, 58, 30, mode.label, () => this.setPlayback(mode.id), { tone: mode.id === "pause" ? "magenta" : "cyan", compact: true, fontSize: 11 });
+      const button = makeButton(this, 1170 + index * 67, 59, 58, 30, mode.label, () => this.setPlayback(mode.id), { tone: mode.id === "pause" ? "magenta" : "cyan", compact: true, fontSize: 11 });
       button.gameObject.setDepth(195);
       return button;
     });
@@ -453,7 +488,7 @@ export class OperationsScene extends Phaser.Scene {
     drawPanelFrame(graphics, SIDE.x, SIDE.y, SIDE.width, SIDE.height, { fill: COLORS.panel, alpha: 0.97, accent: COLORS.cyan, lineWidth: 1.5 });
     graphics.fillStyle(COLORS.magentaDark, 0.22);
     graphics.fillRect(SIDE.x + 14, SIDE.y + 15, SIDE.width - 28, 3);
-    makeText(this, SIDE.x + 24, SIDE.y + 20, "CHANNEL DOSSIER", { fontFamily: FONTS.mono, fontSize: "11px", color: colorString(COLORS.cyan), letterSpacing: 1.6 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 20, "LIVE CORE / CHANNEL DOSSIER", { fontFamily: FONTS.mono, fontSize: "11px", color: colorString(COLORS.cyan), letterSpacing: 1.25 }).setDepth(170);
     makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 20, "INSPECT", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 1 }).setOrigin(1, 0).setDepth(170);
     this.sideChannelId = makeText(this, SIDE.x + 24, SIDE.y + 48, "CH 000", { fontFamily: FONTS.display, fontSize: "35px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(170);
     this.sideCoordinate = makeText(this, SIDE.x + 26, SIDE.y + 91, "A01  /  STEPPED GRID", { fontFamily: FONTS.mono, fontSize: "11px", color: colorString(COLORS.gold), letterSpacing: 1 }).setDepth(170);
@@ -542,6 +577,12 @@ export class OperationsScene extends Phaser.Scene {
         button.gameObject.setAlpha(0.72);
       }
     }
+    this.designerButton?.setEnabled(
+      !this.pending &&
+      this.session.status.isWasmAvailable &&
+      this.snapshot.core.channels.length === 380 &&
+      this.snapshot.lab !== undefined,
+    );
   }
 
   private refreshCore(): void {
@@ -834,6 +875,17 @@ export class OperationsScene extends Phaser.Scene {
     void this.session.dispatch({ type: "set-playback-mode", modeId }).catch(() => undefined);
   }
 
+  private openDesigner(): void {
+    if (this.pending || !this.session.status.isWasmAvailable || this.snapshot.lab === undefined) {
+      return;
+    }
+    // Keep the authoritative play session alive and pause only the browser
+    // wall-clock pump while the designer has focus. Lab commands update the
+    // optional fixture projection; they never initialize or replace Play.
+    this.session.stopShift();
+    this.scene.start("LabScene", { returnChannelIndex: this.selectedChannelIndex });
+  }
+
   private createModalFrame(title: string, subtitle: string): void {
     this.modalBackdrop = this.add.graphics().setDepth(490);
     this.modalBackdrop.fillStyle(COLORS.ink, 0.78);
@@ -992,6 +1044,7 @@ export class OperationsScene extends Phaser.Scene {
     if (key === "d") { this.toggleRefuelDirection(); return; }
     if (key === "r" || key === "enter") { this.dispatchRefuel(); return; }
     if (key === "c") { this.openControlModal(); return; }
+    if (key === "f2") { this.openDesigner(); return; }
     if (key === "1") { this.setPlayback("1x"); return; }
     if (key === "2") { this.setPlayback("10x"); return; }
     if (key === "3") { this.setPlayback("60x"); return; }
@@ -1015,6 +1068,13 @@ export class OperationsScene extends Phaser.Scene {
 function chooseInitialChannel(snapshot: CanduSnapshot): number {
   if (snapshot.core.channels.some((channel) => channel.channelIndex === 210)) return 210;
   return snapshot.core.channels[0]?.channelIndex ?? -1;
+}
+
+function isSceneChannelIndex(value: unknown): value is { selectedChannelIndex: number } {
+  return typeof value === "object" && value !== null &&
+    "selectedChannelIndex" in value &&
+    typeof value.selectedChannelIndex === "number" &&
+    Number.isInteger(value.selectedChannelIndex);
 }
 
 function finiteOr(value: number, fallback: number): number {

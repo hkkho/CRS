@@ -27,6 +27,18 @@ bridge. The bridge runs in a worker and the client fails closed when the
 authoritative WASM module is unavailable; the browser is never a second
 simulation authority.
 
+The title has one Play start. Starting a run initializes the live 380-channel
+`GameSession` together with its 2 × 8 `LabPlaytestSession`, then opens
+Operations. Operations owns the player loop: pacing, channel inspection,
+refuelling, and the power, RRS, score, burnup, and inventory feedback that come
+from the full-core snapshot. Core Designer opens from Operations as an
+engineering workspace inside that same run. It reads the paired workspace
+snapshot and sends `configure-cell`, `solve`, `reset-lab`, and `lab-refuel`
+commands through the bridge. Those commands update the 2 × 8 workspace only;
+they do not reset or mutate the live full-core session. Returning to Operations
+therefore preserves the run and its clock, inventory, score, and accepted
+refuelling state.
+
 `unity/ReactorGame` remains a runnable retained surface, but is frozen for
 feature development while the web game becomes highly functional. It creates a
 real `PracticeGameSessionFactory` session, binds the Bootstrap shell, and
@@ -74,6 +86,8 @@ The player repeatedly:
   refuelling operation;
 - observes the authoritative bundle movement, power/RRS response, discharged
   burnup, score, and event history;
+- opens Core Designer when an engineering inspection is useful, edits or solves
+  the 2 × 8 workspace, then returns to the same Operations run;
 - uses the next interval to keep reserve away from either boundary while
   spending the finite fresh-bundle inventory deliberately;
 - restarts after terminal RRS exhaustion and tries to improve the next run.
@@ -89,15 +103,15 @@ Keep simulation independent from Unity and keep the browser a consumer of the
 same application contract:
 
 ```text
-Vercel-deployed Phaser 3 browser playtest  Retained/frozen Unity views and controls
-                    |                                  |
-             versioned browser bridge              UnityRuntimePort
-                    |                                  |
-                         GameSession
-                              |
-                         ReactorSim.Core state and solver
-                              |
-              project-authored deterministic two-group pack
+  Vercel-deployed Phaser 3 browser playtest  Retained/frozen Unity views and controls
+                      |                                  |
+               versioned browser bridge              UnityRuntimePort
+                      |                                  |
+          GameSession + LabPlaytestSession       GameSession
+                      |                                  |
+             ReactorSim.Core state and solver
+                      |
+          project-authored deterministic two-group pack
 ```
 
 `ReactorSim.Core` owns deterministic state transitions, bundle inventory,
@@ -106,26 +120,28 @@ The exact active finite-volume operator, source iteration, normalization, and
 convergence metrics are documented in
 [`physics/active-two-group-solver.md`](physics/active-two-group-solver.md).
 `ReactorSim.Game` owns reusable session construction, player commands, and
-immutable presentation projections. Unity and Phaser format those projections
-and dispatch input; neither presentation layer duplicates simulation rules.
+immutable presentation projections. The browser bridge carries the live
+`GameSession` snapshot and the paired `LabPlaytestSession` workspace snapshot
+in one browser run. Phaser formats those projections and dispatches input;
+neither presentation layer duplicates simulation rules. Core Designer commands
+are scoped to the workspace snapshot and must never alter the full-core
+session.
 
-The active runtime uses the project-authored deterministic two-group pack.
-The pack is synthetic-calibrated surrogate data and is not validated CANDU
-data or a plant prediction. DRAGON5 and DONJON5 remain optional offline
-reference context; runtime code never launches either executable, and no
-external validation pack is required for the active path. Preserve units,
-energy-group ordering, topology identity, pack checksums, source identity, and
-licensing boundaries when physics data changes.
+The active runtime uses the project-authored deterministic two-group pack. It
+is a practice model with explicit provenance and is not a plant prediction.
+DRAGON5 and DONJON5 remain optional offline reference context; runtime code
+never launches either executable, and no external validation pack is required
+for the active path. Preserve units, energy-group ordering, topology identity,
+pack checksums, source identity, and licensing boundaries when physics data
+changes.
 
 ## Current physics and provenance
 
 The practice session loads the project-authored
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It is a
-synthetic-calibrated infinite-cell surrogate with explicit provenance, not
-validated CANDU data, a plant rating, or an external DRAGON5/DONJON5 result.
-This pack is the active simulation and acceptance path; the game does not
-depend on an external validated source. The fresh NAT-U-SYNTHETIC row and the
-finite-volume/eigen equations are specified in the
+`candu6-two-group-diffusion-v1-infinite-cell-calibrated` pack. It has explicit
+provenance and is the active simulation and acceptance path; the game does not
+depend on an external validated source or claim a plant rating. The fresh fuel
+row and the finite-volume/eigen equations are specified in the
 [active solver math document](physics/active-two-group-solver.md).
 
 The shared two-group full-core path currently:
@@ -211,31 +227,30 @@ locked state and disable simulation controls. Local command history, state
 digests, replay JSON, and feedback notes are appropriate companion tooling;
 they are not a second authority.
 
-The browser also exposes `Lab` mode through the same bridge. Select the
-`LAB / 2 × 8 CELLS` start button or press `L`. Lab uses the
-project-authored `lab-2x8-synthetic-v1` fixture: two channels with eight
-two-group diffusion cells per channel. The Lab view makes each cell's
-fuel/nonfuel state and reflective faces visible and editable. It sends
-`configure-cell` for those changes and `solve` to run the authoritative spatial
-solver and show its convergence, eigenvalue, flux, power, and residual
-diagnostics. `Reset` restores the deterministic fixture; a Lab refuel uses the
-explicit synthetic fresh-fuel variant and is accepted only when the
-replacement solve is usable.
+The browser has one Play entry and one run. The title starts the live
+380-channel `GameSession` and the paired 2 × 8 `LabPlaytestSession`, then opens
+Operations. The live run remains the primary product surface: the player runs
+time, selects channels, commits refuelling, and reads the resulting power,
+RRS, score, burnup, and inventory feedback.
 
-Lab also includes the fixed Core
-`single-cell-reflective-nat-u-synthetic-v1` readout: a fresh
-`NAT-U-SYNTHETIC` row from the embedded pack, one node, six explicit
-reflective faces, zero reflective leakage conductance, and a real one-watt
-`SpatialEigenSolve`. The panel exposes its pack provenance, cross-sections,
-volume, `k`, group fluxes, power, fission production, outer iteration count,
-residual, and power balance. The result is copied from Core; the browser does
-not compute a replacement value. The benchmark converges at
-`k = 1.109625`, `Phi_1 = 2.72852855714132e12 n/m^2/s`,
-`Phi_2 = 3.41066069642665e12 n/m^2/s`, and `1 W`. The exact equations and
-interpretation boundary are in [active two-group solver math](physics/active-two-group-solver.md).
-These project-authored fixtures are compact solver checks for topology,
-material binding, and boundary handling. They are not a full CANDU benchmark,
-a plant prediction, or a substitute for the 380-channel Play session.
+Operations also opens Core Designer, a compact engineering workspace for the
+paired 2 × 8 topology. The workspace exposes cell fuel state, reflective faces,
+flux, convergence, eigenvalue, power, residual, and boundary diagnostics. Its
+bridge commands are scoped explicitly:
+
+- `configure-cell` changes a cell's fuel or boundary configuration in the
+  workspace snapshot;
+- `solve` runs the authoritative workspace solve and refreshes its diagnostics;
+- `reset-lab` restores the workspace fixture; and
+- `lab-refuel` performs a workspace fuel operation when the replacement solve
+  is usable. Core Designer exposes it as the `LAB REFUEL ×4 / B` control.
+
+These commands do not reset or mutate the live full-core `GameSession`. The
+browser keeps both snapshots in the same bridge session, and returning from
+Core Designer to Operations preserves the run, clock, inventory, score, and
+accepted refuelling state. The workspace is useful for inspecting topology and
+solver behavior; it is not a second full-core gameplay model. Its equations and
+boundary conditions are documented in [active two-group solver math](physics/active-two-group-solver.md).
 
 For a production-shaped browser build, stage the bridge from the repository
 root and run:

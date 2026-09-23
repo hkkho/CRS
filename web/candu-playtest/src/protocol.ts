@@ -472,6 +472,10 @@ export type CanduCommand =
   | { type: "queue-power-target"; targetFraction: number }
   | { type: "queue-tilt-target"; targetFraction: number }
   | { type: "commit-refuel"; request: RefuelRequest }
+  /** Edit only the deterministic 2 × 8 designer fixture. */
+  | { type: "reset-lab" }
+  /** Refuel only the deterministic 2 × 8 designer fixture. */
+  | { type: "lab-refuel"; request: RefuelRequest }
   | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: LabBoundaryFace[] }
   | { type: "solve" }
   | { type: "reset" };
@@ -1492,12 +1496,15 @@ function isCanduCommand(value: unknown): value is CanduCommand {
     case "pause":
     case "resume":
     case "reset":
+    case "reset-lab":
       return true;
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "queue-tilt-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
+      return hasOwn(value, "request") && isRefuelRequest(value.request);
+    case "lab-refuel":
       return hasOwn(value, "request") && isRefuelRequest(value.request);
     case "configure-cell":
       return hasOwnProperties(value, [

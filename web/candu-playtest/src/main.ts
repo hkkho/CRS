@@ -17,9 +17,9 @@ session.subscribe((update) => {
   }
   const selected = update.snapshot.core.channels[0];
   statusMirror.textContent = update.status.isWasmAvailable
-    ? update.snapshot.lab === undefined
-      ? `CANDU play mode online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}`
-      : `CANDU Lab mode online. ${update.snapshot.lab.core.channelCount} × ${update.snapshot.lab.core.bundlePositionCount} cells available.`
+    ? session.mode === "play"
+      ? `CANDU play mode online. ${update.snapshot.core.channelCount} channels available. ${selected === undefined ? "" : "Ready for channel selection."}${update.snapshot.lab === undefined ? "" : " Core Designer available."}`
+      : `CANDU Lab mode online. ${update.snapshot.lab?.core.channelCount ?? 0} × ${update.snapshot.lab?.core.bundlePositionCount ?? 0} cells available.`
     : `${update.status.title}. ${update.status.detail}`;
 });
 

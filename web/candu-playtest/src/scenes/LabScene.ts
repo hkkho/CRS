@@ -16,6 +16,7 @@ import type {
   CanduCommandResponse,
   CanduSnapshot,
   LabBoundaryFace,
+  RefuellingDirection,
 } from "../protocol";
 import {
   defaultReflectiveFaces,
@@ -34,7 +35,7 @@ const VIEW_WIDTH = 1600;
 const VIEW_HEIGHT = 900;
 const GRID = { x: 52, y: 136, width: 1060, height: 690 } as const;
 const SIDE = { x: 1140, y: 136, width: 408, height: 690 } as const;
-const CELL_GRID = { x: 100, y: 270, width: 970, height: 430 } as const;
+const CELL_GRID = { x: 100, y: 312, width: 970, height: 430 } as const;
 const FACE_ORDER: readonly LabBoundaryFace[] = [
   "north",
   "east",
@@ -82,10 +83,16 @@ export class LabScene extends Phaser.Scene {
   private powerText: Phaser.GameObjects.Text | null = null;
   private solveText: Phaser.GameObjects.Text | null = null;
   private feedbackText: Phaser.GameObjects.Text | null = null;
+  private livePowerText: Phaser.GameObjects.Text | null = null;
+  private liveScoreText: Phaser.GameObjects.Text | null = null;
+  private liveFreshText: Phaser.GameObjects.Text | null = null;
+  private liveTimeText: Phaser.GameObjects.Text | null = null;
   private fuelButton: TacticalButton | null = null;
   private solveButton: TacticalButton | null = null;
   private resetButton: TacticalButton | null = null;
+  private labRefuelButton: TacticalButton | null = null;
   private backButton: TacticalButton | null = null;
+  private returnChannelIndex = -1;
   private readonly faceButtons = new Map<LabBoundaryFace, TacticalButton>();
   private unavailableOverlay: Phaser.GameObjects.Container | null = null;
   private unavailableTitle: Phaser.GameObjects.Text | null = null;
@@ -95,10 +102,25 @@ export class LabScene extends Phaser.Scene {
     super("LabScene");
   }
 
+  public init(data: unknown): void {
+    this.returnChannelIndex = isSceneChannelIndex(data)
+      ? data.returnChannelIndex
+      : -1;
+  }
+
   public create(): void {
     this.session.stopShift();
+    // A scene instance can be reused after returning to Operations. Rebuild
+    // the interactive maps from the new display list rather than retaining
+    // input handlers for destroyed cells and boundary buttons.
+    this.tiles.clear();
+    this.faceButtons.clear();
+    this.pending = false;
+    this.lastResponse = null;
+    this.resultMessage = "Select a cell to configure its material and boundaries.";
     this.snapshot = this.session.snapshot;
     this.createBackdrop();
+    this.createToolbar();
     this.createGrid();
     this.createSidePanel();
     this.createUnavailableOverlay();
@@ -127,7 +149,95 @@ export class LabScene extends Phaser.Scene {
     background.lineStyle(1, COLORS.gold, 0.2);
     background.lineBetween(0, 116, VIEW_WIDTH, 116);
     background.lineBetween(0, 850, VIEW_WIDTH, 850);
+    background.fillStyle(COLORS.ink, 0.92);
+    background.fillRect(0, 0, VIEW_WIDTH, 114);
+    background.fillStyle(COLORS.magenta, 0.8);
+    background.fillRect(24, 20, 5, 74);
+    background.lineStyle(1.5, COLORS.gold, 0.7);
+    background.lineBetween(0, 113, VIEW_WIDTH, 113);
     drawCornerBrackets(background, 18, 92, VIEW_WIDTH - 36, 776, COLORS.gold);
+  }
+
+  private createToolbar(): void {
+    makeText(this, 48, 17, "CANDU", {
+      fontFamily: FONTS.display,
+      fontSize: "22px",
+      color: colorString(COLORS.ivory),
+      fontStyle: "bold",
+      letterSpacing: 2,
+    }).setDepth(100);
+    makeText(this, 48, 49, "CORE DESIGNER", {
+      fontFamily: FONTS.mono,
+      fontSize: "11px",
+      color: colorString(COLORS.magenta),
+      letterSpacing: 1.9,
+    }).setDepth(100);
+    makeText(this, 48, 73, "ENGINEERING WORKSPACE / 2 × 8 FIXTURE", {
+      fontFamily: FONTS.mono,
+      fontSize: "9px",
+      color: colorString(COLORS.ivoryMuted),
+      letterSpacing: 0.7,
+    }).setDepth(100);
+
+    makeText(this, 380, 18, "LIVE RUN", {
+      fontFamily: FONTS.mono,
+      fontSize: "9px",
+      color: colorString(COLORS.cyan),
+      letterSpacing: 1.2,
+    }).setDepth(100);
+    this.livePowerText = makeText(this, 380, 40, "POWER  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "13px",
+      color: colorString(COLORS.ivory),
+      fontStyle: "bold",
+    }).setDepth(100);
+    this.liveScoreText = makeText(this, 570, 40, "SCORE  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "13px",
+      color: colorString(COLORS.gold),
+      fontStyle: "bold",
+    }).setDepth(100);
+    this.liveFreshText = makeText(this, 750, 40, "FRESH  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "13px",
+      color: colorString(COLORS.cyan),
+      fontStyle: "bold",
+    }).setDepth(100);
+    this.liveTimeText = makeText(this, 930, 40, "TIME  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "13px",
+      color: colorString(COLORS.ivory),
+      fontStyle: "bold",
+    }).setDepth(100);
+    makeText(this, 380, 71, "CELL EDITS APPLY TO DESIGNER FIXTURE ONLY", {
+      fontFamily: FONTS.mono,
+      fontSize: "9px",
+      color: colorString(COLORS.ivoryMuted),
+      letterSpacing: 0.6,
+    }).setDepth(100);
+    makeText(this, 1552, 18, "AUTHORITATIVE SPATIAL SOLVE", {
+      fontFamily: FONTS.mono,
+      fontSize: "9px",
+      color: colorString(COLORS.gold),
+      letterSpacing: 0.9,
+    }).setOrigin(1, 0).setDepth(100);
+    makeText(this, 1552, 40, "PAUSED WHILE DESIGNING", {
+      fontFamily: FONTS.mono,
+      fontSize: "11px",
+      color: colorString(COLORS.gold),
+      align: "right",
+    }).setOrigin(1, 0).setDepth(100);
+    this.backButton = makeButton(
+      this,
+      1455,
+      80,
+      210,
+      30,
+      "RETURN TO OPS  /  ESC",
+      () => this.backToOperations(),
+      { tone: "cyan", compact: true, fontSize: 10 },
+    );
+    this.backButton.gameObject.setDepth(120);
   }
 
   private createGrid(): void {
@@ -161,19 +271,19 @@ export class LabScene extends Phaser.Scene {
     }).setDepth(20);
     makeText(this, GRID.x + 24, GRID.y + 42, "2 CHANNELS × 8 AXIAL NODES / AUTHORITATIVE CORE TOPOLOGY", {
       fontFamily: FONTS.mono,
-      fontSize: "10px",
+      fontSize: "11px",
       color: colorString(COLORS.ivoryMuted),
       letterSpacing: 0.8,
     }).setDepth(20);
     makeText(this, GRID.x + GRID.width - 24, GRID.y + 22, "FLUX FIELD / CELL STATE", {
       fontFamily: FONTS.mono,
-      fontSize: "10px",
+      fontSize: "11px",
       color: colorString(COLORS.gold),
       letterSpacing: 1,
     }).setOrigin(1, 0).setDepth(20);
 
     const singleCellPanel = this.add.graphics().setDepth(1);
-    drawPanelFrame(singleCellPanel, GRID.x + 24, GRID.y + 52, GRID.width - 48, 54, {
+    drawPanelFrame(singleCellPanel, GRID.x + 24, GRID.y + 52, GRID.width - 48, 82, {
       fill: COLORS.indigo,
       alpha: 0.92,
       accent: COLORS.gold,
@@ -182,45 +292,45 @@ export class LabScene extends Phaser.Scene {
     this.singleCellHeader = makeText(
       this,
       GRID.x + 38,
-      GRID.y + 57,
+      GRID.y + 61,
       "SINGLE-CELL BENCHMARK  /  AUTHORITATIVE CORE SOLVER",
       {
         fontFamily: FONTS.mono,
-        fontSize: "9px",
+        fontSize: "11px",
         color: colorString(COLORS.gold),
         letterSpacing: 0.8,
       },
     ).setDepth(20);
-    this.singleCellPack = makeText(this, GRID.x + 38, GRID.y + 68, "PACK  —", {
+    this.singleCellPack = makeText(this, GRID.x + 38, GRID.y + 84, "PACK  —", {
       fontFamily: FONTS.mono,
-      fontSize: "7px",
+      fontSize: "11px",
       color: colorString(COLORS.ivoryMuted),
     }).setDepth(20);
-    this.singleCellProvenance = makeText(this, GRID.x + 560, GRID.y + 68, "PROV  —", {
+    this.singleCellProvenance = makeText(this, GRID.x + 38, GRID.y + 103, "FLUX  —", {
       fontFamily: FONTS.mono,
-      fontSize: "7px",
-      color: colorString(COLORS.ivoryMuted),
-    }).setDepth(20);
-    this.singleCellMaterial = makeText(this, GRID.x + 38, GRID.y + 79, "MATERIAL  —", {
-      fontFamily: FONTS.mono,
-      fontSize: "7px",
-      color: colorString(COLORS.ivoryMuted),
-    }).setDepth(20);
-    this.singleCellCoefficients = makeText(this, GRID.x + 560, GRID.y + 79, "XS  —", {
-      fontFamily: FONTS.mono,
-      fontSize: "7px",
-      color: colorString(COLORS.ivoryMuted),
-    }).setDepth(20);
-    this.singleCellResult = makeText(this, GRID.x + 38, GRID.y + 90, "RESULT  —", {
-      fontFamily: FONTS.mono,
-      fontSize: "8px",
+      fontSize: "11px",
       color: colorString(COLORS.ivory),
     }).setDepth(20);
-    this.singleCellDiagnostics = makeText(this, GRID.x + 560, GRID.y + 90, "SOLVER  —", {
+    this.singleCellMaterial = makeText(this, GRID.x + 38, GRID.y + 121, "REFL  —", {
       fontFamily: FONTS.mono,
-      fontSize: "8px",
+      fontSize: "11px",
       color: colorString(COLORS.ivory),
     }).setDepth(20);
+    this.singleCellCoefficients = makeText(this, GRID.x + 38, GRID.y + 103, "XS  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "10px",
+      color: colorString(COLORS.ivoryMuted),
+    }).setDepth(20).setVisible(false);
+    this.singleCellResult = makeText(this, GRID.x + 38, GRID.y + 121, "RESULT  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "10px",
+      color: colorString(COLORS.ivory),
+    }).setDepth(20).setVisible(false);
+    this.singleCellDiagnostics = makeText(this, GRID.x + 38, GRID.y + 121, "SOLVER  —", {
+      fontFamily: FONTS.mono,
+      fontSize: "10px",
+      color: colorString(COLORS.ivory),
+    }).setDepth(20).setVisible(false);
 
     for (let position = 0; position < 8; position += 1) {
       makeText(this, CELL_GRID.x + cellWidth * (position + 0.5), CELL_GRID.y - 23, `P${position + 1}`, {
@@ -239,7 +349,7 @@ export class LabScene extends Phaser.Scene {
       fontSize: "10px",
       color: colorString(COLORS.cyan),
     }).setOrigin(1, 0.5).setDepth(20);
-    makeText(this, GRID.x + 24, GRID.y + GRID.height - 34, "CLICK CELL TO INSPECT · F TO TOGGLE FUEL · S SOLVE · R RESET", {
+    makeText(this, GRID.x + 24, GRID.y + GRID.height - 34, "CLICK CELL TO INSPECT · F FUEL · B REFUEL · S SOLVE · R RESET-LAB", {
       fontFamily: FONTS.mono,
       fontSize: "9px",
       color: colorString(COLORS.ivoryMuted),
@@ -297,13 +407,13 @@ export class LabScene extends Phaser.Scene {
     });
     graphics.fillStyle(COLORS.magentaDark, 0.24);
     graphics.fillRect(SIDE.x + 14, SIDE.y + 15, SIDE.width - 28, 3);
-    makeText(this, SIDE.x + 24, SIDE.y + 20, "CELL CONFIGURATION", {
+    makeText(this, SIDE.x + 24, SIDE.y + 20, "INSPECTOR / CELL CONFIGURATION", {
       fontFamily: FONTS.mono,
       fontSize: "11px",
       color: colorString(COLORS.cyan),
       letterSpacing: 1.5,
     }).setDepth(110);
-    this.headerMode = makeText(this, SIDE.x + SIDE.width - 24, SIDE.y + 20, "LAB MODE", {
+    this.headerMode = makeText(this, SIDE.x + SIDE.width - 24, SIDE.y + 20, "DESIGNER 2 × 8", {
       fontFamily: FONTS.mono,
       fontSize: "9px",
       color: colorString(COLORS.magenta),
@@ -417,6 +527,17 @@ export class LabScene extends Phaser.Scene {
       wordWrap: { width: SIDE.width - 48 },
       lineSpacing: 3,
     }).setDepth(110);
+    this.labRefuelButton = makeButton(
+      this,
+      SIDE.x + SIDE.width - 70,
+      SIDE.y + 638,
+      126,
+      38,
+      "LAB REFUEL ×4",
+      () => this.labRefuel(),
+      { tone: "magenta", fontSize: 9, compact: true },
+    );
+    this.labRefuelButton.gameObject.setDepth(120);
     this.solveButton = makeButton(
       this,
       SIDE.x + 84,
@@ -439,17 +560,6 @@ export class LabScene extends Phaser.Scene {
       { tone: "gold", fontSize: 9, compact: true },
     );
     this.resetButton.gameObject.setDepth(120);
-    this.backButton = makeButton(
-      this,
-      SIDE.x + SIDE.width - 50,
-      SIDE.y + 638,
-      72,
-      38,
-      "MODE  ↩",
-      () => this.backToTitle(),
-      { tone: "quiet", fontSize: 9, compact: true },
-    );
-    this.backButton.gameObject.setDepth(120);
   }
 
   private createUnavailableOverlay(): void {
@@ -482,6 +592,7 @@ export class LabScene extends Phaser.Scene {
   }
 
   private refresh(): void {
+    this.refreshToolbar();
     this.refreshGrid();
     this.refreshSingleCellPanel();
     this.refreshSidePanel();
@@ -493,53 +604,44 @@ export class LabScene extends Phaser.Scene {
       : "The authoritative Lab session did not return a 2 × 8 topology.");
   }
 
+  private refreshToolbar(): void {
+    const power = Number.isFinite(this.snapshot.physics.actualPowerFraction)
+      ? this.snapshot.physics.actualPowerFraction
+      : this.snapshot.normalizedPowerFraction;
+    this.livePowerText?.setText(`POWER  ${formatPercent(power)}`);
+    this.liveScoreText?.setText(`SCORE  ${Math.round(this.snapshot.scoreTotal).toString().padStart(6, "0")}`);
+    this.liveFreshText?.setText(`FRESH  ${this.snapshot.freshBundlesAvailable}`);
+    this.liveTimeText?.setText(`TIME  ${formatDesignerTime(this.snapshot.simulationTimeSeconds)}`);
+  }
+
   private refreshSingleCellPanel(): void {
     const singleCell = this.snapshot.lab?.singleCell;
     if (singleCell === undefined) {
       this.singleCellHeader?.setText("SINGLE-CELL BENCHMARK  /  AUTHORITATIVE RESULT UNAVAILABLE")
         .setColor(colorString(COLORS.red));
-      this.singleCellPack?.setText("PACK  —  Waiting for the Core fresh-fuel, six-face reflective solve.");
-      this.singleCellProvenance?.setText("PROV  —");
-      this.singleCellMaterial?.setText("MATERIAL  —");
-      this.singleCellCoefficients?.setText("XS  —  No browser-side coefficient row is substituted.");
-      this.singleCellResult?.setText("RESULT  —  No single-cell result returned by the authoritative bridge.");
-      this.singleCellDiagnostics?.setText("SOLVER  —");
+      this.singleCellPack?.setText("PACK  —  Waiting for the authoritative fresh-fuel benchmark.");
+      this.singleCellProvenance?.setText("FLUX  —  No bridge result returned.");
+      this.singleCellMaterial?.setText("REFL  —  Six-face solve unavailable.");
       return;
     }
 
     const group1Flux = singleCell.group1Flux[0] ?? Number.NaN;
     const group2Flux = singleCell.group2Flux[0] ?? Number.NaN;
-    const ratio = group1Flux > 0
-      ? group2Flux / group1Flux
-      : Number.NaN;
     const faces = singleCell.reflectiveFaces.map((face) => face.toUpperCase()).join(" · ");
-    const c = singleCell.coefficients;
     const diagnostics = singleCell.diagnostics;
     const residual = diagnostics.residualRelativeInfinity === null
       ? "—"
       : diagnostics.residualRelativeInfinity.toExponential(2);
-    const balance = diagnostics.powerBalanceRelative === null
-      ? "—"
-      : diagnostics.powerBalanceRelative.toExponential(2);
     this.singleCellHeader?.setText("SINGLE-CELL BENCHMARK  /  AUTHORITATIVE CORE SOLVER")
       .setColor(colorString(COLORS.gold));
     this.singleCellPack?.setText(
-      `PACK ${compactSingleCellText(singleCell.packVersion, 38)} · EVID ${compactSingleCellText(singleCell.evidenceClass, 18)} · G1 ${compactSingleCellText(singleCell.energyGroupOrder[0] ?? "—", 10)} / G2 ${compactSingleCellText(singleCell.energyGroupOrder[1] ?? "—", 10)}`,
+      `PACK ${compactSingleCellText(singleCell.packVersion, 28)} · MAT ${compactSingleCellText(singleCell.materialId, 18)} · SRC ${compactSingleCellText(singleCell.sourceProvenance, 28)}`,
     );
     this.singleCellProvenance?.setText(
-      `PROV ${compactSingleCellText(singleCell.sourceProvenance, 42)} · DATA ${compactSingleCellText(singleCell.dataPackId, 20)}`,
+      `FLUX  G1 ${formatSingleCellValue(group1Flux)} · G2 ${formatSingleCellValue(group2Flux)} · POWER ${formatSingleCellValue(singleCell.totalPowerWatts)} / ${formatSingleCellValue(singleCell.targetPowerWatts)} W`,
     );
     this.singleCellMaterial?.setText(
-      `MAT ${compactSingleCellText(singleCell.materialId, 20)} · FUEL ${compactSingleCellText(singleCell.fuelTypeId, 18)} · BU ${formatSingleCellValue(singleCell.burnupJPerKgHm)} · V ${formatSingleCellValue(singleCell.volumeM3)}m³ · REFL ${faces}`,
-    );
-    this.singleCellCoefficients?.setText(
-      `XS Σa ${formatSingleCellValue(c.absorptionGroup1PerM)}/${formatSingleCellValue(c.absorptionGroup2PerM)} · Σf ${formatSingleCellValue(c.fissionGroup1PerM)}/${formatSingleCellValue(c.fissionGroup2PerM)} · νΣf ${formatSingleCellValue(c.nuFissionGroup1PerM)}/${formatSingleCellValue(c.nuFissionGroup2PerM)} · ↓₁₂ ${formatSingleCellValue(c.downscatterGroup1To2PerM)} · χ ${formatSingleCellValue(c.chiGroup1)}/${formatSingleCellValue(c.chiGroup2)}`,
-    );
-    this.singleCellResult?.setText(
-      `RESULT K ${formatSingleCellValue(singleCell.effectiveK, 6)} · FLUX G1/G2 ${formatSingleCellValue(group1Flux)}/${formatSingleCellValue(group2Flux)} · RATIO ${formatSingleCellValue(ratio)}`,
-    );
-    this.singleCellDiagnostics?.setText(
-      `SOLVER ${singleCell.spatialSolve.isConverged ? "CONVERGED" : singleCell.spatialSolve.status.toUpperCase()} · P ${formatSingleCellValue(singleCell.totalPowerWatts)}/${formatSingleCellValue(singleCell.targetPowerWatts)}W · FISSION ${formatSingleCellValue(singleCell.fissionProductionRate)} · IT ${diagnostics.iterationCount} · RES ${residual} · BAL ${balance}`,
+      `REFL ${faces} · K ${formatSingleCellValue(singleCell.effectiveK, 6)} · ${singleCell.spatialSolve.isConverged ? "CONVERGED" : singleCell.spatialSolve.status.toUpperCase()} · RES ${residual}`,
     );
   }
 
@@ -642,6 +744,12 @@ export class LabScene extends Phaser.Scene {
     this.fuelButton?.setEnabled(controlsEnabled);
     this.solveButton?.setEnabled(lab !== undefined && !this.pending && this.session.status.isWasmAvailable);
     this.resetButton?.setEnabled(lab !== undefined && !this.pending && this.session.status.isWasmAvailable);
+    this.labRefuelButton?.setEnabled(
+      lab !== undefined &&
+      !this.pending &&
+      this.session.status.isWasmAvailable &&
+      lab.freshBundlesAvailable >= 4,
+    );
     this.backButton?.setEnabled(!this.pending);
     for (const face of FACE_ORDER) {
       const button = this.faceButtons.get(face);
@@ -673,6 +781,35 @@ export class LabScene extends Phaser.Scene {
     this.dispatchCell({ hasFuel: false, reflectiveFaces: toggleReflectiveFace(cell.reflectiveFaces, face) });
   }
 
+  private labRefuel(): void {
+    const lab = this.snapshot.lab;
+    if (lab === undefined || this.pending || lab.freshBundlesAvailable < 4) {
+      return;
+    }
+    const channel = lab.core.channels.find((candidate) => candidate.channelIndex === this.selectedCell.channelIndex);
+    if (channel === undefined) {
+      return;
+    }
+    const directionId: RefuellingDirection = channel.flowDirection === "toward-end-a"
+      ? "toward-end-a"
+      : "toward-end-b";
+    this.resultMessage = "LAB REFUEL PENDING…";
+    this.refreshSidePanel();
+    void this.session.dispatch({
+      type: "lab-refuel",
+      request: {
+        channelIndex: this.selectedCell.channelIndex,
+        directionId,
+        shiftCount: 4,
+        fuelTypeId: "LAB-FRESH-SYNTHETIC",
+      },
+    }, { responseMode: "full" }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.resultMessage = `FAILED  /  ${message}`;
+      this.refreshSidePanel();
+    });
+  }
+
   private dispatchCell(change: { hasFuel: boolean; reflectiveFaces: LabBoundaryFace[] }): void {
     const command: Extract<import("../protocol").CanduCommand, { type: "configure-cell" }> = {
       type: "configure-cell",
@@ -683,7 +820,7 @@ export class LabScene extends Phaser.Scene {
     };
     this.resultMessage = "CONFIGURE PENDING…";
     this.refreshSidePanel();
-    void this.session.dispatch(command).catch((error: unknown) => {
+    void this.session.dispatch(command, { responseMode: "full" }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       this.resultMessage = `FAILED  /  ${message}`;
       this.refreshSidePanel();
@@ -694,7 +831,7 @@ export class LabScene extends Phaser.Scene {
     if (this.snapshot.lab === undefined || this.pending) return;
     this.resultMessage = "SOLVE PENDING…";
     this.refreshSidePanel();
-    void this.session.dispatch({ type: "solve" }).catch((error: unknown) => {
+    void this.session.dispatch({ type: "solve" }, { responseMode: "full" }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       this.resultMessage = `FAILED  /  ${message}`;
       this.refreshSidePanel();
@@ -705,7 +842,7 @@ export class LabScene extends Phaser.Scene {
     if (this.pending || !this.session.status.isWasmAvailable) return;
     this.resultMessage = "RESET PENDING…";
     this.refreshSidePanel();
-    void this.session.dispatch({ type: "reset" }).catch((error: unknown) => {
+    void this.session.dispatch({ type: "reset-lab" }, { responseMode: "full" }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
       this.resultMessage = `FAILED  /  ${message}`;
       this.refreshSidePanel();
@@ -731,11 +868,15 @@ export class LabScene extends Phaser.Scene {
   private handleKeyDown(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
     if (key === "escape") {
-      this.backToTitle();
+      this.backToOperations();
       return;
     }
     if (key === "f") {
       this.toggleFuel();
+      return;
+    }
+    if (key === "b") {
+      this.labRefuel();
       return;
     }
     if (key === "s") {
@@ -752,10 +893,15 @@ export class LabScene extends Phaser.Scene {
     }
   }
 
-  private backToTitle(): void {
+  private backToOperations(): void {
     if (this.pending) return;
-    this.session.stopShift();
-    this.scene.start("TitleScene");
+    // Re-arm the live clock; canAdvance() still honors the authoritative
+    // paused and terminal flags, so a paused run remains paused until the
+    // operator changes playback in Operations.
+    this.session.startShift();
+    this.scene.start("OperationsScene", {
+      selectedChannelIndex: this.returnChannelIndex,
+    });
   }
 }
 
@@ -775,4 +921,25 @@ function compactSingleCellText(value: string, maximumLength: number): string {
   return normalized.length <= maximumLength
     ? normalized
     : `${normalized.slice(0, Math.max(1, maximumLength - 1))}…`;
+}
+
+function formatPercent(value: number): string {
+  return Number.isFinite(value) ? `${(value * 100).toFixed(1)}%` : "—";
+}
+
+function formatDesignerTime(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return "—";
+  }
+  const totalMinutes = Math.floor(seconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `D${String(Math.floor(hours / 24) + 1).padStart(2, "0")} ${String(hours % 24).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function isSceneChannelIndex(value: unknown): value is { returnChannelIndex: number } {
+  return typeof value === "object" && value !== null &&
+    "returnChannelIndex" in value &&
+    typeof value.returnChannelIndex === "number" &&
+    Number.isInteger(value.returnChannelIndex);
 }

@@ -53,7 +53,10 @@ export class BridgeSessionController {
     this.bridge = bridge;
     this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
-    this.modeValue = this.snapshotValue.lab === undefined ? "play" : "lab";
+    // Play is the only live session mode. The designer fixture is carried as
+    // an optional projection on the play snapshot, so its presence must not
+    // gate the wall-clock pump or turn a scene transition into a mode switch.
+    this.modeValue = "play";
     this.unsubscribeBridge = bridge.subscribe((status, snapshot) => {
       this.statusValue = status;
       this.snapshotValue = snapshot;
@@ -169,7 +172,7 @@ export class BridgeSessionController {
     this.lastError = null;
     this.emit();
     try {
-      const responseOptions = options ?? (command.type === "reset"
+      const responseOptions = options ?? (isEngineeringCommand(command)
         ? { responseMode: "full" as const }
         : { responseMode: "compact" as const });
       const response = await this.bridge.dispatch(command, responseOptions);
@@ -240,6 +243,14 @@ export class BridgeSessionController {
       listener(update);
     }
   }
+}
+
+function isEngineeringCommand(command: CanduCommand): boolean {
+  return command.type === "configure-cell" ||
+    command.type === "solve" ||
+    command.type === "reset-lab" ||
+    command.type === "lab-refuel" ||
+    command.type === "reset";
 }
 
 function formatError(error: unknown): string {

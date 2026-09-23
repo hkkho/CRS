@@ -251,6 +251,110 @@ namespace ReactorSim.Browser.Tests
         }
 
         [Fact]
+        public void PlaySnapshotCarriesLabAndEngineeringCommandsPreserveLiveGameState()
+        {
+            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            AssertAccepted(initialized);
+            Assert.Equal("play", initialized.GetProperty("mode").GetString());
+            JsonElement initialSnapshot = initialized.GetProperty("snapshot");
+            AssertPlaySnapshot(initialSnapshot);
+            AssertLabSnapshotReady(initialSnapshot.GetProperty("lab"));
+
+            JsonElement advanced = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            AssertAccepted(advanced);
+            JsonElement liveGameBeforeLab = advanced.GetProperty("snapshot");
+            Assert.Equal(3_600.0, liveGameBeforeLab.GetProperty("simulationTimeSeconds").GetDouble(), 12);
+            Assert.Equal(2.0, liveGameBeforeLab.GetProperty("wallElapsedSeconds").GetDouble(), 12);
+
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"command\",\"responseMode\":\"compact\",\"baseSequence\":1,\"payload\":{" +
+                    "\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}}"));
+            AssertAccepted(configured);
+            Assert.False(configured.TryGetProperty("responseKind", out _));
+            Assert.Equal("play", configured.GetProperty("mode").GetString());
+            JsonElement configuredSnapshot = configured.GetProperty("snapshot");
+            AssertAuthoritativeSnapshotUnchanged(liveGameBeforeLab, configuredSnapshot);
+            Assert.False(configuredSnapshot.GetProperty("lab").GetProperty("core").GetProperty("cells")[0]
+                .GetProperty("hasFuel").GetBoolean());
+            Assert.NotEqual(
+                liveGameBeforeLab.GetProperty("lab").GetProperty("spatialSolve").GetProperty("finalState").GetProperty("eigenvalue").GetDouble(),
+                configuredSnapshot.GetProperty("lab").GetProperty("spatialSolve").GetProperty("finalState").GetProperty("eigenvalue").GetDouble());
+
+            JsonElement solved = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"solve\",\"solver\":{\"maximumIterations\":300}}"));
+            AssertAccepted(solved);
+            AssertAuthoritativeSnapshotUnchanged(configuredSnapshot, solved.GetProperty("snapshot"));
+            Assert.Equal(
+                configuredSnapshot.GetProperty("lab").GetProperty("spatialSolve").GetRawText(),
+                solved.GetProperty("snapshot").GetProperty("lab").GetProperty("spatialSolve").GetRawText());
+
+            JsonElement labRefuel = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"lab-refuel\",\"request\":{" +
+                    "\"channelIndex\":1,\"directionId\":\"toward-end-a\",\"shiftCount\":4,\"fuelTypeId\":\"LAB-FRESH-SYNTHETIC\"}}"));
+            AssertAccepted(labRefuel);
+            JsonElement labRefuelSnapshot = labRefuel.GetProperty("snapshot");
+            AssertAuthoritativeSnapshotUnchanged(configuredSnapshot, labRefuelSnapshot);
+            Assert.Equal(1, labRefuelSnapshot.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Equal(28, labRefuelSnapshot.GetProperty("lab").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(0, labRefuelSnapshot.GetProperty("refuellingOperationCount").GetInt32());
+        }
+
+        [Fact]
+        public void ResetLabRestoresWorkspaceWithoutResettingPlayRun()
+        {
+            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement advanced = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+            JsonElement beforeReset = advanced.GetProperty("snapshot");
+
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+            AssertAccepted(configured);
+            JsonElement reset = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"reset-lab\"}"));
+
+            AssertAccepted(reset);
+            Assert.Equal("play", reset.GetProperty("mode").GetString());
+            JsonElement resetSnapshot = reset.GetProperty("snapshot");
+            AssertAuthoritativeSnapshotUnchanged(beforeReset, resetSnapshot);
+            Assert.True(resetSnapshot.GetProperty("lab").GetProperty("core").GetProperty("cells")[0]
+                .GetProperty("hasFuel").GetBoolean());
+            Assert.Equal(0, resetSnapshot.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+            Assert.Equal(32, resetSnapshot.GetProperty("lab").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(resetSnapshot.GetProperty("lab").GetRawText(),
+                Parse(PlaytestBridgeV1.GetSnapshotJson()).GetProperty("lab").GetRawText());
+        }
+
+        [Fact]
+        public void OrdinaryPlayResetRestartsGameWithoutResettingLabWorkspace()
+        {
+            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement configured = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+            AssertAccepted(configured);
+
+            JsonElement reset = Parse(
+                PlaytestBridgeV1.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"reset\"}"));
+            AssertAccepted(reset);
+            JsonElement snapshot = reset.GetProperty("snapshot");
+            Assert.Equal(0.0, snapshot.GetProperty("simulationTimeSeconds").GetDouble(), 12);
+            Assert.Equal(0.0, snapshot.GetProperty("wallElapsedSeconds").GetDouble(), 12);
+            Assert.False(snapshot.GetProperty("lab").GetProperty("core").GetProperty("cells")[0]
+                .GetProperty("hasFuel").GetBoolean());
+            Assert.Equal(0, snapshot.GetProperty("lab").GetProperty("refuellingOperationCount").GetInt32());
+        }
+
+        [Fact]
         public void RepeatedPlayCommandStreamsHaveIdenticalDigestsAndCompactSelectedXenon()
         {
             JsonElement first = RunDeterministicPlayStream();
@@ -272,8 +376,10 @@ namespace ReactorSim.Browser.Tests
             Assert.DoesNotContain("nodeInputs", first.GetRawText(), StringComparison.Ordinal);
             Assert.DoesNotContain("nodeStates", first.GetRawText(), StringComparison.Ordinal);
             Assert.DoesNotContain("overlays", first.GetRawText(), StringComparison.Ordinal);
-            Assert.DoesNotContain("group1Flux", first.GetRawText(), StringComparison.Ordinal);
-            Assert.DoesNotContain("group2Flux", first.GetRawText(), StringComparison.Ordinal);
+            Assert.DoesNotContain("group1Flux", snapshot.GetProperty("core").GetRawText(), StringComparison.Ordinal);
+            Assert.DoesNotContain("group2Flux", snapshot.GetProperty("core").GetRawText(), StringComparison.Ordinal);
+            Assert.True(snapshot.GetProperty("lab").GetProperty("spatialSolve")
+                .GetProperty("isConverged").GetBoolean());
         }
 
         [Fact]
@@ -649,6 +755,16 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal("converged", snapshot.GetProperty("physics").GetProperty("solveState").GetString());
             Assert.Equal(380 * 12, snapshot.GetProperty("xenon").GetProperty("nodeCount").GetInt32());
             Assert.NotEmpty(snapshot.GetProperty("diagnostics").GetProperty("checks").EnumerateArray());
+        }
+
+        private static void AssertLabSnapshotReady(JsonElement lab)
+        {
+            Assert.Equal(LabPlaytestSessionFixtureId, lab.GetProperty("fixtureId").GetString());
+            Assert.Equal(2, lab.GetProperty("core").GetProperty("channelCount").GetInt32());
+            Assert.Equal(8, lab.GetProperty("core").GetProperty("bundlePositionCount").GetInt32());
+            Assert.Equal(16, lab.GetProperty("core").GetProperty("cells").GetArrayLength());
+            Assert.True(lab.GetProperty("spatialSolve").GetProperty("isConverged").GetBoolean());
+            Assert.True(lab.GetProperty("spatialSolve").GetProperty("hasUsableState").GetBoolean());
         }
 
         private static void AssertAccepted(JsonElement response)
