@@ -230,9 +230,9 @@ export class TitleScene extends Phaser.Scene {
       fontStyle: "bold",
       letterSpacing: 2,
     });
-    makeText(this, 148, 712, "STABILIZE THE CORE. CHOOSE THE NEXT CHANNEL.", {
+    makeText(this, 148, 712, "HOLD RRS RESERVE. SPEND FRESH FUEL WISELY. BUILD SCORE.", {
       fontFamily: FONTS.mono,
-      fontSize: "12px",
+      fontSize: "13px",
       color: colorString(COLORS.ivoryMuted),
       letterSpacing: 1.2,
     });
@@ -290,19 +290,19 @@ export class TitleScene extends Phaser.Scene {
       color: colorString(COLORS.cyan),
       letterSpacing: 1.5,
     });
-    makeText(this, 786, 795, "380 CHANNELS  ·  ON-POWER SHIFT LOOP  ·  AUTHORITATIVE TELEMETRY", {
+    makeText(this, 786, 795, "SELECT CHANNEL  →  READ BURNUP  →  REFUEL  →  HOLD RRS RESERVE", {
       fontFamily: FONTS.mono,
-      fontSize: "10px",
+      fontSize: "11px",
       color: colorString(COLORS.ivory),
-      letterSpacing: 0.45,
+      letterSpacing: 0.2,
     });
-    makeText(this, 786, 822, "CORE DESIGNER  /  F2", {
+    makeText(this, 786, 822, "SHIFT OBJECTIVE", {
       fontFamily: FONTS.mono,
       fontSize: "10px",
       color: colorString(COLORS.gold),
       letterSpacing: 0.9,
     });
-    makeText(this, 1006, 822, "Inspect and configure any live channel cell.", {
+    makeText(this, 1006, 822, "Protect reserve · conserve fresh fuel · convert useful burnup into score.", {
       fontFamily: FONTS.body,
       fontSize: "12px",
       color: colorString(COLORS.ivoryMuted),
@@ -326,7 +326,7 @@ export class TitleScene extends Phaser.Scene {
       this.titleAvailability.setText("SHIFT LOCKED · The authoritative browser bridge is unavailable. Reload after the WASM pack is staged.");
     } else if (this.readyForShift) {
       this.titleStatus.setText("AUTHORITY LINK / ONLINE").setColor(colorString(COLORS.green));
-      this.titleAvailability.setText("PLAY MODE READY · 380 CHANNELS · SELECT A PATH AND HOLD POWER");
+      this.titleAvailability.setText("PLAY MODE READY · HOLD RESERVE · SPEND FRESH FUEL · SCORE BURNUP");
     } else {
       this.titleStatus.setText("AUTHORITY LINK / SYNCING").setColor(colorString(COLORS.gold));
       this.titleAvailability.setText("Waiting for the full reactor snapshot…");
