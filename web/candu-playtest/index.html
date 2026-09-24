@@ -14,8 +14,19 @@
       html, body, #game-root { width: 100%; height: 100%; margin: 0; }
       html, body { overflow: hidden; background: #070b1b; }
       body { display: block; }
-      #game-root { display: block; position: relative; overflow: hidden; }
-      canvas { display: block; max-width: 100vw; max-height: 100vh; touch-action: none; }
+      #game-root {
+        display: block;
+        position: relative;
+        overflow: hidden;
+        background: radial-gradient(circle at 50% 42%, #15183b 0%, #0b1026 42%, #070b1b 72%, #030510 100%);
+      }
+      canvas {
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        touch-action: none;
+        box-shadow: 0 0 80px rgb(88 226 223 / 8%), 0 0 0 1px rgb(242 198 109 / 12%);
+      }
       #status-mirror { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     </style>
   </head>
