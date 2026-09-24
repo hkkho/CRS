@@ -86,9 +86,8 @@ browser bridge serializes those snapshots; Phaser consumes them without
 reimplementing physics.
 
 Target desktop readability at 1600×900 and 1280×720 first. Make no mobile
-promise until a separately resourced responsive design exists. Unity remains
-frozen for feature, input, gameplay, and polish work; no slice below includes
-Unity files.
+promise until a separately resourced responsive design exists. Product slices
+below are limited to the shared Core/Game/Browser stack and the web client.
 
 ## Completion stages
 
@@ -398,8 +397,7 @@ shape/RRS reserve, before/after impact, score, and pacing at both desktop
 targets without console errors. Passing unit tests or seeing a changed digest
 alone is not completion.
 
-Unity feature development stays frozen. Shutdown, scram, accident progression,
-operator-training scenarios, full plant operations, plant-grade safety claims,
-and a transient-capable true IQS/photoneutron/Krylov research expansion are not
-on this gameplay path. Future physics research outside the project-authored
+Shutdown, scram, accident progression, operator-training scenarios, full plant
+operations, plant-grade safety claims, and a transient-capable true
+IQS/photoneutron/Krylov research expansion are not on this gameplay path. Future physics research outside the project-authored
 model is outside this roadmap and is not required for the web acceptance path.
