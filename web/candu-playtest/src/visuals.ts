@@ -43,6 +43,20 @@ export function formatPowerWatts(powerWatts: number): string {
   return `${powerWatts.toFixed(0)} W`;
 }
 
+export function formatBundleBurnup(burnupMwdPerKg: number): string {
+  if (!Number.isFinite(burnupMwdPerKg)) {
+    return "—";
+  }
+  const magnitude = Math.abs(burnupMwdPerKg);
+  if (magnitude >= 1000) {
+    return `${(burnupMwdPerKg / 1000).toFixed(1)}k`;
+  }
+  if (magnitude >= 100) {
+    return burnupMwdPerKg.toFixed(0);
+  }
+  return burnupMwdPerKg.toFixed(1);
+}
+
 export function formatReactivity(reactivity: number): string {
   if (!Number.isFinite(reactivity)) {
     return "—";

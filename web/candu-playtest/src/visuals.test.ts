@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatBundleBurnup,
   formatEffectiveK,
   formatPowerWatts,
   formatReactivity,
@@ -23,6 +24,8 @@ describe("tactical playtest display helpers", () => {
     expect(getFlowArrow("toward-end-b")).toBe("→");
     expect(getFlowDirectionLabel("toward-end-a")).toBe("END B → END A");
     expect(formatPowerWatts(2.5e6)).toBe("2.5 MW");
+    expect(formatBundleBurnup(5.99)).toBe("6.0");
+    expect(formatBundleBurnup(1250)).toBe("1.3k");
     expect(formatReactivity(-0.0012)).toBe("-1.200 mk");
     expect(formatEffectiveK(1.0023456)).toBe("1.002346");
     expect(formatSolveResidual(0.0000123)).toBe("1.2e-5");

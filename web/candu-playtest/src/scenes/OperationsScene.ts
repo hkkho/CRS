@@ -15,6 +15,7 @@ import {
   colorString,
   drawCornerBrackets,
   drawPanelFrame,
+  drawMeter,
   makeButton,
   makeText,
   mixColor,
@@ -31,6 +32,7 @@ import type {
 } from "../protocol";
 import { createCoreFaceLayout, findAdjacentChannelIndex, getFlowVector, gridCoordinateLabel, projectChannelToFace, type CoreFaceLayout, type CorePoint } from "../projection";
 import {
+  formatBundleBurnup,
   formatReactivity,
   formatEffectiveK,
   formatSimulationTime,
@@ -115,6 +117,8 @@ export class OperationsScene extends Phaser.Scene {
   private hudDay: Phaser.GameObjects.Text | null = null;
   private hudPower: Phaser.GameObjects.Text | null = null;
   private hudTilt: Phaser.GameObjects.Text | null = null;
+  private hudReserveText: Phaser.GameObjects.Text | null = null;
+  private hudReserveGraphics: Phaser.GameObjects.Graphics | null = null;
   private hudScore: Phaser.GameObjects.Text | null = null;
   private hudFresh: Phaser.GameObjects.Text | null = null;
   private hudStatus: Phaser.GameObjects.Text | null = null;
@@ -201,8 +205,9 @@ export class OperationsScene extends Phaser.Scene {
         this.motion = null;
         this.motionGraphics?.clear();
         this.motionText?.setVisible(false);
-        this.resultMessage = `ACCEPTED  /  ${finished.response.message}`;
+        this.resultMessage = `ACCEPTED  ·  ${finished.response.message}`;
         this.resultExpiresAt = time + 6800;
+        this.showToast(finished.response.message, COLORS.green);
         this.refreshSidePanel();
       }
     }
@@ -303,7 +308,7 @@ export class OperationsScene extends Phaser.Scene {
       const left = projectChannelToFace({ gridColumn: 0, gridRow: row }, this.layout);
       makeText(this, this.layout.gridX - 14, left.y - 5, ROW_LABELS[row] ?? "?", {
         fontFamily: FONTS.mono,
-        fontSize: "9px",
+        fontSize: "10px",
         color: colorString(COLORS.ivoryMuted),
         align: "right",
       }).setOrigin(1, 0).setDepth(20);
@@ -312,7 +317,7 @@ export class OperationsScene extends Phaser.Scene {
       const top = projectChannelToFace({ gridColumn: column, gridRow: 0 }, this.layout);
       makeText(this, top.x, this.layout.gridY - 18, String(column + 1).padStart(2, "0"), {
         fontFamily: FONTS.mono,
-        fontSize: "8px",
+        fontSize: "10px",
         color: colorString(COLORS.ivoryMuted),
       }).setOrigin(0.5).setDepth(20);
     }
@@ -325,9 +330,9 @@ export class OperationsScene extends Phaser.Scene {
     graphics.fillRect(legendX + 55, legendY, 55, 5);
     graphics.fillStyle(colorFromRgb(getHeatColor(1.18)), 1);
     graphics.fillRect(legendX + 110, legendY, 55, 5);
-    makeText(this, legendX, legendY + 10, "LOW", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, legendX + 82, legendY + 10, "NOMINAL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, legendX + 151, legendY + 10, "HIGH", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
+    makeText(this, legendX, legendY + 10, "LOW", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
+    makeText(this, legendX + 82, legendY + 10, "NOMINAL", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
+    makeText(this, legendX + 151, legendY + 10, "HIGH", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
     makeText(this, MAP.x + MAP.width - 26, MAP.y + MAP.height - 34, "ARROWS = COOLANT / FUEL PATH", {
       fontFamily: FONTS.mono,
       fontSize: "9px",
@@ -410,6 +415,7 @@ export class OperationsScene extends Phaser.Scene {
 
   private createHud(): void {
     this.hudGraphics = this.add.graphics().setDepth(180);
+    this.hudReserveGraphics = this.add.graphics().setDepth(190);
     const graphics = this.hudGraphics;
     graphics.fillStyle(COLORS.ink, 0.92);
     graphics.fillRect(0, 0, VIEW_WIDTH, HUD_HEIGHT);
@@ -442,24 +448,24 @@ export class OperationsScene extends Phaser.Scene {
     }).setDepth(190);
 
     this.hudDay = makeText(this, 250, 41, "D01 · 00:00", { fontFamily: FONTS.mono, fontSize: "21px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(190);
-    makeText(this, 250, 20, "DAY / SIMULATION TIME", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1.2 }).setDepth(190);
-    makeText(this, 250, 75, "BASE CLOCK  /  2s = 1h", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
+    makeText(this, 250, 20, "DAY / SIMULATION TIME", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), letterSpacing: 1.1 }).setDepth(190);
+    makeText(this, 250, 75, "BASE CLOCK  /  2s = 1h", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
 
-    makeText(this, 480, 20, "REACTOR POWER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.cyan), letterSpacing: 1.2 }).setDepth(190);
+    makeText(this, 480, 20, "REACTOR POWER", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.cyan), letterSpacing: 1.1 }).setDepth(190);
     this.hudPower = makeText(this, 480, 39, "100.0%", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(190);
-    makeText(this, 480, 75, "TARGET  100.0%", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
+    makeText(this, 480, 75, "TARGET  100.0%", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
 
-    makeText(this, 705, 20, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.magenta), letterSpacing: 1.2 }).setDepth(190);
+    makeText(this, 705, 20, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.magenta), letterSpacing: 1.1 }).setDepth(190);
     this.hudTilt = makeText(this, 705, 39, "+0.00%", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(190);
-    makeText(this, 705, 75, "CONTROL MARGIN  100%", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
+    this.hudReserveText = makeText(this, 705, 75, "RRS RESERVE  100%", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.green) }).setDepth(190);
 
-    makeText(this, 915, 20, "SHIFT SCORE", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1.2 }).setDepth(190);
+    makeText(this, 915, 20, "SHIFT SCORE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), letterSpacing: 1.1 }).setDepth(190);
     this.hudScore = makeText(this, 915, 39, "000000", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.gold), fontStyle: "bold" }).setDepth(190);
-    this.hudFresh = makeText(this, 915, 75, "128 FRESH BUNDLES", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
+    this.hudFresh = makeText(this, 915, 75, "128 FRESH BUNDLES", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
 
     this.hudStatus = makeText(this, 1580, 20, "STABLE", { fontFamily: FONTS.mono, fontSize: "14px", color: colorString(COLORS.green), fontStyle: "bold", align: "right" }).setOrigin(1, 0).setDepth(190);
     this.hudSpeed = makeText(this, 1580, 42, "10x / LIVE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
-    makeText(this, 1580, 80, "R  REFUEL    C  CONTROL    F2  DESIGNER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
+    makeText(this, 1580, 80, "R  REFUEL    C  CONTROL    F2  DESIGNER", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
 
     this.designerButton = makeButton(
       this,
@@ -500,12 +506,12 @@ export class OperationsScene extends Phaser.Scene {
     graphics.lineStyle(1, COLORS.cyan, 0.34);
     graphics.strokeRoundedRect(SIDE.x + 18, SIDE.y + 124, 152, 72, 6);
     graphics.strokeRoundedRect(SIDE.x + 184, SIDE.y + 124, 152, 72, 6);
-    makeText(this, SIDE.x + 30, SIDE.y + 137, "LOCAL POWER", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.7 }).setDepth(170);
-    makeText(this, SIDE.x + 196, SIDE.y + 137, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.7 }).setDepth(170);
+    makeText(this, SIDE.x + 30, SIDE.y + 137, "LOCAL POWER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.6 }).setDepth(170);
+    makeText(this, SIDE.x + 196, SIDE.y + 137, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.6 }).setDepth(170);
     this.sidePower = makeText(this, SIDE.x + 30, SIDE.y + 157, "100.0%", { fontFamily: FONTS.mono, fontSize: "20px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(170);
     this.sideTilt = makeText(this, SIDE.x + 196, SIDE.y + 157, "+0.00%", { fontFamily: FONTS.mono, fontSize: "20px", color: colorString(COLORS.magenta), fontStyle: "bold" }).setDepth(170);
-    makeText(this, SIDE.x + 30, SIDE.y + 181, "POWER FIELD", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
-    this.sideBurnup = makeText(this, SIDE.x + 196, SIDE.y + 181, "AVG BURNUP —", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
+    makeText(this, SIDE.x + 30, SIDE.y + 181, "POWER FIELD", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
+    this.sideBurnup = makeText(this, SIDE.x + 196, SIDE.y + 181, "AVG BURNUP —", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
 
     graphics.fillStyle(COLORS.indigo, 0.78);
     graphics.fillRoundedRect(SIDE.x + 18, SIDE.y + 208, SIDE.width - 36, 132, 6);
@@ -517,33 +523,37 @@ export class OperationsScene extends Phaser.Scene {
     this.sidePhysicsStatic = makeText(this, SIDE.x + 30, SIDE.y + 264, "STATIC            —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
     this.sidePhysicsNet = makeText(this, SIDE.x + 30, SIDE.y + 285, "NET COMP          —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.cyan), fontStyle: "bold" }).setDepth(170);
     this.sidePhysicsK = makeText(this, SIDE.x + 30, SIDE.y + 306, "EFFECTIVE K       —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), fontStyle: "bold" }).setDepth(170);
-    this.sidePhysicsSolve = makeText(this, SIDE.x + 30, SIDE.y + 322, "SOLVE —", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.green) }).setDepth(170);
+    this.sidePhysicsSolve = makeText(this, SIDE.x + 30, SIDE.y + 322, "SOLVE —", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.green) }).setDepth(170);
 
-    makeText(this, SIDE.x + 24, SIDE.y + 358, "AXIAL BUNDLE PROFILE", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1 }).setDepth(170);
-    this.sideProfileLegend = makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 358, "END A  →  END B", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setOrigin(1, 0).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 358, "AXIAL BUNDLE PROFILE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), letterSpacing: 0.8 }).setDepth(170);
+    this.sideProfileLegend = makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 358, "END A  →  END B", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setOrigin(1, 0).setDepth(170);
     this.sideProfileGraphics = this.add.graphics().setDepth(170);
     for (let index = 0; index < 12; index += 1) {
       const y = SIDE.y + 383 + index * 11.5;
-      this.sideProfileNumbers.push(makeText(this, SIDE.x + 24, y - 1, String(index + 1).padStart(2, "0"), { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(172));
-      this.sideProfileValues.push(makeText(this, SIDE.x + 281, y - 1, "—", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(172));
+      this.sideProfileNumbers.push(makeText(this, SIDE.x + 24, y - 1, String(index + 1).padStart(2, "0"), { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(172));
+      this.sideProfileValues.push(makeText(this, SIDE.x + 281, y - 1, "—", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(172));
     }
     graphics.lineStyle(1, COLORS.ivory, 0.14);
     graphics.lineBetween(SIDE.x + 24, SIDE.y + 535, SIDE.x + SIDE.width - 24, SIDE.y + 535);
-    makeText(this, SIDE.x + 24, SIDE.y + 548, "DIRECT REFUELLING", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.8 }).setDepth(170);
-    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 548, "LIVE AUTHORITATIVE ORDER", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
-    this.sideEvent = makeText(this, SIDE.x + 24, SIDE.y + 571, "Ready for an on-power shift.", { fontFamily: FONTS.body, fontSize: "11px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: SIDE.width - 48 }, lineSpacing: 3 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 548, "DIRECT REFUELLING", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.7 }).setDepth(170);
+    makeText(this, SIDE.x + SIDE.width - 22, SIDE.y + 548, "LIVE ORDER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
+    graphics.fillStyle(COLORS.ink, 0.68);
+    graphics.fillRoundedRect(SIDE.x + 18, SIDE.y + 560, SIDE.width - 36, 43, 5);
+    graphics.lineStyle(1, COLORS.ivory, 0.12);
+    graphics.strokeRoundedRect(SIDE.x + 18, SIDE.y + 560, SIDE.width - 36, 43, 5);
+    this.sideEvent = makeText(this, SIDE.x + 28, SIDE.y + 568, "Ready for an on-power shift.", { fontFamily: FONTS.body, fontSize: "10px", color: colorString(COLORS.ivoryMuted), wordWrap: { width: SIDE.width - 58 }, lineSpacing: 1, maxLines: 2 }).setDepth(170);
 
-    this.refuelDirectionButton = makeButton(this, SIDE.x + 102, SIDE.y + 610, 156, 34, formatRefuelDirection(this.refuelDraft?.directionId ?? "toward-end-a"), () => this.toggleRefuelDirection(), { tone: "magenta", fontSize: 9, compact: true });
+    this.refuelDirectionButton = makeButton(this, SIDE.x + 102, SIDE.y + 621, 156, 34, formatRefuelDirection(this.refuelDraft?.directionId ?? "toward-end-a"), () => this.toggleRefuelDirection(), { tone: "magenta", fontSize: 10, compact: true });
     this.refuelDirectionButton.gameObject.setDepth(180);
-    this.refuelFourButton = makeButton(this, SIDE.x + 222, SIDE.y + 610, 68, 34, "4 BUNDLES", () => this.setRefuelShiftCount(4), { tone: "cyan", fontSize: 9, compact: true });
+    this.refuelFourButton = makeButton(this, SIDE.x + 222, SIDE.y + 621, 68, 34, "4 BUNDLES", () => this.setRefuelShiftCount(4), { tone: "cyan", fontSize: 10, compact: true });
     this.refuelFourButton.gameObject.setDepth(180);
-    this.refuelEightButton = makeButton(this, SIDE.x + 298, SIDE.y + 610, 68, 34, "8 BUNDLES", () => this.setRefuelShiftCount(8), { tone: "cyan", fontSize: 9, compact: true });
+    this.refuelEightButton = makeButton(this, SIDE.x + 298, SIDE.y + 621, 68, 34, "8 BUNDLES", () => this.setRefuelShiftCount(8), { tone: "cyan", fontSize: 10, compact: true });
     this.refuelEightButton.gameObject.setDepth(180);
-    this.refuelButton = makeButton(this, SIDE.x + 118, SIDE.y + 658, 188, 34, "REFUEL 4  ↗", () => this.dispatchRefuel(), { tone: "gold", fontSize: 11 });
+    this.refuelButton = makeButton(this, SIDE.x + 118, SIDE.y + 664, 188, 34, "REFUEL 4  ↗", () => this.dispatchRefuel(), { tone: "gold", fontSize: 12 });
     this.refuelButton.gameObject.setDepth(180);
-    this.controlButton = makeButton(this, SIDE.x + 276, SIDE.y + 658, 108, 34, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 10, compact: true });
+    this.controlButton = makeButton(this, SIDE.x + 276, SIDE.y + 664, 108, 34, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 10, compact: true });
     this.controlButton.gameObject.setDepth(180);
-    makeText(this, SIDE.x + 24, SIDE.y + 678, "ARROWS MOVE · 4/8 SIZE · D DIRECTION · R REFUEL", { fontFamily: FONTS.mono, fontSize: "7px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.15 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 681, "ARROWS MOVE · 4/8 SIZE · D DIRECTION · R REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.1 }).setDepth(170);
   }
 
   private createMotionLayer(): void {
@@ -565,6 +575,13 @@ export class OperationsScene extends Phaser.Scene {
     this.hudDay?.setText(formatSimulationTime(this.snapshot.simulationTimeSeconds));
     this.hudPower?.setText(getPowerLabel(power));
     this.hudTilt?.setText(getTiltLabel(this.snapshot.absoluteTiltFraction));
+    const reserve = Phaser.Math.Clamp(this.snapshot.controlMarginFraction, 0, 1);
+    const reserveColor = reserve >= 0.72 ? COLORS.green : reserve >= 0.55 ? COLORS.gold : COLORS.red;
+    this.hudReserveText?.setText(`RRS RESERVE  ${(reserve * 100).toFixed(0)}%`).setColor(colorString(reserveColor));
+    if (this.hudReserveGraphics !== null) {
+      this.hudReserveGraphics.clear();
+      drawMeter(this.hudReserveGraphics, 705, 96, 154, 7, reserve, reserveColor);
+    }
     this.hudScore?.setText(String(Math.round(this.snapshot.scoreTotal)).padStart(6, "0"));
     this.hudFresh?.setText(`${this.snapshot.freshBundlesAvailable} FRESH BUNDLES`);
     this.hudStatus?.setText(status.toUpperCase()).setColor(colorString(status === "stable" ? COLORS.green : status === "watch" ? COLORS.gold : COLORS.red));
@@ -669,7 +686,7 @@ export class OperationsScene extends Phaser.Scene {
         graphics.lineStyle(1, COLORS.ivory, 0.12);
         graphics.strokeRoundedRect(SIDE.x + 75, y, width, 9, 2);
         this.sideProfileNumbers[index]?.setText(String(index + 1).padStart(2, "0"));
-        this.sideProfileValues[index]?.setText(bundle.isFresh ? "FRESH" : `${(bundle.currentBurnupMwdPerKg / 1000).toFixed(1)}k`).setColor(colorString(bundle.isFresh ? COLORS.cyan : COLORS.ivoryMuted));
+        this.sideProfileValues[index]?.setText(bundle.isFresh ? "FRESH" : formatBundleBurnup(bundle.currentBurnupMwdPerKg)).setColor(colorString(bundle.isFresh ? COLORS.cyan : COLORS.ivoryMuted));
       });
     }
     this.refreshRefuelControls(channel);
@@ -753,8 +770,9 @@ export class OperationsScene extends Phaser.Scene {
         this.motion = null;
         this.motionGraphics?.clear();
         this.motionText?.setVisible(false);
-        this.resultMessage = `REJECTED  /  ${response.message}`;
+        this.resultMessage = `REJECTED  ·  ${response.message}`;
         this.resultExpiresAt = this.scene.systems.game.loop.time + 6800;
+        this.showToast(response.message, COLORS.red);
         this.refreshSidePanel();
         return;
       }
@@ -817,8 +835,9 @@ export class OperationsScene extends Phaser.Scene {
     this.refreshSidePanel();
     void this.session.dispatch({ type: "commit-refuel", request }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : String(error);
-      this.resultMessage = `FAILED  /  ${message}`;
+      this.resultMessage = `FAILED  ·  ${message}`;
       this.resultExpiresAt = this.scene.systems.game.loop.time + 6800;
+      this.showToast(message, COLORS.red);
       this.refreshSidePanel();
     });
   }
