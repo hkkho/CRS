@@ -190,7 +190,6 @@ export class OperationsScene extends Phaser.Scene {
     this.events.once("shutdown", () => this.unsubscribe?.());
     this.input.keyboard?.on("keydown", this.handleKeyDown, this);
     this.events.once("shutdown", () => this.input.keyboard?.off("keydown", this.handleKeyDown, this));
-    this.cameras.main.fadeIn(420, 7, 11, 27);
   }
 
   public update(time: number, delta: number): void {
@@ -464,7 +463,7 @@ export class OperationsScene extends Phaser.Scene {
 
     this.hudStatus = makeText(this, 1580, 20, "STABLE", { fontFamily: FONTS.mono, fontSize: "14px", color: colorString(COLORS.green), fontStyle: "bold", align: "right" }).setOrigin(1, 0).setDepth(190);
     this.hudSpeed = makeText(this, 1580, 42, "10x / LIVE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
-    makeText(this, 1580, 80, "R  REFUEL    C  CONTROL    F2  DESIGNER", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
+    makeText(this, 1580, 80, "CLICK A CHANNEL, THEN CHOOSE AN ACTION", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(190);
 
     this.designerButton = makeButton(
       this,
@@ -472,7 +471,7 @@ export class OperationsScene extends Phaser.Scene {
       22,
       290,
       30,
-      "CORE DESIGNER  /  F2",
+      "CORE DESIGNER",
       () => this.openDesigner(),
       { tone: "magenta", compact: true, fontSize: 10 },
     );
@@ -550,9 +549,9 @@ export class OperationsScene extends Phaser.Scene {
     this.refuelEightButton.gameObject.setDepth(180);
     this.refuelButton = makeButton(this, SIDE.x + 118, SIDE.y + 664, 188, 34, "REFUEL 4  ↗", () => this.dispatchRefuel(), { tone: "gold", fontSize: 12 });
     this.refuelButton.gameObject.setDepth(180);
-    this.controlButton = makeButton(this, SIDE.x + 276, SIDE.y + 664, 108, 34, "CTRL  C", () => this.openControlModal(), { tone: "magenta", fontSize: 10, compact: true });
+    this.controlButton = makeButton(this, SIDE.x + 276, SIDE.y + 664, 108, 34, "CONTROL", () => this.openControlModal(), { tone: "magenta", fontSize: 10, compact: true });
     this.controlButton.gameObject.setDepth(180);
-    makeText(this, SIDE.x + 24, SIDE.y + 681, "ARROWS MOVE · 4/8 SIZE · D DIRECTION · R REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.1 }).setDepth(170);
+    makeText(this, SIDE.x + 24, SIDE.y + 681, "CHOOSE DIRECTION AND SIZE, THEN CLICK REFUEL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.1 }).setDepth(170);
   }
 
   private createMotionLayer(): void {
@@ -898,6 +897,10 @@ export class OperationsScene extends Phaser.Scene {
     this.modalBackdrop = this.add.graphics().setDepth(490);
     this.modalBackdrop.fillStyle(COLORS.ink, 0.78);
     this.modalBackdrop.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
+    this.modalBackdrop.setInteractive(new Phaser.Geom.Rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT), Phaser.Geom.Rectangle.Contains);
+    this.modalBackdrop.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+      if (pointer.x < 376 || pointer.x > 1208 || pointer.y < 184 || pointer.y > 824) this.closeModal();
+    });
     this.modalGraphics = this.add.graphics().setDepth(500);
     drawPanelFrame(this.modalGraphics, 376, 184, 832, 640, { fill: COLORS.panel, alpha: 0.985, accent: COLORS.gold, lineWidth: 2 });
     this.modalGraphics.fillStyle(COLORS.magentaDark, 0.24);
@@ -939,7 +942,7 @@ export class OperationsScene extends Phaser.Scene {
   private refreshControlModal(): void {
     if (this.modalDetail === null || this.modalValueA === null || this.modalValueB === null || this.modalValueC === null || this.modalValueD === null || this.modalValueE === null || this.modalStatus === null) return;
     this.modalStatus.setText(this.snapshot.isPaused ? "SHIFT PAUSED / TIME STEP AVAILABLE" : "SHIFT RUNNING / TARGETS QUEUED").setColor(colorString(this.snapshot.isPaused ? COLORS.gold : COLORS.green));
-    this.modalDetail.setText("Queue a power target or pause to advance time.\n\nSigned tilt is measured from thermal flux: End A −, End B +. RRS reserve reflects zone fill limits.\n\n↑/↓  POWER     P  QUEUE POWER");
+    this.modalDetail.setText("Click − or + to set power, then Queue Power. Click Pause to enable time steps.\n\nSigned tilt is measured from thermal flux: End A −, End B +. RRS reserve reflects zone fill limits.");
     this.modalValueA.setText(`POWER TARGET   ${getPowerLabel(this.controlPowerTarget)}`);
     this.modalValueB.setText(`ACTIVE POWER   ${getPowerLabel(finiteOr(this.snapshot.physics.actualPowerFraction, this.snapshot.normalizedPowerFraction))}`);
     this.modalValueC.setText(`FLUX TILT      ${getTiltLabel(this.snapshot.axialTiltFraction)}`);

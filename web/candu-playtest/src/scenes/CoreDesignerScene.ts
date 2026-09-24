@@ -144,7 +144,6 @@ export class CoreDesignerScene extends Phaser.Scene {
     this.events.once("shutdown", () => this.unsubscribe?.());
     this.input.keyboard?.on("keydown", this.handleKeyDown, this);
     this.events.once("shutdown", () => this.input.keyboard?.off("keydown", this.handleKeyDown, this));
-    this.cameras.main.fadeIn(420, 7, 11, 27);
   }
 
   public update(time: number): void {
@@ -254,7 +253,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       80,
       210,
       30,
-      "RETURN TO OPS  /  ESC",
+      "RETURN TO OPS",
       () => this.backToOperations(),
       { tone: "cyan", compact: true, fontSize: 10 },
     );
@@ -349,7 +348,7 @@ export class CoreDesignerScene extends Phaser.Scene {
     makeText(this, legendX, legendY + 10, "LOW", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
     makeText(this, legendX + 78, legendY + 10, "NOMINAL", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
     makeText(this, legendX + 151, legendY + 10, "HIGH", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, MAP.x + MAP.width - 24, MAP.y + MAP.height - 35, "CLICK CHANNEL · ARROWS MOVE · F2 OPS", {
+    makeText(this, MAP.x + MAP.width - 24, MAP.y + MAP.height - 35, "CLICK A CHANNEL, THEN CLICK AN AXIAL POSITION", {
       fontFamily: FONTS.mono,
       fontSize: "8px",
       color: colorString(COLORS.ivoryMuted),
@@ -519,7 +518,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       SIDE.y + SIDE.height - 26,
       EDITOR.width - 28,
       34,
-      "SOLVE LIVE CORE  /  S",
+      "SOLVE LIVE CORE",
       () => this.solve(),
       { tone: "cyan", fontSize: 9, compact: true },
     );

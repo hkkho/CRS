@@ -23,7 +23,6 @@ export class TitleScene extends Phaser.Scene {
   private beginButton: TacticalButton | null = null;
   private readyForShift = false;
   private shiftTransitionStarted = false;
-  private fadeCamera: Phaser.Cameras.Scene2D.Camera | null = null;
   private unsubscribe: (() => void) | null = null;
 
   public constructor() {
@@ -51,8 +50,6 @@ export class TitleScene extends Phaser.Scene {
     this.input.keyboard?.on("keydown-ENTER", this.beginShift, this);
     this.input.keyboard?.on("keydown-SPACE", this.beginShift, this);
     this.events.once("shutdown", () => {
-      this.fadeCamera?.off(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, this.handleFadeOutComplete, this);
-      this.fadeCamera = null;
       this.input.keyboard?.off("keydown-ENTER", this.beginShift, this);
       this.input.keyboard?.off("keydown-SPACE", this.beginShift, this);
     });
@@ -269,7 +266,7 @@ export class TitleScene extends Phaser.Scene {
       () => this.beginShift(),
       { tone: "gold", fontSize: 15 },
     );
-    makeText(this, 300, 858, "ENTER / SPACE", {
+    makeText(this, 300, 858, "CLICK TO PLAY", {
       fontFamily: FONTS.mono,
       fontSize: "10px",
       color: colorString(COLORS.ivoryMuted),
@@ -340,20 +337,6 @@ export class TitleScene extends Phaser.Scene {
     this.shiftTransitionStarted = true;
     this.beginButton?.setEnabled(false);
     this.session.startShift();
-    const fadeCamera = this.cameras.main;
-    this.fadeCamera = fadeCamera;
-    fadeCamera.once(
-      Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE,
-      this.handleFadeOutComplete,
-      this,
-    );
-    fadeCamera.fadeOut(450, 7, 11, 27);
-  }
-
-  private handleFadeOutComplete(): void {
-    if (!this.shiftTransitionStarted) {
-      return;
-    }
     this.scene.start("OperationsScene");
   }
 }

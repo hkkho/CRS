@@ -58,7 +58,37 @@ try {
   if (consoleErrors.length > 0 || pageErrors.length > 0) throw new Error(`Browser errors detected: ${[...consoleErrors, ...pageErrors].join(" | ")}`);
   const viewport = await page.locator("canvas").evaluate((canvas) => ({ width: canvas.width, height: canvas.height }));
   if (viewport.width !== 1600 || viewport.height !== 900) throw new Error(`Unexpected Phaser game viewport: ${viewport.width} × ${viewport.height}.`);
-  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror }));
+  const capture = (x, y, width, height) => page.screenshot({ clip: { x, y, width, height } });
+  const expectChanged = (before, after, label) => {
+    if (before.equals(after)) throw new Error(`${label} did not respond to a mouse click.`);
+  };
+
+  await page.mouse.click(300, 820); // Begin Shift
+  await page.waitForTimeout(200);
+  const refuelBefore = await capture(1240, 740, 315, 79);
+  await page.mouse.click(1518, 757); // 8 Bundles
+  await page.mouse.move(50, 850);
+  const refuelAfter = await capture(1240, 740, 315, 79);
+  expectChanged(refuelBefore, refuelAfter, "Refuel size");
+
+  const modalBefore = await capture(400, 220, 220, 100);
+  await page.mouse.click(1496, 800); // Control
+  const modalAfter = await capture(400, 220, 220, 100);
+  expectChanged(modalBefore, modalAfter, "Control dialog");
+  const targetBefore = await capture(800, 335, 205, 35);
+  await page.mouse.click(752, 450); // Increase power target
+  const targetAfter = await capture(800, 335, 205, 35);
+  expectChanged(targetBefore, targetAfter, "Power target");
+
+  await page.mouse.click(200, 200); // Close dialog outside its frame
+  const designerBefore = await capture(1090, 250, 150, 100);
+  await page.mouse.click(1285, 22); // Core Designer
+  await page.waitForTimeout(200);
+  const designerAfter = await capture(1090, 250, 150, 100);
+  expectChanged(designerBefore, designerAfter, "Core Designer");
+
+  if (consoleErrors.length > 0 || pageErrors.length > 0) throw new Error(`Browser errors detected: ${[...consoleErrors, ...pageErrors].join(" | ")}`);
+  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror, mouseControls: "ok" }));
 } finally {
   await browser.close();
 }

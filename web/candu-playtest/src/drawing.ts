@@ -144,17 +144,19 @@ export function makeButton(
   };
   repaint();
 
+  const hitHeight = Math.max(height, 38);
   container.setInteractive(
-    new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+    new Phaser.Geom.Rectangle(-width / 2, -hitHeight / 2, width, hitHeight),
     Phaser.Geom.Rectangle.Contains,
   );
+  container.input!.cursor = "pointer";
   container.on("pointerover", () => { hovered = true; repaint(); });
   container.on("pointerout", () => { hovered = false; repaint(); });
   container.on("pointerdown", () => { if (enabled) onClick(); });
 
   return {
     gameObject: container,
-    setEnabled: (value: boolean) => { enabled = value; repaint(); },
+    setEnabled: (value: boolean) => { enabled = value; container.input!.cursor = enabled ? "pointer" : "default"; repaint(); },
     setLabel: (value: string) => { currentLabel = value; caption.setText(currentLabel); },
   };
 }
