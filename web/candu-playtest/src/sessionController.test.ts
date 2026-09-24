@@ -332,7 +332,7 @@ function applyCommand(snapshot: CanduSnapshot, command: CanduCommand): CanduSnap
 
 function createResponse(command: CanduCommand, snapshot: CanduSnapshot): CanduCommandResponse {
   return {
-    protocol: "candu-playtest-v1",
+    protocol: "candu-playtest-v2",
     accepted: true,
     sequence: snapshot.sequence,
     command,
@@ -381,7 +381,7 @@ function createClockHarness() {
 
 function createSnapshot(): CanduSnapshot {
   return {
-    protocol: "candu-playtest-v1",
+    protocol: "candu-playtest-v2",
     source: "wasm",
     sequence: 0,
     scenarioId: "test",
@@ -390,9 +390,8 @@ function createSnapshot(): CanduSnapshot {
     wallElapsedSeconds: 0,
     normalizedPowerFraction: 1,
     targetPowerFraction: 1,
-    absoluteTiltFraction: 0,
-    targetTiltFraction: 0,
-    controlMarginFraction: 1,
+    axialTiltFraction: 0,
+    rrsReserveFraction: 1,
     deviceAvailableFraction: 1,
     pendingActionCount: 0,
     scoreTotal: 0,

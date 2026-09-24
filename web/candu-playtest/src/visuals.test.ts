@@ -6,6 +6,7 @@ import {
   formatReactivity,
   formatSolveHealth,
   formatSolveResidual,
+  getTiltLabel,
   getFlowArrow,
   getFlowDirectionLabel,
   getHeatColor,
@@ -26,6 +27,8 @@ describe("tactical playtest display helpers", () => {
     expect(formatPowerWatts(2.5e6)).toBe("2.5 MW");
     expect(formatBundleBurnup(5.99)).toBe("6.0");
     expect(formatBundleBurnup(1250)).toBe("1.3k");
+    expect(getTiltLabel(-0.000000001)).toBe("+0.00%");
+    expect(getTiltLabel(-0.0513)).toBe("-5.13%");
     expect(formatReactivity(-0.0012)).toBe("-1.200 mk");
     expect(formatEffectiveK(1.0023456)).toBe("1.002346");
     expect(formatSolveResidual(0.0000123)).toBe("1.2e-5");
@@ -44,13 +47,12 @@ describe("tactical playtest display helpers", () => {
     const snapshot = {
       physics: { actualPowerFraction: 1, totalPowerWatts: 1 },
       targetPowerFraction: 1,
-      absoluteTiltFraction: 0,
-      targetTiltFraction: 0,
-      controlMarginFraction: 0.9,
+      axialTiltFraction: 0,
+      rrsReserveFraction: 0.9,
     } as CanduSnapshot;
 
     expect(getOverallStatus(snapshot)).toBe("stable");
-    expect(getOverallStatus({ ...snapshot, controlMarginFraction: 0.55 })).toBe("attention");
-    expect(getOverallStatus({ ...snapshot, absoluteTiltFraction: 0.06 })).toBe("watch");
+    expect(getOverallStatus({ ...snapshot, rrsReserveFraction: 0.55 })).toBe("attention");
+    expect(getOverallStatus({ ...snapshot, axialTiltFraction: 0.06 })).toBe("watch");
   });
 });

@@ -49,7 +49,6 @@ public sealed class LiquidZoneRrsGameSessionTests
         {
             session.AdvanceWallMilliseconds(1_000),
             session.QueuePowerTarget(0.95),
-            session.QueueTiltTarget(0.05),
             session.SetPlaybackMode(PracticeGameSessionFactory.DebugPlaybackModeId),
             session.Pause(),
             session.Resume(),

@@ -293,7 +293,7 @@ async function initialize(page) {
 
     const api = globalThis.__canduBenchmarkApi;
     const started = performance.now();
-    const raw = await api.initialize(JSON.stringify({ protocol: "candu-playtest-v1", mode: "play" }));
+    const raw = await api.initialize(JSON.stringify({ protocol: "candu-playtest-v2", mode: "play" }));
     const wasmCallDurationMs = performance.now() - started;
     const parseStarted = performance.now();
     const response = JSON.parse(raw);
@@ -352,7 +352,7 @@ async function dispatch(page, command) {
 
     const api = globalThis.__canduBenchmarkApi;
     const commandJson = JSON.stringify({
-      protocol: "candu-playtest-v1",
+      protocol: "candu-playtest-v2",
       type: "command",
       responseMode: "compact",
       baseSequence,

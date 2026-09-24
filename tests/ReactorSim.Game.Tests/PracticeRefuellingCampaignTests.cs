@@ -10,6 +10,70 @@ public sealed class PracticeRefuellingCampaignTests
     private const string FuelType = "NAT-U-SYNTHETIC";
 
     [Fact]
+    public void LiveShapePublishesSignedAxialTiltAndTwoSidedRrsReserve()
+    {
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSessionSnapshot initial = session.Snapshot;
+
+        Assert.Equal(ComputeSignedTilt(
+            session.CurrentEquilibriumProjection.SpatialSolve.Group2Flux),
+            initial.AxialTiltFraction, 12);
+        Assert.Equal(ComputeReserve(initial.Rrs), initial.RrsReserveFraction, 12);
+        Assert.True(initial.RrsReserveFraction > 0.0);
+
+        GameSessionCommandResult refuelled = session.RefuelChannel(
+            CampaignChannel,
+            "toward-end-a",
+            4,
+            FuelType);
+
+        Assert.True(refuelled.Accepted, refuelled.DiagnosticMessage);
+        Assert.Equal(ComputeSignedTilt(
+            session.CurrentEquilibriumProjection.SpatialSolve.Group2Flux),
+            refuelled.Snapshot.AxialTiltFraction, 12);
+        Assert.Equal(ComputeReserve(refuelled.Snapshot.Rrs),
+            refuelled.Snapshot.RrsReserveFraction, 12);
+        Assert.NotEqual(initial.Core.GetChannel(CampaignChannel).LocalTiltFraction,
+            refuelled.Snapshot.Core.GetChannel(CampaignChannel).LocalTiltFraction);
+
+        GameChannelPresentationSnapshot channel =
+            refuelled.Snapshot.Core.GetChannel(CampaignChannel);
+        IReadOnlyList<double> thermalFlux =
+            session.CurrentEquilibriumProjection.SpatialSolve.Group2Flux;
+        double channelFlux = 0.0;
+        double channelMoment = 0.0;
+        for (int position = 0; position < 12; position++)
+        {
+            double flux = thermalFlux[(int)CampaignChannel * 12 + position];
+            channelFlux += flux;
+            channelMoment += flux * (2.0 * position / 11.0 - 1.0);
+        }
+        Assert.Equal(channelMoment / channelFlux,
+            channel.LocalTiltFraction, 12);
+    }
+
+    private static double ComputeSignedTilt(IReadOnlyList<double> thermalFlux)
+    {
+        double totalFlux = 0.0;
+        double moment = 0.0;
+        for (int index = 0; index < thermalFlux.Count; index++)
+        {
+            double flux = thermalFlux[index];
+            totalFlux += flux;
+            moment += flux * (2.0 * (index % 12) / 11.0 - 1.0);
+        }
+
+        return moment / totalFlux;
+    }
+
+    private static double ComputeReserve(GameRrsPresentationSnapshot rrs)
+    {
+        return Math.Clamp(2.0 * Math.Min(
+            rrs.MinimumFillFraction,
+            1.0 - rrs.MaximumFillFraction), 0.0, 1.0);
+    }
+
+    [Fact]
     public void DirectRefuelPublishesTheAcceptedFourBundleShift()
     {
         GameSession session = PracticeGameSessionFactory.Create();
@@ -143,6 +207,10 @@ public sealed class PracticeRefuellingCampaignTests
             whole.Snapshot.Core.GetChannel(CampaignChannel)
                 .Bundles[0].CurrentBurnupMwDayPerKg > initialBurnup);
         Assert.NotSame(initialProjection, oneAdvance.CurrentEquilibriumProjection);
+        Assert.NotEqual(oneRefuel.Snapshot.Physics.Reactivity,
+            whole.Snapshot.Physics.Reactivity);
+        Assert.NotEqual(oneRefuel.Snapshot.Rrs.CoreReactivity,
+            whole.Snapshot.Rrs.CoreReactivity);
         Assert.Equal(0UL, whole.Snapshot.Xenon.StateVersion);
         Assert.Equal(0.0, whole.Snapshot.Xenon.MeanXe135NumberDensityM3);
         AssertAcceptedStateEqual(
@@ -167,8 +235,8 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.Equal(expected.SimulationTimeSeconds, actual.SimulationTimeSeconds);
         Assert.Equal(expected.WallElapsedSeconds, actual.WallElapsedSeconds);
         Assert.Equal(expected.NormalizedPowerFraction, actual.NormalizedPowerFraction);
-        Assert.Equal(expected.AbsoluteTiltFraction, actual.AbsoluteTiltFraction);
-        Assert.Equal(expected.ControlMarginFraction, actual.ControlMarginFraction);
+        Assert.Equal(expected.AxialTiltFraction, actual.AxialTiltFraction);
+        Assert.Equal(expected.RrsReserveFraction, actual.RrsReserveFraction);
         Assert.Equal(expected.DeviceAvailableFraction, actual.DeviceAvailableFraction);
         Assert.Equal(expected.RefuelRequestsRemaining, actual.RefuelRequestsRemaining);
         Assert.Equal(expected.PendingActionCount, actual.PendingActionCount);

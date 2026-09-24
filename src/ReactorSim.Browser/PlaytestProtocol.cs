@@ -11,10 +11,10 @@ using ReactorSim.Game;
 
 namespace ReactorSim.Browser
 {
-    public static class PlaytestProtocolV1
+    public static class PlaytestProtocolV2
     {
-        public const string ProtocolId = "candu-playtest-v1";
-        public const uint SchemaVersion = 1;
+        public const string ProtocolId = "candu-playtest-v2";
+        public const uint SchemaVersion = 2;
         public const ulong PracticeSeed = 1001;
         public const string StateDigestAlgorithm = "sha256-canonical-state-v1";
         public const string CompactStateDigestAlgorithm = "sha256-canonical-compact-state-v1";
@@ -306,15 +306,15 @@ namespace ReactorSim.Browser
 
     public sealed class BridgeCapabilitiesDto
     {
-        public string Protocol { get; set; } = PlaytestProtocolV1.ProtocolId;
+        public string Protocol { get; set; } = PlaytestProtocolV2.ProtocolId;
 
-        public uint SchemaVersion { get; set; } = PlaytestProtocolV1.SchemaVersion;
+        public uint SchemaVersion { get; set; } = PlaytestProtocolV2.SchemaVersion;
 
         public List<string> Operations { get; set; } = new List<string>();
 
         public List<BridgeModeCapabilityDto> Modes { get; set; } = new List<BridgeModeCapabilityDto>();
 
-        public BridgeMetadataDto Metadata { get; set; } = PlaytestProtocolV1.CreateMetadata();
+        public BridgeMetadataDto Metadata { get; set; } = PlaytestProtocolV2.CreateMetadata();
     }
 
     public sealed class BridgeCommandHistoryDto
@@ -334,9 +334,9 @@ namespace ReactorSim.Browser
 
     public sealed class BridgeReplayDto
     {
-        public string Protocol { get; set; } = PlaytestProtocolV1.ProtocolId;
+        public string Protocol { get; set; } = PlaytestProtocolV2.ProtocolId;
 
-        public uint SchemaVersion { get; set; } = PlaytestProtocolV1.SchemaVersion;
+        public uint SchemaVersion { get; set; } = PlaytestProtocolV2.SchemaVersion;
 
         public string Mode { get; set; } = string.Empty;
 
@@ -359,7 +359,7 @@ namespace ReactorSim.Browser
 
         public string ReplayDigest { get; set; } = string.Empty;
 
-        public BridgeMetadataDto Metadata { get; set; } = PlaytestProtocolV1.CreateMetadata();
+        public BridgeMetadataDto Metadata { get; set; } = PlaytestProtocolV2.CreateMetadata();
 
         public object? Snapshot { get; set; }
 
@@ -384,9 +384,9 @@ namespace ReactorSim.Browser
 
     public sealed class BridgeResponseDto
     {
-        public string Protocol { get; set; } = PlaytestProtocolV1.ProtocolId;
+        public string Protocol { get; set; } = PlaytestProtocolV2.ProtocolId;
 
-        public uint SchemaVersion { get; set; } = PlaytestProtocolV1.SchemaVersion;
+        public uint SchemaVersion { get; set; } = PlaytestProtocolV2.SchemaVersion;
 
         public string Operation { get; set; } = string.Empty;
 

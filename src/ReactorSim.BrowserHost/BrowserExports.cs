@@ -10,25 +10,25 @@ namespace ReactorSim.BrowserHost
         [JSExport]
         public static string GetCapabilities()
         {
-            return PlaytestBridgeV1.GetCapabilities();
+            return PlaytestBridgeV2.GetCapabilities();
         }
 
         [JSExport]
         public static string Initialize(string requestJson)
         {
-            return PlaytestBridgeV1.Initialize(requestJson);
+            return PlaytestBridgeV2.Initialize(requestJson);
         }
 
         [JSExport]
         public static string GetSnapshotJson()
         {
-            return PlaytestBridgeV1.GetSnapshotJson();
+            return PlaytestBridgeV2.GetSnapshotJson();
         }
 
         [JSExport]
         public static string DispatchJson(string commandJson)
         {
-            return PlaytestBridgeV1.DispatchJson(commandJson);
+            return PlaytestBridgeV2.DispatchJson(commandJson);
         }
     }
 }

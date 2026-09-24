@@ -89,7 +89,6 @@ export class OperationsScene extends Phaser.Scene {
   private modalKind: ModalKind | null = null;
   private refuelDraft: RefuelDraft | null = null;
   private controlPowerTarget = 1;
-  private controlTiltTarget = 0;
   private lastHandledResponseSequence = -1;
   private lastError = "";
   private resultMessage = "";
@@ -130,7 +129,7 @@ export class OperationsScene extends Phaser.Scene {
   private sideBurnup: Phaser.GameObjects.Text | null = null;
   private sideFlow: Phaser.GameObjects.Text | null = null;
   private sidePhysicsCore: Phaser.GameObjects.Text | null = null;
-  private sidePhysicsStatic: Phaser.GameObjects.Text | null = null;
+  private sidePhysicsFill: Phaser.GameObjects.Text | null = null;
   private sidePhysicsNet: Phaser.GameObjects.Text | null = null;
   private sidePhysicsK: Phaser.GameObjects.Text | null = null;
   private sidePhysicsSolve: Phaser.GameObjects.Text | null = null;
@@ -455,7 +454,7 @@ export class OperationsScene extends Phaser.Scene {
     this.hudPower = makeText(this, 480, 39, "100.0%", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(190);
     makeText(this, 480, 75, "TARGET  100.0%", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(190);
 
-    makeText(this, 705, 20, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.magenta), letterSpacing: 1.1 }).setDepth(190);
+    makeText(this, 705, 20, "THERMAL FLUX TILT", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.magenta), letterSpacing: 1.1 }).setDepth(190);
     this.hudTilt = makeText(this, 705, 39, "+0.00%", { fontFamily: FONTS.mono, fontSize: "25px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(190);
     this.hudReserveText = makeText(this, 705, 75, "RRS RESERVE  100%", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.green) }).setDepth(190);
 
@@ -507,7 +506,7 @@ export class OperationsScene extends Phaser.Scene {
     graphics.strokeRoundedRect(SIDE.x + 18, SIDE.y + 124, 152, 72, 6);
     graphics.strokeRoundedRect(SIDE.x + 184, SIDE.y + 124, 152, 72, 6);
     makeText(this, SIDE.x + 30, SIDE.y + 137, "LOCAL POWER", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.6 }).setDepth(170);
-    makeText(this, SIDE.x + 196, SIDE.y + 137, "AXIAL TILT", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.6 }).setDepth(170);
+    makeText(this, SIDE.x + 196, SIDE.y + 137, "FLUX TILT  B+", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), letterSpacing: 0.6 }).setDepth(170);
     this.sidePower = makeText(this, SIDE.x + 30, SIDE.y + 157, "100.0%", { fontFamily: FONTS.mono, fontSize: "20px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(170);
     this.sideTilt = makeText(this, SIDE.x + 196, SIDE.y + 157, "+0.00%", { fontFamily: FONTS.mono, fontSize: "20px", color: colorString(COLORS.magenta), fontStyle: "bold" }).setDepth(170);
     makeText(this, SIDE.x + 30, SIDE.y + 181, "POWER FIELD", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
@@ -520,7 +519,7 @@ export class OperationsScene extends Phaser.Scene {
     makeText(this, SIDE.x + 30, SIDE.y + 219, "REACTOR PHYSICS", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.gold), letterSpacing: 1.1 }).setDepth(170);
     makeText(this, SIDE.x + SIDE.width - 30, SIDE.y + 219, "LIVE SOLVE", { fontFamily: FONTS.mono, fontSize: "8px", color: colorString(COLORS.cyan), align: "right" }).setOrigin(1, 0).setDepth(170);
     this.sidePhysicsCore = makeText(this, SIDE.x + 30, SIDE.y + 243, "CORE REACTIVITY   —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivory), fontStyle: "bold" }).setDepth(170);
-    this.sidePhysicsStatic = makeText(this, SIDE.x + 30, SIDE.y + 264, "STATIC            —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
+    this.sidePhysicsFill = makeText(this, SIDE.x + 30, SIDE.y + 264, "RRS FILL RANGE    —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(170);
     this.sidePhysicsNet = makeText(this, SIDE.x + 30, SIDE.y + 285, "NET COMP          —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.cyan), fontStyle: "bold" }).setDepth(170);
     this.sidePhysicsK = makeText(this, SIDE.x + 30, SIDE.y + 306, "EFFECTIVE K       —", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.gold), fontStyle: "bold" }).setDepth(170);
     this.sidePhysicsSolve = makeText(this, SIDE.x + 30, SIDE.y + 322, "SOLVE —", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.green) }).setDepth(170);
@@ -574,8 +573,8 @@ export class OperationsScene extends Phaser.Scene {
     const status = getOverallStatus(this.snapshot);
     this.hudDay?.setText(formatSimulationTime(this.snapshot.simulationTimeSeconds));
     this.hudPower?.setText(getPowerLabel(power));
-    this.hudTilt?.setText(getTiltLabel(this.snapshot.absoluteTiltFraction));
-    const reserve = Phaser.Math.Clamp(this.snapshot.controlMarginFraction, 0, 1);
+    this.hudTilt?.setText(getTiltLabel(this.snapshot.axialTiltFraction));
+    const reserve = Phaser.Math.Clamp(this.snapshot.rrsReserveFraction, 0, 1);
     const reserveColor = reserve >= 0.72 ? COLORS.green : reserve >= 0.55 ? COLORS.gold : COLORS.red;
     this.hudReserveText?.setText(`RRS RESERVE  ${(reserve * 100).toFixed(0)}%`).setColor(colorString(reserveColor));
     if (this.hudReserveGraphics !== null) {
@@ -713,7 +712,7 @@ export class OperationsScene extends Phaser.Scene {
   private refreshPhysicsReadout(): void {
     const physics = this.snapshot.physics;
     this.sidePhysicsCore?.setText(`CORE REACTIVITY   ${formatReactivity(physics.coreReactivity)}`);
-    this.sidePhysicsStatic?.setText(`STATIC            ${formatReactivity(physics.staticReactivity)}`);
+    this.sidePhysicsFill?.setText(`RRS FILL RANGE    ${(this.snapshot.rrs.minimumFillFraction * 100).toFixed(0)}–${(this.snapshot.rrs.maximumFillFraction * 100).toFixed(0)}%`);
     this.sidePhysicsNet?.setText(`NET COMP          ${formatReactivity(physics.compensatedNetReactivity)}`);
     this.sidePhysicsK?.setText(`EFFECTIVE K       ${formatEffectiveK(physics.effectiveK)}`);
     const solveColor = this.snapshot.diagnostics.convergence.state === "converged" ? COLORS.green : COLORS.gold;
@@ -849,7 +848,6 @@ export class OperationsScene extends Phaser.Scene {
     this.destroyModal();
     this.modalKind = "control";
     this.controlPowerTarget = this.snapshot.targetPowerFraction;
-    this.controlTiltTarget = this.snapshot.targetTiltFraction;
     this.createControlModalObjects();
     this.refreshModal();
   }
@@ -862,9 +860,6 @@ export class OperationsScene extends Phaser.Scene {
       this.addModalButton(660, 430, 55, 42, "−", () => { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, -0.01, 0.8, 1.2); this.refreshModal(); }, { tone: "cyan", fontSize: 20, compact: true }),
       this.addModalButton(725, 430, 55, 42, "+", () => { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, 0.01, 0.8, 1.2); this.refreshModal(); }, { tone: "cyan", fontSize: 20, compact: true }),
       this.addModalButton(1010, 430, 172, 42, "QUEUE POWER", () => this.queuePowerTarget(), { tone: "cyan", fontSize: 11 }),
-      this.addModalButton(660, 515, 55, 42, "−", () => { this.controlTiltTarget = adjustTarget(this.controlTiltTarget, -0.01, -0.2, 0.2); this.refreshModal(); }, { tone: "magenta", fontSize: 20, compact: true }),
-      this.addModalButton(725, 515, 55, 42, "+", () => { this.controlTiltTarget = adjustTarget(this.controlTiltTarget, 0.01, -0.2, 0.2); this.refreshModal(); }, { tone: "magenta", fontSize: 20, compact: true }),
-      this.addModalButton(1010, 515, 172, 42, "QUEUE TILT", () => this.queueTiltTarget(), { tone: "magenta", fontSize: 11 }),
       this.addModalButton(468, 606, 150, 42, "+1 HOUR", () => this.stepSimulation(3600), { tone: "gold", fontSize: 11 }),
       this.addModalButton(628, 606, 150, 42, "+8 HOURS", () => this.stepSimulation(28_800), { tone: "gold", fontSize: 11 }),
       this.addModalButton(788, 606, 150, 42, "+1 DAY", () => this.stepSimulation(86_400), { tone: "gold", fontSize: 11 }),
@@ -876,11 +871,6 @@ export class OperationsScene extends Phaser.Scene {
   private queuePowerTarget(): void {
     if (this.pending) return;
     void this.session.dispatch({ type: "queue-power-target", targetFraction: this.controlPowerTarget }).catch(() => undefined);
-  }
-
-  private queueTiltTarget(): void {
-    if (this.pending) return;
-    void this.session.dispatch({ type: "queue-tilt-target", targetFraction: this.controlTiltTarget }).catch(() => undefined);
   }
 
   private stepSimulation(simulationSeconds: number): void {
@@ -949,24 +939,21 @@ export class OperationsScene extends Phaser.Scene {
   private refreshControlModal(): void {
     if (this.modalDetail === null || this.modalValueA === null || this.modalValueB === null || this.modalValueC === null || this.modalValueD === null || this.modalValueE === null || this.modalStatus === null) return;
     this.modalStatus.setText(this.snapshot.isPaused ? "SHIFT PAUSED / TIME STEP AVAILABLE" : "SHIFT RUNNING / TARGETS QUEUED").setColor(colorString(this.snapshot.isPaused ? COLORS.gold : COLORS.green));
-    this.modalDetail.setText("Queue targets to automatic regulation.\nTime steps are available while paused.\n\n↑/↓  POWER     ←/→  TILT\nP  QUEUE POWER     T  QUEUE TILT");
+    this.modalDetail.setText("Queue a power target or pause to advance time.\n\nSigned tilt is measured from thermal flux: End A −, End B +. RRS reserve reflects zone fill limits.\n\n↑/↓  POWER     P  QUEUE POWER");
     this.modalValueA.setText(`POWER TARGET   ${getPowerLabel(this.controlPowerTarget)}`);
     this.modalValueB.setText(`ACTIVE POWER   ${getPowerLabel(finiteOr(this.snapshot.physics.actualPowerFraction, this.snapshot.normalizedPowerFraction))}`);
-    this.modalValueC.setText(`TILT TARGET    ${getTiltLabel(this.controlTiltTarget)}`);
-    this.modalValueD.setText(`ACTIVE TILT    ${getTiltLabel(this.snapshot.absoluteTiltFraction)}`);
+    this.modalValueC.setText(`FLUX TILT      ${getTiltLabel(this.snapshot.axialTiltFraction)}`);
+    this.modalValueD.setText(`RRS RESERVE    ${(this.snapshot.rrsReserveFraction * 100).toFixed(0)}%`);
     this.modalValueE.setText(`TIME           ${formatSimulationTime(this.snapshot.simulationTimeSeconds)}`);
     const stepEnabled = !this.pending && this.snapshot.isPaused;
     this.modalButtons[0]?.setEnabled(!this.pending);
     this.modalButtons[1]?.setEnabled(!this.pending);
     this.modalButtons[2]?.setEnabled(!this.pending);
-    this.modalButtons[3]?.setEnabled(!this.pending);
-    this.modalButtons[4]?.setEnabled(!this.pending);
-    this.modalButtons[5]?.setEnabled(!this.pending);
-    this.modalButtons[6]?.setEnabled(stepEnabled);
-    this.modalButtons[7]?.setEnabled(stepEnabled);
-    this.modalButtons[8]?.setEnabled(stepEnabled);
-    this.modalButtons[9]?.setEnabled(!this.pending);
-    this.modalButtons[10]?.setEnabled(!this.pending);
+    this.modalButtons[3]?.setEnabled(stepEnabled);
+    this.modalButtons[4]?.setEnabled(stepEnabled);
+    this.modalButtons[5]?.setEnabled(stepEnabled);
+    this.modalButtons[6]?.setEnabled(!this.pending);
+    this.modalButtons[7]?.setEnabled(!this.pending);
   }
 
   private closeModal(): void {
@@ -1050,10 +1037,7 @@ export class OperationsScene extends Phaser.Scene {
       if (key === "escape") { this.closeModal(); return; }
       if (key === "arrowup" || key === "w") { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, 0.01, 0.8, 1.2); this.refreshModal(); return; }
       if (key === "arrowdown" || key === "s") { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, -0.01, 0.8, 1.2); this.refreshModal(); return; }
-      if (key === "arrowright" || key === "d") { this.controlTiltTarget = adjustTarget(this.controlTiltTarget, 0.01, -0.2, 0.2); this.refreshModal(); return; }
-      if (key === "arrowleft" || key === "a") { this.controlTiltTarget = adjustTarget(this.controlTiltTarget, -0.01, -0.2, 0.2); this.refreshModal(); return; }
       if (key === "p") { this.queuePowerTarget(); return; }
-      if (key === "t") { this.queueTiltTarget(); return; }
       return;
     }
     if (key === "escape") return;

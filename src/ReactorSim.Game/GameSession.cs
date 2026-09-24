@@ -21,8 +21,8 @@ namespace ReactorSim.Game
             double simulationTimeSeconds,
             double wallElapsedSeconds,
             double normalizedPowerFraction,
-            double absoluteTiltFraction,
-            double controlMarginFraction,
+            double axialTiltFraction,
+            double rrsReserveFraction,
             double deviceAvailableFraction,
             uint refuelRequestsRemaining,
             uint pendingActionCount,
@@ -50,8 +50,8 @@ namespace ReactorSim.Game
             SimulationTimeSeconds = simulationTimeSeconds;
             WallElapsedSeconds = wallElapsedSeconds;
             NormalizedPowerFraction = normalizedPowerFraction;
-            AbsoluteTiltFraction = absoluteTiltFraction;
-            ControlMarginFraction = controlMarginFraction;
+            AxialTiltFraction = axialTiltFraction;
+            RrsReserveFraction = rrsReserveFraction;
             DeviceAvailableFraction = deviceAvailableFraction;
             RefuelRequestsRemaining = refuelRequestsRemaining;
             PendingActionCount = pendingActionCount;
@@ -93,9 +93,9 @@ namespace ReactorSim.Game
 
         public double NormalizedPowerFraction { get; }
 
-        public double AbsoluteTiltFraction { get; }
+        public double AxialTiltFraction { get; }
 
-        public double ControlMarginFraction { get; }
+        public double RrsReserveFraction { get; }
 
         public double DeviceAvailableFraction { get; }
 
@@ -278,7 +278,6 @@ namespace ReactorSim.Game
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
-        private double _scoreResetBaseline;
         private ulong _powerProjectionVersion;
         private IReadOnlyList<NodeKey> _nonfuelNodes;
         private IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
@@ -530,16 +529,6 @@ namespace ReactorSim.Game
             return Complete(_runtime.TryQueuePowerTarget(targetFraction));
         }
 
-        public GameSessionCommandResult QueueTiltTarget(double targetFraction)
-        {
-            if (_practiceRrs.IsGameOver)
-            {
-                return RejectGameOver();
-            }
-
-            return Complete(_runtime.TryQueueTiltTarget(targetFraction));
-        }
-
         public GameSessionCommandResult SetPlaybackMode(string playbackModeId)
         {
             if (_practiceRrs.IsGameOver)
@@ -615,7 +604,6 @@ namespace ReactorSim.Game
         public GameSessionCommandResult DebugResetSyntheticResponse()
         {
             _syntheticScore = 0.0;
-            _scoreResetBaseline = _runtime.Score.TotalPoints;
             return AcceptedMessage("Debug: practice score adjustment reset.");
         }
 
@@ -748,13 +736,13 @@ namespace ReactorSim.Game
                 _runtime.SimulationTimeSeconds,
                 _runtime.WallElapsedSeconds,
                 Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.50),
-                CurrentTiltFraction(),
-                _runtime.ControlMarginFraction,
+                core.AxialTiltFraction,
+                ComputeRrsReserveFraction(core.Rrs),
                 _runtime.DeviceAvailableFraction,
                 _runtime.RefuelRequestsRemaining,
                 _runtime.PendingActionCount,
                 _runtime.ProcessedScriptedEventCount,
-                _runtime.Score.TotalPoints - _scoreResetBaseline + _syntheticScore,
+                _syntheticScore,
                 checked((uint)_runtime.TurnSummaries.Count),
                 _runtime.Outcome.ToString(),
                 _practiceRrs.IsGameOver,
@@ -1474,7 +1462,8 @@ namespace ReactorSim.Game
                     double powerQuality = 1.0 -
                         Clamp(Math.Abs(actualPowerFraction - 1.0) / 0.02, 0.0, 1.0);
                     double tiltQuality = 1.0 -
-                        Clamp(Math.Abs(segment.AbsoluteTiltFraction) / 0.05, 0.0, 1.0);
+                        Clamp(Math.Abs(ComputeSignedAxialTiltFraction(
+                            transaction.SpatialCandidate.SpatialSolve.Group2Flux)) / 0.05, 0.0, 1.0);
                     transaction.SyntheticScore += stepSeconds *
                         (0.35 * powerQuality + 0.15 * tiltQuality);
                     simulationCursor = stepEnd;
@@ -1669,16 +1658,19 @@ namespace ReactorSim.Game
                 var bundleSnapshots = new List<GameBundlePresentationSnapshot>(
                     (int)GameCorePresentationConstants.BundlePositionCount);
                 double burnupTotal = 0.0;
-                double axialPowerMoment = 0.0;
+                double channelThermalFlux = 0.0;
+                double axialThermalFluxMoment = 0.0;
                 for (int bundleIndex = 0; bundleIndex < bundles.Count; bundleIndex++)
                 {
                     BundleState bundle = bundles[bundleIndex];
                     double burnup = bundle.CurrentBurnupJPerKgHm /
                                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
                     double bundlePower =
-                        projection.ShapeNodePowerWatts[nodeIndex++] * physicalShapeScale;
+                        projection.ShapeNodePowerWatts[nodeIndex] * physicalShapeScale;
+                    double thermalFlux = projection.SpatialSolve.Group2Flux[nodeIndex++];
                     burnupTotal += burnup;
-                    axialPowerMoment += bundlePower *
+                    channelThermalFlux += thermalFlux;
+                    axialThermalFluxMoment += thermalFlux *
                         (2.0 * bundle.Position.Value /
                          (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
                     bundleSnapshots.Add(
@@ -1696,9 +1688,9 @@ namespace ReactorSim.Game
                 double localPower = meanChannelPowerWatts <= 0.0
                     ? 1.0
                     : channelPower / meanChannelPowerWatts;
-                double localTilt = channelPower <= 0.0
+                double localTilt = channelThermalFlux <= 0.0
                     ? 0.0
-                    : Math.Abs(axialPowerMoment / channelPower);
+                    : axialThermalFluxMoment / channelThermalFlux;
                 channels.Add(
                     new GameChannelPresentationSnapshot(
                         channelIndex,
@@ -1764,7 +1756,8 @@ namespace ReactorSim.Game
                 channels,
                 physics,
                 xenon,
-                new GameRrsPresentationSnapshot(rrs));
+                new GameRrsPresentationSnapshot(rrs),
+                ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux));
         }
 
         private static GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(
@@ -1853,9 +1846,29 @@ namespace ReactorSim.Game
             return Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.5);
         }
 
-        private double CurrentTiltFraction()
+        private static double ComputeSignedAxialTiltFraction(
+            IReadOnlyList<double> nodeThermalFlux)
         {
-            return Clamp(Math.Abs(_runtime.AbsoluteTiltFraction), 0.0, 1.0);
+            double totalFlux = 0.0;
+            double axialMoment = 0.0;
+            for (int index = 0; index < nodeThermalFlux.Count; index++)
+            {
+                double flux = nodeThermalFlux[index];
+                int position = index % (int)GameCorePresentationConstants.BundlePositionCount;
+                totalFlux += flux;
+                axialMoment += flux *
+                    (2.0 * position /
+                     (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
+            }
+
+            return totalFlux <= 0.0 ? 0.0 : axialMoment / totalFlux;
+        }
+
+        private static double ComputeRrsReserveFraction(GameRrsPresentationSnapshot rrs)
+        {
+            return Clamp(2.0 * Math.Min(
+                rrs.MinimumFillFraction,
+                1.0 - rrs.MaximumFillFraction), 0.0, 1.0);
         }
 
         private static double Clamp(double value, double minimum, double maximum)

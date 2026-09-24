@@ -19,7 +19,7 @@ namespace ReactorSim.Browser
     /// one live, editable full-core GameSession for both gameplay and Core
     /// Designer commands.
     /// </summary>
-    public static class PlaytestBridgeV1
+    public static class PlaytestBridgeV2
     {
         private const string DefaultMode = "play";
         private const string DefaultDataPackId =
@@ -105,7 +105,7 @@ namespace ReactorSim.Browser
                 }
             };
 
-            return PlaytestProtocolV1.Serialize(capabilities);
+            return PlaytestProtocolV2.Serialize(capabilities);
         }
 
         /// <summary>
@@ -130,15 +130,15 @@ namespace ReactorSim.Browser
                         protocol.ValueKind != JsonValueKind.String ||
                         !string.Equals(
                             protocol.GetString(),
-                            PlaytestProtocolV1.ProtocolId,
+                            PlaytestProtocolV2.ProtocolId,
                             StringComparison.Ordinal))
                     {
                         return SerializeError(
                             "initialize",
-                            PlaytestProtocolV1.Diagnostic(
+                            PlaytestProtocolV2.Diagnostic(
                                 "Browser.Initialize.Protocol.Unsupported",
                                 "protocol",
-                                "Initialization must use candu-playtest-v1."),
+                                "Initialization must use candu-playtest-v2."),
                             _runtime);
                     }
 
@@ -153,7 +153,7 @@ namespace ReactorSim.Browser
                         {
                             return SerializeError(
                                 "initialize",
-                                PlaytestProtocolV1.Diagnostic(
+                                PlaytestProtocolV2.Diagnostic(
                                     "Browser.Initialize.Mode.Invalid",
                                     "mode",
                                     "mode must be the string play."),
@@ -167,7 +167,7 @@ namespace ReactorSim.Browser
                     {
                         return SerializeError(
                             "initialize",
-                            PlaytestProtocolV1.Diagnostic(
+                            PlaytestProtocolV2.Diagnostic(
                                 "Browser.Initialize.Mode.Unsupported",
                                 "mode",
                                 "The browser bridge supports only play mode."),
@@ -182,7 +182,7 @@ namespace ReactorSim.Browser
                     PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
                     CacheGameSnapshot(_runtime, game);
                     string stateDigest = ComputeStateDigest(_runtime, snapshot);
-                    return PlaytestProtocolV1.Serialize(
+                    return PlaytestProtocolV2.Serialize(
                         new PlaytestResponseDto
                         {
                             Operation = "initialize",
@@ -211,7 +211,7 @@ namespace ReactorSim.Browser
             {
                 GameSessionSnapshot game = GetCurrentGameSnapshot(_runtime);
                 PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
-                return PlaytestProtocolV1.Serialize(snapshot);
+                return PlaytestProtocolV2.Serialize(snapshot);
             }
         }
 
@@ -236,15 +236,15 @@ namespace ReactorSim.Browser
                         protocol.ValueKind != JsonValueKind.String ||
                         !string.Equals(
                             protocol.GetString(),
-                            PlaytestProtocolV1.ProtocolId,
+                            PlaytestProtocolV2.ProtocolId,
                             StringComparison.Ordinal))
                     {
                         return SerializeError(
                             "dispatch",
-                            PlaytestProtocolV1.Diagnostic(
+                            PlaytestProtocolV2.Diagnostic(
                                 "Browser.Dispatch.Protocol.Unsupported",
                                 "protocol",
-                                "The command must use candu-playtest-v1."),
+                                "The command must use candu-playtest-v2."),
                             _runtime);
                     }
 
@@ -267,7 +267,7 @@ namespace ReactorSim.Browser
                         {
                             return SerializeError(
                                 "dispatch",
-                                PlaytestProtocolV1.Diagnostic(
+                                PlaytestProtocolV2.Diagnostic(
                                     "Browser.Dispatch.BaseSequence.Invalid",
                                     "baseSequence",
                                     "baseSequence must be a nonnegative integer."),
@@ -284,7 +284,7 @@ namespace ReactorSim.Browser
                     {
                         return SerializeError(
                             "dispatch",
-                            PlaytestProtocolV1.Diagnostic(
+                            PlaytestProtocolV2.Diagnostic(
                                 "Browser.Dispatch.Command.Invalid",
                                 "payload.type",
                                 "A command payload requires a non-empty type string."),
@@ -292,7 +292,7 @@ namespace ReactorSim.Browser
                     }
 
                     string commandType = PlaytestInput.NormalizeType(typeValue.GetString()!);
-                    string canonicalCommand = PlaytestProtocolV1.CanonicalizeJson(payload);
+                    string canonicalCommand = PlaytestProtocolV2.CanonicalizeJson(payload);
                     // Engineering commands update the live full-core session.
                     // Keep those responses materialized even when the caller
                     // asks for compact play responses; ordinary game commands
@@ -413,7 +413,7 @@ namespace ReactorSim.Browser
 
                     if (!returnCompact)
                     {
-                        return PlaytestProtocolV1.Serialize(
+                        return PlaytestProtocolV2.Serialize(
                             new PlaytestResponseDto
                             {
                                 Operation = "dispatch",
@@ -432,7 +432,7 @@ namespace ReactorSim.Browser
                             });
                     }
 
-                    return PlaytestProtocolV1.Serialize(
+                    return PlaytestProtocolV2.Serialize(
                         new PlaytestResponseDto
                         {
                             Operation = "dispatch",
@@ -477,7 +477,6 @@ namespace ReactorSim.Browser
                 "pause",
                 "resume",
                 "queue-power-target",
-                "queue-tilt-target",
                 "commit-refuel",
                 "configure-cell",
                 "solve",
@@ -548,7 +547,7 @@ namespace ReactorSim.Browser
 
             if (!TryGetUInt32(payload, out channelIndex, "channelIndex", "channel_index"))
             {
-                diagnostic = PlaytestProtocolV1.Diagnostic(
+                diagnostic = PlaytestProtocolV2.Diagnostic(
                     "Browser.ConfigureCell.ChannelIndex.Invalid",
                     "channelIndex",
                     "channelIndex must be a nonnegative integer.");
@@ -557,7 +556,7 @@ namespace ReactorSim.Browser
 
             if (!TryGetUInt32(payload, out position, "position"))
             {
-                diagnostic = PlaytestProtocolV1.Diagnostic(
+                diagnostic = PlaytestProtocolV2.Diagnostic(
                     "Browser.ConfigureCell.Position.Invalid",
                     "position",
                     "position must be a nonnegative integer.");
@@ -567,7 +566,7 @@ namespace ReactorSim.Browser
             if (!PlaytestInput.TryGetProperty(payload, out JsonElement fuel, "hasFuel", "has_fuel") ||
                 (fuel.ValueKind != JsonValueKind.True && fuel.ValueKind != JsonValueKind.False))
             {
-                diagnostic = PlaytestProtocolV1.Diagnostic(
+                diagnostic = PlaytestProtocolV2.Diagnostic(
                     "Browser.ConfigureCell.HasFuel.Invalid",
                     "hasFuel",
                     "hasFuel must be a JSON boolean.");
@@ -582,7 +581,7 @@ namespace ReactorSim.Browser
                     "reflective_faces") ||
                 faces.ValueKind != JsonValueKind.Array)
             {
-                diagnostic = PlaytestProtocolV1.Diagnostic(
+                diagnostic = PlaytestProtocolV2.Diagnostic(
                     "Browser.ConfigureCell.ReflectiveFaces.Invalid",
                     "reflectiveFaces",
                     "reflectiveFaces must be an array of face strings.");
@@ -595,7 +594,7 @@ namespace ReactorSim.Browser
                 if (faceValue.ValueKind != JsonValueKind.String ||
                     !TryParseTopologyFace(faceValue.GetString(), out TopologyFace face))
                 {
-                    diagnostic = PlaytestProtocolV1.Diagnostic(
+                    diagnostic = PlaytestProtocolV2.Diagnostic(
                         "Browser.ConfigureCell.ReflectiveFaces.Invalid",
                         "reflectiveFaces",
                         "Each reflective face must be one of north, east, south, west, end-a, or end-b.");
@@ -604,7 +603,7 @@ namespace ReactorSim.Browser
 
                 if (parsedFaces.Contains(face))
                 {
-                    diagnostic = PlaytestProtocolV1.Diagnostic(
+                    diagnostic = PlaytestProtocolV2.Diagnostic(
                         "Browser.ConfigureCell.ReflectiveFaces.Duplicate",
                         "reflectiveFaces",
                         "A reflective face may be listed only once.");
@@ -786,9 +785,6 @@ namespace ReactorSim.Browser
                 case "queue-power-target":
                     return QueuePowerTarget(session, payload);
 
-                case "queue-tilt-target":
-                    return QueueTiltTarget(session, payload);
-
                 case "commit-refuel":
                     return Refuel(runtime, payload);
 
@@ -830,21 +826,6 @@ namespace ReactorSim.Browser
             return ToExecution(session.QueuePowerTarget(target));
         }
 
-        private static BridgeCommandExecution QueueTiltTarget(
-            GameSession session,
-            JsonElement payload)
-        {
-            if (!TryGetFiniteDouble(payload, out double target, "targetFraction", "target_fraction"))
-            {
-                return InvalidCommand(
-                    "Browser.TiltTarget.Invalid",
-                    "targetFraction",
-                    "targetFraction must be finite.");
-            }
-
-            return ToExecution(session.QueueTiltTarget(target));
-        }
-
         private static BridgeCommandExecution Refuel(
             BridgeRuntime runtime,
             JsonElement payload)
@@ -881,7 +862,7 @@ namespace ReactorSim.Browser
             }
 
             return BridgeCommandExecution.Failure(
-                PlaytestProtocolV1.Diagnostic(
+                PlaytestProtocolV2.Diagnostic(
                     result.DiagnosticCode,
                     "command",
                     result.DiagnosticMessage),
@@ -908,7 +889,7 @@ namespace ReactorSim.Browser
             string message)
         {
             return BridgeCommandExecution.Failure(
-                PlaytestProtocolV1.Diagnostic(code, path, message));
+                PlaytestProtocolV2.Diagnostic(code, path, message));
         }
 
         private static GameSessionSnapshot GetCurrentGameSnapshot(BridgeRuntime runtime)
@@ -954,7 +935,7 @@ namespace ReactorSim.Browser
 
             return new PlaytestSnapshotDto
             {
-                Protocol = PlaytestProtocolV1.ProtocolId,
+                Protocol = PlaytestProtocolV2.ProtocolId,
                 Source = "wasm",
                 Sequence = runtime.Sequence,
                 ScenarioId = game.ScenarioId,
@@ -963,9 +944,8 @@ namespace ReactorSim.Browser
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,
                 TargetPowerFraction = 1.0,
-                AbsoluteTiltFraction = game.AbsoluteTiltFraction,
-                TargetTiltFraction = 0.0,
-                ControlMarginFraction = game.ControlMarginFraction,
+                AxialTiltFraction = game.AxialTiltFraction,
+                RrsReserveFraction = game.RrsReserveFraction,
                 DeviceAvailableFraction = game.DeviceAvailableFraction,
                 PendingActionCount = game.PendingActionCount,
                 ScoreTotal = game.ScoreTotal,
@@ -1083,9 +1063,8 @@ namespace ReactorSim.Browser
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,
                 TargetPowerFraction = 1.0,
-                AbsoluteTiltFraction = game.AbsoluteTiltFraction,
-                TargetTiltFraction = 0.0,
-                ControlMarginFraction = game.ControlMarginFraction,
+                AxialTiltFraction = game.AxialTiltFraction,
+                RrsReserveFraction = game.RrsReserveFraction,
                 DeviceAvailableFraction = game.DeviceAvailableFraction,
                 PendingActionCount = game.PendingActionCount,
                 ScoreTotal = game.ScoreTotal,
@@ -1143,8 +1122,6 @@ namespace ReactorSim.Browser
                 MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
                 EffectiveK = game.Physics.EffectiveK,
                 Reactivity = game.Physics.Reactivity,
-                StaticReactivity = game.Physics.StaticReactivity,
-                StaticReactivityMethodId = game.Physics.StaticReactivityMethodId,
                 WeightedPerturbationReactivity = game.Physics.WeightedPerturbationReactivity,
                 ReactivityNumerator = game.Physics.ReactivityNumerator,
                 ReactivityDenominator = game.Physics.ReactivityDenominator,
@@ -1252,9 +1229,9 @@ namespace ReactorSim.Browser
                     },
                     new PlaytestCheckDto
                     {
-                        Label = "Control margin",
-                        Value = FormatPercent(game.ControlMarginFraction),
-                        Status = game.ControlMarginFraction > 0.65 ? "pass" : "watch"
+                        Label = "RRS reserve",
+                        Value = FormatPercent(game.RrsReserveFraction),
+                        Status = game.RrsReserveFraction >= 0.72 ? "pass" : "watch"
                     },
                     new PlaytestCheckDto
                     {
@@ -1332,10 +1309,10 @@ namespace ReactorSim.Browser
             BridgeRuntime runtime,
             PlaytestSnapshotDto snapshot)
         {
-            string snapshotJson = PlaytestProtocolV1.Serialize(snapshot);
+            string snapshotJson = PlaytestProtocolV2.Serialize(snapshot);
             using JsonDocument document = JsonDocument.Parse(snapshotJson);
-            string canonical = PlaytestProtocolV1.CanonicalizeJson(document.RootElement);
-            return PlaytestProtocolV1.ComputeDigest(canonical);
+            string canonical = PlaytestProtocolV2.CanonicalizeJson(document.RootElement);
+            return PlaytestProtocolV2.ComputeDigest(canonical);
         }
 
         private static string ComputeCompactStateDigest(
@@ -1343,14 +1320,14 @@ namespace ReactorSim.Browser
             GameSessionSnapshot game,
             PlaytestSnapshotPatchDto patch)
         {
-            string patchJson = PlaytestProtocolV1.Serialize(patch);
+            string patchJson = PlaytestProtocolV2.Serialize(patch);
             using JsonDocument document = JsonDocument.Parse(patchJson);
-            string canonical = PlaytestProtocolV1.CompactStateDigestAlgorithm +
+            string canonical = PlaytestProtocolV2.CompactStateDigestAlgorithm +
                 "|sequence=" + runtime.Sequence.ToString(CultureInfo.InvariantCulture) +
                 "|mode=" + runtime.Mode +
-                "|patch=" + PlaytestProtocolV1.CanonicalizeJson(document.RootElement) +
+                "|patch=" + PlaytestProtocolV2.CanonicalizeJson(document.RootElement) +
                 "|core=" + ComputeCompactCoreIdentity(runtime, game);
-            return PlaytestProtocolV1.ComputeDigest(canonical);
+            return PlaytestProtocolV2.ComputeDigest(canonical);
         }
 
         private static string ComputeCompactCoreIdentity(
@@ -1391,7 +1368,7 @@ namespace ReactorSim.Browser
         {
             string canonical = runtime.Mode + "|" + runtime.InitializationJson + "|" +
                 string.Join("|", runtime.CommandJson);
-            return PlaytestProtocolV1.ComputeDigest(canonical);
+            return PlaytestProtocolV2.ComputeDigest(canonical);
         }
 
         private static bool IsCompactResponseRequested(JsonElement root)
@@ -1450,11 +1427,11 @@ namespace ReactorSim.Browser
             BridgeRuntime runtime)
         {
             PlaytestSnapshotDto snapshot = CreateSnapshot(runtime, 0.0);
-            BridgeDiagnosticDto diagnostic = PlaytestProtocolV1.Diagnostic(
+            BridgeDiagnosticDto diagnostic = PlaytestProtocolV2.Diagnostic(
                 "Browser.Dispatch.BaseSequence.Mismatch",
                 "baseSequence",
                 "The compact command baseSequence does not match the authoritative sequence; request a full snapshot before retrying.");
-            return PlaytestProtocolV1.Serialize(
+            return PlaytestProtocolV2.Serialize(
                 new PlaytestResponseDto
                 {
                     Operation = "dispatch",
@@ -1482,7 +1459,7 @@ namespace ReactorSim.Browser
             BridgeRuntime runtime)
         {
             PlaytestSnapshotDto snapshot = CreateSnapshot(runtime, 0.0);
-            return PlaytestProtocolV1.Serialize(
+            return PlaytestProtocolV2.Serialize(
                 new PlaytestResponseDto
                 {
                     Operation = operation,
@@ -1521,7 +1498,7 @@ namespace ReactorSim.Browser
             failure = null;
             if (string.IsNullOrWhiteSpace(json))
             {
-                failure = PlaytestProtocolV1.Diagnostic(
+                failure = PlaytestProtocolV2.Diagnostic(
                     "Browser.Json.Empty",
                     "json",
                     "A non-empty JSON object is required.");
@@ -1534,7 +1511,7 @@ namespace ReactorSim.Browser
             }
             catch (JsonException exception)
             {
-                failure = PlaytestProtocolV1.Diagnostic(
+                failure = PlaytestProtocolV2.Diagnostic(
                     "Browser.Json.Invalid",
                     "json",
                     "The browser command was not valid JSON: " + exception.Message);
@@ -1545,7 +1522,7 @@ namespace ReactorSim.Browser
             {
                 document.Dispose();
                 document = null;
-                failure = PlaytestProtocolV1.Diagnostic(
+                failure = PlaytestProtocolV2.Diagnostic(
                     "Browser.Json.ObjectRequired",
                     "json",
                     "The browser protocol requires a JSON object.");
@@ -1668,9 +1645,9 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestResponseDto
     {
-        public string Protocol { get; set; } = PlaytestProtocolV1.ProtocolId;
+        public string Protocol { get; set; } = PlaytestProtocolV2.ProtocolId;
 
-        public uint SchemaVersion { get; set; } = PlaytestProtocolV1.SchemaVersion;
+        public uint SchemaVersion { get; set; } = PlaytestProtocolV2.SchemaVersion;
 
         public string Operation { get; set; } = string.Empty;
 
@@ -1725,11 +1702,10 @@ namespace ReactorSim.Browser
 
         public double TargetPowerFraction { get; set; }
 
-        public double AbsoluteTiltFraction { get; set; }
+        public double AxialTiltFraction { get; set; }
 
-        public double TargetTiltFraction { get; set; }
 
-        public double ControlMarginFraction { get; set; }
+        public double RrsReserveFraction { get; set; }
 
         public double DeviceAvailableFraction { get; set; }
 
@@ -1777,7 +1753,7 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestSnapshotDto
     {
-        public string Protocol { get; set; } = PlaytestProtocolV1.ProtocolId;
+        public string Protocol { get; set; } = PlaytestProtocolV2.ProtocolId;
 
         public string Source { get; set; } = "wasm";
 
@@ -1795,11 +1771,10 @@ namespace ReactorSim.Browser
 
         public double TargetPowerFraction { get; set; }
 
-        public double AbsoluteTiltFraction { get; set; }
+        public double AxialTiltFraction { get; set; }
 
-        public double TargetTiltFraction { get; set; }
 
-        public double ControlMarginFraction { get; set; }
+        public double RrsReserveFraction { get; set; }
 
         public double DeviceAvailableFraction { get; set; }
 
@@ -2110,10 +2085,6 @@ namespace ReactorSim.Browser
         public double EffectiveK { get; set; }
 
         public double Reactivity { get; set; }
-
-        public double StaticReactivity { get; set; }
-
-        public string StaticReactivityMethodId { get; set; } = string.Empty;
 
         public double WeightedPerturbationReactivity { get; set; }
 

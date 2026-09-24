@@ -94,7 +94,8 @@ export function formatSolveHealth(snapshot: Pick<CanduSnapshot, "physics" | "dia
 }
 
 export function getTiltLabel(tiltFraction: number): string {
-  return `${tiltFraction >= 0 ? "+" : ""}${(tiltFraction * 100).toFixed(2)}%`;
+  const roundedPercent = Number((tiltFraction * 100).toFixed(2));
+  return `${roundedPercent >= 0 ? "+" : ""}${roundedPercent.toFixed(2)}%`;
 }
 
 export function getFlowArrow(direction: RefuellingDirection): string {
@@ -117,11 +118,11 @@ export function getChannelBand(channel: CanduChannelSnapshot): "low" | "nominal"
 
 export function getOverallStatus(snapshot: CanduSnapshot): "stable" | "watch" | "attention" {
   const powerError = Math.abs(snapshot.physics.actualPowerFraction - snapshot.targetPowerFraction);
-  const tiltError = Math.abs(snapshot.absoluteTiltFraction - snapshot.targetTiltFraction);
-  if (powerError > 0.06 || tiltError > 0.1 || snapshot.controlMarginFraction < 0.6) {
+  const tiltError = Math.abs(snapshot.axialTiltFraction);
+  if (powerError > 0.06 || tiltError > 0.1 || snapshot.rrsReserveFraction < 0.6) {
     return "attention";
   }
-  if (powerError > 0.018 || tiltError > 0.045 || snapshot.controlMarginFraction < 0.72) {
+  if (powerError > 0.018 || tiltError > 0.045 || snapshot.rrsReserveFraction < 0.72) {
     return "watch";
   }
   return "stable";

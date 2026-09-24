@@ -6,7 +6,7 @@ on-power refuelling loop. The visible client is one Phaser 3 game with a fixed
 same board remains legible on desktop and narrow screens.
 
 The game never reimplements simulation rules in the client. It creates the
-authoritative `candu-playtest-v1` bridge, loads the C# `ReactorSim.Game` WASM
+authoritative `candu-playtest-v2` bridge, loads the C# `ReactorSim.Game` WASM
 module in a dedicated worker, and sends only protocol commands. If that bridge
 is unavailable, the title and in-game unavailable scenes explain the locked
 state instead of substituting a local simulation.

@@ -1,4 +1,4 @@
-export const PROTOCOL_VERSION = "candu-playtest-v1" as const;
+export const PROTOCOL_VERSION = "candu-playtest-v2" as const;
 
 export const CORE_CHANNEL_COUNT = 380 as const;
 export const CORE_BUNDLE_POSITION_COUNT = 12 as const;
@@ -216,8 +216,6 @@ export interface CanduPhysicsSnapshot {
   meanBundlePowerWatts: number;
   effectiveK: number;
   reactivity: number;
-  staticReactivity: number;
-  staticReactivityMethodId: string;
   weightedPerturbationReactivity: number;
   reactivityNumerator: number;
   reactivityDenominator: number;
@@ -268,9 +266,8 @@ export interface CanduSnapshot {
   wallElapsedSeconds: number;
   normalizedPowerFraction: number;
   targetPowerFraction: number;
-  absoluteTiltFraction: number;
-  targetTiltFraction: number;
-  controlMarginFraction: number;
+  axialTiltFraction: number;
+  rrsReserveFraction: number;
   deviceAvailableFraction: number;
   pendingActionCount: number;
   scoreTotal: number;
@@ -297,9 +294,8 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "wallElapsedSeconds"
   | "normalizedPowerFraction"
   | "targetPowerFraction"
-  | "absoluteTiltFraction"
-  | "targetTiltFraction"
-  | "controlMarginFraction"
+  | "axialTiltFraction"
+  | "rrsReserveFraction"
   | "deviceAvailableFraction"
   | "pendingActionCount"
   | "scoreTotal"
@@ -331,7 +327,6 @@ export type CanduCommand =
   | { type: "pause" }
   | { type: "resume" }
   | { type: "queue-power-target"; targetFraction: number }
-  | { type: "queue-tilt-target"; targetFraction: number }
   | { type: "commit-refuel"; request: RefuelRequest }
   | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: CoreBoundaryFace[] }
   | { type: "solve" }
@@ -514,7 +509,7 @@ function parseJson(raw: string | unknown): unknown {
     return JSON.parse(raw) as unknown;
   } catch (error) {
     const message = error instanceof Error ? error.message : "invalid JSON";
-    throw new Error(`candu-playtest-v1 JSON parse failed: ${message}`);
+    throw new Error(`candu-playtest-v2 JSON parse failed: ${message}`);
   }
 }
 
@@ -727,8 +722,6 @@ function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {
     "meanBundlePowerWatts",
     "effectiveK",
     "reactivity",
-    "staticReactivity",
-    "staticReactivityMethodId",
     "weightedPerturbationReactivity",
     "reactivityNumerator",
     "reactivityDenominator",
@@ -754,7 +747,6 @@ function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {
     "amplitudeMethodId",
     "reactivityMethodId",
     "solveState",
-    "staticReactivityMethodId",
     "reactivityIdentity",
     "reactivityBindingDigestHex",
     "cadenceIdentity",
@@ -771,7 +763,6 @@ function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {
         "meanBundlePowerWatts",
         "effectiveK",
         "reactivity",
-        "staticReactivity",
         "weightedPerturbationReactivity",
         "reactivityNumerator",
         "reactivityDenominator",
@@ -1007,9 +998,8 @@ const SNAPSHOT_STATE_FIELDS = [
   "wallElapsedSeconds",
   "normalizedPowerFraction",
   "targetPowerFraction",
-  "absoluteTiltFraction",
-  "targetTiltFraction",
-  "controlMarginFraction",
+  "axialTiltFraction",
+  "rrsReserveFraction",
   "deviceAvailableFraction",
   "pendingActionCount",
   "scoreTotal",
@@ -1036,9 +1026,8 @@ function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
       "wallElapsedSeconds",
       "normalizedPowerFraction",
       "targetPowerFraction",
-      "absoluteTiltFraction",
-      "targetTiltFraction",
-      "controlMarginFraction",
+      "axialTiltFraction",
+      "rrsReserveFraction",
       "deviceAvailableFraction",
       "scoreTotal",
       "scoreDelta",
@@ -1083,8 +1072,6 @@ function isCanduCommand(value: unknown): value is CanduCommand {
     case "reset":
       return true;
     case "queue-power-target":
-      return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
-    case "queue-tilt-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
       return hasOwn(value, "request") && isRefuelRequest(value.request);
@@ -1184,7 +1171,7 @@ export function parseProtocolSnapshot(raw: string | unknown): CanduSnapshot {
     unwrapPayload(parseJson(raw), "snapshot"),
   );
   if (!isProtocolSnapshot(value)) {
-    throw new Error("candu-playtest-v1 snapshot is malformed or incomplete.");
+    throw new Error("candu-playtest-v2 snapshot is malformed or incomplete.");
   }
   return value;
 }
@@ -1206,7 +1193,7 @@ function parseProtocolResponseWithBase(
     unwrapPayload(parseJson(raw), "response"),
   );
   if (!isProtocolResponseEnvelope(value)) {
-    throw new Error("candu-playtest-v1 response envelope is malformed.");
+    throw new Error("candu-playtest-v2 response envelope is malformed.");
   }
 
   const isCompact = value.responseKind === "compact" ||
@@ -1219,7 +1206,7 @@ function parseProtocolResponseWithBase(
         value.baseSequence !== previousSnapshot.sequence) {
       if (resyncSnapshot !== undefined) {
         if (!isProtocolSnapshot(resyncSnapshot)) {
-          throw new Error("candu-playtest-v1 resync snapshot is malformed.");
+          throw new Error("candu-playtest-v2 resync snapshot is malformed.");
         }
         return {
           ...value,
@@ -1232,7 +1219,7 @@ function parseProtocolResponseWithBase(
 
     const patch = value.snapshotPatch;
     if (!isCanduSnapshotPatch(patch)) {
-      throw new Error("candu-playtest-v1 compact response is missing snapshotPatch.");
+      throw new Error("candu-playtest-v2 compact response is missing snapshotPatch.");
     }
 
     const snapshot = materializeCompactSnapshot(
@@ -1248,11 +1235,11 @@ function parseProtocolResponseWithBase(
   }
 
   if (!isRecord(value.snapshot)) {
-    throw new Error("candu-playtest-v1 response is missing a snapshot.");
+    throw new Error("candu-playtest-v2 response is missing a snapshot.");
   }
   const snapshot = normalizeInitialSnapshot(value.snapshot);
   if (!isProtocolSnapshot(snapshot)) {
-    throw new Error("candu-playtest-v1 response snapshot is malformed.");
+    throw new Error("candu-playtest-v2 response snapshot is malformed.");
   }
   return { ...value, snapshot } as unknown as CanduCommandResponse;
 }
@@ -1271,14 +1258,14 @@ export function materializeCompactSnapshot(
   patchValue: Record<string, unknown>,
 ): CanduSnapshot {
   if (!isNonNegativeInteger(response.sequence) || !isCanduSnapshotPatch(patchValue)) {
-    throw new Error("candu-playtest-v1 compact snapshot patch is malformed.");
+    throw new Error("candu-playtest-v2 compact snapshot patch is malformed.");
   }
 
   let core = base.core;
   if (hasOwn(response, "coreReplacement")) {
     if (!isCanduCoreSnapshot(response.coreReplacement)) {
       if (response.coreReplacement !== null) {
-        throw new Error("candu-playtest-v1 compact core replacement is malformed.");
+        throw new Error("candu-playtest-v2 compact core replacement is malformed.");
       }
     } else {
       core = response.coreReplacement;
@@ -1293,7 +1280,7 @@ export function materializeCompactSnapshot(
   };
 
   if (!isProtocolSnapshot(snapshot)) {
-    throw new Error("candu-playtest-v1 compact snapshot patch produced an invalid snapshot.");
+    throw new Error("candu-playtest-v2 compact snapshot patch produced an invalid snapshot.");
   }
   return snapshot;
 }
@@ -1302,7 +1289,7 @@ export function parseReplayArchive(raw: string | unknown): CanduReplayArchive {
   const value = parseJson(raw);
   assertProtocol(value);
   if (value.kind !== "command-replay" || !Array.isArray(value.commands)) {
-    throw new Error("Expected a candu-playtest-v1 command replay archive.");
+    throw new Error("Expected a candu-playtest-v2 command replay archive.");
   }
   return value as unknown as CanduReplayArchive;
 }

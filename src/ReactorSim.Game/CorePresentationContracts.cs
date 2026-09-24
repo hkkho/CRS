@@ -16,7 +16,6 @@ namespace ReactorSim.Game
     /// </summary>
     public sealed class GamePhysicsPresentationSnapshot
     {
-        private readonly string _staticReactivityMethodId;
 
         internal GamePhysicsPresentationSnapshot(
             string sourceId,
@@ -184,7 +183,6 @@ namespace ReactorSim.Game
             ReactivityDenominator = reactivityDenominator;
             ReactivityIdentity = reactivityIdentity;
             ReactivityBindingDigestHex = reactivityBindingDigestHex;
-            _staticReactivityMethodId = EquilibriumCoreSolverIdentityV1.ReactivityMethodId;
             CoreReactivity = coreReactivity;
             CompensatedNetReactivity = compensatedNetReactivity;
             CompensationState = compensationState;
@@ -249,23 +247,8 @@ namespace ReactorSim.Game
         public double Reactivity { get; }
 
         /// <summary>
-        /// Legacy spatial state rho, derived only from EffectiveK as
-        /// (k - 1) / k. It is intentionally separate from the operational
-        /// first-order perturbation value below.
-        /// </summary>
-        public double StaticReactivity
-        {
-            get { return Reactivity; }
-        }
-
-        public string StaticReactivityMethodId
-        {
-            get { return _staticReactivityMethodId; }
-        }
-
-        /// <summary>
-        /// B2's adjoint-weighted first-order perturbation reactivity. This is
-        /// the value consumed by the regulated gameplay response.
+        /// Retained compatibility projection of the equilibrium reactivity.
+        /// The active practice path does not run an adjoint perturbation solve.
         /// </summary>
         public double WeightedPerturbationReactivity { get; }
 
@@ -278,14 +261,12 @@ namespace ReactorSim.Game
         public string ReactivityBindingDigestHex { get; }
 
         /// <summary>
-        /// Operational core reactivity supplied to the practice regulator.
-        /// This is the B2 weighted perturbation value, not static k/rho.
+        /// Uncompensated equilibrium reactivity supplied to the practice regulator.
         /// </summary>
         public double CoreReactivity { get; }
 
         /// <summary>
-        /// Core reactivity plus the bounded scalar compensation state. This
-        /// is the value the practice regulator is driving toward zero.
+        /// Equilibrium reactivity after the liquid-zone coefficient overlay.
         /// </summary>
         public double CompensatedNetReactivity { get; }
 
@@ -821,7 +802,8 @@ namespace ReactorSim.Game
             IEnumerable<GameChannelPresentationSnapshot> channels,
             GamePhysicsPresentationSnapshot physics,
             GameXenonPresentationSnapshot xenon,
-            GameRrsPresentationSnapshot rrs)
+            GameRrsPresentationSnapshot rrs,
+            double axialTiltFraction)
         {
             if (channels == null)
             {
@@ -831,6 +813,13 @@ namespace ReactorSim.Game
             Physics = physics ?? throw new ArgumentNullException(nameof(physics));
             Xenon = xenon ?? throw new ArgumentNullException(nameof(xenon));
             Rrs = rrs ?? throw new ArgumentNullException(nameof(rrs));
+            if (double.IsNaN(axialTiltFraction) || double.IsInfinity(axialTiltFraction) ||
+                axialTiltFraction < -1.0 || axialTiltFraction > 1.0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(axialTiltFraction));
+            }
+
+            AxialTiltFraction = axialTiltFraction;
 
             GameChannelPresentationSnapshot[] copy = channels.ToArray();
             if (copy.Length != GameCorePresentationConstants.ChannelCount)
@@ -857,6 +846,9 @@ namespace ReactorSim.Game
         public GameXenonPresentationSnapshot Xenon { get; }
 
         public GameRrsPresentationSnapshot Rrs { get; }
+
+        /// <summary>Signed End A (-) to End B (+) thermal-flux moment.</summary>
+        public double AxialTiltFraction { get; }
 
         public uint ChannelCount
         {

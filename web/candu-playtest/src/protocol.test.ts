@@ -12,7 +12,7 @@ import {
   type CanduSnapshot,
 } from "./protocol";
 
-describe("candu-playtest-v1 protocol validation", () => {
+describe("candu-playtest-v2 protocol validation", () => {
   it("requires authoritative live designer fields on every bundle", () => {
     const snapshot = createSnapshot();
     const bundle = snapshot.core.channels[0].bundles[0];
@@ -183,9 +183,8 @@ function patchFor(snapshot: CanduSnapshot): Record<string, unknown> {
     wallElapsedSeconds: snapshot.wallElapsedSeconds,
     normalizedPowerFraction: snapshot.normalizedPowerFraction,
     targetPowerFraction: snapshot.targetPowerFraction,
-    absoluteTiltFraction: snapshot.absoluteTiltFraction,
-    targetTiltFraction: snapshot.targetTiltFraction,
-    controlMarginFraction: snapshot.controlMarginFraction,
+    axialTiltFraction: snapshot.axialTiltFraction,
+    rrsReserveFraction: snapshot.rrsReserveFraction,
     deviceAvailableFraction: snapshot.deviceAvailableFraction,
     pendingActionCount: snapshot.pendingActionCount,
     scoreTotal: snapshot.scoreTotal,
@@ -253,9 +252,8 @@ function createSnapshot(): CanduSnapshot {
     wallElapsedSeconds: 0,
     normalizedPowerFraction: 1,
     targetPowerFraction: 1,
-    absoluteTiltFraction: 0,
-    targetTiltFraction: 0,
-    controlMarginFraction: 1,
+    axialTiltFraction: 0,
+    rrsReserveFraction: 1,
     deviceAvailableFraction: 1,
     pendingActionCount: 0,
     scoreTotal: 0,
@@ -285,8 +283,6 @@ function createSnapshot(): CanduSnapshot {
       meanBundlePowerWatts: 1,
       effectiveK: 1,
       reactivity: 0,
-      staticReactivity: 0,
-      staticReactivityMethodId: "protocol-test",
       weightedPerturbationReactivity: 0,
       reactivityNumerator: 0,
       reactivityDenominator: 1,

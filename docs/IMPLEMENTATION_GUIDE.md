@@ -19,7 +19,7 @@ simulation, and plant-grade safety claims are out of scope.
 ## Current implementation
 
 The browser surface is one Phaser 3 canvas using the public
-`ReactorSim.Game` session through the versioned `candu-playtest-v1` browser
+`ReactorSim.Game` session through the versioned `candu-playtest-v2` browser
 bridge. The bridge runs in a worker and the client fails closed when the
 authoritative WASM module is unavailable.
 
@@ -97,7 +97,12 @@ regulated steady-state practice model rather than a sub-second transient claim.
 The shared full-core adapter publishes explicit SI watts, normalized power,
 eigenvalue `k`, and `rho = (k - 1) / k`, together with solve identity and
 diagnostics. Short operation intervals reuse the retained equilibrium projection
-for deterministic burnup integration.
+for deterministic burnup integration. The browser displays signed axial tilt
+from the solved thermal flux and two-sided RRS reserve from the live liquid-zone
+fill limits. The practice score uses the spatial tilt and power projection,
+without the legacy scenario tilt/control-margin score. Burnup can change the
+equilibrium reactivity at the hourly full-core solve; this does not imply a
+short-time decay transient.
 
 The exact active finite-volume operator, boundary handling, source iteration,
 and normalization are documented in

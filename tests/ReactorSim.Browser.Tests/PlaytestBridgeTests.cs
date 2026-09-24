@@ -11,11 +11,11 @@ namespace ReactorSim.Browser.Tests
 {
     public sealed class PlaytestBridgeTests
     {
-        private const string Protocol = "candu-playtest-v1";
+        private const string Protocol = "candu-playtest-v2";
         private const string PlayRequest =
-            "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}";
+            "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\"}";
         private const string LabRequest =
-            "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"lab\"}";
+            "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"lab\"}";
         private const string PlayRefuelRequest =
             "{\"channelIndex\":189,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}";
         private static readonly string[] ExpectedOperations =
@@ -37,10 +37,10 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void CapabilitiesAndValidInitializationsExposeAuthoritativeContracts()
         {
-            JsonElement capabilities = Parse(PlaytestBridgeV1.GetCapabilities());
+            JsonElement capabilities = Parse(PlaytestBridgeV2.GetCapabilities());
 
             Assert.Equal(Protocol, capabilities.GetProperty("protocol").GetString());
-            Assert.Equal(1U, capabilities.GetProperty("schemaVersion").GetUInt32());
+            Assert.Equal(2U, capabilities.GetProperty("schemaVersion").GetUInt32());
             Assert.Equal(
                 ExpectedOperations,
                 capabilities.GetProperty("operations")
@@ -56,6 +56,7 @@ namespace ReactorSim.Browser.Tests
             Assert.Contains("advance", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
             Assert.Contains("commit-refuel", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
             Assert.DoesNotContain("preview-refuel", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
+            Assert.DoesNotContain("queue-tilt-target", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
 
             Assert.Equal(1, capabilities.GetProperty("modes").GetArrayLength());
             Assert.DoesNotContain(
@@ -85,7 +86,7 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(EquilibriumCoreSolverIdentityV1.AmplitudeMethodId, metadata.GetProperty("amplitudeMethodId").GetString());
             Assert.Equal(EquilibriumCoreSolverIdentityV1.ReactivityMethodId, metadata.GetProperty("reactivityMethodId").GetString());
 
-            JsonElement play = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement play = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertAccepted(play);
             Assert.Equal("play", play.GetProperty("mode").GetString());
             AssertPlaySnapshot(play.GetProperty("snapshot"));
@@ -99,21 +100,22 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void InvalidProtocolModeTypeAndNumberInputsFailClosedWithoutChangingAuthority()
         {
-            JsonElement baseline = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement baseline = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             string[] invalidInitializations =
             {
                 "{\"mode\":\"play\"}",
                 "{\"protocol\":\"other-v1\",\"mode\":\"play\"}",
-                "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"lab\"}",
-                "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"unsupported\"}",
-                "{\"protocol\":\"candu-playtest-v1\",\"mode\":7}",
-                "{\"protocol\":\"candu-playtest-v1\",\"mode\":[]}",
+                "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}",
+                "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"lab\"}",
+                "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"unsupported\"}",
+                "{\"protocol\":\"candu-playtest-v2\",\"mode\":7}",
+                "{\"protocol\":\"candu-playtest-v2\",\"mode\":[]}",
                 "{not-json"
             };
 
             foreach (string invalidInitialization in invalidInitializations)
             {
-                JsonElement rejected = Parse(PlaytestBridgeV1.Initialize(invalidInitialization));
+                JsonElement rejected = Parse(PlaytestBridgeV2.Initialize(invalidInitialization));
                 AssertRejected(rejected);
                 Assert.Equal("play", rejected.GetProperty("mode").GetString());
                 Assert.Equal(baseline.GetProperty("sequence").GetUInt64(), rejected.GetProperty("sequence").GetUInt64());
@@ -124,21 +126,22 @@ namespace ReactorSim.Browser.Tests
                     rejected.GetProperty("snapshot"));
             }
 
-            JsonElement playBaseline = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement playBaseline = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             string[] invalidCommands =
             {
                 "{not-json",
                 "{\"type\":\"advance\",\"wallMilliseconds\":100}",
                 "{\"protocol\":\"other-v1\",\"type\":\"advance\",\"wallMilliseconds\":100}",
-                "{\"protocol\":\"candu-playtest-v1\",\"type\":7}",
-                "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":\"100\"}",
-                "{\"protocol\":\"candu-playtest-v1\",\"type\":\"queue-power-target\",\"targetFraction\":1e999}",
-                "{\"protocol\":\"candu-playtest-v1\",\"type\":\"preview-refuel\",\"request\":" + PlayRefuelRequest + "}"
+                "{\"protocol\":\"candu-playtest-v2\",\"type\":7}",
+                "{\"protocol\":\"candu-playtest-v2\",\"type\":\"advance\",\"wallMilliseconds\":\"100\"}",
+                "{\"protocol\":\"candu-playtest-v2\",\"type\":\"queue-power-target\",\"targetFraction\":1e999}",
+                "{\"protocol\":\"candu-playtest-v2\",\"type\":\"queue-tilt-target\",\"targetFraction\":0.05}",
+                "{\"protocol\":\"candu-playtest-v2\",\"type\":\"preview-refuel\",\"request\":" + PlayRefuelRequest + "}"
             };
 
             foreach (string invalidCommand in invalidCommands)
             {
-                JsonElement rejected = Parse(PlaytestBridgeV1.Dispatch(invalidCommand));
+                JsonElement rejected = Parse(PlaytestBridgeV2.Dispatch(invalidCommand));
                 AssertRejected(rejected);
                 Assert.Equal("play", rejected.GetProperty("mode").GetString());
                 AssertAuthoritativeSnapshotUnchanged(
@@ -150,12 +153,12 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void PlayCommandSequencePreservesDirectCommitAndRejectedState()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             Assert.Equal(0UL, initialized.GetProperty("sequence").GetUInt64());
 
             JsonElement advanced = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
             AssertAccepted(advanced);
             Assert.Equal(1UL, advanced.GetProperty("sequence").GetUInt64());
             Assert.Equal(3_600.0, advanced.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble(), 12);
@@ -164,8 +167,8 @@ namespace ReactorSim.Browser.Tests
 
             JsonElement beforeCommit = advanced.GetProperty("snapshot");
             JsonElement committed = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":" + PlayRefuelRequest + "}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":" + PlayRefuelRequest + "}"));
             AssertAccepted(committed);
             Assert.Equal(2UL, committed.GetProperty("sequence").GetUInt64());
             AssertPlaySnapshot(committed.GetProperty("snapshot"));
@@ -179,8 +182,8 @@ namespace ReactorSim.Browser.Tests
                 committed.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[189].GetRawText());
 
             JsonElement rejected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
             AssertRejected(rejected);
             Assert.Equal(3UL, rejected.GetProperty("sequence").GetUInt64());
             AssertPlaySnapshot(rejected.GetProperty("snapshot"));
@@ -194,14 +197,14 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void LiveEngineeringEditMutatesFullCorePhysicsAndTargetBundle()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertAccepted(initialized);
             Assert.Equal("play", initialized.GetProperty("mode").GetString());
             JsonElement initialSnapshot = initialized.GetProperty("snapshot");
             AssertPlaySnapshot(initialSnapshot);
             JsonElement configured = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"END_B\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"END_B\"]}"));
             AssertAccepted(configured);
             Assert.False(configured.TryGetProperty("responseKind", out _));
             Assert.Equal("play", configured.GetProperty("mode").GetString());
@@ -226,15 +229,15 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void LiveEngineeringSolveReturnsFullAuthoritativeSnapshot()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             JsonElement configured = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
             AssertAccepted(configured);
             JsonElement beforeSolve = configured.GetProperty("snapshot");
             JsonElement reset = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"solve\"}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"solve\"}"));
             AssertAccepted(reset);
             Assert.False(reset.TryGetProperty("lab", out _));
             AssertPlaySnapshot(reset.GetProperty("snapshot"));
@@ -249,11 +252,11 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void InvalidEngineeringEditRollsBackAuthoritativeState()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
-            JsonElement before = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
+            JsonElement before = Parse(PlaytestBridgeV2.GetSnapshotJson());
             JsonElement rejected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"invalid-face\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"invalid-face\"]}"));
             AssertRejected(rejected);
             Assert.Equal(before.GetProperty("physics").GetRawText(), rejected.GetProperty("snapshot").GetProperty("physics").GetRawText());
             Assert.Equal(before.GetProperty("core").GetRawText(), rejected.GetProperty("snapshot").GetProperty("core").GetRawText());
@@ -262,14 +265,14 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void ResetRestoresFreshFullCoreConfiguration()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             JsonElement configured = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"east\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"east\"]}"));
             AssertAccepted(configured);
             JsonElement reset = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"reset\"}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"reset\"}"));
             AssertAccepted(reset);
             JsonElement snapshot = reset.GetProperty("snapshot");
             Assert.Equal(0.0, snapshot.GetProperty("simulationTimeSeconds").GetDouble(), 12);
@@ -309,14 +312,14 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void BrowserPlayStreamMapsTheSameAuthoritativePracticeGameSessionStream()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             GameSession direct = PracticeGameSessionFactory.CreateBrowserPlaytest();
             AssertGameSnapshotMaps(initialized.GetProperty("snapshot"), direct.Snapshot, 189);
 
             GameSessionCommandResult expectedAdvance = direct.AdvanceWallMilliseconds(2000);
             JsonElement browserAdvance = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
             Assert.True(expectedAdvance.Accepted);
             AssertAccepted(browserAdvance);
             AssertGameSnapshotMaps(browserAdvance.GetProperty("snapshot"), expectedAdvance.Snapshot, 189);
@@ -327,8 +330,8 @@ namespace ReactorSim.Browser.Tests
                 4,
                 "NAT-U-SYNTHETIC");
             JsonElement browserCommit = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":" + PlayRefuelRequest + "}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":" + PlayRefuelRequest + "}"));
             Assert.True(expectedCommit.Accepted);
             AssertAccepted(browserCommit);
             AssertGameSnapshotMaps(browserCommit.GetProperty("snapshot"), expectedCommit.Snapshot, 189);
@@ -341,13 +344,13 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void CompactPlayResponsesCarryPatchWithoutCoreAndCommitCarriesReplacement()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertAccepted(initialized);
             int legacyBytes = initialized.GetRawText().Length;
             Assert.True(legacyBytes > 1_000_000);
 
             JsonElement paused = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(0, "pause")));
             AssertCompactPatch(paused, 0, 1);
             Assert.True(paused.GetProperty("snapshotPatch").GetProperty("isPaused").GetBoolean());
@@ -356,7 +359,7 @@ namespace ReactorSim.Browser.Tests
             Assert.True(paused.GetRawText().Length <= legacyBytes * 0.05);
 
             JsonElement committed = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(
                         1,
                         "commit-refuel",
@@ -367,16 +370,16 @@ namespace ReactorSim.Browser.Tests
             Assert.DoesNotContain("preview", committed.GetRawText(), StringComparison.Ordinal);
 
             JsonElement resumed = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(2, "resume")));
             AssertCompactPatch(resumed, 2, 3);
 
             JsonElement advanced = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(3, "advance", "\"wallMilliseconds\":100")));
             AssertCompactPatch(advanced, 3, 4);
             Assert.DoesNotContain("channels", advanced.GetRawText(), StringComparison.Ordinal);
-            JsonElement exactAfterAdvance = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            JsonElement exactAfterAdvance = Parse(PlaytestBridgeV2.GetSnapshotJson());
             JsonElement advancePatch = advanced.GetProperty("snapshotPatch");
             Assert.Equal(advancePatch.GetProperty("simulationTimeSeconds").GetDouble(), exactAfterAdvance.GetProperty("simulationTimeSeconds").GetDouble(), 12);
             Assert.Equal(advancePatch.GetProperty("wallElapsedSeconds").GetDouble(), exactAfterAdvance.GetProperty("wallElapsedSeconds").GetDouble(), 12);
@@ -391,44 +394,44 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void OrdinaryCompactCommandsDoNotMaterializeBrowserCoreDto()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
-            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
+            PlaytestBridgeV2.ResetCoreSnapshotMaterializationCount();
 
             JsonElement paused = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(0, "pause")));
             AssertCompactPatch(paused, 0, 1);
-            Assert.Equal(0, PlaytestBridgeV1.CoreSnapshotMaterializationCount);
+            Assert.Equal(0, PlaytestBridgeV2.CoreSnapshotMaterializationCount);
 
-            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+            PlaytestBridgeV2.ResetCoreSnapshotMaterializationCount();
             JsonElement resumed = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(1, "resume")));
             AssertCompactPatch(resumed, 1, 2);
-            Assert.Equal(0, PlaytestBridgeV1.CoreSnapshotMaterializationCount);
+            Assert.Equal(0, PlaytestBridgeV2.CoreSnapshotMaterializationCount);
 
-            PlaytestBridgeV1.ResetCoreSnapshotMaterializationCount();
+            PlaytestBridgeV2.ResetCoreSnapshotMaterializationCount();
             JsonElement committed = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(
                         2,
                         "commit-refuel",
                         "\"request\":" + PlayRefuelRequest)));
             AssertCompactPatch(committed, 2, 3);
-            Assert.True(PlaytestBridgeV1.CoreSnapshotMaterializationCount > 0);
+            Assert.True(PlaytestBridgeV2.CoreSnapshotMaterializationCount > 0);
         }
 
         [Fact]
         public void CompactWrongBaseSequenceRequestsResyncWithoutMutatingAuthority()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             JsonElement paused = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(0, "pause")));
             AssertCompactPatch(paused, 0, 1);
 
             JsonElement mismatch = Parse(
-                PlaytestBridgeV1.Dispatch(
+                PlaytestBridgeV2.Dispatch(
                     CompactCommand(0, "resume")));
             Assert.Equal("compact", mismatch.GetProperty("responseKind").GetString());
             Assert.True(mismatch.GetProperty("requiresResync").GetBoolean());
@@ -437,7 +440,7 @@ namespace ReactorSim.Browser.Tests
             Assert.False(mismatch.TryGetProperty("snapshot", out _));
             Assert.False(mismatch.TryGetProperty("snapshotPatch", out _));
 
-            JsonElement exact = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            JsonElement exact = Parse(PlaytestBridgeV2.GetSnapshotJson());
             Assert.Equal(1UL, exact.GetProperty("sequence").GetUInt64());
             Assert.True(exact.GetProperty("isPaused").GetBoolean());
             Assert.Equal(380, exact.GetProperty("core").GetProperty("channels").GetArrayLength());
@@ -446,11 +449,11 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void LabCommandsAreRejectedWithoutChangingPlayState()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             JsonElement before = initialized.GetProperty("snapshot");
             JsonElement rejected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"lab-refuel\",\"request\":{" +
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"lab-refuel\",\"request\":{" +
                     "\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
             AssertRejected(rejected);
             Assert.Equal(before.GetProperty("core").GetRawText(), rejected.GetProperty("snapshot").GetProperty("core").GetRawText());
@@ -460,11 +463,11 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void ConfigureCellRejectsDuplicateFacesBeforeMutation()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
-            JsonElement before = Parse(PlaytestBridgeV1.GetSnapshotJson());
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
+            JsonElement before = Parse(PlaytestBridgeV2.GetSnapshotJson());
             JsonElement rejected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"east\",\"EAST\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"east\",\"EAST\"]}"));
             AssertRejected(rejected);
             Assert.Equal(before.GetProperty("core").GetRawText(), rejected.GetProperty("snapshot").GetProperty("core").GetRawText());
             Assert.Equal(before.GetProperty("physics").GetRawText(), rejected.GetProperty("snapshot").GetProperty("physics").GetRawText());
@@ -473,8 +476,8 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void InitializeLabModeIsRejectedAndKeepsPlayMode()
         {
-            JsonElement baseline = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
-            JsonElement rejected = Parse(PlaytestBridgeV1.Initialize(LabRequest));
+            JsonElement baseline = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
+            JsonElement rejected = Parse(PlaytestBridgeV2.Initialize(LabRequest));
             AssertRejected(rejected);
             Assert.Equal("play", rejected.GetProperty("mode").GetString());
             Assert.Equal(baseline.GetProperty("stateDigest").GetString(), rejected.GetProperty("stateDigest").GetString());
@@ -484,10 +487,10 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void ConfigureCellAcceptsCaseAndCamelFaceNames()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             JsonElement reflected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"North\",\"EAST\",\"south\",\"west\",\"endA\",\"END_B\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[\"North\",\"EAST\",\"south\",\"west\",\"endA\",\"END_B\"]}"));
             AssertAccepted(reflected);
             JsonElement target = reflected.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0]
                 .GetProperty("bundles")[0];
@@ -500,8 +503,8 @@ namespace ReactorSim.Browser.Tests
         public void EngineeringCommandCannotUseUnknownFace()
         {
             JsonElement rejected = Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":true,\"reflectiveFaces\":[\"diagonal\"]}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":true,\"reflectiveFaces\":[\"diagonal\"]}"));
             AssertRejected(rejected);
             Assert.Contains(rejected.GetProperty("diagnostics").EnumerateArray(), diagnostic =>
                 diagnostic.GetProperty("code").GetString() == "Browser.ConfigureCell.ReflectiveFaces.Invalid");
@@ -510,7 +513,7 @@ namespace ReactorSim.Browser.Tests
         [Fact]
         public void FullCoreBundlesExposeAuthoritativeDesignerFieldsForEveryNode()
         {
-            JsonElement initialized = Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertCoreDesignerFields(initialized.GetProperty("snapshot"));
         }
 
@@ -535,13 +538,13 @@ namespace ReactorSim.Browser.Tests
 
         private static JsonElement RunDeterministicPlayStream()
         {
-            Parse(PlaytestBridgeV1.Initialize(PlayRequest));
+            Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
             return Parse(
-                PlaytestBridgeV1.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v1\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+                PlaytestBridgeV2.Dispatch(
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
         }
 
         private static string CompactCommand(
@@ -550,7 +553,7 @@ namespace ReactorSim.Browser.Tests
             string fields = "")
         {
             string suffix = string.IsNullOrWhiteSpace(fields) ? string.Empty : "," + fields;
-            return "{\"protocol\":\"candu-playtest-v1\",\"type\":\"command\",\"responseMode\":\"compact\",\"baseSequence\":" +
+            return "{\"protocol\":\"candu-playtest-v2\",\"type\":\"command\",\"responseMode\":\"compact\",\"baseSequence\":" +
                 baseSequence +
                 ",\"payload\":{\"type\":\"" + commandType + "\"" + suffix + "}}";
         }
@@ -629,9 +632,8 @@ namespace ReactorSim.Browser.Tests
                 "wallElapsedSeconds",
                 "normalizedPowerFraction",
                 "targetPowerFraction",
-                "absoluteTiltFraction",
-                "targetTiltFraction",
-                "controlMarginFraction",
+                "axialTiltFraction",
+                "rrsReserveFraction",
                 "deviceAvailableFraction",
                 "pendingActionCount",
                 "scoreTotal",
@@ -669,8 +671,12 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(expected.SimulationTimeSeconds, browser.GetProperty("simulationTimeSeconds").GetDouble(), 12);
             Assert.Equal(expected.WallElapsedSeconds, browser.GetProperty("wallElapsedSeconds").GetDouble(), 12);
             Assert.Equal(expected.NormalizedPowerFraction, browser.GetProperty("normalizedPowerFraction").GetDouble(), 12);
-            Assert.Equal(expected.AbsoluteTiltFraction, browser.GetProperty("absoluteTiltFraction").GetDouble(), 12);
-            Assert.Equal(expected.ControlMarginFraction, browser.GetProperty("controlMarginFraction").GetDouble(), 12);
+            Assert.Equal(expected.AxialTiltFraction, browser.GetProperty("axialTiltFraction").GetDouble(), 12);
+            Assert.Equal(expected.RrsReserveFraction, browser.GetProperty("rrsReserveFraction").GetDouble(), 12);
+            Assert.False(browser.TryGetProperty("absoluteTiltFraction", out _));
+            Assert.False(browser.TryGetProperty("controlMarginFraction", out _));
+            Assert.False(browser.TryGetProperty("targetTiltFraction", out _));
+            Assert.False(browser.GetProperty("physics").TryGetProperty("staticReactivity", out _));
             Assert.Equal(expected.DeviceAvailableFraction, browser.GetProperty("deviceAvailableFraction").GetDouble(), 12);
             Assert.Equal(expected.PendingActionCount, browser.GetProperty("pendingActionCount").GetUInt32());
             Assert.Equal(expected.ScoreTotal, browser.GetProperty("scoreTotal").GetDouble(), 12);
