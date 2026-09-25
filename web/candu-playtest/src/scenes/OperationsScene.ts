@@ -358,7 +358,7 @@ export class OperationsScene extends Phaser.Scene {
         this.refreshCore();
       }
     });
-    container.on("pointerdown", () => this.selectChannel(channel.channelIndex));
+    container.on("pointerup", () => this.selectChannel(channel.channelIndex));
     return { channel, container, graphics };
   }
 
@@ -898,7 +898,7 @@ export class OperationsScene extends Phaser.Scene {
     this.modalBackdrop.fillStyle(COLORS.ink, 0.78);
     this.modalBackdrop.fillRect(0, 0, VIEW_WIDTH, VIEW_HEIGHT);
     this.modalBackdrop.setInteractive(new Phaser.Geom.Rectangle(0, 0, VIEW_WIDTH, VIEW_HEIGHT), Phaser.Geom.Rectangle.Contains);
-    this.modalBackdrop.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
+    this.modalBackdrop.on("pointerup", (pointer: Phaser.Input.Pointer) => {
       if (pointer.x < 376 || pointer.x > 1208 || pointer.y < 184 || pointer.y > 824) this.closeModal();
     });
     this.modalGraphics = this.add.graphics().setDepth(500);

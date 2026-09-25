@@ -365,7 +365,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       new Phaser.Geom.Rectangle(-this.layout.stepX / 2, -this.layout.stepY / 2, this.layout.stepX, this.layout.stepY),
       Phaser.Geom.Rectangle.Contains,
     );
-    container.on("pointerdown", () => this.selectChannel(channel.channelIndex));
+    container.on("pointerup", () => this.selectChannel(channel.channelIndex));
     return { channelIndex: channel.channelIndex, container, graphics };
   }
 
@@ -560,7 +560,7 @@ export class CoreDesignerScene extends Phaser.Scene {
         new Phaser.Geom.Rectangle(-AXIAL.width / 2 + 4, -rowHeight / 2 + 1, AXIAL.width - 8, rowHeight - 2),
         Phaser.Geom.Rectangle.Contains,
       );
-      container.on("pointerdown", () => {
+      container.on("pointerup", () => {
         if (!this.pending) {
           this.selectedPosition = position;
           this.refresh();

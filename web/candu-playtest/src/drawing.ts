@@ -152,7 +152,7 @@ export function makeButton(
   container.input!.cursor = "pointer";
   container.on("pointerover", () => { hovered = true; repaint(); });
   container.on("pointerout", () => { hovered = false; repaint(); });
-  container.on("pointerdown", () => { if (enabled) onClick(); });
+  container.on("pointerup", () => { if (enabled) onClick(); });
 
   return {
     gameObject: container,
