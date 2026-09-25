@@ -346,7 +346,7 @@ export class OperationsScene extends Phaser.Scene {
     // Use the full orthographic cell as the hit target. The painted channel
     // face stays inset, keeping neighbors clear while selection stays easy.
     container.setSize(this.layout.stepX, this.layout.stepY);
-    const hitArea = new Phaser.Geom.Rectangle(-this.layout.stepX / 2, -this.layout.stepY / 2, this.layout.stepX, this.layout.stepY);
+    const hitArea = new Phaser.Geom.Rectangle(0, 0, this.layout.stepX, this.layout.stepY);
     container.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
     container.on("pointerover", () => {
       this.hoveredChannelIndex = channel.channelIndex;

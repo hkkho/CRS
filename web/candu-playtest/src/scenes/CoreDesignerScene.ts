@@ -362,7 +362,7 @@ export class CoreDesignerScene extends Phaser.Scene {
     container.add(graphics);
     container.setSize(this.layout.stepX, this.layout.stepY);
     container.setInteractive(
-      new Phaser.Geom.Rectangle(-this.layout.stepX / 2, -this.layout.stepY / 2, this.layout.stepX, this.layout.stepY),
+      new Phaser.Geom.Rectangle(0, 0, this.layout.stepX, this.layout.stepY),
       Phaser.Geom.Rectangle.Contains,
     );
     container.on("pointerup", () => this.selectChannel(channel.channelIndex));
@@ -557,7 +557,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       container.add([graphics, positionText, stateText, fluxText, powerText]);
       container.setSize(AXIAL.width - 8, rowHeight - 2);
       container.setInteractive(
-        new Phaser.Geom.Rectangle(-AXIAL.width / 2 + 4, -rowHeight / 2 + 1, AXIAL.width - 8, rowHeight - 2),
+        new Phaser.Geom.Rectangle(0, 0, AXIAL.width - 8, rowHeight - 2),
         Phaser.Geom.Rectangle.Contains,
       );
       container.on("pointerup", () => {

@@ -146,7 +146,7 @@ export function makeButton(
 
   const hitHeight = Math.max(height, 38);
   container.setInteractive(
-    new Phaser.Geom.Rectangle(-width / 2, -hitHeight / 2, width, hitHeight),
+    new Phaser.Geom.Rectangle(0, (height - hitHeight) / 2, width, hitHeight),
     Phaser.Geom.Rectangle.Contains,
   );
   container.input!.cursor = "pointer";
