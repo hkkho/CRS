@@ -238,6 +238,17 @@ namespace ReactorSim.Game
 
         public double TotalPowerWatts { get; }
 
+        /// <summary>Estimated electrical output; TotalPowerWatts remains thermal.</summary>
+        public double ElectricalPowerWatts
+        {
+            get
+            {
+                return TotalPowerWatts *
+                    (PracticeGameSessionFactory.PracticeReferenceElectricalPowerWatts /
+                     PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts);
+            }
+        }
+
         public double MeanChannelPowerWatts { get; }
 
         public double MeanBundlePowerWatts { get; }

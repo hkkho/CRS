@@ -13,20 +13,23 @@ namespace ReactorSim.Game
         public const string PlayPlaybackModeId = "play-accelerated-10x";
         public const string DebugPlaybackModeId = "debug-accelerated-60x";
         public const uint WallControlTickMilliseconds = 100;
+        // Browser 1x: 30 simulated minutes per real second (3 minutes per tick).
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-infinite-cell-calibrated";
+            "candu6-two-group-diffusion-v1-cycle190-650mwe";
         // Kept as a source-compatible browser/Unity metadata alias. The live
         // practice composition no longer loads a kinetics data pack.
         public const string KineticsDataPackVersion =
             DiffusionDataPackVersion;
-        public const double FullCoreDiffusionRecomputeIntervalSeconds = 3_600.0;
-        // The target is the practice display scale. It is not a plant rating;
-        // the solver's energy balance remains in SI watts.
-        public const double PracticeReferencePowerWatts = 1_000_000_000.0;
+        public const double FullCoreDiffusionRecomputeIntervalSeconds = 1_800.0;
+        // Burnup integrates thermal fission energy. Electrical output is a
+        // separate presentation estimate at the authored conversion ratio.
+        public const double PracticeReferenceThermalPowerWatts = 2_064_000_000.0;
+        public const double PracticeReferenceElectricalPowerWatts = 650_000_000.0;
+        public const double PracticeReferencePowerWatts = PracticeReferenceThermalPowerWatts;
 
-        public static GameSession Create()
+        public static GameSession Create(ulong seed = 1001)
         {
             return CreateSession(
                 1.0,
@@ -34,10 +37,10 @@ namespace ReactorSim.Game
                 60.0,
                 6.0,
                 600.0,
-                PlayPlaybackModeId);
+                PlayPlaybackModeId, seed);
         }
 
-        public static GameSession CreateBrowserPlaytest()
+        public static GameSession CreateBrowserPlaytest(ulong seed = 1001)
         {
             return CreateSession(
                 BrowserBaseSimulationSecondsPerWallSecond,
@@ -45,7 +48,7 @@ namespace ReactorSim.Game
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0,
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
                 BrowserScenarioHorizonSeconds,
-                RealTimePlaybackModeId);
+                RealTimePlaybackModeId, seed);
         }
 
         private static GameSession CreateSession(
@@ -54,7 +57,8 @@ namespace ReactorSim.Game
             double debugAccelerationFactor,
             double maximumPresentationAdvancePerWallTickSeconds,
             double scenarioHorizonSeconds,
-            string initialPlaybackModeId)
+            string initialPlaybackModeId,
+            ulong seed)
         {
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
@@ -131,7 +135,7 @@ namespace ReactorSim.Game
                 Phase8ScenarioDefinitionV1.TryCreate(
                     ScenarioId,
                     DifficultyId,
-                    1001,
+                    seed,
                     initialState,
                     events));
             Phase8ScenarioRuntimeV1 runtime = Require(
@@ -159,7 +163,7 @@ namespace ReactorSim.Game
                 FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
             FullCoreDiffusionModelV1 fullCoreModel = Require(
                 FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
-            SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreatePractice();
+            SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreateAgedPractice(seed);
             EquilibriumCoreSolverV1 equilibriumSolver = Require(
                 EquilibriumCoreSolverV1.TryCreate(
                     fullCoreModel,
@@ -179,6 +183,16 @@ namespace ReactorSim.Game
                     initialRrs,
                     runtime.SimulationTimeSeconds));
             Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
+            // Settle the assumed pre-run core without consuming run time/fuel.
+            // Each controller pass retains its normal bounded movement contract.
+            for (int pass = 0; pass < 7 &&
+                Math.Abs(acceptedRrs.State.CompensatedNetReactivity) > PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance;
+                pass++)
+            {
+                acceptedRrs = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                    equilibriumSolver, coreState.EnumerateBundles(), acceptedRrs.State, runtime.SimulationTimeSeconds));
+                Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
+            }
             return new GameSession(
                 scoredRuntime,
                 playbackModes,

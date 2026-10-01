@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { oldestFuelChannel, refuelImpactText, operationGuidance } from "../gameplayPresentation";
 import {
   canIssueRefuel,
   createRefuelDraft,
@@ -79,6 +80,15 @@ export class OperationsScene extends Phaser.Scene {
   private readonly reducedMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
   private readonly tiles = new Map<number, ChannelTile>();
   private readonly modalObjects: ModalObject[] = [];
+  private mapMode: "power" | "burnup" = "power";
+  private mapModeButton: TacticalButton | null = null;
+  private mapLegend: Phaser.GameObjects.Text | null = null;
+  private impactText: Phaser.GameObjects.Text | null = null;
+  private guidanceText: Phaser.GameObjects.Text | null = null;
+  private zoneGraphics: Phaser.GameObjects.Graphics | null = null;
+  private zoneText: Phaser.GameObjects.Text | null = null;
+  private zoneEffort: Phaser.GameObjects.Text | null = null;
+  private readonly zoneLabels: Phaser.GameObjects.Text[] = [];
   private snapshot: CanduSnapshot = this.session.snapshot;
   private selectedChannelIndex = -1;
   private hoveredChannelIndex = -1;
@@ -86,6 +96,7 @@ export class OperationsScene extends Phaser.Scene {
   private unsubscribe: (() => void) | null = null;
   private pending = false;
   private initialSelectedChannelIndex: number | null = null;
+  private initialRefuelDraft: RefuelDraft | null = null;
   private modalKind: ModalKind | null = null;
   private refuelDraft: RefuelDraft | null = null;
   private controlPowerTarget = 1;
@@ -157,6 +168,8 @@ export class OperationsScene extends Phaser.Scene {
     this.initialSelectedChannelIndex = isSceneChannelIndex(data)
       ? data.selectedChannelIndex
       : null;
+    this.initialRefuelDraft = isSceneChannelIndex(data) && "refuelDraft" in data
+      ? data.refuelDraft as RefuelDraft : null;
   }
 
   public create(): void {
@@ -165,10 +178,15 @@ export class OperationsScene extends Phaser.Scene {
     // previous display list must not be touched by the first refresh.
     this.destroyModal();
     this.tiles.clear();
+    this.zoneLabels.length = 0;
     this.sideProfileNumbers.length = 0;
     this.sideProfileValues.length = 0;
     this.playbackButtons = [];
     this.motion = null;
+    this.mapMode = "power";
+    this.resultMessage = "";
+    this.resultExpiresAt = 0;
+    this.lastError = "";
     this.pending = false;
     this.snapshot = this.session.snapshot;
     const requestedChannel = this.initialSelectedChannelIndex;
@@ -179,12 +197,15 @@ export class OperationsScene extends Phaser.Scene {
       : chooseInitialChannel(this.snapshot);
     const initialChannel = this.getSelectedChannel();
     this.refuelDraft = initialChannel === undefined ? null : createRefuelDraft(initialChannel);
+    if (this.initialRefuelDraft?.channelIndex === this.selectedChannelIndex) this.refuelDraft = { ...this.initialRefuelDraft };
+    this.initialRefuelDraft = null;
     this.createBackdrop();
     this.createUnavailableOverlay();
     this.createMap();
     this.createHud();
     this.createSidePanel();
     this.createMotionLayer();
+    this.createGameplayPanel();
     this.refreshAll();
     this.unsubscribe = this.session.subscribe((update) => this.receiveSessionUpdate(update));
     this.events.once("shutdown", () => this.unsubscribe?.());
@@ -241,7 +262,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private createMap(): void {
-    this.layout = createCoreFaceLayout(MAP.x + 8, MAP.y + 10, MAP.width - 16, MAP.height - 28);
+    this.layout = createCoreFaceLayout(MAP.x + 8, MAP.y + 10, MAP.width - 16, MAP.height - 196);
     this.mapGraphics = this.add.graphics().setDepth(0);
     this.ambientGraphics = this.add.graphics().setDepth(12);
     this.selectionGraphics = this.add.graphics().setDepth(13);
@@ -295,12 +316,9 @@ export class OperationsScene extends Phaser.Scene {
       color: colorString(COLORS.ivoryMuted),
       letterSpacing: 1,
     }).setDepth(20);
-    makeText(this, MAP.x + MAP.width - 20, MAP.y + 22, "POWER / HEAT FIELD", {
-      fontFamily: FONTS.mono,
-      fontSize: "10px",
-      color: colorString(COLORS.gold),
-      letterSpacing: 1.2,
-    }).setOrigin(1, 0).setDepth(20);
+    this.mapModeButton = makeButton(this, 810, 163, 180, 34, "MAP: POWER [M]", () => this.toggleMapMode(), { tone: "cyan", fontSize: 12 });
+    this.mapModeButton.gameObject.setDepth(180);
+    makeButton(this, 1048, 163, 250, 34, "FIND OLDEST FUEL [N]", () => this.selectOldestFuel(), { tone: "gold", fontSize: 12 }).gameObject.setDepth(180);
 
     for (let row = 0; row < 22; row += 1) {
       const left = projectChannelToFace({ gridColumn: 0, gridRow: row }, this.layout);
@@ -320,23 +338,59 @@ export class OperationsScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(20);
     }
 
-    const legendX = MAP.x + 28;
-    const legendY = MAP.y + MAP.height - 36;
-    graphics.fillStyle(colorFromRgb(getHeatColor(0.72)), 1);
-    graphics.fillRect(legendX, legendY, 55, 5);
-    graphics.fillStyle(colorFromRgb(getHeatColor(0.93)), 1);
-    graphics.fillRect(legendX + 55, legendY, 55, 5);
-    graphics.fillStyle(colorFromRgb(getHeatColor(1.18)), 1);
-    graphics.fillRect(legendX + 110, legendY, 55, 5);
-    makeText(this, legendX, legendY + 10, "LOW", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, legendX + 82, legendY + 10, "NOMINAL", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, legendX + 151, legendY + 10, "HIGH", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
-    makeText(this, MAP.x + MAP.width - 26, MAP.y + MAP.height - 34, "ARROWS = COOLANT / FUEL PATH", {
-      fontFamily: FONTS.mono,
-      fontSize: "9px",
-      color: colorString(COLORS.ivoryMuted),
-      letterSpacing: 0.8,
-    }).setOrigin(1, 0).setDepth(20);
+    this.mapLegend = makeText(this, MAP.x + 28, 614, "POWER: cool = low · gold = nominal · red = high", { fontFamily: FONTS.mono, fontSize: "13px", color: colorString(COLORS.ivoryMuted) }).setDepth(20);
+    makeButton(this, 1078, 621, 210, 30, "REACTOR STUDIO [V]", () => this.openStudio(), { tone: "gold", fontSize: 12 }).gameObject.setDepth(180);
+  }
+
+  private createGameplayPanel(): void {
+    const graphics = this.add.graphics().setDepth(160);
+    drawPanelFrame(graphics, 44, 649, 630, 157, { fill: COLORS.ink, accent: COLORS.gold });
+    drawPanelFrame(graphics, 690, 649, 496, 157, { fill: COLORS.ink, accent: COLORS.cyan });
+    this.impactText = makeText(this, 60, 660, "MAKE YOUR FIRST FUEL MOVE\nUse FIND OLDEST FUEL to inspect a candidate.\nFour bundles conserve stock; eight replace more fuel.\nWatch the local power, tilt and reserve response.\nPower is regulated; it can stay at 100%.", { fontFamily: FONTS.mono, fontSize: "14px", lineSpacing: 7, color: colorString(COLORS.ivory), wordWrap: { width: 596 } }).setDepth(170);
+    this.zoneGraphics = this.add.graphics().setDepth(170);
+    this.zoneText = makeText(this, 706, 660, "RRS ZONE FILLS", { fontFamily: FONTS.mono, fontSize: "13px", color: colorString(COLORS.cyan), lineSpacing: 4 }).setDepth(172);
+    this.zoneEffort = makeText(this, 706, 784, "", { fontFamily: FONTS.mono, fontSize: "12px", color: colorString(COLORS.ivoryMuted) }).setDepth(172);
+    for (let i = 0; i < 14; i++) {
+      this.zoneLabels.push(makeText(this, 721 + i * 33, 748, "", { fontFamily: FONTS.mono, fontSize: "11px", align: "center", color: colorString(COLORS.ivory) }).setOrigin(0.5, 0).setDepth(172));
+    }
+    this.guidanceText = makeText(this, 32, 839, "", { fontFamily: FONTS.body, fontSize: "16px", color: colorString(COLORS.ivory), wordWrap: { width: 1280 } }).setDepth(180);
+    makeText(this, 32, 872, "SPACE pause/resume   •   Arrows select   •   M map   •   N oldest fuel   •   D direction   •   4 / 8 size   •   R refuel", { fontFamily: FONTS.mono, fontSize: "12px", color: colorString(COLORS.ivoryMuted) }).setDepth(180);
+    makeButton(this, 1460, 865, 210, 38, "NEW SHIFT", () => this.restartShift(), { tone: "quiet", fontSize: 13 }).gameObject.setDepth(180);
+  }
+
+  private toggleMapMode(): void {
+    this.mapMode = this.mapMode === "power" ? "burnup" : "power";
+    this.mapModeButton?.setLabel(`MAP: ${this.mapMode.toUpperCase()} [M]`);
+    this.mapLegend?.setText(this.mapMode === "power" ? "POWER: cool = low · gold = nominal · red = high" : "BURNUP: cyan = fresh · gold = 8+ MWd/kg · compare fuel age before spending stock");
+    this.refreshCore();
+  }
+
+  private selectOldestFuel(): void {
+    const channel = oldestFuelChannel(this.snapshot.core.channels);
+    if (channel !== null) this.selectChannel(channel);
+  }
+
+  private restartShift(): void {
+    if (this.pending || !this.session.status.isWasmAvailable) return;
+    void this.session.dispatch({ type: "reset" }).then(response => {
+      if (response.accepted) this.scene.restart();
+    }).catch(() => undefined);
+  }
+
+  private refreshGameplayPanel(): void {
+    this.guidanceText?.setText(operationGuidance(this.snapshot));
+    const rrs = this.snapshot.rrs;
+    const movement = Math.max(0, ...rrs.appliedFillCommand.map(Math.abs));
+    this.zoneEffort?.setText(movement > 0.00001 ? `Largest applied fill change: ${(movement * 100).toFixed(2)} pp` : "No zone fill movement applied on this solve.");
+    this.zoneText?.setText(`RRS ZONE FILLS · ${(rrs.minimumFillFraction * 100).toFixed(0)}–${(rrs.maximumFillFraction * 100).toFixed(0)}%\nKeep room to absorb or release reactivity.`);
+    this.zoneGraphics?.clear();
+    rrs.zones.forEach((zone, i) => {
+      const fill = Phaser.Math.Clamp(zone.fillFraction, 0, 1);
+      const x = 709 + i * 33;
+      this.zoneGraphics?.fillStyle(COLORS.panelRaised, 1).fillRect(x, 704, 24, 38);
+      this.zoneGraphics?.fillStyle(fill < 0.1 || fill > 0.9 ? COLORS.red : COLORS.cyan, 0.85).fillRect(x, 742 - fill * 38, 24, fill * 38);
+      this.zoneLabels[i]?.setText(`${(fill * 100).toFixed(0)}%\nZ${zone.logicalZoneId + 1}`);
+    });
   }
 
   private createChannelTile(channel: CanduChannelSnapshot): ChannelTile {
@@ -528,8 +582,8 @@ export class OperationsScene extends Phaser.Scene {
     this.sideProfileGraphics = this.add.graphics().setDepth(170);
     for (let index = 0; index < 12; index += 1) {
       const y = SIDE.y + 383 + index * 11.5;
-      this.sideProfileNumbers.push(makeText(this, SIDE.x + 24, y - 1, String(index + 1).padStart(2, "0"), { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted) }).setDepth(172));
-      this.sideProfileValues.push(makeText(this, SIDE.x + 281, y - 1, "—", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(172));
+      this.sideProfileNumbers.push(makeText(this, SIDE.x + 24, y - 1, String(index + 1).padStart(2, "0"), { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted) }).setDepth(172));
+      this.sideProfileValues.push(makeText(this, SIDE.x + 326, y - 1, "—", { fontFamily: FONTS.mono, fontSize: "9px", color: colorString(COLORS.ivoryMuted), align: "right" }).setOrigin(1, 0).setDepth(172));
     }
     graphics.lineStyle(1, COLORS.ivory, 0.14);
     graphics.lineBetween(SIDE.x + 24, SIDE.y + 535, SIDE.x + SIDE.width - 24, SIDE.y + 535);
@@ -560,6 +614,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private refreshAll(): void {
+    this.refreshGameplayPanel();
     this.refreshHud();
     this.refreshCore();
     this.refreshSidePanel();
@@ -580,7 +635,7 @@ export class OperationsScene extends Phaser.Scene {
       this.hudReserveGraphics.clear();
       drawMeter(this.hudReserveGraphics, 705, 96, 154, 7, reserve, reserveColor);
     }
-    this.hudScore?.setText(String(Math.round(this.snapshot.scoreTotal)).padStart(6, "0"));
+    this.hudScore?.setText(Math.round(this.snapshot.scoreTotal).toLocaleString("en-US"));
     this.hudFresh?.setText(`${this.snapshot.freshBundlesAvailable} FRESH BUNDLES`);
     this.hudStatus?.setText(status.toUpperCase()).setColor(colorString(status === "stable" ? COLORS.green : status === "watch" ? COLORS.gold : COLORS.red));
     this.hudSpeed?.setText(`${this.snapshot.isPaused ? "PAUSED" : this.snapshot.playbackModeId} / ${this.pending ? "COMMAND" : "LIVE"}`);
@@ -617,7 +672,9 @@ export class OperationsScene extends Phaser.Scene {
       tile.container.setDepth(40 + tile.channel.gridRow / 1000);
       const width = this.layout.tileWidth + (isSelected ? 4 : isHovered ? 3 : 0);
       const height = this.layout.tileHeight + (isSelected ? 3 : isHovered ? 2 : 0);
-      const heat = colorFromRgb(getHeatColor(tile.channel.localPowerFraction));
+      const heat = this.mapMode === "power"
+        ? colorFromRgb(getHeatColor(tile.channel.localPowerFraction))
+        : mixColor(COLORS.cyanDark, COLORS.gold, Phaser.Math.Clamp(tile.channel.averageBurnupMwdPerKg / 8, 0, 1));
       tile.graphics.clear();
       tile.graphics.fillStyle(COLORS.ink, isSelected || isHovered ? 0.82 : 0.6);
       tile.graphics.fillRoundedRect(-width / 2 + 2, -height / 2 + 3, width + 2, height + 2, 3);
@@ -674,9 +731,9 @@ export class OperationsScene extends Phaser.Scene {
       const maxPower = Math.max(1, ...channel.bundles.map((bundle) => bundle.powerWatts));
       channel.bundles.forEach((bundle, index) => {
         const y = SIDE.y + 383 + index * 11.5;
-        const width = 198;
+        const width = 174;
         const barWidth = Math.max(4, width * Math.max(0, bundle.powerWatts) / maxPower);
-        const color = bundle.isFresh ? COLORS.cyan : mixColor(COLORS.magentaDark, COLORS.gold, Math.min(1, bundle.currentBurnupMwdPerKg / 8_000));
+        const color = bundle.isFresh ? COLORS.cyan : mixColor(COLORS.magentaDark, COLORS.gold, Math.min(1, bundle.currentBurnupMwdPerKg / 8));
         graphics.fillStyle(COLORS.ink, 0.78);
         graphics.fillRoundedRect(SIDE.x + 75, y, width, 9, 2);
         graphics.fillStyle(color, bundle.isFresh ? 0.82 : 0.9);
@@ -697,14 +754,14 @@ export class OperationsScene extends Phaser.Scene {
     }
     const draft = this.refuelDraft;
     const ready = channel !== undefined && this.snapshot.core.channels.length === 380 && this.session.status.isWasmAvailable;
-    const controlsEnabled = ready && !this.pending && this.motion === null;
+    const controlsEnabled = ready && !this.pending && !this.snapshot.rrs.isGameOver;
     this.refuelDirectionButton?.setLabel(draft === null ? "DIRECTION" : formatRefuelDirection(draft.directionId));
     this.refuelFourButton?.setEnabled(controlsEnabled);
     this.refuelEightButton?.setEnabled(controlsEnabled);
     this.refuelDirectionButton?.setEnabled(controlsEnabled);
     this.refuelFourButton?.gameObject.setAlpha(draft?.shiftCount === 4 ? 1 : 0.64);
     this.refuelEightButton?.gameObject.setAlpha(draft?.shiftCount === 8 ? 1 : 0.64);
-    this.refuelButton?.setLabel(`REFUEL ${draft?.shiftCount ?? 4}  ↗`);
+    this.refuelButton?.setLabel(this.snapshot.rrs.isGameOver ? "SHIFT COMPLETE" : this.snapshot.freshBundlesAvailable < (draft?.shiftCount ?? 4) ? "NOT ENOUGH FUEL" : `REFUEL ${draft?.shiftCount ?? 4}  ↗`);
     this.refuelButton?.setEnabled(controlsEnabled && canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending));
   }
 
@@ -748,6 +805,9 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private receiveSessionUpdate(update: SessionUpdate): void {
+    if (update.response?.command.type === "commit-refuel" && update.response.accepted && update.response.sequence !== this.lastHandledResponseSequence) {
+      this.impactText?.setText(refuelImpactText(this.snapshot, update.snapshot, update.response.command.request.channelIndex));
+    }
     this.snapshot = update.snapshot;
     this.pending = update.pending;
     if (update.error !== null && update.error !== this.lastError) {
@@ -803,7 +863,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private toggleRefuelDirection(): void {
-    if (this.refuelDraft === null || this.pending || this.motion !== null) {
+    if (this.refuelDraft === null || this.pending) {
       return;
     }
     this.refuelDraft.directionId = toggleRefuelDirection(this.refuelDraft.directionId);
@@ -813,7 +873,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private setRefuelShiftCount(shiftCount: RefuelRequest["shiftCount"]): void {
-    if (this.refuelDraft === null || this.pending || this.motion !== null) {
+    if (this.refuelDraft === null || this.pending) {
       return;
     }
     this.refuelDraft.shiftCount = shiftCount;
@@ -824,9 +884,12 @@ export class OperationsScene extends Phaser.Scene {
 
   private dispatchRefuel(): void {
     const draft = this.refuelDraft;
-    if (this.motion !== null || !canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending)) {
+    if (this.snapshot.rrs.isGameOver || !canIssueRefuel(draft, this.snapshot.freshBundlesAvailable, this.pending)) {
       return;
     }
+    this.motion = null;
+    this.motionGraphics?.clear();
+    this.motionText?.setVisible(false);
     const request = toRefuelRequest(draft);
     this.resultMessage = "ORDER PENDING…";
     this.resultExpiresAt = 0;
@@ -893,6 +956,11 @@ export class OperationsScene extends Phaser.Scene {
     this.scene.start("CoreDesignerScene", { returnChannelIndex: this.selectedChannelIndex });
   }
 
+  private openStudio(): void {
+    if (this.pending || !this.session.status.isWasmAvailable) return;
+    this.scene.start("StudioScene", { selectedChannelIndex: this.selectedChannelIndex, refuelDraft: this.refuelDraft });
+  }
+
   private createModalFrame(title: string, subtitle: string): void {
     this.modalBackdrop = this.add.graphics().setDepth(490);
     this.modalBackdrop.fillStyle(COLORS.ink, 0.78);
@@ -955,6 +1023,7 @@ export class OperationsScene extends Phaser.Scene {
     this.modalButtons[3]?.setEnabled(stepEnabled);
     this.modalButtons[4]?.setEnabled(stepEnabled);
     this.modalButtons[5]?.setEnabled(stepEnabled);
+    this.modalButtons[6]?.setLabel(this.snapshot.isPaused ? "RESUME  ▶" : "PAUSE  Ⅱ");
     this.modalButtons[6]?.setEnabled(!this.pending);
     this.modalButtons[7]?.setEnabled(!this.pending);
   }
@@ -1023,7 +1092,7 @@ export class OperationsScene extends Phaser.Scene {
   }
 
   private showToast(message: string, color: number): void {
-    const toast = this.add.container(800, 850).setDepth(700);
+    const toast = this.add.container(800, 124).setDepth(700);
     const graphics = this.add.graphics();
     graphics.fillStyle(COLORS.ink, 0.94);
     graphics.fillRoundedRect(-300, -20, 600, 40, 6);
@@ -1036,6 +1105,8 @@ export class OperationsScene extends Phaser.Scene {
 
   private handleKeyDown(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
+    if (event.repeat) return;
+    if ([" ", "arrowup", "arrowdown", "arrowleft", "arrowright", "enter", "f2"].includes(key)) event.preventDefault();
     if (this.modalKind === "control") {
       if (key === "escape") { this.closeModal(); return; }
       if (key === "arrowup" || key === "w") { this.controlPowerTarget = adjustTarget(this.controlPowerTarget, 0.01, 0.8, 1.2); this.refreshModal(); return; }
@@ -1044,6 +1115,9 @@ export class OperationsScene extends Phaser.Scene {
       return;
     }
     if (key === "escape") return;
+    if (key === "v") { this.openStudio(); return; }
+    if (key === "m") { this.toggleMapMode(); return; }
+    if (key === "n") { this.selectOldestFuel(); return; }
     if (key === "4") { this.setRefuelShiftCount(4); return; }
     if (key === "8") { this.setRefuelShiftCount(8); return; }
     if (key === "d") { this.toggleRefuelDirection(); return; }
@@ -1053,7 +1127,7 @@ export class OperationsScene extends Phaser.Scene {
     if (key === "1") { this.setPlayback("1x"); return; }
     if (key === "2") { this.setPlayback("10x"); return; }
     if (key === "3") { this.setPlayback("60x"); return; }
-    if (key === " ") { this.setPlayback("pause"); return; }
+    if (key === " ") { this.setPlayback(this.snapshot.isPaused ? "1x" : "pause"); return; }
     const movement: Record<string, [number, number]> = {
       arrowleft: [-1, 0], a: [-1, 0], arrowright: [1, 0],
       arrowup: [0, -1], w: [0, -1], arrowdown: [0, 1], s: [0, 1],

@@ -24,6 +24,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\..\data\packs\candu6-two-group-diffusion-pack-v1.json" Link="TestData\data\packs\candu6-two-group-diffusion-pack-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\..\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json" Link="TestData\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

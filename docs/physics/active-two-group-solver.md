@@ -13,7 +13,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated`, units profile
+`candu6-two-group-diffusion-v1-cycle190-650mwe`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -28,8 +28,8 @@ group 2 is thermal.
 | `Sigma_a2` | `0.16` | m^-1 | Thermal absorption |
 | `Sigma_f1` | `0.035` | m^-1 | Fast fission rate for power |
 | `Sigma_f2` | `0.155` | m^-1 | Thermal fission rate for power |
-| `nuSigma_f1` | `0.0840` | m^-1 | Fast neutron production |
-| `nuSigma_f2` | `0.37665` | m^-1 | Thermal neutron production |
+| `nuSigma_f1` | `0.07905016808075824` | m^-1 | Fast neutron production |
+| `nuSigma_f2` | `0.35445530723354274` | m^-1 | Thermal neutron production |
 | `Sigma_s12` | `0.200` | m^-1 | Fast-to-thermal downscatter |
 | `chi1` | `1.0` | dimensionless | Fast fission spectrum fraction |
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
@@ -210,8 +210,8 @@ Substitution into the fast equation gives the infinite-medium eigenvalue
 ```text
 k_inf = (nuSigma_f1 + nuSigma_f2 * (phi_2 / phi_1)) /
         (Sigma_a1 + Sigma_s12)
-      = (0.0840 + 0.37665 * 1.25) / 0.50
-      = 1.109625
+      = (0.07905016808075824 + 0.35445530723354274 * 1.25) / 0.50
+      = 1.0442386042453733
 ```
 
 The one-watt normalization is computed from the actual `Sigma_f`, energy, and
@@ -236,7 +236,7 @@ analytic expression.
 | Result | Value |
 | --- | ---: |
 | Status | `Converged` |
-| Effective `k` | `1.109625` |
+| Effective `k` | `1.0442386042453733` |
 | Fast flux | `2.72852855714132e12 n/m^2/s` |
 | Thermal flux | `3.41066069642665e12 n/m^2/s` |
 | Total power | `1 W` |

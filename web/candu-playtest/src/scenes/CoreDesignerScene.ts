@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { ZoneLayoutEditor } from "../ZoneLayoutEditor";
 import { getRuntimeSession } from "../runtime";
 import {
   COLORS,
@@ -72,6 +73,7 @@ interface AxialRow {
  * Operations; it has no second fixture or local reactor state.
  */
 export class CoreDesignerScene extends Phaser.Scene {
+  private zoneEditor: ZoneLayoutEditor | null = null;
   private readonly session = getRuntimeSession();
   private readonly tiles = new Map<number, ChannelTile>();
   private readonly axialRows: AxialRow[] = [];
@@ -83,6 +85,7 @@ export class CoreDesignerScene extends Phaser.Scene {
   private resultMessage = "Select a channel, then an axial bundle position.";
   private lastResponseSequence = -1;
   private returnChannelIndex = -1;
+  private returnScene = "OperationsScene";
   private layout: CoreFaceLayout = createCoreFaceLayout(MAP.x, MAP.y, MAP.width, MAP.height);
   private unsubscribe: (() => void) | null = null;
   private mapGraphics: Phaser.GameObjects.Graphics | null = null;
@@ -115,6 +118,8 @@ export class CoreDesignerScene extends Phaser.Scene {
 
   public init(data: unknown): void {
     this.returnChannelIndex = isSceneChannelIndex(data) ? data.returnChannelIndex : -1;
+    this.returnScene = typeof data === "object" && data !== null && "returnScene" in data && data.returnScene === "StudioScene"
+      ? "StudioScene" : "OperationsScene";
   }
 
   public create(): void {
@@ -142,6 +147,7 @@ export class CoreDesignerScene extends Phaser.Scene {
     this.refresh();
     this.unsubscribe = this.session.subscribe((update) => this.receiveSessionUpdate(update));
     this.events.once("shutdown", () => this.unsubscribe?.());
+    this.events.once("shutdown", () => { this.zoneEditor?.destroy(); this.zoneEditor = null; });
     this.input.keyboard?.on("keydown", this.handleKeyDown, this);
     this.events.once("shutdown", () => this.input.keyboard?.off("keydown", this.handleKeyDown, this));
   }
@@ -258,6 +264,8 @@ export class CoreDesignerScene extends Phaser.Scene {
       { tone: "cyan", compact: true, fontSize: 10 },
     );
     this.backButton.gameObject.setDepth(120);
+    makeButton(this, 1200, 80, 220, 30, "ZONE GEOMETRY [Z]", () => this.openZoneEditor(),
+      { tone: "gold", compact: true, fontSize: 10 }).gameObject.setDepth(120);
   }
 
   private createMap(): void {
@@ -843,7 +851,9 @@ export class CoreDesignerScene extends Phaser.Scene {
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
+    if (this.zoneEditor) return;
     const key = event.key.toLowerCase();
+    if (key === "z") { this.openZoneEditor(); return; }
     if (key === "escape") {
       this.backToOperations();
       return;
@@ -876,10 +886,16 @@ export class CoreDesignerScene extends Phaser.Scene {
     }
   }
 
+  private openZoneEditor(): void {
+    if (this.zoneEditor || this.session.isPending) return;
+    try { this.zoneEditor = new ZoneLayoutEditor(this.session, () => { this.zoneEditor = null; }); }
+    catch (error) { this.resultMessage = String(error); this.refreshEditor(); }
+  }
+
   private backToOperations(): void {
     if (this.pending) return;
     this.session.startShift();
-    this.scene.start("OperationsScene", { selectedChannelIndex: this.selectedChannelIndex });
+    this.scene.start(this.returnScene, { selectedChannelIndex: this.selectedChannelIndex });
   }
 }
 

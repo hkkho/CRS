@@ -137,6 +137,45 @@ namespace ReactorSim.Core
                 0);
         }
 
+        public static SyntheticGameCoreStateV1 CreateAgedPractice(ulong seed = 1001,
+            double targetDischargeBurnupMwDayPerKg = AgedCoreSnapshotGeneratorV1.TargetDischargeBurnupMwDayPerKg)
+        {
+            double[] ages = AgedCoreSnapshotGeneratorV1.CreateChannelAges(seed);
+            var channels = new BundleState[ChannelCount][];
+            ulong bundleSequence = 1;
+            for (uint channel = 0; channel < ChannelCount; channel++)
+            {
+                channels[channel] = new BundleState[BundlePositionCount];
+                Candu6GridPositionV1 gridPosition =
+                    Candu6CoreTopologyFactoryV1.GetPosition(channel);
+                bool reverse = ((gridPosition.Column + gridPosition.CartesianY) & 1) != 0;
+                for (uint position = 0; position < BundlePositionCount; position++)
+                {
+                    int fromInlet = reverse ? 11 - (int)position : (int)position;
+                    double burnupMwDayPerKg = AgedCoreSnapshotGeneratorV1.BundleBurnupMwDayPerKg(
+                        fromInlet, ages[channel], targetDischargeBurnupMwDayPerKg);
+                    channels[channel][position] = new BundleState(
+                        StableIdFor(bundleSequence++),
+                        new ChannelId(channel),
+                        new BundlePosition(position),
+                        new MaterialVariantId("NAT-U-SYNTHETIC"),
+                        burnupMwDayPerKg * JoulesPerMegaWattDayPerKilogram,
+                        0.0,
+                        DefaultHeavyMetalMassKg,
+                        0.0);
+                }
+            }
+
+            return new SyntheticGameCoreStateV1(
+                channels,
+                DefaultFreshBundleCount,
+                0,
+                FirstFreshBundleSequence,
+                -1,
+                default(GameRefuellingDirectionV1),
+                0);
+        }
+
         public BundleState GetBundle(uint channelIndex, uint positionIndex)
         {
             if (channelIndex >= ChannelCount)

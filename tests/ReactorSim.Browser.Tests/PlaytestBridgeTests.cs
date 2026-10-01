@@ -9,7 +9,7 @@ using Xunit;
 
 namespace ReactorSim.Browser.Tests
 {
-    public sealed class PlaytestBridgeTests
+    public sealed partial class PlaytestBridgeTests
     {
         private const string Protocol = "candu-playtest-v2";
         private const string PlayRequest =
@@ -243,10 +243,20 @@ namespace ReactorSim.Browser.Tests
             AssertPlaySnapshot(reset.GetProperty("snapshot"));
             Assert.False(reset.GetProperty("snapshot").GetProperty("core").GetProperty("channels")[0]
                 .GetProperty("bundles")[0].GetProperty("hasFuel").GetBoolean());
-            Assert.Equal(
-                beforeSolve.GetProperty("physics").GetProperty("effectiveK").GetDouble(),
-                reset.GetProperty("snapshot").GetProperty("physics").GetProperty("effectiveK").GetDouble(),
-                12);
+            double beforeK = beforeSolve.GetProperty("physics").GetProperty("effectiveK").GetDouble();
+            double afterK = reset.GetProperty("snapshot").GetProperty("physics").GetProperty("effectiveK").GetDouble();
+            // A converged explicit solve may retain the existing fills and k.
+            // Any further bounded RRS correction preserves the inventory/clock.
+            Assert.InRange(Math.Abs(afterK - beforeK), 0.0, 0.002);
+            // RRS minimizes a combined shape/reactivity objective. A small
+            // criticality tradeoff is admissible when correcting the aged shape.
+            Assert.InRange(Math.Abs(afterK - 1.0), 0.0, 0.002);
+            JsonElement rrs = reset.GetProperty("snapshot").GetProperty("rrs");
+            Assert.True(rrs.GetProperty("combinedWeightedResidual").GetDouble() <=
+                rrs.GetProperty("controlledBaselineWeightedResidual").GetDouble() +
+                PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance);
+            Assert.Equal(beforeSolve.GetProperty("simulationTimeSeconds").GetDouble(),
+                reset.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
         }
 
         [Fact]

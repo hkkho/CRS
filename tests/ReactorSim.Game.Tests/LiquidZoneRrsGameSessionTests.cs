@@ -90,7 +90,7 @@ public sealed class LiquidZoneRrsGameSessionTests
     }
 
     [Fact]
-    public void ShortTickReusesProjectionWhileHourlyBoundaryRunsStaticRrs()
+    public void ShortTickReusesProjectionWhileBaseSecondRunsHalfHourRrsAndChangesKeff()
     {
         GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
         var initialProjection = session.CurrentEquilibriumProjection;
@@ -102,11 +102,15 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Same(initialProjection, session.CurrentEquilibriumProjection);
         Assert.Equal(initialFills, session.CurrentLiquidZoneRrs.ZoneFills);
 
-        GameSessionCommandResult boundary = session.AdvanceWallMilliseconds(1_900);
+        GameSessionCommandResult boundary = session.AdvanceWallMilliseconds(900);
 
         Assert.True(boundary.Accepted, boundary.DiagnosticMessage);
         Assert.NotSame(initialProjection, session.CurrentEquilibriumProjection);
-        Assert.Equal(3_600.0, boundary.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(1_800.0, boundary.Snapshot.SimulationTimeSeconds);
+        Assert.NotEqual(initialProjection.EffectiveK, boundary.Snapshot.Physics.EffectiveK);
+        // A settled aged core can retain fills when the tiny burnup change
+        // offers no improvement to the combined spatial/criticality residual.
+        Assert.Equal(1_800.0, session.CurrentLiquidZoneRrs.SimulationTimeSeconds);
         Assert.Equal(1, session.CurrentLiquidZoneRrs.ControllerIterationCount);
         Assert.InRange(
             boundary.Snapshot.Rrs.CandidateSolveCount,
@@ -167,33 +171,31 @@ public sealed class LiquidZoneRrsGameSessionTests
     }
 
     [Fact]
-    public void RejectedVerificationDoesNotConsumeCorrectionSolveOrReplaceBaseline()
+    public void AgedCoreFeedbackRegulatesCriticalityWithinCandidateAndFillBounds()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         PracticeLiquidZoneRrsV1 before = session.CurrentLiquidZoneRrs;
-        Digest32 baselineOverlayDigest =
-            session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!.OverlayDigest;
 
         GameSessionCommandResult result = session.RefuelChannel(
-            189, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+            75, "toward-end-a", 8, "NAT-U-SYNTHETIC");
 
         Assert.True(result.Accepted, result.DiagnosticMessage);
         PracticeLiquidZoneRrsV1 after = session.CurrentLiquidZoneRrs;
         Assert.Equal(1, after.BaseCandidateSolveCount);
         Assert.Equal(1, after.ControlledBaselineCandidateSolveCount);
-        Assert.Equal(1, after.VerificationCandidateSolveCount);
-        Assert.Equal(0, after.CorrectionCandidateSolveCount);
-        Assert.Equal(3, after.CandidateSolveCount);
-        Assert.False(after.CorrectionApplied);
-        Assert.Equal(before.ZoneFills, after.ZoneFills);
-        Assert.Equal(baselineOverlayDigest, after.OverlayDigest);
-        Assert.Equal(
-            baselineOverlayDigest,
+        Assert.InRange(after.VerificationCandidateSolveCount, 0, 1);
+        // An aged start can already meet tolerance after its first response;
+        // the extra secant solve is conditional on that measured residual.
+        Assert.InRange(after.CorrectionCandidateSolveCount, 0, 1);
+        Assert.Equal(2 + after.VerificationCandidateSolveCount + after.CorrectionCandidateSolveCount, after.CandidateSolveCount);
+        Assert.True(after.AverageFillFraction > before.AverageFillFraction);
+        Assert.True(after.CombinedWeightedResidual <= after.ControlledBaselineWeightedResidual +
+            PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance);
+        Assert.InRange(Math.Abs(after.CompensatedNetReactivity), 0.0, 2e-5);
+        Assert.All(after.AppliedFillCommand, movement => Assert.InRange(
+            Math.Abs(movement), 0.0, PracticeLiquidZoneRrsIdentityV1.MaxFillMovementPerEvent + 1.0e-12));
+        Assert.Equal(after.OverlayDigest,
             session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!.OverlayDigest);
-        Assert.All(after.AppliedFillCommand, command => Assert.Equal(0.0, command));
-        Assert.Equal(
-            after.ControlledBaselineWeightedResidual,
-            after.CombinedWeightedResidual);
     }
 
     private static PracticeLiquidZoneRrsV1 CreateUniformFillState(

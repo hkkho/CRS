@@ -1,4 +1,6 @@
 import { chromium } from "playwright";
+import { verifyStudio } from "./studio-smoke.mjs";
+import { verifyZoneLayout } from "./zone-layout-smoke.mjs";
 
 const baseUrl = process.argv[2] ?? process.env.PLAYTEST_URL;
 const wasmPath = process.argv[3] ?? process.env.PLAYTEST_WASM_PATH;
@@ -63,6 +65,12 @@ try {
     if (before.equals(after)) throw new Error(`${label} did not respond to a mouse click.`);
   };
 
+  const agedSeedBefore = await capture(875, 625, 350, 50);
+  await page.mouse.click(1050, 650); // New aged core / next deterministic seed.
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("Browser playtest run reset."), undefined, { timeout: 60_000 });
+  await page.mouse.move(50, 850);
+  expectChanged(agedSeedBefore, await capture(875, 625, 350, 50), "Aged core seed");
+
   await page.mouse.click(300, 820); // Begin Shift
   await page.waitForTimeout(200);
   const refuelBefore = await capture(1240, 740, 315, 79);
@@ -81,14 +89,42 @@ try {
   expectChanged(targetBefore, targetAfter, "Power target");
 
   await page.mouse.click(200, 200); // Close dialog outside its frame
+  await page.keyboard.press("Space");
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("Paused."));
+  const mapBefore = await capture(100, 220, 1000, 350);
+  await page.keyboard.press("m");
+  await page.mouse.move(50, 850);
+  expectChanged(mapBefore, await capture(100, 220, 1000, 350), "Burnup map");
+  await page.keyboard.press("n");
+  await page.keyboard.press("4");
+  const impactBefore = await capture(45, 650, 625, 155);
+  await page.keyboard.press("r");
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("124 fresh bundles. 1 refuelling operations."), undefined, { timeout: 60_000 });
+  expectChanged(impactBefore, await capture(45, 650, 625, 155), "Accepted refuelling impact");
+  if (process.env.PLAYTEST_CAPTURE_DIR) {
+    await page.screenshot({ path: `${process.env.PLAYTEST_CAPTURE_DIR}/operations-1600.png` });
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.waitForTimeout(200);
+  if (process.env.PLAYTEST_CAPTURE_DIR) {
+    await page.screenshot({ path: `${process.env.PLAYTEST_CAPTURE_DIR}/operations-1280.png` });
+  }
+  await page.keyboard.press("Space");
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("Running."));
+  await page.mouse.click(1460 * 0.8, 865 * 0.8); // New shift at scaled viewport
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("128 fresh bundles. 0 refuelling operations."), undefined, { timeout: 60_000 });
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await page.waitForTimeout(200);
   const designerBefore = await capture(1090, 250, 150, 100);
   await page.mouse.click(1285, 22); // Core Designer
   await page.waitForTimeout(200);
   const designerAfter = await capture(1090, 250, 150, 100);
   expectChanged(designerBefore, designerAfter, "Core Designer");
+  const zoneLayout = await verifyZoneLayout(page);
+  const studio = await verifyStudio(page);
 
   if (consoleErrors.length > 0 || pageErrors.length > 0) throw new Error(`Browser errors detected: ${[...consoleErrors, ...pageErrors].join(" | ")}`);
-  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror, mouseControls: "ok" }));
+  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror, mouseControls: "ok", zoneLayout, studio }));
 } finally {
   await browser.close();
 }

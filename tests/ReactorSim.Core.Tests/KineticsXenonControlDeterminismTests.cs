@@ -430,8 +430,8 @@ public sealed class KineticsXenonControlDeterminismTests
             split.Snapshot.Xenon.EffectiveCoefficientDigestHex);
 
         Assert.Equal(whole.Snapshot.NormalizedPowerFraction, split.Snapshot.NormalizedPowerFraction);
-        Assert.Equal(whole.Snapshot.AbsoluteTiltFraction, split.Snapshot.AbsoluteTiltFraction);
-        Assert.Equal(whole.Snapshot.ControlMarginFraction, split.Snapshot.ControlMarginFraction);
+        Assert.Equal(whole.Snapshot.AxialTiltFraction, split.Snapshot.AxialTiltFraction);
+        Assert.Equal(whole.Snapshot.RrsReserveFraction, split.Snapshot.RrsReserveFraction);
         Assert.Equal(whole.Snapshot.DeviceAvailableFraction, split.Snapshot.DeviceAvailableFraction);
         Assert.Equal(whole.Snapshot.RefuelRequestsRemaining, split.Snapshot.RefuelRequestsRemaining);
         Assert.Equal(whole.Snapshot.ProcessedScriptedEventCount, split.Snapshot.ProcessedScriptedEventCount);
@@ -729,8 +729,7 @@ public sealed class KineticsXenonControlDeterminismTests
         Assert.Equal(expected.MeanBundlePowerWatts, actual.MeanBundlePowerWatts);
         Assert.Equal(expected.EffectiveK, actual.EffectiveK);
         Assert.Equal(expected.Reactivity, actual.Reactivity);
-        Assert.Equal(expected.StaticReactivity, actual.StaticReactivity);
-        Assert.Equal(expected.StaticReactivityMethodId, actual.StaticReactivityMethodId);
+        Assert.Equal(expected.CoreReactivity, actual.CoreReactivity);
         Assert.Equal(expected.WeightedPerturbationReactivity, actual.WeightedPerturbationReactivity);
         Assert.Equal(expected.ReactivityNumerator, actual.ReactivityNumerator);
         Assert.Equal(expected.ReactivityDenominator, actual.ReactivityDenominator);

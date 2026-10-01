@@ -8,6 +8,48 @@ namespace ReactorSim.Core.Tests;
 public sealed class PracticeLiquidZoneRrsTests
 {
     [Fact]
+    public void AbsorberCompartmentCanDifferFromMeasuredRegionAndInactiveCellsRemainZero()
+    {
+        var original = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+        var selected = original.Nodes[0];
+        uint compartment = (selected.LogicalZoneId + 1) % 14;
+        var edited = Require(PracticeLiquidZoneRrsMappingV1.TryCreate(original.Nodes.Select((n, i) =>
+            new PracticeLiquidZoneRrsNodeBindingV1(n.Node, n.LogicalZoneId,
+                i == 0 ? 0.020 : 0, i == 0 ? 0.008 : 0, i == 0 ? compartment : n.AbsorberZoneId))));
+        Assert.Equal(selected.LogicalZoneId, edited.GetLogicalZoneId(selected.Node));
+        Assert.NotEqual(original.MappingDigest, edited.MappingDigest);
+        var fills = Enumerable.Repeat(0.25, 14).ToArray();
+        fills[compartment] = 0.75;
+        var overlay = Require(edited.TryBuildOverlay(fills));
+        Assert.Equal(0.015, overlay.GetDeltaAbsorptionGroup1PerM(selected.Node), 12);
+        Assert.Equal(0.006, overlay.GetDeltaAbsorptionGroup2PerM(selected.Node), 12);
+        Assert.Equal(0, BitConverter.DoubleToInt64Bits(overlay.GetDeltaAbsorptionGroup1PerM(original.Nodes[1].Node)));
+        fills[selected.LogicalZoneId] = double.NaN;
+        Assert.False(edited.TryBuildOverlay(fills).IsValid);
+    }
+    [Theory]
+    [InlineData(4, 15, 1)]
+    [InlineData(4, 6, 2)]
+    [InlineData(10, 17, 3)]
+    [InlineData(10, 11, 4)]
+    [InlineData(10, 4, 5)]
+    [InlineData(17, 15, 6)]
+    [InlineData(17, 6, 7)]
+    public void TraditionalCandu6RegionsHaveTwoSideAndThreeCentreCompartments(
+        int column, int row, uint plantZone)
+    {
+        PracticeLiquidZoneRrsMappingV1 mapping = Require(
+            PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+        Assert.True(Candu6CoreTopologyFactoryV1.TryGetChannelIndex(column, row, out uint channel));
+        for (uint bundle = 0; bundle < 12; bundle++)
+        {
+            uint expected = plantZone - 1U + (bundle < 6 ? 0U : 7U);
+            Assert.Equal(expected, mapping.GetLogicalZoneId(
+                new NodeKey(new ChannelId(channel), new BundlePosition(bundle))));
+        }
+    }
+
+    [Fact]
     public void PracticeMapCoversEveryNodeOnceAndSplitsEachChannelAxially()
     {
         PracticeLiquidZoneRrsMappingV1 mapping = Require(
@@ -122,6 +164,24 @@ public sealed class PracticeLiquidZoneRrsTests
     }
 
     [Fact]
+    public void CalibratedZonesHaveValidPositiveAbsorptionAndSixToSevenMkWorth()
+    {
+        CreateRunFixture(out var inventory, out var solver, out _);
+        var mapping = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+        double RhoAt(double fill)
+        {
+            var overlay = Require(mapping.TryBuildOverlay(Enumerable.Repeat(fill, 14).ToArray()));
+            return Require(solver.TrySolveCandidate(inventory.EnumerateBundles(), overlay)).RelativeReactivity;
+        }
+
+        double empty = RhoAt(0), half = RhoAt(0.5), full = RhoAt(1);
+        Assert.True(empty > half && half > full);
+        Assert.InRange(1000 * (empty - full), 6, 7);
+        Assert.InRange(Math.Abs(1000 * half), 0, 0.05);
+        Assert.Equal(0, PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction);
+    }
+
+    [Fact]
     public void EquilibriumControllerIsDeterministicBoundedAndNeverUsesMoreThanFourCandidates()
     {
         CreateRunFixture(
@@ -182,12 +242,36 @@ public sealed class PracticeLiquidZoneRrsTests
         }
     }
 
+    [Fact]
+    public void ExcessFuelReactivityIsRegulatedBeforeSpatialShapeOptimisation()
+    {
+        CreateRunFixture(out var inventory, out var solver, out var initial);
+        var settled = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+            solver, inventory.EnumerateBundles(), initial, 0.0));
+        Require(solver.TryCommitCandidate(settled.Projection));
+        var fuelled = Require(inventory.TryRefuel(
+            75, GameRefuellingDirectionV1.TowardEndA, 8, "NAT-U-SYNTHETIC", 0.0)).ResultingState;
+        var uncompensated = Require(solver.TrySolveCandidate(fuelled.EnumerateBundles()));
+        var retained = Require(solver.TrySolveCandidate(
+            Require(solver.TryPrepareCandidates(fuelled.EnumerateBundles())), uncompensated.SpatialSolve,
+            Require(settled.State.TryBuildOverlay())));
+        var regulated = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+            solver, fuelled.EnumerateBundles(), settled.State, 0.0));
+
+        Assert.True(Math.Abs(regulated.Projection.RelativeReactivity) < Math.Abs(retained.RelativeReactivity));
+        Assert.InRange(Math.Abs(regulated.Projection.RelativeReactivity), 0, 2.0e-5);
+        Assert.True(regulated.State.AverageFillFraction > settled.State.AverageFillFraction);
+        Assert.Equal(0, regulated.State.SimulationTimeSeconds);
+    }
+
     private static void CreateRunFixture(
         out SyntheticGameCoreStateV1 inventory,
         out EquilibriumCoreSolverV1 solver,
         out PracticeLiquidZoneRrsV1 initial)
     {
-        inventory = SyntheticGameCoreStateV1.CreatePractice();
+        // The calibrated controller operates around the aged half-fill
+        // reference; a fresh core exceeds its 6.5 mk control authority.
+        inventory = SyntheticGameCoreStateV1.CreateAgedPractice(1001);
         FullCoreDiffusionDataPackV1 pack = Require(
             FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
         FullCoreDiffusionModelV1 model = Require(

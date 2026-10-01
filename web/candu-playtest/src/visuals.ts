@@ -69,6 +69,12 @@ export function formatEffectiveK(effectiveK: number): string {
   return Number.isFinite(effectiveK) ? effectiveK.toFixed(6) : "—";
 }
 
+/** Names for the shared simulation's traditional CANDU 6 region order. */
+export function formatLiquidZoneRegion(logicalZoneId: number): string {
+  const regions = ["lower left", "upper left", "lower centre", "centre", "upper centre", "lower right", "upper right"];
+  return `Z${logicalZoneId + 1} · End ${logicalZoneId < 7 ? "A" : "B"} ${regions[logicalZoneId % 7] ?? "unknown"}`;
+}
+
 export function formatSolveResidual(residual: number): string {
   if (!Number.isFinite(residual)) {
     return "—";

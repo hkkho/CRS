@@ -18,7 +18,8 @@ simulation, and plant-grade safety claims are out of scope.
 
 ## Current implementation
 
-The browser surface is one Phaser 3 canvas using the public
+The browser uses a Phaser 3 canvas and an alternative native DOM/SVG Studio
+interface, both using the public
 `ReactorSim.Game` session through the versioned `candu-playtest-v2` browser
 bridge. The bridge runs in a worker and the client fails closed when the
 authoritative WASM module is unavailable.
@@ -32,6 +33,23 @@ successful edits replace the live equilibrium atomically, and returning to
 Operations preserves the run clock, inventory, score, and accepted refuelling
 state.
 
+Core Designer's **Zone geometry** (`Z`) view consumes authoritative per-node
+region IDs, independent absorber compartment IDs, and two absorption slopes.
+Its draft can repaint regions, clear absorber cells, and translate a mask across
+the lattice and axial positions. `configure-zone-layout` validates the complete
+mapping and solves a candidate before committing; rejection preserves physical
+state. Accepted edits retain fuel, time, inventory and score, rebuild spatial
+references, and use existing zone fills as the regulation starting point.
+The browser does not estimate the resulting reactivity.
+
+Reactor Studio opens from the title screen or Operations (`V`) as an alternative
+presentation of that same live session. It provides a round channel map,
+fuel-age shortlist, bundle rack, direct refuelling, pacing, power targets,
+operation impact, and all fourteen zone fills. Switching between Studio and
+Operations preserves selection and the refuelling draft. Designer returns to
+its originating view. Studio subscriptions and DOM event handlers are removed
+on scene shutdown, and native focus remains stable through snapshot updates.
+
 The finite fuel budget is `FreshBundlesAvailable`.
 `RefuelRequestsRemaining` is a scenario/runtime counter and must not be
 presented as fuel inventory.
@@ -44,8 +62,7 @@ The player repeatedly:
   inventory, and operation count;
 - selects a channel and inspects bundle positions, burnup, local power, and
   tilt;
-- chooses a direction and four- or eight-bundle shift, previews the order, then
-  confirms or cancels it;
+- chooses a direction and four- or eight-bundle shift and issues the order directly;
 - observes the authoritative bundle movement, power/RRS response, discharged
   burnup, score, and event history;
 - opens Core Designer when an engineering inspection is useful, edits a live
@@ -53,8 +70,10 @@ The player repeatedly:
   run; and
 - restarts after terminal RRS exhaustion and attempts a better run.
 
-The UI may explain current state and consequences already present in a snapshot,
-but it must not invent a fuel budget or future state.
+The UI may sort observed fuel age, highlight inspection candidates, and compare
+accepted snapshots. These are presentation aids, not a second simulation.
+Project-authored synthetic data and plausible approximations are sufficient for
+gameplay; formal source validation is not a development gate.
 
 ## Runtime architecture and boundaries
 
@@ -91,7 +110,7 @@ development/validation inputs only.
 ## Current physics and provenance
 
 The practice session uses the project-authored
-`candu6-two-group-diffusion-v1-infinite-cell-calibrated` path. It is a
+`candu6-two-group-diffusion-v1-cycle190-650mwe` path. It is a
 regulated steady-state practice model rather than a sub-second transient claim.
 
 The shared full-core adapter publishes explicit SI watts, normalized power,
@@ -101,8 +120,19 @@ for deterministic burnup integration. The browser displays signed axial tilt
 from the solved thermal flux and two-sided RRS reserve from the live liquid-zone
 fill limits. The practice score uses the spatial tilt and power projection,
 without the legacy scenario tilt/control-margin score. Burnup can change the
-equilibrium reactivity at the hourly full-core solve; this does not imply a
+equilibrium reactivity at the half-hour full-core solve; this does not imply a
 short-time decay transient.
+
+The fourteen liquid zones use the traditional CANDU 6 arrangement: seven
+regions in each axial half, with two left, three centre, and two right regions.
+The bounded RRS regulates net criticality independently of fuel burnup, then
+adjusts spatial shape within the criticality band. It measures the diffusion
+response and uses a secant correction for an inaccurate initial estimate.
+See [independent regulation](physics/rrs-independent-regulation.md) for the
+acceptance policy and refuelling regression. Browser 1x advances 30 simulated
+minutes per real second; each base second recomputes Keff and zone fills.
+See [liquid-zone RRS](physics/liquid-zone-rrs.md) for the region numbering,
+source diagrams, controller limits, and approximation details.
 
 The exact active finite-volume operator, boundary handling, source iteration,
 and normalization are documented in

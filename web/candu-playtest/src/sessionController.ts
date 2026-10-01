@@ -246,6 +246,7 @@ export class BridgeSessionController {
 
 function isEngineeringCommand(command: CanduCommand): boolean {
   return command.type === "configure-cell" ||
+    command.type === "configure-zone-layout" ||
     command.type === "solve" ||
     command.type === "reset";
 }

@@ -1,0 +1,25 @@
+.zone-layout-editor { box-sizing: border-box; width: min(1260px, 96vw); max-height: 94vh; padding: 24px; border: 1px solid #a6b29f; border-radius: 12px; background: #f5f5ed; color: #27362e; font: 14px system-ui, sans-serif; }
+.zone-layout-editor::backdrop { background: #12221bd9; }
+.zone-layout-editor header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.zone-layout-editor h1 { font-size: 26px; margin: 0; }
+.zone-layout-editor h2 { font-size: 16px; margin: 20px 0 8px; }
+.zone-layout-editor p { line-height: 1.5; }
+.zone-layout-editor header p { font-size: 11px; letter-spacing: 2px; margin: 0 0 5px; }
+.zone-layout-body { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 28px; }
+.zone-layout-controls, .zone-layout-offsets { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
+.zone-layout-offsets label { flex: 1; min-width: 70px; }
+.zone-layout-editor label { display: block; margin: 8px 0; }
+.zone-layout-editor input[type=number], .zone-layout-editor select { box-sizing: border-box; display: block; width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #aab6a7; border-radius: 4px; background: white; color: #24382c; }
+.zone-layout-editor button { padding: 9px 12px; margin: 4px 0; cursor: pointer; border: 1px solid #aab6a7; border-radius: 5px; background: #fff; color: #25372d; }
+.zone-layout-editor button:disabled { opacity: .45; cursor: default; }
+.zone-layout-editor :focus-visible { outline: 3px solid #127a91; outline-offset: 2px; }
+.zone-layout-editor svg { display: block; width: 100%; max-height: 58vh; }
+.zone-layout-editor svg rect { cursor: pointer; }
+.zone-layout-legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.zone-layout-legend i { display: inline-block; width: 12px; height: 12px; margin-right: 4px; border-radius: 2px; }
+.zone-layout-rack { display: flex; gap: 4px; }
+.zone-layout-rack button { flex: 1; padding: 5px 0; border-top: 5px solid; }
+.zone-layout-rack small { display: block; font-size: 10px; }
+.zone-layout-editor .zone-layout-apply { width: 100%; background: #32594a; color: #fff; }
+.zone-layout-editor [data-field=message] { padding: 10px; background: #e3e9de; overflow-wrap: anywhere; }
+@media (max-width: 800px) { .zone-layout-body { grid-template-columns: 1fr; } .zone-layout-editor { padding: 14px; } }

@@ -58,7 +58,7 @@ public sealed class SingleCellReflectiveDiffusionFixtureTests
             (coefficients.AbsorptionGroup1PerM + coefficients.DownscatterGroup1To2PerM);
 
         Assert.Equal(1.25, thermalToFastFluxRatio, 12);
-        Assert.Equal(1.109625, kInfinite, 12);
+        Assert.Equal(1.0442386042453733, kInfinite, 12);
         Assert.Equal(
             fixture.MaterialLookup.Coefficients.AbsorptionGroup1PerM,
             coefficients.AbsorptionGroup1PerM,
@@ -92,7 +92,7 @@ public sealed class SingleCellReflectiveDiffusionFixtureTests
         Assert.NotNull(result.FinalState);
         SpatialEigenIterationState state = result.FinalState!;
 
-        Assert.Equal(1.109625, state.Eigenvalue, 10);
+        Assert.Equal(1.0442386042453733, state.Eigenvalue, 10);
         Assert.Equal(1.0, state.TotalPowerW, 12);
         Assert.Equal(1.25, state.Group2Flux[0] / state.Group1Flux[0], 10);
         SpatialNodeCoefficients coefficients = Assert.Single(fixture.Coefficients.Nodes);

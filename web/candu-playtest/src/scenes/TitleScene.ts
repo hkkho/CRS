@@ -21,6 +21,9 @@ export class TitleScene extends Phaser.Scene {
   private titleStatus: Phaser.GameObjects.Text | null = null;
   private titleAvailability: Phaser.GameObjects.Text | null = null;
   private beginButton: TacticalButton | null = null;
+  private studioButton: TacticalButton | null = null;
+  private coreSeedButton: TacticalButton | null = null;
+  private coreSeed = 1001;
   private readyForShift = false;
   private shiftTransitionStarted = false;
   private unsubscribe: (() => void) | null = null;
@@ -37,6 +40,16 @@ export class TitleScene extends Phaser.Scene {
     this.drawCrest();
     this.createTitleCopy();
     this.createBeginButton();
+    this.coreSeedButton = makeButton(this, 1050, 650, 350, 48,
+      `NEW AGED CORE · SEED ${this.coreSeed}`, () => {
+        const nextSeed = (this.coreSeed + 1) >>> 0;
+        void this.session.dispatch({ type: "reset", seed: nextSeed }).then(response => {
+          if (response.accepted) {
+            this.coreSeed = nextSeed;
+            this.coreSeedButton?.setLabel(`NEW AGED CORE · SEED ${this.coreSeed}`);
+          }
+        });
+      }, { tone: "cyan", fontSize: 13 });
     this.createWorkspaceBrief();
     this.renderSessionState({
       status: this.session.status,
@@ -272,6 +285,8 @@ export class TitleScene extends Phaser.Scene {
       color: colorString(COLORS.ivoryMuted),
       letterSpacing: 1,
     }).setOrigin(0.5);
+    this.studioButton = makeButton(this, 603, 820, 260, 58, "REACTOR STUDIO  ↗", () => this.beginStudio(), { tone: "cyan", fontSize: 14 });
+    makeText(this, 603, 858, "ALTERNATIVE INTERFACE", { fontFamily: FONTS.mono, fontSize: "10px", color: colorString(COLORS.ivoryMuted), letterSpacing: 1 }).setOrigin(0.5);
   }
 
   private createWorkspaceBrief(): void {
@@ -310,6 +325,8 @@ export class TitleScene extends Phaser.Scene {
     this.readyForShift = update.status.isWasmAvailable &&
       update.snapshot.core.channels.length === 380;
     this.beginButton?.setEnabled(this.readyForShift && !update.pending);
+    this.studioButton?.setEnabled(this.readyForShift && !update.pending);
+    this.coreSeedButton?.setEnabled(this.readyForShift && !update.pending);
     this.beginButton?.setLabel("BEGIN SHIFT  ↗");
     if (this.titleStatus === null || this.titleAvailability === null) {
       return;
@@ -331,12 +348,21 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private beginShift(): void {
+    this.beginView("OperationsScene");
+  }
+
+  private beginStudio(): void {
+    this.beginView("StudioScene");
+  }
+
+  private beginView(scene: string): void {
     if (!this.readyForShift || this.session.isPending || this.shiftTransitionStarted) {
       return;
     }
     this.shiftTransitionStarted = true;
     this.beginButton?.setEnabled(false);
+    this.studioButton?.setEnabled(false);
     this.session.startShift();
-    this.scene.start("OperationsScene");
+    this.scene.start(scene);
   }
 }

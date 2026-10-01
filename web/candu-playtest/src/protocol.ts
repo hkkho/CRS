@@ -45,6 +45,20 @@ export interface CanduBundleSnapshot {
   reflectiveFaces: CoreBoundaryFace[];
   group1Flux: number;
   group2Flux: number;
+  /** Optional only for older fixtures; WASM supplies authoritative zone geometry. */
+  logicalZoneId?: number;
+  absorberZoneId?: number;
+  group1AbsorptionPerMPerFillFraction?: number;
+  group2AbsorptionPerMPerFillFraction?: number;
+}
+
+export interface ZoneNodeBinding {
+  channelIndex: number;
+  position: number;
+  logicalZoneId: number;
+  absorberZoneId: number;
+  group1AbsorptionPerMPerFillFraction: number;
+  group2AbsorptionPerMPerFillFraction: number;
 }
 
 export interface CanduChannelSnapshot {
@@ -105,6 +119,8 @@ export interface CanduRrsZoneSnapshot {
 }
 
 export interface CanduRrsSnapshot {
+  absorptionReferenceFillFraction?: number;
+  calibratedTotalZoneWorthMk?: number;
   controllerIdentity: string;
   mappingIdentity: string;
   mappingDigestHex: string;
@@ -212,6 +228,7 @@ export interface CanduPhysicsSnapshot {
   actualPowerFraction: number;
   targetPowerWatts: number;
   totalPowerWatts: number;
+  electricalPowerWatts?: number;
   meanChannelPowerWatts: number;
   meanBundlePowerWatts: number;
   effectiveK: number;
@@ -329,8 +346,9 @@ export type CanduCommand =
   | { type: "queue-power-target"; targetFraction: number }
   | { type: "commit-refuel"; request: RefuelRequest }
   | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: CoreBoundaryFace[] }
+  | { type: "configure-zone-layout"; nodes: ZoneNodeBinding[] }
   | { type: "solve" }
-  | { type: "reset" };
+  | { type: "reset"; seed?: number };
 
 export interface CanduCommandResponse {
   protocol: typeof PROTOCOL_VERSION;
@@ -645,7 +663,17 @@ function isCanduBundleSnapshot(
 
   return isBoolean(value.hasFuel) &&
     Array.isArray(value.reflectiveFaces) && value.reflectiveFaces.every(isCoreBoundaryFace) &&
-    isFiniteNumber(value.group1Flux) && isFiniteNumber(value.group2Flux);
+    isFiniteNumber(value.group1Flux) && isFiniteNumber(value.group2Flux) &&
+    (value.logicalZoneId === undefined || isZoneNodeBinding({ ...value, channelIndex: 0 }));
+}
+
+function isZoneNodeBinding(value: unknown): value is ZoneNodeBinding {
+  return isRecord(value) && isNonNegativeInteger(value.channelIndex) && value.channelIndex < 380 &&
+    isNonNegativeInteger(value.position) && value.position < 12 &&
+    isNonNegativeInteger(value.logicalZoneId) && value.logicalZoneId < 14 &&
+    isNonNegativeInteger(value.absorberZoneId) && value.absorberZoneId < 14 &&
+    isFiniteNumber(value.group1AbsorptionPerMPerFillFraction) && value.group1AbsorptionPerMPerFillFraction >= 0 && value.group1AbsorptionPerMPerFillFraction <= 1 &&
+    isFiniteNumber(value.group2AbsorptionPerMPerFillFraction) && value.group2AbsorptionPerMPerFillFraction >= 0 && value.group2AbsorptionPerMPerFillFraction <= 1;
 }
 
 function isCanduChannelSnapshot(
@@ -779,7 +807,9 @@ function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {
     return false;
   }
 
-  return (!hasOwn(value, "adjointNormalizationIdentity") ||
+  return (!hasOwn(value, "electricalPowerWatts") ||
+      (isFiniteNumber(value.electricalPowerWatts) && value.electricalPowerWatts >= 0)) &&
+    (!hasOwn(value, "adjointNormalizationIdentity") ||
       isString(value.adjointNormalizationIdentity)) &&
     (!hasOwn(value, "adjointDigestHex") || isString(value.adjointDigestHex)) &&
     (!hasOwn(value, "adjointIterationCount") || isNonNegativeInteger(value.adjointIterationCount)) &&
@@ -942,6 +972,12 @@ function isCanduRrsSnapshot(value: unknown): value is CanduRrsSnapshot {
     return false;
   }
 
+  if (value.absorptionReferenceFillFraction !== undefined &&
+      (!isFiniteNumber(value.absorptionReferenceFillFraction) ||
+       value.absorptionReferenceFillFraction < 0 || value.absorptionReferenceFillFraction > 1)) return false;
+  if (value.calibratedTotalZoneWorthMk !== undefined &&
+      (!isFiniteNumber(value.calibratedTotalZoneWorthMk) || value.calibratedTotalZoneWorthMk <= 0)) return false;
+
   return value.zones.every((zone, zoneIndex) =>
     isCanduRrsZoneSnapshot(zone, zoneIndex));
 }
@@ -1069,8 +1105,9 @@ function isCanduCommand(value: unknown): value is CanduCommand {
       return hasOwn(value, "modeId") && isPlaybackModeId(value.modeId);
     case "pause":
     case "resume":
-    case "reset":
       return true;
+    case "reset":
+      return value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295);
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
@@ -1085,6 +1122,8 @@ function isCanduCommand(value: unknown): value is CanduCommand {
         isNonNegativeInteger(value.position) && isBoolean(value.hasFuel) &&
         Array.isArray(value.reflectiveFaces) &&
         value.reflectiveFaces.every(isCoreBoundaryFace);
+    case "configure-zone-layout":
+      return Array.isArray(value.nodes) && value.nodes.length === 4560 && value.nodes.every(isZoneNodeBinding);
     case "solve":
       return true;
     default:

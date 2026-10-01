@@ -13,6 +13,43 @@ import {
 } from "./protocol";
 
 describe("candu-playtest-v2 protocol validation", () => {
+  it("validates electrical power separately from thermal fission power", () => {
+    const snapshot = createSnapshot();
+    snapshot.physics.electricalPowerWatts = 650_000_000;
+    snapshot.physics.totalPowerWatts = 2_064_000_000;
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    for (const power of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      snapshot.physics.electricalPowerWatts = power;
+      expect(isProtocolSnapshot(snapshot)).toBe(false);
+    }
+  });
+
+  it("validates authoritative zone calibration metadata when present", () => {
+    const snapshot = createSnapshot();
+    snapshot.rrs.absorptionReferenceFillFraction = 0;
+    snapshot.rrs.calibratedTotalZoneWorthMk = 6.5;
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.rrs.absorptionReferenceFillFraction = -0.1;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.rrs.absorptionReferenceFillFraction = 0;
+    for (const worth of [0, -6.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      snapshot.rrs.calibratedTotalZoneWorthMk = worth;
+      expect(isProtocolSnapshot(snapshot)).toBe(false);
+    }
+  });
+
+  it("preserves explicit reset seeds and rejects malformed seeds", () => {
+    const snapshot = createSnapshot();
+    for (const seed of [0, 1002, 4294967295]) {
+      const response = { ...responseEnvelope(snapshot, snapshot.sequence), command: { type: "reset", seed } };
+      expect(parseProtocolResponse(JSON.stringify(response)).command).toEqual({ type: "reset", seed });
+    }
+    for (const seed of [-1, 1.5, 4294967296, "1001", null]) {
+      const response = { ...responseEnvelope(snapshot, snapshot.sequence), command: { type: "reset", seed } };
+      expect(() => parseProtocolResponse(JSON.stringify(response))).toThrow();
+    }
+  });
+
   it("requires authoritative live designer fields on every bundle", () => {
     const snapshot = createSnapshot();
     const bundle = snapshot.core.channels[0].bundles[0];

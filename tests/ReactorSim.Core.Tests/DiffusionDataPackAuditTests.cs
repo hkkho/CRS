@@ -7,7 +7,9 @@ namespace ReactorSim.Core.Tests;
 public sealed class DiffusionDataPackAuditTests
 {
     private static readonly double[] ExpectedBurnupKnotsMwDayPerKgHm =
-        { 0.0, 1.5, 4.0, 7.0, 7.5, 10.0, 15.0, 20.0 };
+        { 0.0, 0.5870752427184465, 1.5655339805825241, 2.7396844660194173,
+          2.9353762135922326, 3.91383495145631, 5.870752427184465, 7.82766990291262,
+          9.784587378640776, 11.74150485436893, 15.0, 20.0, 25.0, 30.0 };
 
     [Fact]
     public void EmbeddedPackAuditClassifiesCurrentSyntheticRepresentation()
@@ -18,12 +20,11 @@ public sealed class DiffusionDataPackAuditTests
             DiffusionDataPackAuditV1.TryAudit(pack));
         DiffusionCoefficientTableAuditV1 table = Assert.Single(audit.Tables);
 
-        Assert.Equal(8, table.BurnupKnotsMwDayPerKgHm.Count);
+        Assert.Equal(14, table.BurnupKnotsMwDayPerKgHm.Count);
+        for (int index = 0; index < ExpectedBurnupKnotsMwDayPerKgHm.Length; index++)
+            Assert.Equal(ExpectedBurnupKnotsMwDayPerKgHm[index], table.BurnupKnotsMwDayPerKgHm[index], 12);
         Assert.Equal(
-            ExpectedBurnupKnotsMwDayPerKgHm,
-            table.BurnupKnotsMwDayPerKgHm);
-        Assert.Equal(
-            20.0 * InfiniteCellDiffusionModelV1.JoulesPerMegaWattDayPerKilogramHm,
+            30.0 * InfiniteCellDiffusionModelV1.JoulesPerMegaWattDayPerKilogramHm,
             table.BurnupKnotsJPerKgHm[table.BurnupKnotsJPerKgHm.Count - 1],
             6);
 

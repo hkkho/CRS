@@ -20,33 +20,36 @@ namespace ReactorSim.Core
         public const uint BundlePositionCount = 12;
         public const uint NodeCount = ChannelCount * BundlePositionCount;
         public const double InitialFillFraction = 0.5;
-        public const double Group1AbsorptionPerMPerFillFraction = 0.020;
-        public const double Group2AbsorptionPerMPerFillFraction = 0.008;
+        public const double AbsorptionReferenceFillFraction = 0.0;
+        public const double CalibratedTotalZoneWorthMk = 6.5;
+        public const double Group1AbsorptionPerMPerFillFraction = 0.0015964146304331297;
+        public const double Group2AbsorptionPerMPerFillFraction = 0.0006385658521732518;
         public const int ResponseVariableCount = (int)LogicalZoneCount;
         public const int ResponseOutputCount = ResponseVariableCount + 1;
         public const double ResponseGroup1AbsorptionWeight = 0.65;
         public const double ResponseGroup2AbsorptionWeight = 0.35;
-        public const double ResponseShapeSensitivityScale = 4.0;
-        public const double ResponseCommonModeSensitivityScale = 3.0;
+        public const double ResponseShapeSensitivityScale = 40.0;
+        public const double ResponseCommonModeSensitivityScale = 5.0;
         public const double ResponseShapeResidualWeight = 1.0;
-        public const double ResponseCommonModeResidualWeight = 1.0;
+        public const double ResponseCommonModeResidualWeight = 20.0;
         public const double ResponseRegularization = 1.0e-6;
         public const double MaxFillMovementPerEvent = 0.08;
         public const double MaxFillIncrementPerIteration = MaxFillMovementPerEvent;
         public const double FillCommandTolerance = 1.0e-12;
         public const double ControllerTolerance = 1.0e-4;
+        public const double CriticalityTolerance = 1.0e-5;
         public const double ResidualAcceptanceTolerance = 1.0e-10;
         public const int MaximumCandidateSolveCount = 4;
         public const int MaximumControllerPasses = 1;
         public const int MaximumControllerIterations = MaximumControllerPasses;
-        public const string ControllerIdentity = "synthetic-practice-liquid-zone-rrs-v1";
+        public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v2";
         public const string ResponseModelIdentity =
-            "synthetic-practice-liquid-zone-response-jacobian-v1";
-        public const string MappingIdentity = "synthetic-practice-liquid-zone-map-380x12-v1";
-        public const string OverlayIdentity = "synthetic-practice-liquid-zone-absorption-overlay-v1";
-        public const string CadenceIdentity = "equilibrium-static-event-rrs-v1";
+            "synthetic-practice-liquid-zone-response-common-shape-v3";
+        public const string MappingIdentity = "candu6-regions-independent-absorber-masks-380x12-v3";
+        public const string OverlayIdentity = "synthetic-practice-liquid-zone-positive-absorption-v2";
+        public const string CadenceIdentity = "equilibrium-half-hour-and-event-rrs-v2";
         public const string Provenance =
-            "project-authored-synthetic; future offline data-pack replaceable";
+            "project-authored-synthetic; independent regional measurement and homogenized absorber masks; positive absorption calibrated to 6.5 mk with seed-1001 reference critical at half fill";
     }
 
     /// <summary>
@@ -60,7 +63,8 @@ namespace ReactorSim.Core
             NodeKey node,
             uint logicalZoneId,
             double group1AbsorptionPerMPerFillFraction,
-            double group2AbsorptionPerMPerFillFraction)
+            double group2AbsorptionPerMPerFillFraction,
+            uint? absorberZoneId = null)
         {
             if (logicalZoneId >= PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount)
             {
@@ -77,6 +81,9 @@ namespace ReactorSim.Core
 
             Node = node;
             LogicalZoneId = logicalZoneId;
+            AbsorberZoneId = absorberZoneId ?? logicalZoneId;
+            if (AbsorberZoneId >= PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount)
+                throw new ArgumentOutOfRangeException(nameof(absorberZoneId));
             Group1AbsorptionPerMPerFillFraction = group1AbsorptionPerMPerFillFraction;
             Group2AbsorptionPerMPerFillFraction = group2AbsorptionPerMPerFillFraction;
         }
@@ -84,6 +91,8 @@ namespace ReactorSim.Core
         public NodeKey Node { get; }
 
         public uint LogicalZoneId { get; }
+        /// <summary>Fill compartment driving absorption at this node; independent of its measured power region.</summary>
+        public uint AbsorberZoneId { get; }
 
         public double Group1AbsorptionPerMPerFillFraction { get; }
 
@@ -99,9 +108,10 @@ namespace ReactorSim.Core
 
     /// <summary>
     /// Complete deterministic 380 by 12 node mapping for the practice RRS.
-    /// The compact synthetic map divides the stepped 22 by 22 channel outline
-    /// into seven face bands across two axial bundle halves. It is a game
-    /// contract, not an external CANDU plant map.
+    /// Seven regions in each axial half: two left, three centre, two right.
+    /// Traditional numbering follows St-Aubin and Marleau (2018), Figure 2.
+    /// Region boundaries are discretized onto the game's 22 by 22 lattice;
+    /// absorption weights remain project-authored approximations.
     /// </summary>
     public sealed class PracticeLiquidZoneRrsMappingV1
     {
@@ -161,7 +171,15 @@ namespace ReactorSim.Core
             for (uint channel = 0; channel < PracticeLiquidZoneRrsIdentityV1.ChannelCount; channel++)
             {
                 Candu6GridPositionV1 position = Candu6CoreTopologyFactoryV1.GetPosition(channel);
-                uint radialBand = checked((uint)Math.Min(6, (position.Column * 7) / 22));
+                // Display rows run top to bottom. Plant zones 1..7 are
+                // lower-left, upper-left, lower-centre, centre, upper-centre,
+                // lower-right, upper-right; zones 8..14 repeat axially.
+                uint faceZone = position.Column < 7
+                    ? (position.DisplayRow < 11 ? 1U : 0U)
+                    : position.Column >= 15
+                        ? (position.DisplayRow < 11 ? 6U : 5U)
+                        : position.DisplayRow < 8 ? 4U
+                            : position.DisplayRow < 14 ? 3U : 2U;
                 for (uint bundlePosition = 0;
                      bundlePosition < PracticeLiquidZoneRrsIdentityV1.BundlePositionCount;
                      bundlePosition++)
@@ -170,7 +188,7 @@ namespace ReactorSim.Core
                         PracticeLiquidZoneRrsIdentityV1.BundlePositionCount / 2U
                         ? 0U
                         : 1U;
-                    uint zone = checked(axialHalf * 7U + radialBand);
+                    uint zone = checked(axialHalf * 7U + faceZone);
                     nodes.Add(new PracticeLiquidZoneRrsNodeBindingV1(
                         new NodeKey(
                             new ChannelId(channel),
@@ -288,6 +306,7 @@ namespace ReactorSim.Core
                         Phase5CanonicalBytesV1.WriteUInt32(writer, node.Node.ChannelId.Value);
                         Phase5CanonicalBytesV1.WriteUInt32(writer, node.Node.Position.Value);
                         Phase5CanonicalBytesV1.WriteUInt32(writer, node.LogicalZoneId);
+                        Phase5CanonicalBytesV1.WriteUInt32(writer, node.AbsorberZoneId);
                         Phase5CanonicalBytesV1.WriteDouble(
                             writer,
                             node.Group1AbsorptionPerMPerFillFraction);
@@ -332,11 +351,15 @@ namespace ReactorSim.Core
                     "A practice RRS overlay requires exactly fourteen zone fills.");
             }
 
+            if (zoneFills.Any(fill => !IsCanonicalFraction(fill)))
+                return ContractValidationResult<StaticAbsorptionOverlayV1>.Invalid(
+                    "PracticeLiquidZoneRrs.Fill.Invalid", "zone_fills",
+                    "Every practice RRS zone fill must be finite and within [0,1].");
             var entries = new List<StaticAbsorptionOverlayEntryV1>(_nodes.Count);
             for (int nodeIndex = 0; nodeIndex < _nodes.Count; nodeIndex++)
             {
                 PracticeLiquidZoneRrsNodeBindingV1 binding = _nodes[nodeIndex];
-                double fill = zoneFills[(int)binding.LogicalZoneId];
+                double fill = zoneFills[(int)binding.AbsorberZoneId];
                 if (!IsCanonicalFraction(fill))
                 {
                     return ContractValidationResult<StaticAbsorptionOverlayV1>.Invalid(
@@ -345,9 +368,12 @@ namespace ReactorSim.Core
                         "Every practice RRS zone fill must be finite and within [0,1].");
                 }
 
-                double deltaFill = fill - PracticeLiquidZoneRrsIdentityV1.InitialFillFraction;
+                double deltaFill = fill - PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction;
                 double group1 = deltaFill * binding.Group1AbsorptionPerMPerFillFraction;
                 double group2 = deltaFill * binding.Group2AbsorptionPerMPerFillFraction;
+                // An inactive footprint remains canonical zero even when the compartment drains.
+                if (group1 == 0) group1 = 0;
+                if (group2 == 0) group2 = 0;
                 if (!IsCanonicalFinite(group1) || !IsCanonicalFinite(group2))
                 {
                     return ContractValidationResult<StaticAbsorptionOverlayV1>.Invalid(
@@ -446,6 +472,61 @@ namespace ReactorSim.Core
         }
 
         public string Identity { get; }
+
+        internal PracticeLiquidZoneRrsResponseModelV1 WithBaselineFractions(
+            IEnumerable<double> fractions)
+        {
+            return new PracticeLiquidZoneRrsResponseModelV1(
+                fractions, VariableOrder, Jacobian, ResidualWeights,
+                CommonModeReactivitySensitivities, EffectiveAbsorptionPerMPerFillFraction);
+        }
+
+        /// <summary>
+        /// Correct the response along a measured fill movement (Broyden secant).
+        /// This uses the authoritative diffusion result, including spatial
+        /// coupling, instead of repeating an inaccurate estimated command.
+        /// </summary>
+        internal PracticeLiquidZoneRrsResponseModelV1 WithMeasuredResponse(
+            double[] fillMovement,
+            double[] initialShapeErrors,
+            double initialReactivity,
+            double[] measuredShapeErrors,
+            double measuredReactivity)
+        {
+            double normSquared = fillMovement.Sum(value => value * value);
+            if (normSquared <= 1.0e-24)
+            {
+                return this;
+            }
+
+            var rows = new double[OutputCount][];
+            for (int output = 0; output < OutputCount; output++)
+            {
+                rows[output] = Jacobian[output].ToArray();
+                double observedChange = output < VariableCount
+                    ? measuredShapeErrors[output] - initialShapeErrors[output]
+                    : measuredReactivity - initialReactivity;
+                double predictedChange = 0.0;
+                for (int variable = 0; variable < VariableCount; variable++)
+                {
+                    predictedChange += rows[output][variable] * fillMovement[variable];
+                }
+
+                double correction = (observedChange - predictedChange) / normSquared;
+                for (int variable = 0; variable < VariableCount; variable++)
+                {
+                    rows[output][variable] += correction * fillMovement[variable];
+                }
+            }
+
+            return new PracticeLiquidZoneRrsResponseModelV1(
+                BaselineZonalPowerFractions,
+                VariableOrder,
+                rows,
+                ResidualWeights,
+                rows[VariableCount],
+                EffectiveAbsorptionPerMPerFillFraction);
+        }
 
         public string ResponseModelIdentity
         {
@@ -1126,7 +1207,8 @@ namespace ReactorSim.Core
         public static ContractValidationResult<PracticeLiquidZoneRrsV1> TryCreate(
             PracticeLiquidZoneRrsMappingV1 mapping,
             EquilibriumCoreProjectionV1 initialEquilibrium,
-            double simulationTimeSeconds = 0.0)
+            double simulationTimeSeconds = 0.0,
+            IReadOnlyList<double>? initialFills = null)
         {
             if (mapping == null)
             {
@@ -1162,9 +1244,9 @@ namespace ReactorSim.Core
                     measurement.FirstDiagnostic.Message);
             }
 
-            var fills = Enumerable.Repeat(
+            var fills = initialFills == null ? Enumerable.Repeat(
                 PracticeLiquidZoneRrsIdentityV1.InitialFillFraction,
-                (int)PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount).ToArray();
+                (int)PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount).ToArray() : initialFills.ToArray();
             ContractValidationResult<StaticAbsorptionOverlayV1> overlay =
                 mapping.TryBuildOverlay(fills);
             if (!overlay.IsValid)
@@ -1287,7 +1369,8 @@ namespace ReactorSim.Core
             EquilibriumCoreSolverV1 equilibriumSolver,
             IEnumerable<BundleState> bundles,
             PracticeLiquidZoneRrsV1 previousState,
-            double simulationTimeSeconds)
+            double simulationTimeSeconds,
+            FullCoreDiffusionSolveResultV1? warmStart = null)
         {
             if (equilibriumSolver == null)
             {
@@ -1341,7 +1424,7 @@ namespace ReactorSim.Core
             ContractValidationResult<EquilibriumCoreProjectionV1> baseCandidate =
                 equilibriumSolver.TrySolveCandidate(
                     preparedCandidates.Value,
-                    equilibriumSolver.CurrentSpatialSolve);
+                    warmStart ?? equilibriumSolver.CurrentSpatialSolve);
             baseCandidateSolveCount++;
             if (!baseCandidate.IsValid)
             {
@@ -1403,7 +1486,11 @@ namespace ReactorSim.Core
             }
 
             ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1> responseModel =
-                PracticeLiquidZoneRrsResponseModelV1.TryCreate(baselineMeasurement.Value.Fractions);
+                previousState.CorrectionResponseModel != null
+                    ? ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1>.Valid(
+                        previousState.CorrectionResponseModel.WithBaselineFractions(
+                            baselineMeasurement.Value.Fractions))
+                    : PracticeLiquidZoneRrsResponseModelV1.TryCreate(baselineMeasurement.Value.Fractions);
             if (!responseModel.IsValid)
             {
                 return InvalidRun(
@@ -1502,40 +1589,30 @@ namespace ReactorSim.Core
                         verificationOverlay.Value,
                         verificationWeightedResidual,
                         false);
-                    bool verificationAccepted = IsStrictlyBetter(
-                        verificationCandidate.WeightedResidual,
-                        finalCandidate.WeightedResidual);
+                    bool verificationAccepted = IsBetterCandidate(verificationCandidate, finalCandidate);
                     if (verificationAccepted)
                     {
                         finalCandidate = verificationCandidate;
                     }
 
-                    if (verificationAccepted &&
-                        !IsControllerConverged(
-                            verificationMeasurement.Value.Errors,
-                            verification.Value.RelativeReactivity))
+                    if (!IsControllerConverged(
+                            finalCandidate.Measurement.Errors,
+                            finalCandidate.Projection.RelativeReactivity))
                     {
-                        ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1>
-                            correctionResponseModelResult =
-                            PracticeLiquidZoneRrsResponseModelV1.TryCreate(
-                                verificationMeasurement.Value.Fractions);
-                        if (!correctionResponseModelResult.IsValid)
-                        {
-                            return InvalidRun(
-                                correctionResponseModelResult.FirstDiagnostic.Code,
-                                correctionResponseModelResult.FirstDiagnostic.Path,
-                                correctionResponseModelResult.FirstDiagnostic.Message);
-                        }
-
                         PracticeLiquidZoneRrsResponseModelV1 correctionModel =
-                            correctionResponseModelResult.Value;
+                            responseModel.Value.WithMeasuredResponse(
+                                commandedFills.Zip(previousFills, (next, prior) => next - prior).ToArray(),
+                                baselineMeasurement.Value.Errors,
+                                controlledBaseline.Value.RelativeReactivity,
+                                verificationMeasurement.Value.Errors,
+                                verification.Value.RelativeReactivity);
                         correctionResponseModel = correctionModel;
                         ContractValidationResult<double[]> correctionCommand =
                             TrySolveBoundedFillCommand(
                                 correctionModel,
-                                verificationMeasurement.Value.Errors,
-                                verification.Value.RelativeReactivity,
-                                commandedFills,
+                                finalCandidate.Measurement.Errors,
+                                finalCandidate.Projection.RelativeReactivity,
+                                finalCandidate.Fills,
                                 previousFills);
                         if (!correctionCommand.IsValid)
                         {
@@ -1546,10 +1623,10 @@ namespace ReactorSim.Core
                         }
 
                         double[] correctionFills = ApplyFillCommand(
-                            commandedFills,
+                            finalCandidate.Fills,
                             previousFills,
                             correctionCommand.Value);
-                        if (HasFillChange(correctionFills, commandedFills))
+                        if (HasFillChange(correctionFills, finalCandidate.Fills))
                         {
                             ContractValidationResult<StaticAbsorptionOverlayV1>
                                 correctionOverlay =
@@ -1600,9 +1677,7 @@ namespace ReactorSim.Core
                                 correctionOverlay.Value,
                                 correctionWeightedResidual,
                                 true);
-                            if (IsStrictlyBetter(
-                                    correctionCandidate.WeightedResidual,
-                                    finalCandidate.WeightedResidual))
+                            if (IsBetterCandidate(correctionCandidate, finalCandidate))
                             {
                                 finalCandidate = correctionCandidate;
                             }
@@ -1721,6 +1796,15 @@ namespace ReactorSim.Core
                     1.0);
                 lowerBounds[variable] = eventLower - currentFill;
                 upperBounds[variable] = eventUpper - currentFill;
+            }
+
+            // Regulate common-mode criticality independently of the shape
+            // objective; burnup must not act as the reactivity controller.
+            // Actual diffusion candidates verify this estimated response.
+            if (Math.Abs(reactivity) > PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance)
+            {
+                return ContractValidationResult<double[]>.Valid(SolveCommonModeCommand(
+                    responseModel, reactivity, lowerBounds, upperBounds));
             }
 
             var residual = new double[responseModel.OutputCount];
@@ -1906,6 +1990,9 @@ namespace ReactorSim.Core
                 }
             }
 
+            // Shape corrections live in the common-mode nullspace: add a
+            // bounded common offset so the estimated net reactivity stays zero.
+            solution = SolveCommonModeCommand(responseModel, reactivity, lowerBounds, upperBounds, solution);
             double initialResidual = ComputeWeightedResidual(
                 responseModel,
                 shapeErrors,
@@ -1963,7 +2050,7 @@ namespace ReactorSim.Core
                     }
                 }
 
-                if (!IsCanonicalFinite(pivotMagnitude) || pivotMagnitude <= 1.0e-14)
+                if (!ContractValidation.IsFinite(pivotMagnitude) || pivotMagnitude <= 1.0e-14)
                 {
                     return false;
                 }
@@ -1985,7 +2072,7 @@ namespace ReactorSim.Core
                 for (int row = pivot + 1; row < dimension; row++)
                 {
                     double factor = work[row, pivot] / work[pivot, pivot];
-                    if (!IsCanonicalFinite(factor))
+                    if (!ContractValidation.IsFinite(factor))
                     {
                         return false;
                     }
@@ -2008,15 +2095,17 @@ namespace ReactorSim.Core
                     value -= work[row, column] * solution[column];
                 }
 
-                if (!IsCanonicalFinite(value) ||
-                    !IsCanonicalFinite(work[row, row]) ||
+                if (!ContractValidation.IsFinite(value) ||
+                    !ContractValidation.IsFinite(work[row, row]) ||
                     Math.Abs(work[row, row]) <= 1.0e-14)
                 {
                     return false;
                 }
 
-                solution[row] = value / work[row, row];
-                if (!IsCanonicalFinite(solution[row]))
+                // Elimination may produce signed zero; canonicalize only at
+                // the contract boundary, not during valid finite arithmetic.
+                solution[row] = value == 0.0 ? 0.0 : value / work[row, row];
+                if (!ContractValidation.IsFinite(solution[row]))
                 {
                     return false;
                 }
@@ -2130,13 +2219,46 @@ namespace ReactorSim.Core
             double reactivity)
         {
             return MaxAbsolute(shapeErrors) <= PracticeLiquidZoneRrsIdentityV1.ControllerTolerance &&
-                   Math.Abs(reactivity) <= PracticeLiquidZoneRrsIdentityV1.ControllerTolerance;
+                   Math.Abs(reactivity) <= PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance;
         }
 
-        private static bool IsStrictlyBetter(double candidate, double incumbent)
+        private static bool IsBetterCandidate(RrsCandidate candidate, RrsCandidate incumbent)
         {
-            return candidate + PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance <
-                   incumbent;
+            double before = Math.Abs(incumbent.Projection.RelativeReactivity);
+            double after = Math.Abs(candidate.Projection.RelativeReactivity);
+            if (before > PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance)
+                return after + PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance < before;
+            if (after > PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance) return false;
+            return candidate.WeightedResidual + PracticeLiquidZoneRrsIdentityV1.ResidualAcceptanceTolerance <
+                incumbent.WeightedResidual;
+        }
+
+        private static double[] SolveCommonModeCommand(
+            PracticeLiquidZoneRrsResponseModelV1 responseModel, double reactivity,
+            double[] lowerBounds, double[] upperBounds, double[]? shapeCommand = null)
+        {
+            // One common fill request, clipped at each compartment's physical
+            // and event bounds. Other compartments remain active at a limit.
+            // A learned positive derivative cannot reverse absorption.
+            double Change(double request)
+            {
+                double change = 0;
+                for (int zone = 0; zone < lowerBounds.Length; zone++)
+                    change += Math.Min(0, responseModel.CommonModeReactivitySensitivities[zone]) *
+                        Clamp((shapeCommand?[zone] ?? 0) + request, lowerBounds[zone], upperBounds[zone]);
+                return change;
+            }
+            double low = lowerBounds.Min() - (shapeCommand?.Max() ?? 0);
+            double high = upperBounds.Max() - (shapeCommand?.Min() ?? 0);
+            for (int iteration = 0; iteration < 56; iteration++)
+            {
+                double middle = (low + high) * 0.5;
+                if (reactivity + Change(middle) > 0) low = middle;
+                else high = middle;
+            }
+            double request = (low + high) * 0.5;
+            return lowerBounds.Select((lower, zone) =>
+                CanonicalizeZero(Clamp((shapeCommand?[zone] ?? 0) + request, lower, upperBounds[zone]))).ToArray();
         }
 
         private static double CanonicalizeZero(double value)

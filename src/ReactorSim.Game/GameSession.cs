@@ -425,6 +425,23 @@ namespace ReactorSim.Game
             return AcceptedMessage("Configured full-core equilibrium solve committed.");
         }
 
+        /// <summary>Replace regional membership and homogenized absorber footprints atomically.
+        /// Retains fuel, clock, score and zone levels; rebuilds spatial references for the new layout.</summary>
+        public GameSessionCommandResult ConfigureZoneLayout(
+            IEnumerable<PracticeLiquidZoneRrsNodeBindingV1> nodes)
+        {
+            if (_practiceRrs.IsGameOver) return RejectGameOver();
+            var mapping = PracticeLiquidZoneRrsMappingV1.TryCreate(nodes);
+            if (!mapping.IsValid) return Rejected(mapping.FirstDiagnostic.Code, mapping.FirstDiagnostic.Message);
+            var design = new ConfiguredCoreDesign(_nonfuelNodes,
+                _reflectiveFaceOverrides.Select(entry =>
+                    new KeyValuePair<NodeKey, IEnumerable<TopologyFace>>(entry.Key, entry.Value)));
+            var transaction = TryBuildConfiguredCoreTransaction(design, mapping.Value);
+            if (!transaction.IsValid) return Rejected(transaction.FirstDiagnostic.Code, transaction.FirstDiagnostic.Message);
+            ApplyConfiguredCoreTransaction(transaction.Value);
+            return AcceptedMessage("Zone layout committed; spatial references rebuilt and existing fills retained as the regulation starting point.");
+        }
+
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
         {
             if (_practiceRrs.IsGameOver)
@@ -966,7 +983,8 @@ namespace ReactorSim.Game
         }
 
         private ContractValidationResult<ConfiguredCoreTransaction>
-            TryBuildConfiguredCoreTransaction(ConfiguredCoreDesign design)
+            TryBuildConfiguredCoreTransaction(ConfiguredCoreDesign design,
+                PracticeLiquidZoneRrsMappingV1? zoneMapping = null)
         {
             if (design == null)
             {
@@ -1038,11 +1056,21 @@ namespace ReactorSim.Game
                     solver.FirstDiagnostic.Message);
             }
 
+            PracticeLiquidZoneRrsV1 previousRrs = _practiceRrs;
+            if (zoneMapping != null)
+            {
+                var remapped = PracticeLiquidZoneRrsV1.TryCreate(zoneMapping,
+                    solver.Value.CurrentProjection, _runtime.SimulationTimeSeconds, _practiceRrs.ZoneFills);
+                if (!remapped.IsValid)
+                    return InvalidConfiguredTransaction(remapped.FirstDiagnostic.Code,
+                        remapped.FirstDiagnostic.Path, remapped.FirstDiagnostic.Message);
+                previousRrs = remapped.Value;
+            }
             ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
                 PracticeLiquidZoneRrsV1.TryRunEquilibrium(
                     solver.Value,
                     _coreState.EnumerateBundles(),
-                    _practiceRrs,
+                    previousRrs,
                     _runtime.SimulationTimeSeconds);
             if (!regulated.IsValid)
             {
@@ -1265,7 +1293,8 @@ namespace ReactorSim.Game
             TryBuildRrsEquilibrium(
                 SyntheticGameCoreStateV1 coreState,
                 PracticeLiquidZoneRrsV1 previousRrs,
-                double simulationTimeSeconds)
+                double simulationTimeSeconds,
+                FullCoreDiffusionSolveResultV1? warmStart = null)
         {
             if (coreState == null)
             {
@@ -1287,7 +1316,8 @@ namespace ReactorSim.Game
                 _equilibriumSolver,
                 coreState.EnumerateBundles(),
                 previousRrs,
-                simulationTimeSeconds);
+                simulationTimeSeconds,
+                warmStart);
         }
 
         private static double PracticeRefuellingScore(GameRefuellingResultV1 result)
@@ -1297,13 +1327,14 @@ namespace ReactorSim.Game
                 : result.DischargedBundles.Average(
                     bundle => bundle.CurrentBurnupJPerKgHm /
                               GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
-            double utilizationQuality = Clamp((averageDischargedBurnup - 4.0) / 6.0, 0.0, 1.0);
-            double shiftFactor = result.ShiftCount / 4.0;
+            double usefulBurnup = Clamp(averageDischargedBurnup, 0.0, 10.0);
             // Scoring observes the operation. It does not modify power,
             // tilt, or reactivity; those are recomputed from the resulting
             // bundle state by the full-core diffusion solve.
-            return
-                6.0 + 10.0 * utilizationQuality - 0.75 * shiftFactor;
+            // A fixed fresh-fuel cost prevents farming points by reversing a
+            // shift and immediately ejecting the fresh bundles just inserted.
+            // Reward scales with useful fuel discharged, not button presses.
+            return result.ShiftCount * (0.75 * usefulBurnup - 1.5);
         }
 
         private ContractValidationResult<PracticeTransaction> TryBuildPracticeAdvance(
@@ -1561,7 +1592,8 @@ namespace ReactorSim.Game
                 TryBuildRrsEquilibrium(
                     transaction.CoreState,
                     transaction.Rrs,
-                    simulationTimeSeconds);
+                    simulationTimeSeconds,
+                    transaction.SpatialCandidate.SpatialSolve);
             if (!regulated.IsValid)
             {
                 return InvalidTransactionBoolean(

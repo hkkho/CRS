@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatBundleBurnup,
   formatEffectiveK,
+  formatLiquidZoneRegion,
   formatPowerWatts,
   formatReactivity,
   formatSolveHealth,
@@ -31,6 +32,9 @@ describe("tactical playtest display helpers", () => {
     expect(getTiltLabel(-0.0513)).toBe("-5.13%");
     expect(formatReactivity(-0.0012)).toBe("-1.200 mk");
     expect(formatEffectiveK(1.0023456)).toBe("1.002346");
+    expect(formatLiquidZoneRegion(0)).toBe("Z1 · End A lower left");
+    expect(formatLiquidZoneRegion(4)).toBe("Z5 · End A upper centre");
+    expect(formatLiquidZoneRegion(13)).toBe("Z14 · End B upper right");
     expect(formatSolveResidual(0.0000123)).toBe("1.2e-5");
   });
 

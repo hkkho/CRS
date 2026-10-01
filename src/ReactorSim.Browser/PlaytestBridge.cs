@@ -174,9 +174,14 @@ namespace ReactorSim.Browser
                             _runtime);
                     }
 
+                    if (!TryReadSeed(root, PlaytestProtocolV2.PracticeSeed, out ulong seed))
+                    {
+                        return SerializeError("initialize", PlaytestProtocolV2.Diagnostic(
+                            "Browser.Seed.Invalid", "seed", "seed must be an integer from 0 to 4294967295."), _runtime);
+                    }
                     BridgeRuntime candidate = CreateRuntime(
                         mode,
-                        requestJson ?? "{}");
+                        requestJson ?? "{}", seed);
                     _runtime = candidate;
                     GameSessionSnapshot game = _runtime.PlaySession.Snapshot;
                     PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
@@ -318,9 +323,14 @@ namespace ReactorSim.Browser
                     object? previousDetailedProjection = _runtime.LastDetailedProjection;
                     if (commandType == "reset")
                     {
+                        if (!TryReadSeed(payload, _runtime.PlaySession.Snapshot.Seed, out ulong resetSeed))
+                            return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic(
+                                "Browser.Seed.Invalid", "seed", "seed must be an integer from 0 to 4294967295."), _runtime);
+                        string resetInitialization = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":" +
+                            resetSeed.ToString(CultureInfo.InvariantCulture) + "}";
                         BridgeRuntime candidate = CreateRuntime(
                             _runtime.Mode,
-                            _runtime.InitializationJson);
+                            resetInitialization, resetSeed);
                         _runtime = candidate;
                         _runtime.LastEvent = new PlaytestEventDto
                         {
@@ -479,6 +489,7 @@ namespace ReactorSim.Browser
                 "queue-power-target",
                 "commit-refuel",
                 "configure-cell",
+                "configure-zone-layout",
                 "solve",
                 "reset"
             };
@@ -486,12 +497,22 @@ namespace ReactorSim.Browser
 
         private static BridgeRuntime CreateRuntime(
             string mode,
-            string initializationJson)
+            string initializationJson,
+            ulong seed = PlaytestProtocolV2.PracticeSeed)
         {
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                PracticeGameSessionFactory.CreateBrowserPlaytest());
+                PracticeGameSessionFactory.CreateBrowserPlaytest(seed));
+        }
+
+        private static bool TryReadSeed(JsonElement payload, ulong fallback, out ulong seed)
+        {
+            seed = fallback;
+            if (!PlaytestInput.TryGetProperty(payload, out JsonElement value, "seed")) return true;
+            if (value.ValueKind != JsonValueKind.Number || !value.TryGetUInt32(out uint supplied)) return false;
+            seed = supplied;
+            return true;
         }
 
         private static BridgeCommandExecution DispatchEngineering(
@@ -499,6 +520,29 @@ namespace ReactorSim.Browser
             string commandType,
             JsonElement payload)
         {
+            if (commandType == "configure-zone-layout")
+            {
+                if (!PlaytestInput.TryGetProperty(payload, out JsonElement nodes, "nodes") ||
+                    nodes.ValueKind != JsonValueKind.Array || nodes.GetArrayLength() != 4560)
+                    return InvalidCommand("Browser.ZoneLayout.Nodes.Invalid", "nodes", "Supply exactly 4560 zone node bindings.");
+                var bindings = new List<PracticeLiquidZoneRrsNodeBindingV1>();
+                foreach (JsonElement node in nodes.EnumerateArray())
+                {
+                    if (!TryGetUInt32(node, out uint channel, "channelIndex") || channel >= 380 ||
+                        !TryGetUInt32(node, out uint position, "position") || position >= 12 ||
+                        !TryGetUInt32(node, out uint zone, "logicalZoneId") || zone >= 14 ||
+                        !TryGetUInt32(node, out uint absorberZone, "absorberZoneId") || absorberZone >= 14 ||
+                        !PlaytestInput.TryGetProperty(node, out JsonElement fast, "group1AbsorptionPerMPerFillFraction") ||
+                        fast.ValueKind != JsonValueKind.Number || !fast.TryGetDouble(out double a1) || double.IsNaN(a1) || double.IsInfinity(a1) || a1 < 0 || a1 > 1 ||
+                        !PlaytestInput.TryGetProperty(node, out JsonElement thermal, "group2AbsorptionPerMPerFillFraction") ||
+                        thermal.ValueKind != JsonValueKind.Number || !thermal.TryGetDouble(out double a2) || double.IsNaN(a2) || double.IsInfinity(a2) || a2 < 0 || a2 > 1)
+                        return InvalidCommand("Browser.ZoneLayout.Binding.Invalid", "nodes", "Invalid node, zone or absorption slope (allowed range 0–1 m^-1 per unit fill).");
+                    bindings.Add(new PracticeLiquidZoneRrsNodeBindingV1(
+                        new NodeKey(new ChannelId(channel), new BundlePosition(position)), zone,
+                        a1 == 0 ? 0 : a1, a2 == 0 ? 0 : a2, absorberZone));
+                }
+                return ToExecution(runtime.PlaySession.ConfigureZoneLayout(bindings));
+            }
             if (commandType == "configure-cell")
             {
                 if (!TryReadConfiguredCell(
@@ -679,6 +723,7 @@ namespace ReactorSim.Browser
         private static bool IsEngineeringCommand(string commandType)
         {
             return commandType == "configure-cell" ||
+                commandType == "configure-zone-layout" ||
                 commandType == "solve";
         }
 
@@ -787,21 +832,6 @@ namespace ReactorSim.Browser
 
                 case "commit-refuel":
                     return Refuel(runtime, payload);
-
-                case "reset":
-                    runtime.PlaySession = PracticeGameSessionFactory.CreateBrowserPlaytest();
-                    runtime.LastGameSnapshot = null;
-                    runtime.LastScore = 0.0;
-                    runtime.LastDetailedProjection = runtime.PlaySession.CurrentSpatialCandidate;
-                    runtime.LastEvent = new PlaytestEventDto
-                    {
-                        EventId = "wasm-event-reset",
-                        TimeSeconds = 0.0,
-                        Title = "Run reset",
-                        Detail = "The deterministic practice session was restored.",
-                        Tone = "info"
-                    };
-                    return BridgeCommandExecution.Success("Practice run reset.");
 
                 default:
                     return InvalidCommand(
@@ -1036,7 +1066,15 @@ namespace ReactorSim.Browser
                                     bundle.Position),
                                 Group2Flux = runtime.PlaySession.GetCellGroup2Flux(
                                     channel.ChannelIndex,
-                                    bundle.Position)
+                                    bundle.Position),
+                                LogicalZoneId = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping.GetLogicalZoneId(
+                                    new NodeKey(new ChannelId(channel.ChannelIndex), new BundlePosition(bundle.Position))),
+                                AbsorberZoneId = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
+                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).AbsorberZoneId,
+                                Group1AbsorptionPerMPerFillFraction = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
+                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).Group1AbsorptionPerMPerFillFraction,
+                                Group2AbsorptionPerMPerFillFraction = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
+                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).Group2AbsorptionPerMPerFillFraction
                             })
                             .ToList()
                     })
@@ -1118,6 +1156,7 @@ namespace ReactorSim.Browser
                 ActualPowerFraction = game.Physics.ActualPowerFraction,
                 TargetPowerWatts = game.Physics.TargetPowerWatts,
                 TotalPowerWatts = game.Physics.TotalPowerWatts,
+                ElectricalPowerWatts = game.Physics.ElectricalPowerWatts,
                 MeanChannelPowerWatts = game.Physics.MeanChannelPowerWatts,
                 MeanBundlePowerWatts = game.Physics.MeanBundlePowerWatts,
                 EffectiveK = game.Physics.EffectiveK,
@@ -1159,6 +1198,8 @@ namespace ReactorSim.Browser
                 StateDigestHex = game.Rrs.StateDigestHex,
                 SimulationTimeSeconds = game.Rrs.SimulationTimeSeconds,
                 NodeCount = game.Rrs.NodeCount,
+                AbsorptionReferenceFillFraction = PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction,
+                CalibratedTotalZoneWorthMk = PracticeLiquidZoneRrsIdentityV1.CalibratedTotalZoneWorthMk,
                 AverageFillFraction = game.Rrs.AverageFillFraction,
                 MinimumFillFraction = game.Rrs.MinimumFillFraction,
                 MaximumFillFraction = game.Rrs.MaximumFillFraction,
@@ -1850,6 +1891,10 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestBundleDto
     {
+        public uint LogicalZoneId { get; set; }
+        public uint AbsorberZoneId { get; set; }
+        public double Group1AbsorptionPerMPerFillFraction { get; set; }
+        public double Group2AbsorptionPerMPerFillFraction { get; set; }
         public uint Position { get; set; }
 
         public string BundleId { get; set; } = string.Empty;
@@ -1944,6 +1989,8 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestRrsDto
     {
+        public double AbsorptionReferenceFillFraction { get; set; }
+        public double CalibratedTotalZoneWorthMk { get; set; }
         public string ControllerIdentity { get; set; } = string.Empty;
 
         public string MappingIdentity { get; set; } = string.Empty;
@@ -2077,6 +2124,8 @@ namespace ReactorSim.Browser
         public double TargetPowerWatts { get; set; }
 
         public double TotalPowerWatts { get; set; }
+
+        public double ElectricalPowerWatts { get; set; }
 
         public double MeanChannelPowerWatts { get; set; }
 
