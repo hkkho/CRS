@@ -885,7 +885,7 @@ export function createCanduPlaytestBridge(
 export const protocolDescriptor = {
   version: PROTOCOL_VERSION,
   wasmGlobalNames: ["canduPlaytestWasm", "__canduPlaytestWasm", "CanduPlaytestWasm"],
-  workerModule: "/src/wasmWorker.ts",
-  stagedModule: "/wasm/main.mjs",
+  workerModule: `${import.meta.env.BASE_URL}src/wasmWorker.ts`,
+  stagedModule: `${import.meta.env.BASE_URL}wasm/main.mjs`,
   injectedExports: findWasmExports,
 };

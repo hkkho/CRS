@@ -3,6 +3,10 @@
 This repository is the source for the web-first CANDU on-power refuelling game
 deployed from `web/candu-playtest` to Vercel.
 
+The secondary host is [GitHub Pages](https://hkkho.github.io/CRS/).
+Both hosts deploy the validated shared WASM simulation from `main`;
+see [hosting and verification](docs/maintenance/hosting.md).
+
 The player keeps a deterministic practice reactor at useful power, manages RRS
 reserve, spends a finite fresh-bundle inventory, refuels channels, and builds
 score from stable operation and useful discharged burnup. Reactor Studio and Core

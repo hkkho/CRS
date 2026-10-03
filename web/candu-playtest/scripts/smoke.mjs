@@ -14,10 +14,10 @@ if (!baseUrl) {
 }
 
 const targetUrl = new URL(baseUrl);
-targetUrl.pathname = targetUrl.pathname.replace(/\/$/, "");
+targetUrl.pathname = `${targetUrl.pathname.replace(/\/$/, "")}/`;
 
 function absolutePath(pathname) {
-  return new URL(pathname.replace(/^\//, ""), `${targetUrl.origin}/`).toString();
+  return new URL(pathname.replace(/^\//, ""), targetUrl).toString();
 }
 
 function assertAsset(response, label, { rejectHtml = false, contentTypeIncludes } = {}) {

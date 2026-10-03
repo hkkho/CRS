@@ -60,7 +60,7 @@ exportsPromise = loadWasm();
 
 async function loadWasm(): Promise<CanduPlaytestWasmExports> {
   try {
-    const moduleUrl = new URL("/wasm/main.mjs", scope.location.href).href;
+    const moduleUrl = new URL(`${import.meta.env.BASE_URL}wasm/main.mjs`, scope.location.href).href;
     await import(/* @vite-ignore */ moduleUrl);
     const wasmExports = findWasmExports();
     if (wasmExports === null) {

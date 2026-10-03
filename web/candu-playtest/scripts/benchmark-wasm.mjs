@@ -20,8 +20,9 @@ const targetUrl = new URL(baseUrl);
 const bridgeMode = parseBridgeMode(options.bridge ?? process.env.PLAYTEST_BENCHMARK_BRIDGE);
 const useRichBridge = bridgeMode === "worker" ||
   (bridgeMode === "auto" && isLocalDevelopmentUrl(targetUrl));
-const moduleUrl = new URL("/wasm/main.mjs", targetUrl.origin).toString();
-const buildInfoUrl = new URL("/wasm/build-info.json", targetUrl.origin).toString();
+const assetBaseUrl = new URL(`${targetUrl.pathname.replace(/\/$/, "")}/`, targetUrl.origin);
+const moduleUrl = new URL("wasm/main.mjs", assetBaseUrl).toString();
+const buildInfoUrl = new URL("wasm/build-info.json", assetBaseUrl).toString();
 const consoleErrors = [];
 const pageErrors = [];
 const observedPages = new WeakSet();
