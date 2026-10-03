@@ -1,0 +1,4 @@
+# Physics-pack identities hash the exact embedded bytes. Never rewrite their
+# line endings during checkout: wire fixtures and provenance use these hashes.
+/data/packs/*.json -text
+/src/ReactorSim.Core/EmbeddedData/*.json -text
