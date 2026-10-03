@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "data_pack_id": "00000000-0000-0000-0000-000000000601",
-  "data_pack_version": "candu6-two-group-diffusion-v1-cycle190-650mwe",
+  "data_pack_version": "candu6-two-group-diffusion-v1-cycle190-650mwe-innerrel1e7",
   "topology_schema_id": "candu6-380x12-grid-v1",
   "channel_count": 380,
   "bundle_position_count": 12,
@@ -35,7 +35,7 @@
     "linear_method_id": "jacobi-v1",
     "linear_method_version": "1",
     "absolute_residual_tolerance": 1e-11,
-    "relative_residual_tolerance": 1e-08,
+    "relative_residual_tolerance": 1e-07,
     "maximum_inner_iterations": 128,
     "k_absolute_tolerance": 2e-07,
     "k_relative_tolerance": 2e-06,

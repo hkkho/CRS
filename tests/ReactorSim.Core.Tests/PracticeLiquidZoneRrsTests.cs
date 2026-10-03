@@ -8,6 +8,58 @@ namespace ReactorSim.Core.Tests;
 public sealed class PracticeLiquidZoneRrsTests
 {
     [Fact]
+    public void TestedSecondCorrectionCanRetainTheFirstAcceptedMove()
+    {
+        Assert.Equal("command-retained", PracticeLiquidZoneRrsV1.DescribeControllerDecision(false, true, false,
+            false, Enumerable.Repeat(0.5, 14).ToArray(), Enumerable.Repeat(0.02, 14).ToArray(), correctionTested: true));
+    }
+
+    [Theory]
+    [InlineData(true, false, false, true, 0.5, 0, "already-balanced")]
+    [InlineData(false, false, false, false, 0.5, 0, "retained-best")]
+    [InlineData(false, true, false, true, 0.5, 0.02, "command-applied")]
+    [InlineData(false, true, true, true, 0.5, 0.02, "correction-applied")]
+    [InlineData(false, true, false, false, 0, 0.02, "fill-limits")]
+    [InlineData(false, true, false, false, 0.5, 0.08, "event-limit")]
+    [InlineData(false, false, false, false, 0, 0, "exhausted-empty")]
+    [InlineData(false, false, false, false, 1, 0, "exhausted-full")]
+    public void DecisionCodesDistinguishRetainedAcceptedBoundedAndExhaustedFacts(bool balanced, bool accepted,
+        bool corrected, bool converged, double fill, double command, string expected)
+    {
+        var fills = Enumerable.Repeat(0.5, 14).ToArray();
+        fills[0] = fill;
+        if (expected.StartsWith("exhausted", StringComparison.Ordinal)) fills = Enumerable.Repeat(fill, 14).ToArray();
+        Assert.Equal(expected, PracticeLiquidZoneRrsV1.DescribeControllerDecision(balanced, accepted, corrected,
+            converged, fills, Enumerable.Repeat(command, 14).ToArray()));
+    }
+
+    [Theory]
+    [InlineData(0.00005, true)]
+    [InlineData(-0.00005, true)]
+    [InlineData(0.000050001, false)]
+    [InlineData(-0.000050001, false)]
+    public void ControllerAcceptsInclusivePointZeroFiveMkBand(double reactivity, bool expected)
+    {
+        Assert.Equal(expected, PracticeLiquidZoneRrsV1.IsControllerConverged(new double[14], reactivity));
+        var shapeErrors = new double[14];
+        shapeErrors[0] = 0.010000001;
+        Assert.False(PracticeLiquidZoneRrsV1.IsControllerConverged(shapeErrors, reactivity));
+    }
+
+    [Theory]
+    [InlineData(0.01, true)]
+    [InlineData(-0.01, true)]
+    [InlineData(0.010000001, false)]
+    [InlineData(-0.010000001, false)]
+    public void ControllerAcceptsInclusiveOnePercentagePointRegionalBand(double error, bool expected)
+    {
+        var shapeErrors = new double[14];
+        shapeErrors[13] = error;
+        Assert.Equal(expected, PracticeLiquidZoneRrsV1.IsControllerConverged(shapeErrors, 0.00005));
+        Assert.False(PracticeLiquidZoneRrsV1.IsControllerConverged(shapeErrors, 0.000050001));
+    }
+
+    [Fact]
     public void AbsorberCompartmentCanDifferFromMeasuredRegionAndInactiveCellsRemainZero()
     {
         var original = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
@@ -208,6 +260,10 @@ public sealed class PracticeLiquidZoneRrsTests
 
         PracticeLiquidZoneRrsV1 state = first.State;
         Assert.Equal(state.StateDigest, second.State.StateDigest);
+        Assert.Equal(state.DecisionCode, second.State.DecisionCode);
+        Assert.Equal(state.DecisionCode, Require(state.TryWithSimulationTime(2)).DecisionCode);
+        Assert.NotEqual("initial-reference", state.DecisionCode);
+
         Assert.Equal(state.ZoneFills, second.State.ZoneFills);
         Assert.Equal(1, state.BaseCandidateSolveCount);
         Assert.Equal(1, state.ControlledBaselineCandidateSolveCount);

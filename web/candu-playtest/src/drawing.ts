@@ -1,30 +1,30 @@
 import Phaser from "phaser";
 
 export const COLORS = {
-  void: 0x070b1b,
-  navy: 0x0b1026,
-  indigo: 0x15183b,
-  indigoLight: 0x25245a,
-  panel: 0x111733,
-  panelRaised: 0x191b45,
-  ink: 0x090d20,
-  ivory: 0xf4eee0,
-  ivoryMuted: 0xbeb8c9,
+  void: 0x07100b,
+  navy: 0x0b1911,
+  indigo: 0x102419,
+  indigoLight: 0x254830,
+  panel: 0x0b1911,
+  panelRaised: 0x183321,
+  ink: 0x07100b,
+  ivory: 0xb5edb0,
+  ivoryMuted: 0x8fba93,
   gold: 0xf2c66d,
   goldSoft: 0xc49a4c,
-  cyan: 0x58e2df,
-  cyanDark: 0x1c7c94,
-  magenta: 0xd75bd9,
-  magentaDark: 0x703c83,
+  cyan: 0xa8eda3,
+  cyanDark: 0x42784d,
+  magenta: 0xffc56c,
+  magentaDark: 0x88652d,
   red: 0xf35d79,
   green: 0x65e4aa,
-  grid: 0x445184,
+  grid: 0x315b3b,
   white: 0xffffff,
 } as const;
 
 export const FONTS = {
-  display: "Georgia, Palatino Linotype, serif",
-  body: "Trebuchet MS, Segoe UI, sans-serif",
+  display: "Consolas, Courier New, monospace",
+  body: "Consolas, Courier New, monospace",
   mono: "Consolas, SFMono-Regular, monospace",
 } as const;
 
@@ -140,7 +140,7 @@ export function makeButton(
       background.fillStyle(COLORS.white, 0.06);
       background.fillRoundedRect(-width / 2 + 2, -height / 2 + 2, width - 4, height * 0.42, 4);
     }
-    caption.setColor(colorString(enabled ? COLORS.ivory : COLORS.ivoryMuted));
+    caption.setColor(colorString(enabled && hovered ? COLORS.ink : enabled ? COLORS.ivory : COLORS.ivoryMuted));
   };
   repaint();
 
@@ -159,24 +159,6 @@ export function makeButton(
     setEnabled: (value: boolean) => { enabled = value; container.input!.cursor = enabled ? "pointer" : "default"; repaint(); },
     setLabel: (value: string) => { currentLabel = value; caption.setText(currentLabel); },
   };
-}
-
-export function drawMeter(
-  graphics: Phaser.GameObjects.Graphics,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  value: number,
-  color: number,
-): void {
-  const clamped = Phaser.Math.Clamp(value, 0, 1);
-  graphics.fillStyle(COLORS.ink, 0.85);
-  graphics.fillRoundedRect(x, y, width, height, height / 2);
-  graphics.fillStyle(color, 0.88);
-  graphics.fillRoundedRect(x, y, width * clamped, height, height / 2);
-  graphics.lineStyle(1, COLORS.ivoryMuted, 0.22);
-  graphics.strokeRoundedRect(x, y, width, height, height / 2);
 }
 
 export function colorString(value: number): string {

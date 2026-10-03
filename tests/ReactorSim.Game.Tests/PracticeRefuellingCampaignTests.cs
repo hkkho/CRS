@@ -93,7 +93,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSessionSnapshot before = session.Snapshot;
         SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
         EquilibriumCoreProjectionV1 beforeEquilibrium = session.CurrentEquilibriumProjection;
-        IqsSpatialCandidateV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
+        EquilibriumCoreProjectionV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
         GameChannelPresentationSnapshot beforeChannel = before.Core.GetChannel(CampaignChannel);
 
         GameSessionCommandResult committed = session.RefuelChannel(
@@ -132,8 +132,8 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.True(
             Math.Abs(committed.Snapshot.Rrs.CompensatedNetReactivity) <=
             Math.Abs(committed.Snapshot.Rrs.CoreReactivity));
-        Assert.Equal(0UL, committed.Snapshot.Xenon.StateVersion);
-        Assert.Equal(0.0, committed.Snapshot.Xenon.MeanXe135NumberDensityM3);
+        Assert.Equal(before.Xenon.StateVersion + 1, committed.Snapshot.Xenon.StateVersion);
+        Assert.True(committed.Snapshot.Xenon.MeanXe135NumberDensityM3 > 0);
         Assert.NotSame(beforeCoreState, session.CoreState);
         Assert.NotSame(beforeEquilibrium, session.CurrentEquilibriumProjection);
         Assert.NotSame(beforeSpatialCandidate, session.CurrentSpatialCandidate);
@@ -146,7 +146,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSessionSnapshot before = session.Snapshot;
         SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
         EquilibriumCoreProjectionV1 beforeEquilibrium = session.CurrentEquilibriumProjection;
-        IqsSpatialCandidateV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
+        EquilibriumCoreProjectionV1 beforeSpatialCandidate = session.CurrentSpatialCandidate;
 
         GameSessionCommandResult rejected = session.RefuelChannel(
             CampaignChannel,
@@ -178,8 +178,8 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.Equal(
             EquilibriumCoreSolverIdentityV1.ModelId,
             advanced.Snapshot.Physics.SourceId);
-        Assert.Equal(0UL, advanced.Snapshot.Xenon.StateVersion);
-        Assert.Equal(0.0, advanced.Snapshot.Xenon.MeanXe135NumberDensityM3);
+        Assert.True(advanced.Snapshot.Xenon.StateVersion > 0);
+        Assert.True(advanced.Snapshot.Xenon.MeanXe135NumberDensityM3 > 0);
     }
 
     [Fact]
@@ -224,8 +224,8 @@ public sealed class PracticeRefuellingCampaignTests
             whole.Snapshot.Physics.Reactivity);
         Assert.NotEqual(oneRefuel.Snapshot.Rrs.CoreReactivity,
             whole.Snapshot.Rrs.CoreReactivity);
-        Assert.Equal(0UL, whole.Snapshot.Xenon.StateVersion);
-        Assert.Equal(0.0, whole.Snapshot.Xenon.MeanXe135NumberDensityM3);
+        Assert.True(whole.Snapshot.Xenon.StateVersion > oneRefuel.Snapshot.Xenon.StateVersion);
+        Assert.True(whole.Snapshot.Xenon.MeanXe135NumberDensityM3 > 0);
         AssertAcceptedStateEqual(
             whole.Snapshot,
             secondHalf.Snapshot,

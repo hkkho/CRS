@@ -51,7 +51,7 @@ function observe(page) {
 async function checkApplication(page) {
   observe(page);
   await page.goto(targetUrl.toString(), { waitUntil: "domcontentloaded" });
-  await page.locator("canvas").waitFor({ state: "attached", timeout: 10_000 });
+  await page.locator(".reactor-launcher").waitFor({ state: "attached", timeout: 10_000 });
   await page.waitForFunction(
     () => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"),
     undefined,
@@ -61,13 +61,7 @@ async function checkApplication(page) {
   if (!mirror?.includes("380 channels")) {
     throw new Error(`The browser did not report the full play snapshot: ${mirror}`);
   }
-  const viewport = await page.locator("canvas").evaluate((canvas) => ({
-    width: canvas.width,
-    height: canvas.height,
-  }));
-  if (viewport.width !== 1600 || viewport.height !== 900) {
-    throw new Error(`Unexpected Phaser game viewport: ${viewport.width} × ${viewport.height}.`);
-  }
+  const viewport = await page.locator("#game-root").evaluate(root => ({ width: root.clientWidth, height: root.clientHeight }));
   return { mirror, viewport };
 }
 

@@ -1,0 +1,122 @@
+[
+  {
+    "seed": 1001,
+    "command": "initialize",
+    "sha256": "c5996205aa66d60d6b8374bbdb6bd46efc1efedfbd1fed99af9528b667d74a37"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022pause\u0022}",
+    "sha256": "49e6378e8246fa81c5d52e5c4a4bd46fa613749564b2e0e1eb1171f8696ac41e"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022queue-power-target\u0022,\u0022targetFraction\u0022:0.95}",
+    "sha256": "5bf6b4cebd10a2eb2e3e59c6a8991a4152481d4a1f7b6435964dca0b561d7076"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022resume\u0022}",
+    "sha256": "da5571956c8aac56a6be47ec4a3f6544750a3c8348f1f793ef8b3cde77e65efa"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022queue-power-target\u0022,\u0022targetFraction\u0022:0.95}",
+    "sha256": "c9331c396c954cefbd0578616b4fc1239e84e7e1a87106bc6447c58b31f838be"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022advance\u0022,\u0022wallMilliseconds\u0022:100}",
+    "sha256": "b721c2e58e00cdecb0df67262365ff145bcca1216025d5f28a9ce6b058e78c21"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022commit-refuel\u0022,\u0022request\u0022:{\u0022channelIndex\u0022:210,\u0022directionId\u0022:\u0022toward-end-b\u0022,\u0022shiftCount\u0022:4,\u0022fuelTypeId\u0022:\u0022NAT-U-SYNTHETIC\u0022}}",
+    "sha256": "92ea3c163cc19986ba6c3c28995f408dcb19536837de8f29d6d454fae96334dd"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022commit-refuel\u0022,\u0022request\u0022:{\u0022channelIndex\u0022:999,\u0022directionId\u0022:\u0022toward-end-b\u0022,\u0022shiftCount\u0022:4,\u0022fuelTypeId\u0022:\u0022NAT-U-SYNTHETIC\u0022}}",
+    "sha256": "3a5cba559234513700f799fe8a0e35374fb8c49fdd7bbad438235a061296a141"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022set-playback-mode\u0022,\u0022modeId\u0022:\u002210x\u0022}",
+    "sha256": "efe98fe2fa00e2a394ca67a082b6dc31b0255d307126e9481971487c0e24e2b1"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022advance\u0022,\u0022wallMilliseconds\u0022:100}",
+    "sha256": "5641849992b500f5374fc9d00083b0de0a2f1220cdeb90a2b17be57b37349708"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022solve\u0022}",
+    "sha256": "43ccdcaa4f2a39d8de9e328c40e2f94ba18bd4fa31f44b0be06921bd56ab5e38"
+  },
+  {
+    "seed": 1001,
+    "command": "{\u0022type\u0022:\u0022reset\u0022}",
+    "sha256": "8f7796e4d0938d399fc82e5982947261a47b790f0b28e81854bdec9e929213cb"
+  },
+  {
+    "seed": 1002,
+    "command": "initialize",
+    "sha256": "ebc07aa6ae23f7562ef84734411315c87ac00693f8555b5cd23e80e6ccaa2c71"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022pause\u0022}",
+    "sha256": "0ec16375ee1b5d4a3cf7533ec530e20e9e237d990ddd66c660fb0d8bcf568807"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022queue-power-target\u0022,\u0022targetFraction\u0022:0.95}",
+    "sha256": "e40071b3a5edb8a7f3c15bddf8c468a36c5d8b54d3310b98c66a40e179c44377"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022resume\u0022}",
+    "sha256": "5d6e696ff6002dc998b8a51c85bfb37abc4a2b05f27f24053150fda6da6aa5f9"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022queue-power-target\u0022,\u0022targetFraction\u0022:0.95}",
+    "sha256": "f0eb0e34fdef8bd8b6f437a5ad9993d863e02f4ad9899299c58577bfb8733db9"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022advance\u0022,\u0022wallMilliseconds\u0022:100}",
+    "sha256": "bffb0f6390e6c336b56167a028bd6edff50f86ba3127dc80bfe0e84d8588e49e"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022commit-refuel\u0022,\u0022request\u0022:{\u0022channelIndex\u0022:210,\u0022directionId\u0022:\u0022toward-end-b\u0022,\u0022shiftCount\u0022:4,\u0022fuelTypeId\u0022:\u0022NAT-U-SYNTHETIC\u0022}}",
+    "sha256": "e972d7081ffb9e27e8e5a86774c8aafc86d29fafefd4b00b3320b36051234655"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022commit-refuel\u0022,\u0022request\u0022:{\u0022channelIndex\u0022:999,\u0022directionId\u0022:\u0022toward-end-b\u0022,\u0022shiftCount\u0022:4,\u0022fuelTypeId\u0022:\u0022NAT-U-SYNTHETIC\u0022}}",
+    "sha256": "3990124d7b4601270196542354bca58c84adacd3e184760cf83fc99362b645e7"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022set-playback-mode\u0022,\u0022modeId\u0022:\u002210x\u0022}",
+    "sha256": "46ccda517b60329b80f75de9ee7b08cfb1524a79edda26e7b2821b49d89809ae"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022advance\u0022,\u0022wallMilliseconds\u0022:100}",
+    "sha256": "eef64e52873440e044314c518d578f16ac9bfe8be05e276258eae744b2163568"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022solve\u0022}",
+    "sha256": "102aa2023b9b8c99c2fd7bc75dd5dcc09bd569b0cb98d8ec0728b010e6a440cf"
+  },
+  {
+    "seed": 1002,
+    "command": "{\u0022type\u0022:\u0022reset\u0022}",
+    "sha256": "ed34a8900f82bc969458ed0f19262df8cae60569d5a9ee62fad02c52a942290b"
+  }
+]

@@ -337,6 +337,9 @@ namespace ReactorSim.Core
         /// </summary>
         public ContractValidationResult<SpatialSolveResult> TrySolve()
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("eigen-solve");
+#endif
             ContractDiagnostic initialDiagnostic;
             SpatialIterationMetrics initialMetrics;
             if (!TryEvaluateState(
@@ -650,7 +653,7 @@ namespace ReactorSim.Core
                 forbiddenClampCount: 0);
         }
 
-        private bool TryEvaluateState(
+        internal bool TryEvaluateState(
             SpatialEigenIterationState state,
             double[] sourceShape,
             out SpatialIterationMetrics metrics,
@@ -951,7 +954,7 @@ namespace ReactorSim.Core
             return diagnostic.Code.Contains("NonFinite", StringComparison.Ordinal);
         }
 
-        private readonly struct SpatialIterationMetrics
+        internal readonly struct SpatialIterationMetrics
         {
             public SpatialIterationMetrics(
                 double residualAbsoluteInfinity,

@@ -2,12 +2,15 @@ import type { BridgeSessionController } from "./sessionController";
 import type { ZoneNodeBinding } from "./protocol";
 import { isAbsorbing, moveAbsorberMask, zoneBindings } from "./zoneLayout";
 import "./zoneLayout.css";
+import { findAdjacentChannelIndex, gridCoordinateLabel } from "./projection";
 
 const palette = ["#c87952", "#daae52", "#6d9c6e", "#43888b", "#758abd", "#aa76a2", "#ba626b",
   "#994d28", "#9c7927", "#426d44", "#246365", "#4c6096", "#795679", "#8d4149"];
 
 /** Editable draft; only Core/Game can validate and commit the resulting physics. */
 export class ZoneLayoutEditor {
+  private readonly liveRegion = document.getElementById("session-announcements");
+  private readonly liveRegionParent = this.liveRegion?.parentElement;
   private readonly dialog = document.createElement("dialog");
   private nodes: ZoneNodeBinding[];
   private undo: ZoneNodeBinding[][] = [];
@@ -15,7 +18,8 @@ export class ZoneLayoutEditor {
   private readonly unsubscribe: () => void;
   private readonly previousFocus = document.activeElement as HTMLElement | null;
 
-  public constructor(private readonly session: BridgeSessionController, private readonly onClose: () => void) {
+  public constructor(private readonly session: Pick<BridgeSessionController, "snapshot" | "isPending" | "status" | "dispatch" | "subscribe">, private readonly onClose: () => void) {
+    if (!session.status.isWasmAvailable) throw new Error("Zone geometry requires the live reactor connection.");
     const bindings = zoneBindings(session.snapshot);
     if (!bindings) throw new Error("Zone geometry requires an updated authoritative WASM snapshot.");
     if (session.snapshot.rrs.absorptionReferenceFillFraction === undefined)
@@ -32,7 +36,8 @@ export class ZoneLayoutEditor {
       </div><svg data-field="map" viewBox="0 0 600 600" aria-label="Zone geometry core face"></svg>
       <div class="zone-layout-legend">${palette.map((color, i) => `<span><i style="background:${color}"></i>Z${i + 1}</span>`).join("")}</div>
       <p data-field="coverage"></p><p data-field="cell"></p><div data-field="rack" class="zone-layout-rack" aria-label="Selected channel axial membership"></div></section>
-      <aside><h2>Edit selected cells</h2><p>Click a core cell to select it. Enable the brush to paint multiple cells with clicks or drags.</p>
+      <aside><h2>Edit selected cells</h2><p>Select a channel below or use the core map. Enable the brush to paint multiple cells with clicks or drags.</p>
+        <label>Selected channel <select data-field="channel">${session.snapshot.core.channels.map(channel => `<option value="${channel.channelIndex}">${gridCoordinateLabel(channel)} · CH ${channel.channelIndex}</option>`).join("")}</select></label>
         <label><input type="checkbox" data-field="brush"> Paint on click / drag</label>
         <label>Edit <select data-field="edit"><option value="region">Control-region membership</option><option value="absorber">Absorber compartment & slopes</option></select></label>
         <label>Zone <select data-field="zone">${palette.map((_, i) => `<option value="${i}">Z${i + 1}</option>`).join("")}</select></label>
@@ -46,14 +51,25 @@ export class ZoneLayoutEditor {
         <h2>Draft controls</h2><div class="zone-layout-controls"><button data-action="undo">Undo</button><button data-action="reload">Reload live layout</button><button data-action="export">Export JSON</button></div>
         <p>Apply runs the shared core solver atomically. Invalid geometry or coefficients leave the live run unchanged. Spatial references are rebuilt; fuel, clock and score are preserved.</p>
         <button data-action="apply" class="zone-layout-apply">Apply layout & solve</button>
-        <p data-field="message" role="status" aria-live="polite">Live geometry loaded. No draft edits applied.</p>
+        <p data-field="message">Live geometry loaded. No draft edits applied.</p>
+        <span data-field="draft-announcement" class="zone-draft-announcement" role="status" aria-live="polite"></span>
       </aside></div>`;
     document.body.append(this.dialog);
+    // The shared live region must stay inside the active modal's accessible tree.
+    if (this.liveRegion) this.dialog.append(this.liveRegion);
     this.dialog.addEventListener("click", this.handleClick);
-    this.dialog.addEventListener("change", () => this.render());
+    this.dialog.addEventListener("change", event => {
+      const target = event.target as HTMLSelectElement;
+      if (target.dataset.field === "channel") this.selectedChannel = Number(target.value);
+      this.render();
+    });
     this.dialog.addEventListener("cancel", (e) => { e.preventDefault(); this.destroy(); });
     this.unsubscribe = session.subscribe(() => {
       this.field<HTMLButtonElement>("apply").disabled = session.isPending || !session.status.isWasmAvailable;
+      if (!session.status.isWasmAvailable) {
+        this.destroy();
+        document.querySelector<HTMLButtonElement>(".bridge-recovery button")?.focus();
+      }
     });
     this.render();
     this.dialog.showModal();
@@ -64,7 +80,10 @@ export class ZoneLayoutEditor {
   }
   private value(name: string): string { return this.field<HTMLInputElement>(name).value; }
   private checkpoint(): void { this.undo.push(this.nodes.map(n => ({ ...n }))); if (this.undo.length > 20) this.undo.shift(); }
-  private message(text: string): void { this.field("message").textContent = text; }
+  private message(text: string, announce = true): void {
+    this.field("message").textContent = text;
+    if (announce) this.field("draft-announcement").textContent = text;
+  }
 
   private paint(clear = false): void {
     const slice = Number(this.value("slice")), scope = this.value("scope");
@@ -123,16 +142,17 @@ export class ZoneLayoutEditor {
 
   private async apply(): Promise<void> {
     if (this.session.isPending) return;
-    this.message("Solving the draft layout…");
+    this.message("Solving the draft layout…", false);
     try {
       const response = await this.session.dispatch({ type: "configure-zone-layout", nodes: this.nodes.map(n => ({ ...n })) }, { responseMode: "full" });
       if (response.accepted) { this.nodes = zoneBindings(this.session.snapshot)!; this.undo = []; }
-      this.message(`${response.accepted ? "Applied" : "Rejected"}: ${response.message}`);
-    } catch (error) { this.message(error instanceof Error ? error.message : String(error)); }
+      this.message(`${response.accepted ? "Applied" : "Rejected"}: ${response.message}`, false);
+    } catch (error) { this.message(error instanceof Error ? error.message : String(error), false); }
     this.render();
   }
 
   private render(): void {
+    this.field<HTMLSelectElement>("channel").value = String(this.selectedChannel);
     const slice = Number(this.value("slice")), absorber = this.value("mode") === "absorber";
     const svg = this.dialog.querySelector("svg")!;
     const focusedChannel = document.activeElement?.getAttribute("data-channel");
@@ -146,11 +166,23 @@ export class ZoneLayoutEditor {
       rect.setAttribute("fill", absorber && !isAbsorbing(node) ? "#e7e9e1" : palette[absorber ? node.absorberZoneId : node.logicalZoneId]!);
       rect.setAttribute("stroke", channel.channelIndex === this.selectedChannel ? "#141f21" : "#fff");
       rect.setAttribute("stroke-width", channel.channelIndex === this.selectedChannel ? "3" : "0.5");
-      rect.setAttribute("data-channel", String(channel.channelIndex)); rect.setAttribute("role", "button"); rect.setAttribute("tabindex", "0");
+      rect.setAttribute("data-channel", String(channel.channelIndex)); rect.setAttribute("role", "button");
+      rect.setAttribute("tabindex", channel.channelIndex === this.selectedChannel ? "0" : "-1");
+      rect.setAttribute("aria-pressed", String(channel.channelIndex === this.selectedChannel));
       const label = `Channel ${channel.channelIndex}, column ${channel.gridColumn + 1}, row ${channel.gridRow + 1}: region Z${node.logicalZoneId + 1}, absorber ${isAbsorbing(node) ? `Z${node.absorberZoneId + 1}` : "none"}`;
       rect.setAttribute("aria-label", label);
       const title = document.createElementNS("http://www.w3.org/2000/svg", "title"); title.textContent = label; rect.append(title);
-      rect.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.selectedChannel = channel.channelIndex; this.paintWithBrush(); this.render(); } });
+      rect.addEventListener("keydown", (e) => {
+        const moves: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+        if (moves[e.key]) {
+          e.preventDefault();
+          this.selectedChannel = findAdjacentChannelIndex(this.session.snapshot.core.channels, channel.channelIndex, ...moves[e.key]);
+          this.render();
+          this.field("map").querySelector<SVGGraphicsElement>(`[data-channel="${this.selectedChannel}"]`)?.focus();
+        } else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault(); this.selectedChannel = channel.channelIndex; this.paintWithBrush(); this.render();
+        }
+      });
       rect.addEventListener("pointerenter", (e) => { if (e.buttons === 1 && this.field<HTMLInputElement>("brush").checked) { this.selectedChannel = channel.channelIndex; this.paintWithBrush(); this.render(); } });
       svg.append(rect);
     }
@@ -164,5 +196,9 @@ export class ZoneLayoutEditor {
     if (focusedChannel) svg.querySelector<SVGGraphicsElement>(`[data-channel="${focusedChannel}"]`)?.focus();
   }
 
-  public destroy(): void { this.unsubscribe(); this.dialog.close(); this.dialog.remove(); this.onClose(); this.previousFocus?.focus(); }
+  public destroy(): void {
+    this.unsubscribe();
+    if (this.liveRegion && this.liveRegionParent) this.liveRegionParent.append(this.liveRegion);
+    this.dialog.close(); this.dialog.remove(); this.onClose(); this.previousFocus?.focus();
+  }
 }

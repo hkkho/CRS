@@ -1,15 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  adjustTarget,
   canIssueRefuel,
   createRefuelDraft,
   formatRefuelDirection,
   toggleRefuelDirection,
-  toggleShiftCount,
   toRefuelRequest,
 } from "./commandState";
 
-describe("Phaser command window state", () => {
+describe("Refuelling draft state", () => {
   const channel = { channelIndex: 210, flowDirection: "toward-end-b" as const };
 
   it("creates a playable order from the selected channel", () => {
@@ -22,7 +20,6 @@ describe("Phaser command window state", () => {
     });
     expect(formatRefuelDirection(draft.directionId)).toContain("END A");
     expect(toggleRefuelDirection(draft.directionId)).toBe("toward-end-a");
-    expect(toggleShiftCount(draft.shiftCount)).toBe(8);
   });
 
   it("allows a direct order when the selected shift is affordable", () => {
@@ -35,9 +32,4 @@ describe("Phaser command window state", () => {
     expect(canIssueRefuel(null, 8, false)).toBe(false);
   });
 
-  it("keeps target nudges inside the operator envelope", () => {
-    expect(adjustTarget(1.2, 0.05, 0.8, 1.2)).toBe(1.2);
-    expect(adjustTarget(0.8, -0.05, 0.8, 1.2)).toBe(0.8);
-    expect(adjustTarget(0.995, 0.005, 0.8, 1.2)).toBe(1);
-  });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { oldestFuelChannel, operationGuidance, refuelImpactText } from "./gameplayPresentation";
+import { highestBurnupChannel, operationGuidance, refuelImpactText } from "./gameplayPresentation";
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 
 function channel(channelIndex: number, burnup: number, hasFuel = true): CanduChannelSnapshot {
@@ -13,12 +13,15 @@ function snapshot(channels: CanduChannelSnapshot[]): CanduSnapshot {
 }
 
 describe("gameplay presentation", () => {
-  it("finds old fuel deterministically without reordering the snapshot or selecting empty cells", () => {
+  it("ranks burnup deterministically without reordering the snapshot or selecting empty cells", () => {
     const channels = [channel(9, 7), channel(1, 100, false), channel(3, 7)];
-    expect(oldestFuelChannel(channels)).toBe(3);
+    expect(highestBurnupChannel(channels)).toBe(3);
     expect(channels.map(c => c.channelIndex)).toEqual([9, 1, 3]);
-    expect(oldestFuelChannel([])).toBeNull();
-    expect(oldestFuelChannel([channel(1, 100, false)])).toBeNull();
+    const mixed = { ...channel(2, 200), bundles: [{ hasFuel: true }, { hasFuel: false }] } as CanduChannelSnapshot;
+    expect(highestBurnupChannel([...channels, mixed])).toBe(3);
+    expect(highestBurnupChannel([{ ...channel(2, 200), canRefuel: false }, ...channels])).toBe(3);
+    expect(highestBurnupChannel([])).toBeNull();
+    expect(highestBurnupChannel([channel(1, 100, false)])).toBeNull();
   });
 
   it("compares the requested channel and preserves signed response and score loss", () => {
@@ -33,6 +36,15 @@ describe("gameplay presentation", () => {
     expect(text).toContain("128 → 124 bundles");
     expect(text).toContain("100.0% → 100.0% (regulated)");
     expect(refuelImpactText(before, after, 9)).toContain("unavailable");
+  });
+
+  it("displays authoritative reward and cost without recomputing the policy", () => {
+    const before = snapshot([channel(3, 6)]);
+    const after = snapshot([channel(3, 5)]);
+    after.lastRefuellingScore = { policyId: "test-policy", dischargeReward: 17, freshFuelCost: 6, netPoints: 11 };
+    expect(refuelImpactText(before, after, 3)).toContain("+11.0 SCORE");
+    expect(refuelImpactText(before, after, 3)).toContain("Discharge reward  +17.0");
+    expect(refuelImpactText(before, after, 3)).toContain("Fresh fuel cost  −6.0");
   });
 
   it("explains exhausted inventory and terminal runs instead of silently disabling controls", () => {

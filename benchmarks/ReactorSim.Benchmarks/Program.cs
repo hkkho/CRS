@@ -62,6 +62,12 @@ internal static class Program
     {
         try
         {
+            if (args.Contains("--profile") || args.Contains("--profile-manifest"))
+            {
+                throw new ArgumentException(
+                    "The historical P9 profile mode is retired: its parameter manifest is absent. " +
+                    "Use the static --warmup/--measure mode, CpuSpatialBenchmark, or browser benchmark scripts.");
+            }
             ValidateScenarioManifest();
             BenchmarkSettings settings = BenchmarkSettings.Parse(args);
             if (settings.ProfileMode)

@@ -20,6 +20,11 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Equal(
             session.CurrentLiquidZoneRrs.GameOverReason,
             session.Snapshot.GameOverReason);
+        Assert.Equal(session.CurrentLiquidZoneRrs.DecisionCode, session.Snapshot.Rrs.DecisionCode);
+        Assert.NotEmpty(session.Snapshot.Rrs.DecisionExplanation);
+        var limiting = session.Snapshot.Rrs.GetZone((uint)session.Snapshot.Rrs.LimitingZoneId);
+        Assert.Equal(session.Snapshot.Rrs.Zones.Min(z => Math.Min(z.FillFraction, 1 - z.FillFraction)),
+            Math.Min(limiting.FillFraction, 1 - limiting.FillFraction));
         Assert.False(session.Snapshot.IsGameOver);
         Assert.Empty(session.Snapshot.GameOverReason);
     }
@@ -38,6 +43,9 @@ public sealed class LiquidZoneRrsGameSessionTests
         ReplacePracticeRrs(session, terminal);
 
         GameSessionSnapshot before = session.Snapshot;
+        Assert.Equal(terminalFill == 0 ? "exhausted-empty" : "exhausted-full", before.Rrs.DecisionCode);
+        Assert.Contains("exhausted", before.Rrs.DecisionExplanation);
+
         SyntheticGameCoreStateV1 beforeCoreState = session.CoreState;
         EquilibriumCoreProjectionV1 beforeProjection = session.CurrentEquilibriumProjection;
         PracticeLiquidZoneRrsV1 beforeRrs = session.CurrentLiquidZoneRrs;
@@ -194,8 +202,15 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.InRange(Math.Abs(after.CompensatedNetReactivity), 0.0, 2e-5);
         Assert.All(after.AppliedFillCommand, movement => Assert.InRange(
             Math.Abs(movement), 0.0, PracticeLiquidZoneRrsIdentityV1.MaxFillMovementPerEvent + 1.0e-12));
-        Assert.Equal(after.OverlayDigest,
-            session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!.OverlayDigest);
+        var effective = session.CurrentEquilibriumProjection.StaticAbsorptionOverlay!;
+        Assert.NotEqual(after.OverlayDigest, effective.OverlayDigest);
+        foreach (var zoneEntry in after.AbsorptionOverlay.Entries)
+        {
+            Assert.True(effective.TryGetEntry(zoneEntry.Node, out var entry));
+            Assert.True(session.CurrentXenonState.Overlay.TryGetEntry(zoneEntry.Node, out var poison));
+            Assert.Equal(zoneEntry.DeltaAbsorptionGroup2PerM + poison!.DeltaAbsorptionGroup2PerM,
+                entry!.DeltaAbsorptionGroup2PerM);
+        }
     }
 
     private static PracticeLiquidZoneRrsV1 CreateUniformFillState(
@@ -238,7 +253,8 @@ public sealed class LiquidZoneRrsGameSessionTests
                 source.ControlledBaselineCandidateSolveCount,
                 source.VerificationCandidateSolveCount,
                 source.CorrectionCandidateSolveCount,
-                source.CorrectionApplied
+                source.CorrectionApplied,
+                source.DecisionCode
             });
     }
 
@@ -283,7 +299,7 @@ public sealed class LiquidZoneRrsGameSessionTests
         Assert.Equal(expected.Rrs.OverlayDigestHex, actual.Rrs.OverlayDigestHex);
         Assert.Same(expectedCoreState, session.CoreState);
         Assert.Same(expectedProjection, session.CurrentEquilibriumProjection);
-        Assert.Same(expectedProjection.LegacyPresentationProjection, session.CurrentSpatialCandidate);
+        Assert.Same(expectedProjection, session.CurrentSpatialCandidate);
         Assert.Same(expectedRrs, session.CurrentLiquidZoneRrs);
     }
 

@@ -1,6 +1,7 @@
 import Phaser from "phaser";
+import type { StudioNavigation, WorkspaceSession, DesignerNavigation } from "../studio/StudioNavigation";
+import { DesignerControls } from "../DesignerControls";
 import { ZoneLayoutEditor } from "../ZoneLayoutEditor";
-import { getRuntimeSession } from "../runtime";
 import {
   COLORS,
   FONTS,
@@ -70,22 +71,23 @@ interface AxialRow {
 
 /**
  * Live Core Designer. This is a view over the same 380 × 12 snapshot used by
- * Operations; it has no second fixture or local reactor state.
+ * Reactor Studio; it has no second fixture or local reactor state.
  */
 export class CoreDesignerScene extends Phaser.Scene {
+  private nativeControls: DesignerControls | null = null;
   private zoneEditor: ZoneLayoutEditor | null = null;
-  private readonly session = getRuntimeSession();
   private readonly tiles = new Map<number, ChannelTile>();
   private readonly axialRows: AxialRow[] = [];
   private readonly faceButtons = new Map<CoreBoundaryFace, TacticalButton>();
-  private snapshot: CanduSnapshot = this.session.snapshot;
+  private snapshot: CanduSnapshot;
   private selectedChannelIndex = -1;
   private selectedPosition = 0;
   private pending = false;
   private resultMessage = "Select a channel, then an axial bundle position.";
   private lastResponseSequence = -1;
   private returnChannelIndex = -1;
-  private returnScene = "OperationsScene";
+  private returnToShell: ((state: StudioNavigation) => void) | null = null;
+  private studioNavigation: StudioNavigation = {};
   private layout: CoreFaceLayout = createCoreFaceLayout(MAP.x, MAP.y, MAP.width, MAP.height);
   private unsubscribe: (() => void) | null = null;
   private mapGraphics: Phaser.GameObjects.Graphics | null = null;
@@ -112,14 +114,15 @@ export class CoreDesignerScene extends Phaser.Scene {
   private unavailableTitle: Phaser.GameObjects.Text | null = null;
   private unavailableDetail: Phaser.GameObjects.Text | null = null;
 
-  public constructor() {
+  public constructor(private readonly session: WorkspaceSession) {
     super("CoreDesignerScene");
+    this.snapshot = session.snapshot;
   }
 
-  public init(data: unknown): void {
-    this.returnChannelIndex = isSceneChannelIndex(data) ? data.returnChannelIndex : -1;
-    this.returnScene = typeof data === "object" && data !== null && "returnScene" in data && data.returnScene === "StudioScene"
-      ? "StudioScene" : "OperationsScene";
+  public init(data: DesignerNavigation = {}): void {
+    this.returnToShell = data.onReturn ?? null;
+    this.returnChannelIndex = data.returnChannelIndex ?? -1;
+    this.studioNavigation = data.studioNavigation ?? {};
   }
 
   public create(): void {
@@ -144,7 +147,17 @@ export class CoreDesignerScene extends Phaser.Scene {
     this.createMap();
     this.createInspector();
     this.createUnavailableOverlay();
+    this.game.canvas.setAttribute("aria-hidden", "true");
+    this.game.canvas.tabIndex = -1;
+    this.nativeControls = new DesignerControls(document.getElementById("game-root")!, {
+      selectChannel: index => this.selectChannel(index),
+      selectPosition: position => { if (!this.pending) { this.selectedPosition = position; this.refresh(); } },
+      toggleFuel: () => this.toggleFuel(), toggleFace: face => this.toggleFace(face),
+      solve: () => this.solve(), zones: () => this.openZoneEditor(), back: () => this.backToStudio(),
+    });
+    this.events.once("shutdown", () => { this.nativeControls?.destroy(); this.nativeControls = null; });
     this.refresh();
+    this.nativeControls.focus();
     this.unsubscribe = this.session.subscribe((update) => this.receiveSessionUpdate(update));
     this.events.once("shutdown", () => this.unsubscribe?.());
     this.events.once("shutdown", () => { this.zoneEditor?.destroy(); this.zoneEditor = null; });
@@ -259,8 +272,8 @@ export class CoreDesignerScene extends Phaser.Scene {
       80,
       210,
       30,
-      "RETURN TO OPS",
-      () => this.backToOperations(),
+      "RETURN TO STUDIO",
+      () => this.backToStudio(),
       { tone: "cyan", compact: true, fontSize: 10 },
     );
     this.backButton.gameObject.setDepth(120);
@@ -609,6 +622,8 @@ export class CoreDesignerScene extends Phaser.Scene {
 
   private refresh(): void {
     this.keepSelectionValid();
+    this.nativeControls?.update(this.snapshot, this.selectedChannelIndex, this.selectedPosition,
+      this.pending, this.session.status.isWasmAvailable, this.resultMessage);
     this.refreshToolbar();
     this.refreshCore();
     this.refreshAxialRows();
@@ -807,7 +822,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       reflectiveFaces: sortFaces(change.reflectiveFaces),
     }, { responseMode: "full" }).catch((error: unknown) => {
       this.resultMessage = `FAILED  /  ${error instanceof Error ? error.message : String(error)}`;
-      this.refreshEditor();
+      this.refresh();
     });
   }
 
@@ -817,7 +832,7 @@ export class CoreDesignerScene extends Phaser.Scene {
     this.refreshEditor();
     void this.session.dispatch({ type: "solve" }, { responseMode: "full" }).catch((error: unknown) => {
       this.resultMessage = `FAILED  /  ${error instanceof Error ? error.message : String(error)}`;
-      this.refreshEditor();
+      this.refresh();
     });
   }
 
@@ -851,15 +866,16 @@ export class CoreDesignerScene extends Phaser.Scene {
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
-    if (this.zoneEditor) return;
+    if (this.zoneEditor || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.target instanceof Element && event.target.closest("input, select, textarea")) return;
     const key = event.key.toLowerCase();
     if (key === "z") { this.openZoneEditor(); return; }
     if (key === "escape") {
-      this.backToOperations();
+      this.backToStudio();
       return;
     }
     if (key === "f2") {
-      this.backToOperations();
+      this.backToStudio();
       return;
     }
     if (key === "s") {
@@ -887,27 +903,23 @@ export class CoreDesignerScene extends Phaser.Scene {
   }
 
   private openZoneEditor(): void {
-    if (this.zoneEditor || this.session.isPending) return;
+    if (this.zoneEditor || this.session.isPending || !this.session.status.isWasmAvailable) return;
     try { this.zoneEditor = new ZoneLayoutEditor(this.session, () => { this.zoneEditor = null; }); }
-    catch (error) { this.resultMessage = String(error); this.refreshEditor(); }
+    catch (error) { this.resultMessage = String(error); this.refresh(); }
   }
 
-  private backToOperations(): void {
+  private backToStudio(): void {
     if (this.pending) return;
     this.session.startShift();
-    this.scene.start(this.returnScene, { selectedChannelIndex: this.selectedChannelIndex });
+    const navigation = { ...this.studioNavigation, selectedChannelIndex: this.selectedChannelIndex };
+    if (this.returnToShell) this.returnToShell(navigation);
+    else this.scene.start("StudioScene", navigation);
   }
 }
 
 function chooseInitialChannel(snapshot: CanduSnapshot): number {
   if (snapshot.core.channels.some((channel) => channel.channelIndex === 210)) return 210;
   return snapshot.core.channels[0]?.channelIndex ?? -1;
-}
-
-function isSceneChannelIndex(value: unknown): value is { returnChannelIndex: number } {
-  return typeof value === "object" && value !== null &&
-    "returnChannelIndex" in value && typeof value.returnChannelIndex === "number" &&
-    Number.isInteger(value.returnChannelIndex);
 }
 
 function finiteOr(value: number, fallback: number): number {

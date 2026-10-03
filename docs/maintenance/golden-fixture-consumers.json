@@ -1,0 +1,228 @@
+[
+  {
+    "artifact": "data/comparisons/p4-t06-g4d-independent-reproduction-v1.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/IndependentSpatialReproduction/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4d-independent-reproduction-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-synthetic-input-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-reduced-candidate-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-reduced-candidate-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "benchmarks/P4-T08-static-solver-benchmark.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/SpatialComparison/Program.cs",
+      "benchmarks/ReactorSim.Benchmarks/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-r5-candidate-snapshots-v1.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/SpatialComparison/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-synthetic-input-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-reduced-candidate-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/packs/p4-t06-r4-reduced-candidate-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "benchmarks/P4-T08-static-solver-benchmark.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/SpatialComparison/Program.cs",
+      "benchmarks/ReactorSim.Benchmarks/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4i-manufactured-definition-v1.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/ManufacturedSpatialAuthority/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4i-manufactured-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/ManufacturedSpatialAuthority/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4i-manufactured-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p4-t06-g4i-manufactured-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [
+      "tools/ManufacturedSpatialAuthority/Program.cs"
+    ],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p4-t06-g4i-manufactured-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4j-representative-definition-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4j-representative-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4j-representative-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4k-independent-authority-definition-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4k-independent-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p4-t06-g4k-independent-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p4-t06-g4k-independent-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p4-t06-g4k-independent-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t06-synthetic-definition-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t06-synthetic-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t06-synthetic-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p7-t06-synthetic-authority-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p7-t06-synthetic-authority-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t07-literature-cases-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t08-literature-calibrated-definition-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t08-literature-calibrated-synthetic-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/comparisons/p7-t08-literature-calibrated-synthetic-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p7-t08-literature-calibrated-synthetic-v1.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  },
+  {
+    "artifact": "data/golden/p7-t08-literature-calibrated-synthetic-v1.manifest.json",
+    "exists": true,
+    "otherTextConsumers": [],
+    "decision": "retain; Golden shell removal does not establish obsolescence"
+  }
+]

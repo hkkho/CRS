@@ -46,8 +46,7 @@ namespace ReactorSim.Core
             ReadOnlyCollection<double> shapeGroup2,
             ReadOnlyCollection<double> shapeNodePowerWatts,
             ReadOnlyCollection<double> shapeChannelPowerWatts,
-            ReadOnlyCollection<double> shapeBundlePowerWatts,
-            IqsSpatialCandidateV1 legacyPresentationProjection)
+            ReadOnlyCollection<double> shapeBundlePowerWatts)
         {
             Owner = owner;
             SpatialSolve = spatialSolve;
@@ -57,7 +56,6 @@ namespace ReactorSim.Core
             _shapeNodePowerWatts = shapeNodePowerWatts;
             _shapeChannelPowerWatts = shapeChannelPowerWatts;
             _shapeBundlePowerWatts = shapeBundlePowerWatts;
-            LegacyPresentationProjection = legacyPresentationProjection;
         }
 
         internal EquilibriumCoreSolverV1 Owner { get; }
@@ -206,13 +204,6 @@ namespace ReactorSim.Core
             get { return SpatialSolve.SpatialSolve.Diagnostics.ResidualRelativeInfinity ?? 0.0; }
         }
 
-        /// <summary>
-        /// Compatibility-only carrier for the pre-existing Game/browser
-        /// projection surface. It contains this same static solve and is not
-        /// an owner of kinetics or xenon state.
-        /// </summary>
-        public IqsSpatialCandidateV1 LegacyPresentationProjection { get; }
-
         private static string ToHex(Digest32 digest)
         {
             var builder = new StringBuilder(digest.Bytes.Count * 2);
@@ -229,15 +220,18 @@ namespace ReactorSim.Core
     {
         internal EquilibriumCorePreparedCandidatesV1(
             EquilibriumCoreSolverV1 owner,
-            FullCoreDiffusionPreparedSolveV1 spatialPreparedSolve)
+            FullCoreDiffusionPreparedSolveV1 spatialPreparedSolve,
+            StaticAbsorptionOverlayV1? backgroundOverlay = null)
         {
             Owner = owner;
             SpatialPreparedSolve = spatialPreparedSolve;
+            BackgroundOverlay = backgroundOverlay;
         }
 
         internal EquilibriumCoreSolverV1 Owner { get; }
 
         internal FullCoreDiffusionPreparedSolveV1 SpatialPreparedSolve { get; }
+        internal StaticAbsorptionOverlayV1? BackgroundOverlay { get; }
     }
 
     /// <summary>
@@ -357,12 +351,18 @@ namespace ReactorSim.Core
         public ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(
             IEnumerable<BundleState> bundles)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-candidate");
+#endif
             return TrySolveCandidate(bundles, _current.SpatialSolve);
         }
 
         internal ContractValidationResult<EquilibriumCorePreparedCandidatesV1>
-            TryPrepareCandidates(IEnumerable<BundleState> bundles)
+            TryPrepareCandidates(IEnumerable<BundleState> bundles, StaticAbsorptionOverlayV1? backgroundOverlay = null)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = RuntimeProfile.Measure("equilibrium-prepare");
+#endif
             ContractValidationResult<FullCoreDiffusionPreparedSolveV1> prepared =
                 _spatialModel.TryPrepareSolve(bundles);
             if (!prepared.IsValid)
@@ -374,7 +374,7 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<EquilibriumCorePreparedCandidatesV1>.Valid(
-                new EquilibriumCorePreparedCandidatesV1(this, prepared.Value));
+                new EquilibriumCorePreparedCandidatesV1(this, prepared.Value, backgroundOverlay));
         }
 
         internal ContractValidationResult<EquilibriumCoreProjectionV1> TrySolveCandidate(
@@ -382,6 +382,9 @@ namespace ReactorSim.Core
             FullCoreDiffusionSolveResultV1 initialSpatialSolve,
             StaticAbsorptionOverlayV1? staticAbsorptionOverlay = null)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-candidate");
+#endif
             if (prepared == null || !ReferenceEquals(prepared.Owner, this))
             {
                 return InvalidCandidate(
@@ -404,6 +407,30 @@ namespace ReactorSim.Core
                     "EquilibriumCoreSolver.InitialSpatialSolve.DataPackMismatch",
                     "initial_spatial_solve.data_pack",
                     "An equilibrium candidate warm start must use this solver's exact diffusion data pack.");
+            }
+
+            if (prepared.BackgroundOverlay != null)
+            {
+                if (staticAbsorptionOverlay == null) staticAbsorptionOverlay = prepared.BackgroundOverlay;
+                else
+                {
+                    var entries = prepared.BackgroundOverlay.Entries.ToDictionary(e => e.Node);
+                    foreach (var entry in staticAbsorptionOverlay.Entries)
+                    {
+                        entries.TryGetValue(entry.Node, out var background);
+                        var composed = StaticAbsorptionOverlayEntryV1.TryCreate(entry.Node,
+                            entry.DeltaAbsorptionGroup1PerM + (background?.DeltaAbsorptionGroup1PerM ?? 0),
+                            entry.DeltaAbsorptionGroup2PerM + (background?.DeltaAbsorptionGroup2PerM ?? 0));
+                        if (!composed.IsValid) return InvalidCandidate(composed.FirstDiagnostic.Code,
+                            composed.FirstDiagnostic.Path, composed.FirstDiagnostic.Message);
+                        entries[entry.Node] = composed.Value;
+                    }
+                    var combined = StaticAbsorptionOverlayV1.TryCreate(
+                        prepared.BackgroundOverlay.SourceIdentity + "+" + staticAbsorptionOverlay.SourceIdentity, entries.Values);
+                    if (!combined.IsValid) return InvalidCandidate(combined.FirstDiagnostic.Code,
+                        combined.FirstDiagnostic.Path, combined.FirstDiagnostic.Message);
+                    staticAbsorptionOverlay = combined.Value;
+                }
             }
 
             ContractValidationResult<FullCoreDiffusionSolveResultV1> spatial =
@@ -440,6 +467,9 @@ namespace ReactorSim.Core
             IEnumerable<BundleState> bundles,
             StaticAbsorptionOverlayV1 staticAbsorptionOverlay)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-candidate");
+#endif
             return TrySolveCandidate(
                 bundles,
                 staticAbsorptionOverlay,
@@ -451,6 +481,9 @@ namespace ReactorSim.Core
             StaticAbsorptionOverlayV1 staticAbsorptionOverlay,
             FullCoreDiffusionSolveResultV1 initialSpatialSolve)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-candidate");
+#endif
             if (bundles == null)
             {
                 return InvalidCandidate(
@@ -517,6 +550,9 @@ namespace ReactorSim.Core
             IEnumerable<BundleState> bundles,
             FullCoreDiffusionSolveResultV1 initialSpatialSolve)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-candidate");
+#endif
             if (bundles == null)
             {
                 return InvalidCandidate(
@@ -596,6 +632,9 @@ namespace ReactorSim.Core
         private EquilibriumCoreProjectionV1 BuildProjection(
             FullCoreDiffusionSolveResultV1 spatial)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("equilibrium-projection");
+#endif
             if (spatial == null || spatial.NodePowerWatts.Count != _spatialModel.NodeCount)
             {
                 throw new InvalidOperationException(
@@ -610,26 +649,6 @@ namespace ReactorSim.Core
                     spatial.NodePowerWatts[nodeIndex];
             }
 
-            AdjointWeightedReactivityResultV1 compatibilityReactivity =
-                new AdjointWeightedReactivityResultV1(
-                    spatial.EffectiveK - 1.0,
-                    spatial.EffectiveK,
-                    spatial.Reactivity,
-                    spatial.CoefficientBindingDigest,
-                    spatial.InventoryBindingDigest,
-                    spatial.CoefficientBindingDigest);
-            IqsSpatialCandidateV1 legacyProjection =
-                new IqsSpatialCandidateV1(
-                    this,
-                    spatial,
-                    spatial.Group1FluxStorage,
-                    spatial.Group2FluxStorage,
-                    spatial.NodePowerWattsStorage,
-                    spatial.TotalPowerWatts,
-                    1.0,
-                    spatial.Reactivity,
-                    compatibilityReactivity);
-
             return new EquilibriumCoreProjectionV1(
                 this,
                 spatial,
@@ -638,8 +657,7 @@ namespace ReactorSim.Core
                 spatial.Group2FluxStorage,
                 spatial.NodePowerWattsStorage,
                 new ReadOnlyCollection<double>(channelPowerWatts),
-                spatial.NodePowerWattsStorage,
-                legacyProjection);
+                spatial.NodePowerWattsStorage);
         }
 
         private static ContractValidationResult<EquilibriumCoreSolverV1> Invalid(

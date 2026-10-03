@@ -261,7 +261,8 @@ namespace ReactorSim.Core
             double targetPowerW,
             double initialEigenvalue,
             double[]? initialGroup1Flux = null,
-            double[]? initialGroup2Flux = null)
+            double[]? initialGroup2Flux = null,
+            int cpuWorkerCount = SpatialOperator.DefaultWorkerCount)
         {
             if (stencil == null)
             {
@@ -322,7 +323,7 @@ namespace ReactorSim.Core
             }
 
             ContractValidationResult<SpatialOperator> operatorResult =
-                SpatialOperator.TryCreate(stencil, coefficients);
+                SpatialOperator.TryCreate(stencil, coefficients, cpuWorkerCount);
             if (!operatorResult.IsValid)
             {
                 return ContractValidationResult<SpatialEigenIteration>.Invalid(
@@ -687,6 +688,9 @@ namespace ReactorSim.Core
             IReadOnlyList<double>? initialGuess,
             out ContractDiagnostic diagnostic)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("linear-solve");
+#endif
             for (int nodeIndex = 0; nodeIndex < source.Length; nodeIndex++)
             {
                 if (!ContractValidation.IsFinite(source[nodeIndex]) || source[nodeIndex] < 0)

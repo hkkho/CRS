@@ -12,6 +12,34 @@ import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import { BridgeSessionController } from "./sessionController";
 
 describe("bridge session controller", () => {
+  it('reports quiet clock solving separately from foreground pending and tags status-only updates', async () => {
+    const bridge = createSerializedFakeBridge();
+    const clock = createClockHarness();
+    const controller = new BridgeSessionController(bridge, clock.options);
+    const updates: import('./sessionController').SessionUpdate[] = [];
+    controller.subscribe(update => updates.push(update));
+    controller.startShift(); clock.advanceBy(100);
+    expect(updates.at(-1)?.pace?.solving).toBe(true);
+    expect(updates.at(-1)?.pending).toBe(false);
+    expect(updates.at(-1)?.changeKind).toBe('status');
+    clock.advanceBy(2000); bridge.resolveActive(); await flushMicrotasks();
+    expect(updates.some(update => update.changeKind === 'snapshot')).toBe(true);
+    expect(updates.at(-1)?.pace?.solving).toBe(false);
+    expect(updates.at(-1)?.pace?.simulatedMinutesPerSecond).toBe(0);
+    controller.setVisible(false);
+    expect(updates.at(-1)?.pace?.simulatedMinutesPerSecond).toBeNull();
+    controller.stopShift(); controller.dispose();
+  });
+  it("stops the clock at horizon completion even with RRS headroom", () => {
+    const bridge = createSerializedFakeBridge({ ...createSnapshot(), runStatus: "completed",
+      runEndReason: "Practice horizon completed" });
+    const clock = createClockHarness();
+    const controller = new BridgeSessionController(bridge, clock.options);
+    controller.startShift();
+    clock.advanceBy(10_000);
+    expect(bridge.calls).toEqual([]);
+    controller.dispose();
+  });
   it("starts and stops the authoritative live-clock lifecycle without owning simulation rules", async () => {
     const bridge = createSerializedFakeBridge();
     const clock = createClockHarness();
@@ -417,3 +445,20 @@ async function flushMicrotasks(): Promise<void> {
   await Promise.resolve();
   await Promise.resolve();
 }
+
+it("retains refuel presentation across later ticks and clears it only on accepted reset", async () => {
+  const controller = new BridgeSessionController(createImmediateFakeBridge(), createClockHarness().options);
+  const refuel = await controller.dispatch({ type: "commit-refuel", request: { channelIndex: 210,
+    directionId: "toward-end-b", shiftCount: 4, fuelTypeId: "NAT-U-SYNTHETIC" } });
+  expect(controller.presentation.message).toBe(refuel.message);
+  expect(controller.presentation.result).toBe("accepted");
+  const impact = controller.presentation.impactText;
+  await controller.dispatch({ type: "pause" });
+  expect(controller.presentation.impactText).toBe(impact);
+  controller.stopShift(); controller.startShift(); controller.stopShift();
+  expect(controller.presentation.impactText).toBe(impact);
+  await controller.dispatch({ type: "reset" });
+  expect(controller.presentation.result).toBeUndefined();
+  expect(controller.presentation.impactText).toContain("first fuel move");
+  controller.dispose();
+});

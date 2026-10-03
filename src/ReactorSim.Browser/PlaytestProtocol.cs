@@ -18,10 +18,13 @@ namespace ReactorSim.Browser
         public const ulong PracticeSeed = 1001;
         public const string StateDigestAlgorithm = "sha256-canonical-state-v1";
         public const string CompactStateDigestAlgorithm = "sha256-canonical-compact-state-v1";
-        public const string ReplayDigestAlgorithm = "sha256-canonical-replay-v1";
+        public const string ReplayDigestAlgorithm = "sha256-chained-replay-v2";
 
         internal static string Serialize(object value)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("json-serialize");
+#endif
             return value switch
             {
                 BridgeCapabilitiesDto capabilities =>

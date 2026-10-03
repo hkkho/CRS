@@ -1,9 +1,24 @@
+import { isRunTerminal } from "./protocol";
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 import { getPowerLabel, getTiltLabel } from "./visuals";
 
-/** Inspection aid only: sort observed fuel age, never predict a reactor response. */
-export function oldestFuelChannel(channels: readonly CanduChannelSnapshot[]): number | null {
-  const fuelled = channels.filter(channel => channel.bundles.some(bundle => bundle.hasFuel));
+/** Inspection aid only: average burnup is neither residence age nor a predicted response. */
+export function isChannelRefuellable(channel: CanduChannelSnapshot | undefined): boolean {
+  if (!channel) return false;
+  // Older fixtures lack Game eligibility: conservatively display fully fuelled channels only.
+  return channel.canRefuel ?? (channel.bundles.length > 0 && channel.bundles.every(bundle => bundle.hasFuel));
+}
+
+export function channelHeadroom(snapshot: CanduSnapshot, channel: CanduChannelSnapshot): string {
+  const ids = [...new Set(channel.bundles.map(b => b.absorberZoneId).filter((id): id is number => id !== undefined))].sort((a,b) => a-b);
+  return ids.map(id => {
+    const zone = snapshot.rrs.zones.find(z => z.logicalZoneId === id);
+    return zone ? `Z${id + 1}: ${(zone.fillFraction * 100).toFixed(0)}% drain / ${((1-zone.fillFraction)*100).toFixed(0)}% fill room` : "";
+  }).filter(Boolean).join(" · ");
+}
+
+export function highestBurnupChannel(channels: readonly CanduChannelSnapshot[]): number | null {
+  const fuelled = channels.filter(channel => isChannelRefuellable(channel));
   fuelled.sort((a, b) => b.averageBurnupMwdPerKg - a.averageBurnupMwdPerKg || a.channelIndex - b.channelIndex);
   return fuelled[0]?.channelIndex ?? null;
 }
@@ -12,11 +27,18 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
   const oldChannel = before.core.channels.find(channel => channel.channelIndex === channelIndex);
   const newChannel = after.core.channels.find(channel => channel.channelIndex === channelIndex);
   if (!oldChannel || !newChannel) return "Channel response unavailable.";
-  const score = after.scoreTotal - before.scoreTotal;
+  const breakdown = after.lastRefuellingScore;
+  const score = breakdown?.netPoints ?? after.scoreTotal - before.scoreTotal;
   return [
     `CH ${channelIndex} · EQUILIBRIUM RESPONSE · ${score >= 0 ? "+" : ""}${score.toFixed(1)} SCORE`,
+    ...(breakdown ? [
+      `Discharge reward  +${breakdown.dischargeReward.toFixed(1)}`,
+      `Fresh fuel cost  −${breakdown.freshFuelCost.toFixed(1)}`,
+    ] : []),
     `Local power  ${getPowerLabel(oldChannel.localPowerFraction)} → ${getPowerLabel(newChannel.localPowerFraction)}`,
     `Local tilt   ${getTiltLabel(oldChannel.localTiltFraction)} → ${getTiltLabel(newChannel.localTiltFraction)}`,
+    ...(after.rrs.decisionExplanation ? [`RRS decision  ${after.rrs.decisionExplanation}`,
+      `Regulating residual  ${after.rrs.controlledBaselineWeightedResidual.toExponential(2)} → ${after.rrs.combinedWeightedResidual.toExponential(2)} (this solve)`] : []),
     `RRS reserve  ${(before.rrsReserveFraction * 100).toFixed(1)}% → ${(after.rrsReserveFraction * 100).toFixed(1)}%`,
     `Fresh fuel   ${before.freshBundlesAvailable} → ${after.freshBundlesAvailable} bundles`,
     `Core power   ${getPowerLabel(before.physics.actualPowerFraction)} → ${getPowerLabel(after.physics.actualPowerFraction)} (regulated)`,
@@ -24,7 +46,7 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
 }
 
 export function operationGuidance(snapshot: CanduSnapshot): string {
-  if (snapshot.rrs.isGameOver) return "Run complete — start a new shift to try a different fuel strategy.";
+  if (isRunTerminal(snapshot)) return `${snapshot.runEndReason || snapshot.rrs.gameOverReason || "Run complete"} — start a new shift to try a different fuel strategy.`;
   if (snapshot.freshBundlesAvailable < 4) return "Fuel budget spent — keep running for operating score, or start a new shift.";
-  return "Inspect older fuel → choose 4 or 8 bundles → refuel → compare the response. Keep RRS reserve away from zero.";
+  return "Compare burnup and both ends → choose 4 or 8 bundles → refuel → compare the response. Keep RRS reserve away from zero.";
 }

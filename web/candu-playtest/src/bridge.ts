@@ -279,6 +279,7 @@ type WorkerMessage = WorkerResultMessage | WorkerErrorMessage | WorkerReadyMessa
 
 export interface WorkerProtocolWorker {
   onmessage: ((event: MessageEvent) => void) | null;
+  onmessageerror: ((event: MessageEvent) => void) | null;
   onerror: ((event: ErrorEvent) => void) | null;
   postMessage(message: unknown): void;
   terminate(): void;
@@ -289,11 +290,19 @@ export type WorkerProtocolWorkerFactory = () => WorkerProtocolWorker;
 export interface WorkerProtocolBridgeOptions {
   createWorker?: WorkerProtocolWorkerFactory;
   onFatalError?: (error: Error) => void;
+  startupTimeoutMs?: number;
+  commandTimeoutMs?: number;
 }
+
+// Generous failure ceilings, not performance targets. See runtime-profile.md:
+// measured 60x ticks are ~3.7s; allow cold loading and much slower devices.
+export const WORKER_STARTUP_TIMEOUT_MS = 120_000;
+export const WORKER_COMMAND_TIMEOUT_MS = 180_000;
 
 interface PendingWorkerRequest {
   resolve: (value: WorkerResultMessage) => void;
   reject: (reason: unknown) => void;
+  timer: ReturnType<typeof setTimeout>;
 }
 
 /**
@@ -317,18 +326,26 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   private terminalError: Error | null = null;
   private workerTerminated = false;
   private readonly metrics: TransportMetric[] = [];
+  private readonly startupTimeoutMs: number;
+  private readonly commandTimeoutMs: number;
+  private startupTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: WorkerProtocolBridgeOptions = {}) {
+    this.startupTimeoutMs = timeoutOption(options.startupTimeoutMs, WORKER_STARTUP_TIMEOUT_MS);
+    this.commandTimeoutMs = timeoutOption(options.commandTimeoutMs, WORKER_COMMAND_TIMEOUT_MS);
     this.onFatalError = options.onFatalError ?? (() => undefined);
     this.ready = new Promise<void>((resolve, reject) => {
       this.resolveReady = resolve;
       this.rejectReady = reject;
     });
     this.worker = (options.createWorker ?? createDefaultWorker)();
-    this.worker.onmessage = (event: MessageEvent) => this.handleMessage(event.data as WorkerMessage);
+    this.worker.onmessage = (event: MessageEvent) => this.handleMessage(event.data);
+    this.worker.onmessageerror = () => this.failReady(new Error("The browser WASM worker response could not be read."));
     this.worker.onerror = (event: ErrorEvent) => {
       this.failReady(new Error(event.message || "The browser WASM worker failed to load."));
     };
+    this.startupTimer = setTimeout(() => this.failReady(new Error(
+      "The reactor did not finish loading before the startup deadline.")), this.startupTimeoutMs);
   }
 
   getSnapshot(): CanduSnapshot {
@@ -467,7 +484,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   }
 
   private enqueue<T>(operation: () => Promise<T>): Promise<T> {
-    const result = this.operationQueue.then(operation, operation);
+    const result = this.operationQueue.then(operation, operation).catch((error: unknown) => {
+      this.failReady(toError(error, "The authoritative response could not be processed."));
+      throw error;
+    });
     this.operationQueue = result.catch(() => undefined);
     return result;
   }
@@ -484,11 +504,13 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
         return;
       }
 
-      this.pending.set(id, { resolve, reject });
+      const timeoutMs = request.type === "initialize" ? this.startupTimeoutMs : this.commandTimeoutMs;
+      const timer = setTimeout(() => this.failReady(new Error(
+        "The reactor stopped responding. The last order's result is unknown; it will not be retried.")), timeoutMs);
+      this.pending.set(id, { resolve, reject, timer });
       try {
         this.worker.postMessage({ ...request, id });
       } catch (error) {
-        this.pending.delete(id);
         const reason = toError(error, "The browser WASM worker could not accept a request.");
         this.failReady(reason);
         reject(this.terminalError ?? reason);
@@ -496,10 +518,17 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     });
   }
 
-  private handleMessage(message: WorkerMessage): void {
+  private handleMessage(value: unknown): void {
+    if (this.lifecycleState !== "active") return;
+    if (!isWorkerMessage(value)) {
+      this.failReady(new Error("The browser WASM worker sent a malformed response."));
+      return;
+    }
+    const message = value;
     if (message.type === "ready") {
       if (!this.readySettled) {
         this.readySettled = true;
+        this.clearStartupTimer();
         this.resolveReady();
       }
       return;
@@ -519,7 +548,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       return;
     }
     this.pending.delete(message.id);
+    clearTimeout(pending.timer);
     if (message.type === "error") {
+      // An exception may occur after state committed. Do not let the clock retry.
+      this.failReady(new Error(message.error));
       pending.reject(new Error(message.error));
     } else {
       pending.resolve(message);
@@ -549,18 +581,21 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
 
   private rejectPending(error: Error): void {
     for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
       pending.reject(error);
     }
     this.pending.clear();
   }
 
   private terminateWorker(): void {
+    this.clearStartupTimer();
     if (this.workerTerminated) {
       return;
     }
 
     this.workerTerminated = true;
     this.worker.onmessage = null;
+    this.worker.onmessageerror = null;
     this.worker.onerror = null;
     try {
       this.worker.terminate();
@@ -568,6 +603,31 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       // The bridge is already terminal even if a host-specific terminate call fails.
     }
   }
+
+  private clearStartupTimer(): void {
+    if (this.startupTimer !== null) clearTimeout(this.startupTimer);
+    this.startupTimer = null;
+  }
+}
+
+function timeoutOption(value: number | undefined, fallback: number): number {
+  const timeout = value ?? fallback;
+  if (!Number.isFinite(timeout) || timeout <= 0 || timeout > 2_147_483_647) {
+    throw new RangeError("Worker timeout must be a positive finite timer duration.");
+  }
+  return timeout;
+}
+
+function isWorkerMessage(value: unknown): value is WorkerMessage {
+  if (typeof value !== "object" || value === null) return false;
+  const message = value as Record<string, unknown>;
+  if (message.type === "ready") return true;
+  if (message.type === "load-error") return message.error === undefined || typeof message.error === "string";
+  if (!Number.isSafeInteger(message.id) || (message.id as number) <= 0) return false;
+  if (message.type === "error") return typeof message.error === "string";
+  return message.type === "result" && typeof message.resultJson === "string" &&
+    typeof message.wasmCallDurationMs === "number" && Number.isFinite(message.wasmCallDurationMs) && message.wasmCallDurationMs >= 0 &&
+    typeof message.returnedUtf8PayloadBytes === "number" && Number.isSafeInteger(message.returnedUtf8PayloadBytes) && message.returnedUtf8PayloadBytes >= 0;
 }
 
 function createDefaultWorker(): WorkerProtocolWorker {
@@ -589,7 +649,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private failedClosed = false;
   private disposed = false;
 
-  constructor(options: Pick<WorkerProtocolBridgeOptions, "createWorker"> = {}) {
+  constructor(options: Omit<WorkerProtocolBridgeOptions, "onFatalError"> = {}) {
     // Keep a shape-compatible snapshot available while the authoritative
     // module loads. It is never an active bridge or a fallback data source.
     const placeholderSnapshot = createUnavailableSnapshot();
@@ -599,7 +659,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
 
     try {
       this.wasm = new WorkerProtocolBridge({
-        createWorker: options.createWorker,
+        ...options,
         onFatalError: (error) => this.transitionToUnavailable(error),
       });
     } catch {
@@ -817,7 +877,7 @@ function createUnavailableSnapshot(): CanduSnapshot {
 }
 
 export function createCanduPlaytestBridge(
-  options: Pick<WorkerProtocolBridgeOptions, "createWorker"> = {},
+  options: Omit<WorkerProtocolBridgeOptions, "onFatalError"> = {},
 ): CanduPlaytestBridgeLifecycle {
   return new AuthoritativeProtocolBridge(options);
 }

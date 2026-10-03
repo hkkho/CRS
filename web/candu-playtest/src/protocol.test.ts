@@ -1,3 +1,4 @@
+import { createShift } from "./testSnapshot";
 import { describe, expect, it } from "vitest";
 import {
   CORE_BUNDLE_POSITION_COUNT,
@@ -13,6 +14,83 @@ import {
 } from "./protocol";
 
 describe("candu-playtest-v2 protocol validation", () => {
+  it("validates modified-run provenance and standard eligibility", () => {
+    const snapshot = createSnapshot();
+    snapshot.provenance = { kind: "modified-sandbox", label: "Modified sandbox", isModified: true,
+      eligibleForStandardChallenge: false, reasons: ["Fuel edited"] };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, provenance: { ...snapshot.provenance, eligibleForStandardChallenge: true } })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, provenance: { ...snapshot.provenance, reasons: [] } })).toBe(false);
+  });
+
+  it("validates controller explanations and limiting zones while retaining older hosts", () => {
+    const snapshot = createSnapshot();
+    snapshot.rrs.decisionCode = "retained-best"; snapshot.rrs.decisionExplanation = "Retained previous fills."; snapshot.rrs.limitingZoneId = 3;
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, rrs: { ...snapshot.rrs, limitingZoneId: 14 } })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, rrs: { ...snapshot.rrs, decisionCode: "made-up" } })).toBe(false);
+  });
+
+  it("validates shared movement maps and confirmed bundle positions", () => {
+    const snapshot = createSnapshot();
+    const plan = { directionId: "toward-end-b" as const, shiftCount: 4 as const, incomingEnd: "A" as const, outgoingEnd: "B" as const,
+      insertedPositions: [0,1,2,3], dischargedPositions: [8,9,10,11], retainedFromPositions: [0,1,2,3,4,5,6,7], retainedToPositions: [4,5,6,7,8,9,10,11] };
+    snapshot.refuellingPlans = [plan];
+    snapshot.lastFuelMovement = { operationId: 1, channelIndex: 210, plan,
+      score: { policyId: "test", dischargeReward: 12, freshFuelCost: 6, netPoints: 6 },
+      bundles: [{ bundleId: "identity", beforePosition: 8, afterPosition: null, burnupMwdPerKg: 8 }] };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.lastFuelMovement.bundles[0] = { bundleId: "identity", beforePosition: 8, burnupMwdPerKg: 8 };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, refuellingPlans: [{ ...plan, dischargedPositions: [12] }] })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, lastFuelMovement: { ...snapshot.lastFuelMovement,
+      bundles: [{ bundleId: "identity", beforePosition: 8, afterPosition: -1, burnupMwdPerKg: 8 }] } })).toBe(false);
+  });
+
+  it("validates Game-owned shift progress and keeps older hosts readable", () => {
+    const snapshot = createSnapshot();
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.shift = createShift();
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    for (const thermalEnergyMwh of [NaN, Infinity, -1])
+      expect(isProtocolSnapshot({ ...snapshot, shift: { ...snapshot.shift, thermalEnergyMwh } })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, shift: { ...snapshot.shift, outcome: "made-up" } })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, shift: { ...snapshot.shift, usefulBundlesDischarged: 0.5 } })).toBe(false);
+  });
+
+  it("validates optional authoritative scoring metadata", () => {
+    const snapshot = createSnapshot();
+    snapshot.scorePolicyId = "practice-discharge-per-bundle-v1";
+    snapshot.lastRefuellingScore = { policyId: snapshot.scorePolicyId, dischargeReward: 0, freshFuelCost: 6, netPoints: -6 };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    for (const invalid of [NaN, Infinity, -1]) {
+      expect(isProtocolSnapshot({ ...snapshot, lastRefuellingScore: { ...snapshot.lastRefuellingScore, freshFuelCost: invalid } })).toBe(false);
+    }
+    expect(isProtocolSnapshot({ ...snapshot, scorePolicyId: "" })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, lastRefuellingScore: null })).toBe(true);
+  });
+
+  it("validates run status independently of RRS exhaustion", () => {
+    const snapshot = createSnapshot();
+    snapshot.runStatus = "completed";
+    snapshot.runEndReason = "Practice horizon completed";
+    expect(parseProtocolSnapshot(snapshot).runStatus).toBe("completed");
+    expect(isProtocolSnapshot({ ...snapshot, runStatus: "unknown" })).toBe(false);
+    expect(isProtocolSnapshot({ ...snapshot, runEndReason: 42 })).toBe(false);
+  });
+  it("accepts unavailable discharge readings and validates recorded burnup peaks", () => {
+    const snapshot = createSnapshot();
+    snapshot.lastDischargedMaximumBurnupMwdPerKg = null;
+    snapshot.maximumDischargedBurnupMwdPerKg = null;
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.lastDischargedMaximumBurnupMwdPerKg = 5.5;
+    snapshot.maximumDischargedBurnupMwdPerKg = 8;
+    expect(parseProtocolSnapshot(snapshot).maximumDischargedBurnupMwdPerKg).toBe(8);
+    for (const invalid of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      snapshot.maximumDischargedBurnupMwdPerKg = invalid;
+      expect(isProtocolSnapshot(snapshot)).toBe(false);
+    }
+  });
   it("validates electrical power separately from thermal fission power", () => {
     const snapshot = createSnapshot();
     snapshot.physics.electricalPowerWatts = 650_000_000;
@@ -91,6 +169,8 @@ describe("candu-playtest-v2 protocol validation", () => {
       responseKind: "compact",
       baseSequence: base.sequence,
       snapshotPatch: patch,
+      replayDigest: "sha256:test-stream-identity",
+      replayDigestAlgorithm: "sha256-chained-replay-v2",
     }), base);
 
     expect(response.snapshot.sequence).toBe(1);
@@ -98,6 +178,10 @@ describe("candu-playtest-v2 protocol validation", () => {
     expect(response.snapshot.playbackModeId).toBe("pause");
     expect(response.snapshot.core).toBe(base.core);
     expect(response.responseKind).toBe("compact");
+    expect(response.replayDigestAlgorithm).toBe("sha256-chained-replay-v2");
+    expect(() => parseProtocolResponse(JSON.stringify({
+      ...responseEnvelope(base, 1), replayDigestAlgorithm: 2,
+    }), base)).toThrow();
   });
 
   it("normalizes initialize command metadata to reset when null or omitted", () => {

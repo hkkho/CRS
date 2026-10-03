@@ -17,6 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ReactorSim.Core\ReactorSim.Core.csproj" />
     <ProjectReference Include="..\..\src\ReactorSim.Game\ReactorSim.Game.csproj" />
+    <ProjectReference Include="..\..\src\ReactorSim.Core.Research\ReactorSim.Core.Research.csproj" />
   </ItemGroup>
 
   <ItemGroup>

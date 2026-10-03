@@ -9,7 +9,7 @@ like fuel decay was being used as the regulation mechanism.
 
 The shared Core controller now prioritizes measured net criticality:
 
-- Outside a 0.01-mk band, solve a common fill request, clipped independently
+- Outside a 0.05-mk band, solve a common fill request, clipped independently
   at each compartment's physical and eight-percentage-point event bounds.
   Filling supplies negative absorption reactivity; draining removes it.
 - Inside the band, solve the bounded shape objective and add a common offset
@@ -26,9 +26,14 @@ power as before, with the retained accepted spatial solution. No Keff value
 is forced to one. This remains a half-hour/event equilibrium game model,
 without valve transients or plant-controller fidelity.
 
-Controller identity is `synthetic-practice-liquid-zone-criticality-first-rrs-v2`;
+Controller identity is `synthetic-practice-liquid-zone-criticality-first-rrs-v4`;
 response identity is `synthetic-practice-liquid-zone-response-common-shape-v3`.
 The existing fuel pack, 2064 MW thermal rating and 6.5-mk zone worth are retained.
+The current inclusive acceptance band is ±0.05 mk (dimensionless rho ±5e-5).
+Regional fraction error is bounded by 0.01 (one percentage point of total power)
+for controller convergence;
+spatial diffusion convergence tolerances are unchanged. The September replay
+below used the earlier v2 controller with its ±0.01-mk band.
 
 The replay in `artifacts/rrs-independent-refuel-response-2026-09-30` uses seed
 1001, two eight-bundle old-channel operations at hour 14, and a matched control

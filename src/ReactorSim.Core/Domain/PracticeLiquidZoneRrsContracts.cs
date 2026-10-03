@@ -36,13 +36,17 @@ namespace ReactorSim.Core
         public const double MaxFillMovementPerEvent = 0.08;
         public const double MaxFillIncrementPerIteration = MaxFillMovementPerEvent;
         public const double FillCommandTolerance = 1.0e-12;
-        public const double ControllerTolerance = 1.0e-4;
-        public const double CriticalityTolerance = 1.0e-5;
+        // Absolute regional share error, expressed as a fraction of total power.
+        public const double RegionalShapeTolerancePercentagePoints = 1.0;
+        public const double ControllerTolerance = RegionalShapeTolerancePercentagePoints / 100.0;
+        // Reactivity is dimensionless; 1 mk = 1e-3 rho.
+        public const double CriticalityToleranceMk = 0.05;
+        public const double CriticalityTolerance = CriticalityToleranceMk * 1.0e-3;
         public const double ResidualAcceptanceTolerance = 1.0e-10;
         public const int MaximumCandidateSolveCount = 4;
         public const int MaximumControllerPasses = 1;
         public const int MaximumControllerIterations = MaximumControllerPasses;
-        public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v2";
+        public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v4";
         public const string ResponseModelIdentity =
             "synthetic-practice-liquid-zone-response-common-shape-v3";
         public const string MappingIdentity = "candu6-regions-independent-absorber-masks-380x12-v3";
@@ -837,7 +841,7 @@ namespace ReactorSim.Core
     /// current measured zonal shape, bounded fills, and the last static
     /// controller result. No kinetics or time integration is represented.
     /// </summary>
-    public sealed class PracticeLiquidZoneRrsV1
+    public sealed partial class PracticeLiquidZoneRrsV1
     {
         private readonly ReadOnlyCollection<double> _zoneFills;
         private readonly ReadOnlyCollection<double> _referenceZonalPowerFractions;
@@ -874,7 +878,8 @@ namespace ReactorSim.Core
             int controlledBaselineCandidateSolveCount,
             int verificationCandidateSolveCount,
             int correctionCandidateSolveCount,
-            bool correctionApplied)
+            bool correctionApplied,
+            string decisionCode = "initial-reference")
         {
             Mapping = mapping;
             _zoneFills = Copy(zoneFills);
@@ -910,6 +915,7 @@ namespace ReactorSim.Core
                 verificationCandidateSolveCount +
                 correctionCandidateSolveCount;
             CorrectionApplied = correctionApplied;
+            DecisionCode = LowExhaustion ? "exhausted-empty" : HighExhaustion ? "exhausted-full" : decisionCode;
             StateDigest = ComputeStateDigest();
         }
 
@@ -1148,6 +1154,8 @@ namespace ReactorSim.Core
 
         public bool CorrectionApplied { get; }
 
+        public string DecisionCode { get; }
+
         public bool Converged
         {
             get { return ControllerConverged; }
@@ -1354,7 +1362,7 @@ namespace ReactorSim.Core
                     ControlledBaselineCandidateSolveCount,
                     VerificationCandidateSolveCount,
                     CorrectionCandidateSolveCount,
-                    CorrectionApplied));
+                    CorrectionApplied, DecisionCode));
         }
 
         /// <summary>
@@ -1370,8 +1378,12 @@ namespace ReactorSim.Core
             IEnumerable<BundleState> bundles,
             PracticeLiquidZoneRrsV1 previousState,
             double simulationTimeSeconds,
-            FullCoreDiffusionSolveResultV1? warmStart = null)
+            FullCoreDiffusionSolveResultV1? warmStart = null,
+            StaticAbsorptionOverlayV1? backgroundOverlay = null)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("rrs-event");
+#endif
             if (equilibriumSolver == null)
             {
                 return InvalidRun(
@@ -1407,7 +1419,7 @@ namespace ReactorSim.Core
 
             BundleState[] bundleRecords = bundles.ToArray();
             ContractValidationResult<EquilibriumCorePreparedCandidatesV1> preparedCandidates =
-                equilibriumSolver.TryPrepareCandidates(bundleRecords);
+                equilibriumSolver.TryPrepareCandidates(bundleRecords, backgroundOverlay);
             if (!preparedCandidates.IsValid)
             {
                 return InvalidRun(
@@ -1517,9 +1529,10 @@ namespace ReactorSim.Core
                 false);
             PracticeLiquidZoneRrsResponseModelV1? correctionResponseModel = null;
 
-            if (!IsControllerConverged(
-                    baselineMeasurement.Value.Errors,
-                    controlledBaseline.Value.RelativeReactivity))
+            bool baselineConverged = IsControllerConverged(baselineMeasurement.Value.Errors,
+                controlledBaseline.Value.RelativeReactivity);
+            bool commandAccepted = false;
+            if (!baselineConverged)
             {
                 ContractValidationResult<double[]> command = TrySolveBoundedFillCommand(
                     responseModel.Value,
@@ -1593,6 +1606,7 @@ namespace ReactorSim.Core
                     if (verificationAccepted)
                     {
                         finalCandidate = verificationCandidate;
+                        commandAccepted = true;
                     }
 
                     if (!IsControllerConverged(
@@ -1715,10 +1729,33 @@ namespace ReactorSim.Core
                 controlledBaselineCandidateSolveCount,
                 verificationCandidateSolveCount,
                 correctionCandidateSolveCount,
-                finalCandidate.CorrectionApplied);
+                finalCandidate.CorrectionApplied,
+                DescribeControllerDecision(baselineConverged, commandAccepted, finalCandidate.CorrectionApplied,
+                    IsControllerConverged(finalCandidate.Measurement.Errors, finalCandidate.Projection.RelativeReactivity),
+                    finalCandidate.Fills, Difference(finalCandidate.Fills, previousFills), correctionCandidateSolveCount > 0));
 
             return ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>.Valid(
                 new PracticeLiquidZoneRrsEquilibriumResultV1(state, finalCandidate.Projection));
+        }
+
+        /// <summary>Diagnostic classification from actual controller branch choices and measured bounds; no solver changes.</summary>
+        public static string DescribeControllerDecision(bool baselineConverged, bool commandAccepted,
+            bool correctionAccepted, bool finalConverged, IReadOnlyList<double> fills, IReadOnlyList<double> appliedCommand, bool correctionTested = false)
+        {
+            if (fills == null || appliedCommand == null || fills.Count != 14 || appliedCommand.Count != 14 ||
+                fills.Any(f => double.IsNaN(f) || double.IsInfinity(f) || f < 0 || f > 1) ||
+                appliedCommand.Any(f => double.IsNaN(f) || double.IsInfinity(f)))
+                throw new ArgumentException("Decision facts require fourteen finite bounded fills and commands.");
+            if (fills.All(f => f <= 0)) return "exhausted-empty";
+            if (fills.All(f => f >= 1)) return "exhausted-full";
+            if (baselineConverged) return "already-balanced";
+            if (!finalConverged && fills.Any(f => f <= PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance ||
+                f >= 1 - PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)) return "fill-limits";
+            if (!finalConverged && appliedCommand.Any(f => Math.Abs(f) >=
+                PracticeLiquidZoneRrsIdentityV1.MaxFillMovementPerEvent - PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)) return "event-limit";
+            if (correctionAccepted) return "correction-applied";
+            if (commandAccepted && correctionTested) return "command-retained";
+            return commandAccepted ? "command-applied" : "retained-best";
         }
 
         private static ContractValidationResult<double[]> TrySolveBoundedFillCommand(
@@ -1728,6 +1765,9 @@ namespace ReactorSim.Core
             double[] currentFills,
             double[] eventOriginFills)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("rrs-command");
+#endif
             if (responseModel == null)
             {
                 return ContractValidationResult<double[]>.Invalid(
@@ -2214,7 +2254,7 @@ namespace ReactorSim.Core
             return Math.Sqrt(squared);
         }
 
-        private static bool IsControllerConverged(
+        internal static bool IsControllerConverged(
             double[] shapeErrors,
             double reactivity)
         {

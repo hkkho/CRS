@@ -43,7 +43,9 @@ Each solve measures the fourteen fractions of total fission power. The initial
 equilibrium shape supplies their references, preserving the intended radial
 profile rather than imposing equal power on regions of different sizes.
 The controller treats net criticality and spatial shape as separate objectives.
-Outside a 0.01-mk net-reactivity band, a common fill request removes excess
+Controller convergence allows one percentage point of absolute error in each
+region's share of total power (fraction 0.01), alongside ±0.05 mk net reactivity.
+Outside a 0.05-mk net-reactivity band, a common fill request removes excess
 reactivity or supplies a deficit, with each compartment clipped at its bounds.
 Inside that band, bounded least squares corrects `target fraction - measured
 fraction`; a common offset cancels its estimated reactivity change.
