@@ -8,7 +8,8 @@ import {
 type WorkerRequest =
   | { id: number; type: "initialize"; mode: BridgeModeId }
   | { id: number; type: "get-snapshot" }
-  | { id: number; type: "dispatch"; commandJson: string };
+  | { id: number; type: "gpu-fixture"; requestJson: string }
+  | { id: number; type: "dispatch"; commandJson: string; profile?: boolean };
 
 type WorkerResponse =
   | { type: "ready" }
@@ -59,7 +60,7 @@ exportsPromise = loadWasm();
 
 async function loadWasm(): Promise<CanduPlaytestWasmExports> {
   try {
-    const moduleUrl = new URL("/wasm/main.mjs", scope.location.href).href;
+    const moduleUrl = new URL(`${import.meta.env.BASE_URL}wasm/main.mjs`, scope.location.href).href;
     await import(/* @vite-ignore */ moduleUrl);
     const wasmExports = findWasmExports();
     if (wasmExports === null) {
@@ -86,7 +87,14 @@ async function dispatchRequest(api: CanduPlaytestWasmExports, request: WorkerReq
       return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode })));
     case "get-snapshot":
       return normalizeJson(await api.getSnapshotJson());
+    case "gpu-fixture":
+      if (!api.getGpuPrototypeFixtureJson) throw new Error("This WASM build has no GPU fixture export.");
+      return normalizeJson(await api.getGpuPrototypeFixtureJson(request.requestJson));
     case "dispatch":
+      if (request.profile) {
+        if (!api.dispatchProfileJson) throw new Error("This WASM build has no profiling export.");
+        return normalizeJson(await api.dispatchProfileJson(request.commandJson));
+      }
       return normalizeJson(await api.dispatchJson(request.commandJson));
   }
 }

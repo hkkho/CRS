@@ -1,7 +1,6 @@
 export const LIVE_CLOCK_WALL_TICK_MS = 100;
 export const LIVE_CLOCK_TIMER_INTERVAL_MS = 100;
 export const LIVE_CLOCK_MAX_DISPATCH_MS = 1_000;
-export const LIVE_CLOCK_MAX_BACKLOG_MS = 60_000;
 
 type TimerHandle = unknown;
 
@@ -20,8 +19,6 @@ export interface LiveClockSchedulerOptions {
    * retaining a catch-up backlog.
    */
   maxDispatchMs?: number;
-  /** @deprecated Pending time is always capped at one wall-time quantum. */
-  maxBacklogMs?: number;
 }
 
 /**
@@ -70,13 +67,6 @@ export class LiveClockScheduler {
 
     if (this.maxDispatchMs < this.wallTickMs) {
       throw new RangeError("maxDispatchMs must be at least one wall-time control tick.");
-    }
-
-    // Validate the legacy option when supplied, but do not use it to permit a
-    // second pending quantum. Keeping this validation makes accidental invalid
-    // callers fail in the same place as before while preserving the new cap.
-    if (options.maxBacklogMs !== undefined) {
-      positiveOption(options.maxBacklogMs, LIVE_CLOCK_MAX_BACKLOG_MS, "maxBacklogMs");
     }
   }
 

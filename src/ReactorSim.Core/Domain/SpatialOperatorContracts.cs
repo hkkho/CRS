@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ReactorSim.Core
 {
@@ -985,12 +986,22 @@ namespace ReactorSim.Core
     {
         private readonly SpatialStencil _stencil;
         private readonly CompiledNode[] _nodes;
+        private readonly ParallelOptions _parallelOptions;
+#if CPU_PARALLEL
+        public const int DefaultWorkerCount = 2;
+#else
+        public const int DefaultWorkerCount = 1;
+#endif
 
-        private SpatialOperator(SpatialStencil stencil, CompiledNode[] nodes)
+        private SpatialOperator(SpatialStencil stencil, CompiledNode[] nodes, int workerCount)
         {
             _stencil = stencil;
             _nodes = nodes;
+            WorkerCount = Math.Min(workerCount, nodes.Length);
+            _parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = WorkerCount };
         }
+
+        public int WorkerCount { get; }
 
         public int NodeCount
         {
@@ -999,8 +1010,15 @@ namespace ReactorSim.Core
 
         public static ContractValidationResult<SpatialOperator> TryCreate(
             SpatialStencil stencil,
-            SpatialCoefficientSet coefficients)
+            SpatialCoefficientSet coefficients,
+            int workerCount = DefaultWorkerCount)
         {
+            if (workerCount < 1 || workerCount > 8)
+            {
+                return ContractValidationResult<SpatialOperator>.Invalid(
+                    "SpatialOperator.WorkerCount.Invalid", "worker_count",
+                    "CPU operator execution requires between one and eight partitions.");
+            }
             if (stencil == null)
             {
                 return ContractValidationResult<SpatialOperator>.Invalid(
@@ -1077,7 +1095,7 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<SpatialOperator>.Valid(
-                new SpatialOperator(stencil, compiledNodes));
+                new SpatialOperator(stencil, compiledNodes, workerCount));
         }
 
         public bool TryApply(
@@ -1086,6 +1104,9 @@ namespace ReactorSim.Core
             double[] destination,
             out ContractDiagnostic diagnostic)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("operator-apply");
+#endif
             if (group != SpatialEnergyGroup.Group1 && group != SpatialEnergyGroup.Group2)
             {
                 ClearIfSupplied(destination);
@@ -1158,7 +1179,41 @@ namespace ReactorSim.Core
                 }
             }
 
-            for (int nodeIndex = 0; nodeIndex < _nodes.Length; nodeIndex++)
+            bool success = WorkerCount == 1
+                ? TryApplyRange(group, flux, destination, 0, _nodes.Length, out diagnostic)
+                : TryApplyParallel(group, flux, destination, out diagnostic);
+            if (!success) Array.Clear(destination, 0, destination.Length);
+            return success;
+        }
+
+        private bool TryApplyParallel(SpatialEnergyGroup group, double[] flux,
+            double[] destination, out ContractDiagnostic diagnostic)
+        {
+            // Contiguous, disjoint rows; preserve the arithmetic order within each row.
+            // Join before inspecting errors or clearing output. The earliest canonical
+            // partition supplies the same first failure as serial execution.
+            // Keep the capturing lambda here so serial applications allocate no closure.
+            var failures = new ContractDiagnostic?[WorkerCount];
+            Parallel.For(0, WorkerCount, _parallelOptions, partition =>
+            {
+                TryApplyRange(group, flux, destination,
+                    partition * _nodes.Length / WorkerCount,
+                    (partition + 1) * _nodes.Length / WorkerCount,
+                    out ContractDiagnostic failure);
+                failures[partition] = failure;
+            });
+            diagnostic = null!;
+            for (int partition = 0; partition < WorkerCount; partition++)
+            {
+                if (failures[partition] != null) { diagnostic = failures[partition]!; break; }
+            }
+            return diagnostic == null;
+        }
+
+        private bool TryApplyRange(SpatialEnergyGroup group, double[] flux,
+            double[] destination, int first, int end, out ContractDiagnostic diagnostic)
+        {
+            for (int nodeIndex = first; nodeIndex < end; nodeIndex++)
             {
                 CompiledNode node = _nodes[nodeIndex];
                 double removal = group == SpatialEnergyGroup.Group1
@@ -1169,8 +1224,7 @@ namespace ReactorSim.Core
 
                 if (!ContractValidation.IsFinite(removal) || !ContractValidation.IsFinite(result))
                 {
-                    return FailAndClear(
-                        destination,
+                    return FailRow(
                         ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
                         "SpatialOperator.Result.NonFinite",
                         "The removal contribution became non-finite.",
@@ -1187,8 +1241,7 @@ namespace ReactorSim.Core
                     leakage += term;
                     if (!ContractValidation.IsFinite(term) || !ContractValidation.IsFinite(leakage))
                     {
-                        return FailAndClear(
-                            destination,
+                        return FailRow(
                             ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
                             "SpatialOperator.Leakage.NonFinite",
                             "The interior leakage contribution became non-finite.",
@@ -1205,8 +1258,7 @@ namespace ReactorSim.Core
                     leakage += term;
                     if (!ContractValidation.IsFinite(term) || !ContractValidation.IsFinite(leakage))
                     {
-                        return FailAndClear(
-                            destination,
+                        return FailRow(
                             ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
                             "SpatialOperator.BoundaryLeakage.NonFinite",
                             "The boundary leakage contribution became non-finite.",
@@ -1218,8 +1270,7 @@ namespace ReactorSim.Core
                 result += leakageContribution;
                 if (!ContractValidation.IsFinite(leakageContribution) || !ContractValidation.IsFinite(result))
                 {
-                    return FailAndClear(
-                        destination,
+                    return FailRow(
                         ContractValidation.NodePath(_stencil.Nodes[nodeIndex].Node, ".operator"),
                         "SpatialOperator.Result.NonFinite",
                         "The removal-plus-leakage result became non-finite.",
@@ -1231,6 +1282,13 @@ namespace ReactorSim.Core
 
             diagnostic = null!;
             return true;
+        }
+
+        private static bool FailRow(string path, string code, string message,
+            out ContractDiagnostic diagnostic)
+        {
+            diagnostic = new ContractDiagnostic(code, path, message);
+            return false;
         }
 
         /// <summary>

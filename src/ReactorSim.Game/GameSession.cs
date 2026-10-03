@@ -8,269 +8,9 @@ using ReactorSim.Core;
 
 namespace ReactorSim.Game
 {
-    public sealed class GameSessionSnapshot
-    {
-        internal GameSessionSnapshot(
-            string scenarioId,
-            string difficultyId,
-            ulong seed,
-            string playbackModeId,
-            double accelerationFactor,
-            uint wallControlTickMilliseconds,
-            double scenarioHorizonSeconds,
-            double simulationTimeSeconds,
-            double wallElapsedSeconds,
-            double normalizedPowerFraction,
-            double axialTiltFraction,
-            double rrsReserveFraction,
-            double deviceAvailableFraction,
-            uint refuelRequestsRemaining,
-            uint pendingActionCount,
-            uint processedScriptedEventCount,
-            double scoreTotal,
-            uint turnSummaryCount,
-            string outcomeId,
-            bool isGameOver,
-            string gameOverReason,
-            bool isPaused,
-            uint freshBundlesAvailable,
-            uint refuellingOperationCount,
-            int lastRefuelledChannel,
-            string lastRefuellingDirectionId,
-            ushort lastRefuellingShiftCount,
-            GameCorePresentationSnapshot core)
-        {
-            ScenarioId = scenarioId;
-            DifficultyId = difficultyId;
-            Seed = seed;
-            PlaybackModeId = playbackModeId;
-            AccelerationFactor = accelerationFactor;
-            WallControlTickMilliseconds = wallControlTickMilliseconds;
-            ScenarioHorizonSeconds = scenarioHorizonSeconds;
-            SimulationTimeSeconds = simulationTimeSeconds;
-            WallElapsedSeconds = wallElapsedSeconds;
-            NormalizedPowerFraction = normalizedPowerFraction;
-            AxialTiltFraction = axialTiltFraction;
-            RrsReserveFraction = rrsReserveFraction;
-            DeviceAvailableFraction = deviceAvailableFraction;
-            RefuelRequestsRemaining = refuelRequestsRemaining;
-            PendingActionCount = pendingActionCount;
-            ProcessedScriptedEventCount = processedScriptedEventCount;
-            ScoreTotal = scoreTotal;
-            TurnSummaryCount = turnSummaryCount;
-            OutcomeId = outcomeId;
-            IsGameOver = isGameOver;
-            GameOverReason = gameOverReason;
-            IsPaused = isPaused;
-            FreshBundlesAvailable = freshBundlesAvailable;
-            RefuellingOperationCount = refuellingOperationCount;
-            LastRefuelledChannel = lastRefuelledChannel;
-            LastRefuellingDirectionId = lastRefuellingDirectionId;
-            LastRefuellingShiftCount = lastRefuellingShiftCount;
-            Core = core ?? throw new ArgumentNullException(nameof(core));
-            Physics = Core.Physics;
-            Xenon = Core.Xenon;
-            Rrs = Core.Rrs;
-        }
-
-        public string ScenarioId { get; }
-
-        public ulong Seed { get; }
-
-        public string DifficultyId { get; }
-
-        public string PlaybackModeId { get; }
-
-        public double AccelerationFactor { get; }
-
-        public uint WallControlTickMilliseconds { get; }
-
-        public double ScenarioHorizonSeconds { get; }
-
-        public double SimulationTimeSeconds { get; }
-
-        public double WallElapsedSeconds { get; }
-
-        public double NormalizedPowerFraction { get; }
-
-        public double AxialTiltFraction { get; }
-
-        public double RrsReserveFraction { get; }
-
-        public double DeviceAvailableFraction { get; }
-
-        public uint RefuelRequestsRemaining { get; }
-
-        public uint PendingActionCount { get; }
-
-        public uint ProcessedScriptedEventCount { get; }
-
-        public double ScoreTotal { get; }
-
-        public uint TurnSummaryCount { get; }
-
-        public string OutcomeId { get; }
-
-        public bool IsGameOver { get; }
-
-        public string GameOverReason { get; }
-
-        public bool IsPaused { get; }
-
-        public uint FreshBundlesAvailable { get; }
-
-        public uint RefuellingOperationCount { get; }
-
-        public int LastRefuelledChannel { get; }
-
-        public string LastRefuellingDirectionId { get; }
-
-        public ushort LastRefuellingShiftCount { get; }
-
-        public GameCorePresentationSnapshot Core { get; }
-
-        public GamePhysicsPresentationSnapshot Physics { get; }
-
-        public GameXenonPresentationSnapshot Xenon { get; }
-
-        public GameRrsPresentationSnapshot Rrs { get; }
-    }
-
-    public sealed class GameSessionCommandResult
-    {
-        internal GameSessionCommandResult(
-            bool accepted,
-            string diagnosticCode,
-            string diagnosticMessage,
-            string message,
-            GameSessionSnapshot snapshot)
-        {
-            Accepted = accepted;
-            DiagnosticCode = diagnosticCode;
-            DiagnosticMessage = diagnosticMessage;
-            Message = message;
-            Snapshot = snapshot;
-        }
-
-        public bool Accepted { get; }
-
-        public string DiagnosticCode { get; }
-
-        public string DiagnosticMessage { get; }
-
-        public string Message { get; }
-
-        public GameSessionSnapshot Snapshot { get; }
-    }
-
     public sealed class GameSession
     {
-        private sealed class PracticeTransaction
-        {
-            internal PracticeTransaction(
-                SyntheticGameCoreStateV1 coreState,
-                EquilibriumCoreProjectionV1 spatialCandidate,
-                PracticeLiquidZoneRrsV1 rrs,
-                double lastFullCoreSolveSimulationTime,
-                double syntheticScore,
-                ulong powerProjectionVersion)
-            {
-                CoreState = coreState;
-                SpatialCandidate = spatialCandidate;
-                Rrs = rrs;
-                LastFullCoreSolveSimulationTime = lastFullCoreSolveSimulationTime;
-                SyntheticScore = syntheticScore;
-                PowerProjectionVersion = powerProjectionVersion;
-            }
-
-            internal SyntheticGameCoreStateV1 CoreState;
-
-            internal EquilibriumCoreProjectionV1 SpatialCandidate;
-
-            internal PracticeLiquidZoneRrsV1 Rrs;
-
-            internal double LastFullCoreSolveSimulationTime;
-
-            internal double SyntheticScore;
-
-            internal ulong PowerProjectionVersion;
-        }
-
-        private sealed class ConfiguredCoreDesign
-        {
-            internal ConfiguredCoreDesign(
-                IEnumerable<NodeKey> nonfuelNodes,
-                IEnumerable<KeyValuePair<NodeKey, IEnumerable<TopologyFace>>> reflectiveFaceOverrides)
-            {
-                NodeKey[] orderedNonfuelNodes = (nonfuelNodes ?? throw new ArgumentNullException(nameof(nonfuelNodes)))
-                    .Distinct()
-                    .OrderBy(node => node)
-                    .ToArray();
-                _nonfuelNodes = new ReadOnlyCollection<NodeKey>(orderedNonfuelNodes);
-
-                var map = new Dictionary<NodeKey, IReadOnlyList<TopologyFace>>();
-                if (reflectiveFaceOverrides == null)
-                {
-                    throw new ArgumentNullException(nameof(reflectiveFaceOverrides));
-                }
-
-                foreach (KeyValuePair<NodeKey, IEnumerable<TopologyFace>> entry in
-                    reflectiveFaceOverrides.OrderBy(item => item.Key))
-                {
-                    TopologyFace[] faces = (entry.Value ?? throw new ArgumentNullException(nameof(reflectiveFaceOverrides)))
-                        .Distinct()
-                        .OrderBy(GameSession.FaceRank)
-                        .ToArray();
-                    if (faces.Length > 0)
-                    {
-                        map[entry.Key] = new ReadOnlyCollection<TopologyFace>(faces);
-                    }
-                }
-
-                _reflectiveFaceOverrides =
-                    new ReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>(map);
-            }
-
-            private readonly IReadOnlyList<NodeKey> _nonfuelNodes;
-            private readonly IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
-                _reflectiveFaceOverrides;
-
-            internal IReadOnlyList<NodeKey> NonfuelNodes
-            {
-                get { return _nonfuelNodes; }
-            }
-
-            internal IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
-                ReflectiveFaceOverrides
-            {
-                get { return _reflectiveFaceOverrides; }
-            }
-        }
-
-        private sealed class ConfiguredCoreTransaction
-        {
-            internal ConfiguredCoreTransaction(
-                EquilibriumCoreSolverV1 solver,
-                PracticeLiquidZoneRrsV1 rrs,
-                ConfiguredCoreDesign design,
-                ulong powerProjectionVersion)
-            {
-                Solver = solver;
-                Rrs = rrs;
-                Design = design;
-                PowerProjectionVersion = powerProjectionVersion;
-            }
-
-            internal EquilibriumCoreSolverV1 Solver;
-
-            internal PracticeLiquidZoneRrsV1 Rrs;
-
-            internal ConfiguredCoreDesign Design;
-
-            internal ulong PowerProjectionVersion;
-        }
-
-        private readonly Phase8ScoredScenarioRuntimeV1 _runtime;
+        private readonly PracticeRunClock _runtime;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private EquilibriumCoreSolverV1 _equilibriumSolver;
@@ -278,25 +18,43 @@ namespace ReactorSim.Game
         private SyntheticGameCoreStateV1 _coreState;
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
+        private readonly bool _challenge;
+        private double _thermalEnergyJoules;
+        private uint _fuelConsumed;
+        private uint _usefulBundlesDischarged;
+        private double _dischargeReward;
+        private double _freshFuelCost;
+        private RefuellingScoreBreakdown? _lastRefuellingScore;
+        private RefuellingMovement? _lastFuelMovement;
+        private readonly List<string> _modificationReasons = new List<string>();
+        private double? _lastDischargedMaximumBurnupMwDayPerKg;
+        private double? _maximumDischargedBurnupMwDayPerKg;
         private ulong _powerProjectionVersion;
+        private PracticeXenonStateV1 _xenon;
+        private PracticeXenonStateV1 _coupledXenon;
         private IReadOnlyList<NodeKey> _nonfuelNodes;
         private IReadOnlyDictionary<NodeKey, IReadOnlyList<TopologyFace>>
             _reflectiveFaceOverrides;
 
         internal GameSession(
-            Phase8ScoredScenarioRuntimeV1 runtime,
+            PracticeRunClock runtime,
             IReadOnlyDictionary<string, Phase8PlaybackModeV1> playbackModes,
             uint wallControlTickMilliseconds,
             SyntheticGameCoreStateV1 coreState,
             EquilibriumCoreSolverV1 equilibriumSolver,
-            PracticeLiquidZoneRrsV1 practiceRrs)
+            PracticeLiquidZoneRrsV1 practiceRrs,
+            bool challenge = false)
         {
+            _challenge = challenge;
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
             _equilibriumSolver = equilibriumSolver ?? throw new ArgumentNullException(nameof(equilibriumSolver));
             _practiceRrs = practiceRrs ?? throw new ArgumentNullException(nameof(practiceRrs));
+            _xenon = PracticeXenonStateV1.CreateEquilibrium(coreState, equilibriumSolver.CurrentProjection,
+                _runtime.SimulationTimeSeconds);
+            _coupledXenon = _xenon;
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
             _nonfuelNodes = new ReadOnlyCollection<NodeKey>(Array.Empty<NodeKey>());
             _reflectiveFaceOverrides =
@@ -314,9 +72,9 @@ namespace ReactorSim.Game
             get { return _coreState; }
         }
 
-        public IqsSpatialCandidateV1 CurrentSpatialCandidate
+        public EquilibriumCoreProjectionV1 CurrentSpatialCandidate
         {
-            get { return _equilibriumSolver.CurrentProjection.LegacyPresentationProjection; }
+            get { return _equilibriumSolver.CurrentProjection; }
         }
 
         public EquilibriumCoreProjectionV1 CurrentEquilibriumProjection
@@ -328,6 +86,8 @@ namespace ReactorSim.Game
         {
             get { return _practiceRrs; }
         }
+
+        public PracticeXenonStateV1 CurrentXenonState => _xenon;
 
         public bool IsFuelCell(uint channelIndex, uint position)
         {
@@ -364,7 +124,7 @@ namespace ReactorSim.Game
             bool hasFuel,
             IReadOnlyCollection<TopologyFace> reflectiveFaces)
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -391,7 +151,12 @@ namespace ReactorSim.Game
                     transaction.FirstDiagnostic.Message);
             }
 
+            bool geometryChanged = !_nonfuelNodes.SequenceEqual(design.Value.NonfuelNodes) ||
+                _reflectiveFaceOverrides.Count != design.Value.ReflectiveFaceOverrides.Count ||
+                _reflectiveFaceOverrides.Any(entry => !design.Value.ReflectiveFaceOverrides.TryGetValue(entry.Key, out var faces) ||
+                    !entry.Value.SequenceEqual(faces));
             ApplyConfiguredCoreTransaction(transaction.Value);
+            if (geometryChanged) MarkModified("Fuel or reflective faces edited");
             return AcceptedMessage(
                 "Core cell " + channelIndex.ToString(CultureInfo.InvariantCulture) +
                 ":" + position.ToString(CultureInfo.InvariantCulture) +
@@ -400,7 +165,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult SolveConfiguredCore()
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -430,7 +195,7 @@ namespace ReactorSim.Game
         public GameSessionCommandResult ConfigureZoneLayout(
             IEnumerable<PracticeLiquidZoneRrsNodeBindingV1> nodes)
         {
-            if (_practiceRrs.IsGameOver) return RejectGameOver();
+            if (IsRunTerminal) return RejectGameOver();
             var mapping = PracticeLiquidZoneRrsMappingV1.TryCreate(nodes);
             if (!mapping.IsValid) return Rejected(mapping.FirstDiagnostic.Code, mapping.FirstDiagnostic.Message);
             var design = new ConfiguredCoreDesign(_nonfuelNodes,
@@ -438,18 +203,20 @@ namespace ReactorSim.Game
                     new KeyValuePair<NodeKey, IEnumerable<TopologyFace>>(entry.Key, entry.Value)));
             var transaction = TryBuildConfiguredCoreTransaction(design, mapping.Value);
             if (!transaction.IsValid) return Rejected(transaction.FirstDiagnostic.Code, transaction.FirstDiagnostic.Message);
+            bool geometryChanged = !mapping.Value.MappingDigest.Equals(_practiceRrs.MappingDigest);
             ApplyConfiguredCoreTransaction(transaction.Value);
+            if (geometryChanged) MarkModified("Zone geometry edited");
             return AcceptedMessage("Zone layout committed; spatial references rebuilt and existing fills retained as the regulation starting point.");
         }
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
 
-            ContractValidationResult<Phase8ScoredAdvanceResultV1> planned =
+            ContractValidationResult<PracticeRunAdvance> planned =
                 _runtime.TryPlanAdvanceWallMilliseconds(wallMilliseconds);
             if (!planned.IsValid)
             {
@@ -458,7 +225,7 @@ namespace ReactorSim.Game
                     planned.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<PracticeTransaction> transaction =
+            ContractValidationResult<PracticeCandidate> transaction =
                 TryBuildPracticeAdvance(planned.Value.Advance);
             if (!transaction.IsValid)
             {
@@ -518,8 +285,8 @@ namespace ReactorSim.Game
                 }
             }
 
-            ContractValidationResult<Phase8ScoredAdvanceResultV1> result =
-                _runtime.TryAdvanceWallMilliseconds(acceptedWallMilliseconds);
+            ContractValidationResult<bool> result =
+                _runtime.TryCommitAdvance(transaction.Value.Clock!);
             if (!result.IsValid)
             {
                 if (projectionChanged)
@@ -532,13 +299,13 @@ namespace ReactorSim.Game
                     result.FirstDiagnostic.Message);
             }
 
-            ApplyPracticeTransaction(transaction.Value);
+            ApplyPracticeCandidate(transaction.Value);
             return Complete(result);
         }
 
         public GameSessionCommandResult QueuePowerTarget(double targetFraction)
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -548,7 +315,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult SetPlaybackMode(string playbackModeId)
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -576,7 +343,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult Pause()
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -586,7 +353,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult Resume()
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -596,6 +363,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult DebugGrantFreshBundles(uint additionalBundles)
         {
+            if (IsRunTerminal) return RejectGameOver();
             if (additionalBundles == 0)
             {
                 return Rejected(
@@ -604,23 +372,29 @@ namespace ReactorSim.Game
             }
 
             _coreState = _coreState.WithFreshBundles(additionalBundles);
+            MarkModified("Developer fuel grant");
             return AcceptedMessage(
                 "Debug: granted " + additionalBundles.ToString(CultureInfo.InvariantCulture) +
-                " fresh bundles; debug state is not scored.");
+                " fresh bundles; run marked modified sandbox.");
         }
 
         public GameSessionCommandResult DebugClearPendingActions()
         {
-            return CompleteWithMessage(
-                _runtime.TryClearPendingActions(),
-                clearedCount =>
-                    "Debug: cleared " + clearedCount.ToString(CultureInfo.InvariantCulture) +
-                    " pending actions; debug state is not scored.");
+            if (IsRunTerminal) return RejectGameOver();
+            var cleared = _runtime.TryClearPendingActions();
+            if (cleared.IsValid && cleared.Value > 0) MarkModified("Developer actions cleared");
+            return CompleteWithMessage(cleared, clearedCount =>
+                "Debug: cleared " + clearedCount.ToString(CultureInfo.InvariantCulture) + " pending actions.");
         }
 
         public GameSessionCommandResult DebugResetSyntheticResponse()
         {
+            if (IsRunTerminal) return RejectGameOver();
+            if (_syntheticScore != 0.0 || _dischargeReward != 0.0 || _freshFuelCost != 0.0)
+                MarkModified("Developer score reset");
             _syntheticScore = 0.0;
+            _dischargeReward = 0.0;
+            _freshFuelCost = 0.0;
             return AcceptedMessage("Debug: practice score adjustment reset.");
         }
 
@@ -630,7 +404,7 @@ namespace ReactorSim.Game
             ushort shiftCount,
             string fuelTypeId)
         {
-            if (_practiceRrs.IsGameOver)
+            if (IsRunTerminal)
             {
                 return RejectGameOver();
             }
@@ -642,11 +416,11 @@ namespace ReactorSim.Game
                     "Choose either toward-end-a or toward-end-b.");
             }
 
-            if (_nonfuelNodes.Any(node => node.ChannelId.Value == channelIndex))
+            if (RefuellingIneligibilityReason(channelIndex).Length > 0)
             {
                 return Rejected(
                     "GameSession.Refuelling.Channel.Nonfuel",
-                    "A channel containing a configured nonfuel cell cannot be refuelled until every cell in that channel is fuel.");
+                    RefuellingIneligibilityReason(channelIndex));
             }
 
             ContractValidationResult<GameRefuellingResultV1> result = TryRefuel(
@@ -659,7 +433,7 @@ namespace ReactorSim.Game
                 return Rejected(result.FirstDiagnostic.Code, result.FirstDiagnostic.Message);
             }
 
-            ContractValidationResult<PracticeTransaction> transaction =
+            ContractValidationResult<PracticeCandidate> transaction =
                 TryBuildRefuellingTransaction(result.Value);
             if (!transaction.IsValid)
             {
@@ -678,8 +452,23 @@ namespace ReactorSim.Game
                     committed.FirstDiagnostic.Message);
             }
 
-            ApplyPracticeTransaction(transaction.Value);
+            var previousCore = _coreState;
+            ApplyPracticeCandidate(transaction.Value);
+            _lastRefuellingScore = PracticeScoring.DescribeRefuelling(result.Value);
+            _lastFuelMovement = new RefuellingMovement(previousCore, result.Value, _lastRefuellingScore);
+            _fuelConsumed += checked((uint)result.Value.DischargedBundles.Count);
+            _usefulBundlesDischarged += checked((uint)result.Value.DischargedBundles.Count(bundle =>
+                bundle.CurrentBurnupJPerKgHm / GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram >=
+                ShiftProgress.UsefulBurnupThresholdMwDayPerKg));
+            _dischargeReward += _lastRefuellingScore.DischargeReward;
+            _freshFuelCost += _lastRefuellingScore.FreshFuelCost;
             string message = FormatRefuellingMessage(result.Value);
+            _lastDischargedMaximumBurnupMwDayPerKg = result.Value.DischargedBundles.Max(
+                bundle => bundle.CurrentBurnupJPerKgHm /
+                    GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
+            _maximumDischargedBurnupMwDayPerKg = Math.Max(
+                _maximumDischargedBurnupMwDayPerKg ?? 0.0,
+                _lastDischargedMaximumBurnupMwDayPerKg.Value);
             return new GameSessionCommandResult(
                 true,
                 string.Empty,
@@ -741,6 +530,9 @@ namespace ReactorSim.Game
 
         private GameSessionSnapshot CreateSnapshot()
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("game-snapshot");
+#endif
             GameCorePresentationSnapshot core = CreateCorePresentationSnapshot(_coreState);
             return new GameSessionSnapshot(
                 _runtime.ScenarioId,
@@ -760,25 +552,55 @@ namespace ReactorSim.Game
                 _runtime.PendingActionCount,
                 _runtime.ProcessedScriptedEventCount,
                 _syntheticScore,
-                checked((uint)_runtime.TurnSummaries.Count),
+                _runtime.TurnSummaryCount,
                 _runtime.Outcome.ToString(),
-                _practiceRrs.IsGameOver,
-                _practiceRrs.GameOverReason,
+                IsRunTerminal,
+                RunEndReason,
                 _runtime.IsPaused,
                 _coreState.FreshBundlesAvailable,
                 _coreState.RefuellingOperationCount,
                 _coreState.LastRefuelledChannel,
                 DirectionId(_coreState.LastDirection),
                 _coreState.LastShiftCount,
-                core);
+                _lastDischargedMaximumBurnupMwDayPerKg,
+                _maximumDischargedBurnupMwDayPerKg,
+                core,
+                _lastRefuellingScore,
+                new ShiftProgress(_challenge, _runtime.Seed, _runtime.ScenarioHorizonSeconds,
+                    _runtime.SimulationTimeSeconds, IsRunTerminal,
+                    _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !_practiceRrs.IsGameOver,
+                    _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
+                    _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0),
+                _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons));
         }
+
+        private bool IsRunTerminal => _practiceRrs.IsGameOver ||
+            _runtime.Outcome != PracticeRunOutcome.Running;
+
+        private string RunEndReason => _practiceRrs.IsGameOver
+            ? _practiceRrs.GameOverReason
+            : _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon
+                ? _challenge ? "Challenge day completed" : "Practice horizon completed"
+                : _runtime.Outcome != PracticeRunOutcome.Running
+                    ? "Practice operating envelope ended the run"
+                    : string.Empty;
 
         private GameSessionCommandResult RejectGameOver()
         {
             return Rejected(
                 "GameSession.Run.GameOver",
-                "The practice run is terminal: " + _practiceRrs.GameOverReason + ".");
+                "The practice run is terminal: " + RunEndReason + ".");
         }
+
+        private void MarkModified(string reason)
+        {
+            if (!_modificationReasons.Contains(reason)) _modificationReasons.Add(reason);
+        }
+
+        private string RefuellingIneligibilityReason(uint channelIndex) =>
+            _nonfuelNodes.Any(node => node.ChannelId.Value == channelIndex)
+                ? "This channel contains configured nonfuel cells. Restore every cell to fuel in Core Designer before refuelling."
+                : string.Empty;
 
         private ContractValidationResult<GameRefuellingResultV1> TryRefuel(
             uint channelIndex,
@@ -794,7 +616,7 @@ namespace ReactorSim.Game
                 _runtime.SimulationTimeSeconds);
         }
 
-        private ContractValidationResult<PracticeTransaction> TryBuildRefuellingTransaction(
+        private ContractValidationResult<PracticeCandidate> TryBuildRefuellingTransaction(
             GameRefuellingResultV1 result)
         {
             if (result == null)
@@ -816,11 +638,13 @@ namespace ReactorSim.Game
                     timeBinding.FirstDiagnostic.Message);
             }
 
+            PracticeXenonStateV1 xenon = _xenon.Rebind(result.ResultingState);
             ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
                 TryBuildRrsEquilibrium(
                     result.ResultingState,
                     _practiceRrs,
-                    simulationTimeSeconds);
+                    simulationTimeSeconds,
+                    xenon: xenon);
             if (!regulated.IsValid)
             {
                 return InvalidTransaction(
@@ -839,7 +663,7 @@ namespace ReactorSim.Game
                     nextProjectionVersion.FirstDiagnostic.Message);
             }
 
-            double nextScore = _syntheticScore + PracticeRefuellingScore(result);
+            double nextScore = _syntheticScore + PracticeScoring.DescribeRefuelling(result).NetPoints;
             if (!IsFinite(nextScore))
             {
                 return InvalidTransaction(
@@ -848,14 +672,15 @@ namespace ReactorSim.Game
                     "The refuelling transaction score must remain finite.");
             }
 
-            return ContractValidationResult<PracticeTransaction>.Valid(
-                new PracticeTransaction(
+            return ContractValidationResult<PracticeCandidate>.Valid(
+                new PracticeCandidate(
                     result.ResultingState,
                     regulated.Value.Projection,
                     regulated.Value.State,
                     simulationTimeSeconds,
                     nextScore,
-                    nextProjectionVersion.Value));
+                    nextProjectionVersion.Value,
+                    xenon, thermalEnergyJoules: _thermalEnergyJoules));
         }
 
         private ContractValidationResult<EquilibriumCoreProjectionV1> TryBuildEquilibriumCandidate(
@@ -878,263 +703,30 @@ namespace ReactorSim.Game
                 initialSpatialSolve);
         }
 
-        private ContractValidationResult<ConfiguredCoreDesign>
-            TryBuildConfiguredCoreDesign(
-                uint channelIndex,
-                uint position,
-                bool hasFuel,
-                IReadOnlyCollection<TopologyFace> reflectiveFaces)
+        private ContractValidationResult<ConfiguredCoreDesign> TryBuildConfiguredCoreDesign(uint channelIndex,
+            uint position, bool hasFuel, IReadOnlyCollection<TopologyFace> reflectiveFaces)
+            => GameGeometryTransactions.BuildDesign(channelIndex, position, hasFuel, reflectiveFaces,
+                _nonfuelNodes, _reflectiveFaceOverrides);
+        private ContractValidationResult<ConfiguredCoreTransaction> TryBuildConfiguredCoreTransaction(
+            ConfiguredCoreDesign design, PracticeLiquidZoneRrsMappingV1? zoneMapping = null)
         {
-            if (channelIndex >= GameCorePresentationConstants.ChannelCount)
-            {
-                return InvalidConfiguredDesign(
-                    "GameSession.ConfigureCell.Channel.OutOfRange",
-                    "channelIndex",
-                    "The configured channel index must identify one of the 380 full-core channels.");
-            }
-
-            if (position >= GameCorePresentationConstants.BundlePositionCount)
-            {
-                return InvalidConfiguredDesign(
-                    "GameSession.ConfigureCell.Position.OutOfRange",
-                    "position",
-                    "The configured position must identify one of the 12 bundle positions.");
-            }
-
-            if (reflectiveFaces == null)
-            {
-                return InvalidConfiguredDesign(
-                    "GameSession.ConfigureCell.ReflectiveFaces.Missing",
-                    "reflectiveFaces",
-                    "A cell configuration requires an explicit reflective face collection.");
-            }
-
-            var requestedFaces = new HashSet<TopologyFace>();
-            foreach (TopologyFace face in reflectiveFaces)
-            {
-                if (!Enum.IsDefined(typeof(TopologyFace), face))
-                {
-                    return InvalidConfiguredDesign(
-                        "GameSession.ConfigureCell.ReflectiveFaces.Invalid",
-                        "reflectiveFaces",
-                        "Every reflective face must be a known topology face.");
-                }
-
-                if (!requestedFaces.Add(face))
-                {
-                    return InvalidConfiguredDesign(
-                        "GameSession.ConfigureCell.ReflectiveFaces.Duplicate",
-                        "reflectiveFaces",
-                        "A reflective face may be listed only once.");
-                }
-            }
-
-            NodeKey node = new NodeKey(
-                new ChannelId(channelIndex),
-                new BundlePosition(position));
-            var nonfuelNodes = new HashSet<NodeKey>(_nonfuelNodes);
-            if (hasFuel)
-            {
-                nonfuelNodes.Remove(node);
-            }
-            else
-            {
-                nonfuelNodes.Add(node);
-            }
-
-            var faceMap = new Dictionary<NodeKey, List<TopologyFace>>();
-            foreach (KeyValuePair<NodeKey, IReadOnlyList<TopologyFace>> entry in
-                _reflectiveFaceOverrides)
-            {
-                faceMap[entry.Key] = entry.Value.ToList();
-            }
-
-            if (faceMap.TryGetValue(node, out List<TopologyFace>? currentFaces))
-            {
-                foreach (TopologyFace currentFace in currentFaces.ToArray())
-                {
-                    RemoveFace(faceMap, node, currentFace);
-                    if (TryGetInteriorNeighbor(
-                            node,
-                            currentFace,
-                            out NodeKey neighbor))
-                    {
-                        RemoveFace(faceMap, neighbor, InverseFace(currentFace));
-                    }
-                }
-            }
-
-            foreach (TopologyFace face in requestedFaces)
-            {
-                AddFace(faceMap, node, face);
-                if (TryGetInteriorNeighbor(node, face, out NodeKey neighbor))
-                {
-                    AddFace(faceMap, neighbor, InverseFace(face));
-                }
-            }
-
-            return ContractValidationResult<ConfiguredCoreDesign>.Valid(
-                new ConfiguredCoreDesign(
-                    nonfuelNodes,
-                    faceMap.Select(entry =>
-                        new KeyValuePair<NodeKey, IEnumerable<TopologyFace>>(
-                            entry.Key,
-                            entry.Value))));
-        }
-
-        private ContractValidationResult<ConfiguredCoreTransaction>
-            TryBuildConfiguredCoreTransaction(ConfiguredCoreDesign design,
-                PracticeLiquidZoneRrsMappingV1? zoneMapping = null)
-        {
-            if (design == null)
-            {
-                return InvalidConfiguredTransaction(
-                    "GameSession.ConfigureCell.Design.Missing",
-                    "design",
-                    "A configured full-core solve requires an explicit immutable design.");
-            }
-
-            ContractValidationResult<bool> timeBinding =
-                ValidateCommittedTime(_runtime.SimulationTimeSeconds);
-            if (!timeBinding.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    timeBinding.FirstDiagnostic.Code,
-                    timeBinding.FirstDiagnostic.Path,
-                    timeBinding.FirstDiagnostic.Message);
-            }
-
-            var overrides = design.ReflectiveFaceOverrides
-                .OrderBy(entry => entry.Key)
-                .SelectMany(entry => entry.Value.Select(face =>
-                    new ReflectiveFaceOverrideV1(entry.Key, face)))
-                .ToArray();
-            ContractValidationResult<CoreTopology> topology =
-                Candu6CoreTopologyFactoryV1.TryCreate(overrides);
-            if (!topology.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    topology.FirstDiagnostic.Code,
-                    topology.FirstDiagnostic.Path,
-                    topology.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<SpatialStencil> stencil =
-                SpatialStencil.TryCreate(topology.Value);
-            if (!stencil.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    stencil.FirstDiagnostic.Code,
-                    stencil.FirstDiagnostic.Path,
-                    stencil.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<FullCoreDiffusionModelV1> model =
-                FullCoreDiffusionModelV1.TryCreate(
-                    _equilibriumSolver.DataPack,
-                    topology.Value,
-                    stencil.Value,
-                    design.NonfuelNodes);
-            if (!model.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    model.FirstDiagnostic.Code,
-                    model.FirstDiagnostic.Path,
-                    model.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<EquilibriumCoreSolverV1> solver =
-                EquilibriumCoreSolverV1.TryCreate(
-                    model.Value,
-                    _coreState.EnumerateBundles(),
-                    _equilibriumSolver.TargetPowerWatts);
-            if (!solver.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    solver.FirstDiagnostic.Code,
-                    solver.FirstDiagnostic.Path,
-                    solver.FirstDiagnostic.Message);
-            }
-
-            PracticeLiquidZoneRrsV1 previousRrs = _practiceRrs;
-            if (zoneMapping != null)
-            {
-                var remapped = PracticeLiquidZoneRrsV1.TryCreate(zoneMapping,
-                    solver.Value.CurrentProjection, _runtime.SimulationTimeSeconds, _practiceRrs.ZoneFills);
-                if (!remapped.IsValid)
-                    return InvalidConfiguredTransaction(remapped.FirstDiagnostic.Code,
-                        remapped.FirstDiagnostic.Path, remapped.FirstDiagnostic.Message);
-                previousRrs = remapped.Value;
-            }
-            ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
-                PracticeLiquidZoneRrsV1.TryRunEquilibrium(
-                    solver.Value,
-                    _coreState.EnumerateBundles(),
-                    previousRrs,
-                    _runtime.SimulationTimeSeconds);
-            if (!regulated.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    regulated.FirstDiagnostic.Code,
-                    regulated.FirstDiagnostic.Path,
-                    regulated.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<bool> committed =
-                solver.Value.TryCommitCandidate(regulated.Value.Projection);
-            if (!committed.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    committed.FirstDiagnostic.Code,
-                    committed.FirstDiagnostic.Path,
-                    committed.FirstDiagnostic.Message);
-            }
-
-            ContractValidationResult<ulong> nextProjectionVersion =
-                TryNextPowerProjectionVersion(_powerProjectionVersion);
-            if (!nextProjectionVersion.IsValid)
-            {
-                return InvalidConfiguredTransaction(
-                    nextProjectionVersion.FirstDiagnostic.Code,
-                    nextProjectionVersion.FirstDiagnostic.Path,
-                    nextProjectionVersion.FirstDiagnostic.Message);
-            }
-
-            return ContractValidationResult<ConfiguredCoreTransaction>.Valid(
-                new ConfiguredCoreTransaction(
-                    solver.Value,
-                    regulated.Value.State,
-                    design,
-                    nextProjectionVersion.Value));
+            var time = ValidateCommittedTime(_runtime.SimulationTimeSeconds);
+            if (!time.IsValid) return ContractValidationResult<ConfiguredCoreTransaction>.Invalid(
+                time.FirstDiagnostic.Code, time.FirstDiagnostic.Path, time.FirstDiagnostic.Message);
+            return GameGeometryTransactions.Build(design, zoneMapping, _equilibriumSolver, _coreState,
+                _practiceRrs, _xenon, _runtime.SimulationTimeSeconds, _powerProjectionVersion);
         }
 
         private void ApplyConfiguredCoreTransaction(
             ConfiguredCoreTransaction transaction)
         {
             _equilibriumSolver = transaction.Solver;
+            _coupledXenon = _xenon;
             _practiceRrs = transaction.Rrs;
             _nonfuelNodes = transaction.Design.NonfuelNodes;
             _reflectiveFaceOverrides = transaction.Design.ReflectiveFaceOverrides;
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
             _powerProjectionVersion = transaction.PowerProjectionVersion;
-        }
-
-        private static ContractValidationResult<ConfiguredCoreDesign>
-            InvalidConfiguredDesign(string code, string path, string message)
-        {
-            return ContractValidationResult<ConfiguredCoreDesign>.Invalid(
-                code,
-                path,
-                message);
-        }
-
-        private static ContractValidationResult<ConfiguredCoreTransaction>
-            InvalidConfiguredTransaction(string code, string path, string message)
-        {
-            return ContractValidationResult<ConfiguredCoreTransaction>.Invalid(
-                code,
-                path,
-                message);
         }
 
         private static NodeKey GetNodeKey(uint channelIndex, uint position)
@@ -1163,138 +755,13 @@ namespace ReactorSim.Game
             return flux[_equilibriumSolver.SpatialModel.Topology.GetFlatIndex(node)];
         }
 
-        private static void AddFace(
-            Dictionary<NodeKey, List<TopologyFace>> faceMap,
-            NodeKey node,
-            TopologyFace face)
-        {
-            if (!faceMap.TryGetValue(node, out List<TopologyFace>? faces))
-            {
-                faces = new List<TopologyFace>();
-                faceMap[node] = faces;
-            }
-
-            if (!faces.Contains(face))
-            {
-                faces.Add(face);
-                faces.Sort((left, right) => FaceRank(left).CompareTo(FaceRank(right)));
-            }
-        }
-
-        private static void RemoveFace(
-            Dictionary<NodeKey, List<TopologyFace>> faceMap,
-            NodeKey node,
-            TopologyFace face)
-        {
-            if (!faceMap.TryGetValue(node, out List<TopologyFace>? faces))
-            {
-                return;
-            }
-
-            faces.Remove(face);
-            if (faces.Count == 0)
-            {
-                faceMap.Remove(node);
-            }
-        }
-
-        private static bool TryGetInteriorNeighbor(
-            NodeKey node,
-            TopologyFace face,
-            out NodeKey neighbor)
-        {
-            neighbor = default(NodeKey);
-            int column;
-            int displayRow;
-            switch (face)
-            {
-                case TopologyFace.North:
-                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column;
-                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow - 1;
-                    break;
-                case TopologyFace.East:
-                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column + 1;
-                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow;
-                    break;
-                case TopologyFace.South:
-                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column;
-                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow + 1;
-                    break;
-                case TopologyFace.West:
-                    column = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).Column - 1;
-                    displayRow = Candu6CoreTopologyFactoryV1.GetPosition(node.ChannelId.Value).DisplayRow;
-                    break;
-                case TopologyFace.EndA:
-                    if (node.Position.Value == 0)
-                    {
-                        return false;
-                    }
-
-                    neighbor = new NodeKey(
-                        node.ChannelId,
-                        new BundlePosition(node.Position.Value - 1));
-                    return true;
-                case TopologyFace.EndB:
-                    if (node.Position.Value + 1 >=
-                        GameCorePresentationConstants.BundlePositionCount)
-                    {
-                        return false;
-                    }
-
-                    neighbor = new NodeKey(
-                        node.ChannelId,
-                        new BundlePosition(node.Position.Value + 1));
-                    return true;
-                default:
-                    return false;
-            }
-
-            if (!Candu6CoreTopologyFactoryV1.TryGetChannelIndex(
-                    column,
-                    displayRow,
-                    out uint neighborChannel))
-            {
-                return false;
-            }
-
-            neighbor = new NodeKey(
-                new ChannelId(neighborChannel),
-                node.Position);
-            return true;
-        }
-
-        private static TopologyFace InverseFace(TopologyFace face)
-        {
-            switch (face)
-            {
-                case TopologyFace.North:
-                    return TopologyFace.South;
-                case TopologyFace.East:
-                    return TopologyFace.West;
-                case TopologyFace.South:
-                    return TopologyFace.North;
-                case TopologyFace.West:
-                    return TopologyFace.East;
-                case TopologyFace.EndA:
-                    return TopologyFace.EndB;
-                case TopologyFace.EndB:
-                    return TopologyFace.EndA;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(face));
-            }
-        }
-
-        private static int FaceRank(TopologyFace face)
-        {
-            return (byte)face;
-        }
-
         private ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1>
             TryBuildRrsEquilibrium(
                 SyntheticGameCoreStateV1 coreState,
                 PracticeLiquidZoneRrsV1 previousRrs,
                 double simulationTimeSeconds,
-                FullCoreDiffusionSolveResultV1? warmStart = null)
+                FullCoreDiffusionSolveResultV1? warmStart = null,
+                PracticeXenonStateV1? xenon = null)
         {
             if (coreState == null)
             {
@@ -1317,29 +784,16 @@ namespace ReactorSim.Game
                 coreState.EnumerateBundles(),
                 previousRrs,
                 simulationTimeSeconds,
-                warmStart);
+                warmStart,
+                (xenon ?? _xenon).BuildOverlay(_nonfuelNodes));
         }
 
-        private static double PracticeRefuellingScore(GameRefuellingResultV1 result)
+        private ContractValidationResult<PracticeCandidate> TryBuildPracticeAdvance(
+            PracticeRunAdvance advance)
         {
-            double averageDischargedBurnup = result.DischargedBundles.Count == 0
-                ? 0.0
-                : result.DischargedBundles.Average(
-                    bundle => bundle.CurrentBurnupJPerKgHm /
-                              GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
-            double usefulBurnup = Clamp(averageDischargedBurnup, 0.0, 10.0);
-            // Scoring observes the operation. It does not modify power,
-            // tilt, or reactivity; those are recomputed from the resulting
-            // bundle state by the full-core diffusion solve.
-            // A fixed fresh-fuel cost prevents farming points by reversing a
-            // shift and immediately ejecting the fresh bundles just inserted.
-            // Reward scales with useful fuel discharged, not button presses.
-            return result.ShiftCount * (0.75 * usefulBurnup - 1.5);
-        }
-
-        private ContractValidationResult<PracticeTransaction> TryBuildPracticeAdvance(
-            Phase8ScenarioAdvanceResultV1 advance)
-        {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("practice-advance");
+#endif
             if (advance == null)
             {
                 return InvalidTransaction(
@@ -1358,15 +812,17 @@ namespace ReactorSim.Game
                     timeBinding.FirstDiagnostic.Message);
             }
 
-            var transaction = new PracticeTransaction(
+            var transaction = new PracticeAdvanceBuilder(
                 _coreState,
                 _equilibriumSolver.CurrentProjection,
                 _practiceRrs,
                 _lastFullCoreSolveSimulationTime,
                 _syntheticScore,
-                _powerProjectionVersion);
+                _powerProjectionVersion,
+                _xenon,
+                _coupledXenon, _thermalEnergyJoules);
 
-            foreach (Phase8ScenarioAdvanceSegmentV1 segment in advance.StateSegments)
+            foreach (PracticeRunSegment segment in advance.StateSegments)
             {
                 double segmentStartSeconds = segment.SimulationTimeStartSeconds;
                 double segmentEndSeconds = segment.SimulationTimeEndSeconds;
@@ -1411,8 +867,7 @@ namespace ReactorSim.Game
 
                         if (transaction.Rrs.IsGameOver)
                         {
-                            return ContractValidationResult<PracticeTransaction>.Valid(
-                                transaction);
+                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
                         }
 
                         if (scheduled.Value)
@@ -1437,6 +892,16 @@ namespace ReactorSim.Game
                     }
 
                     double stepEnd = simulationCursor + stepSeconds;
+                    try
+                    {
+                        transaction.Xenon = transaction.Xenon.Advance(transaction.SpatialCandidate,
+                            requestedAmplitude, stepSeconds);
+                    }
+                    catch (Exception exception) when (exception is ArgumentException ||
+                        exception is InvalidOperationException || exception is OverflowException)
+                    {
+                        return InvalidTransaction("GameSession.Xenon.Advance.Invalid", "xenon", exception.Message);
+                    }
                     // Short ticks reuse the last accepted static equilibrium
                     // projection. The operator target is the equilibrium
                     // power scale; no exponential response or kinetics
@@ -1463,6 +928,7 @@ namespace ReactorSim.Game
                     }
 
                     transaction.CoreState = integrated.Value;
+                    transaction.ThermalEnergyJoules += deltaEnergy.Sum();
                     ContractValidationResult<PracticeLiquidZoneRrsV1> advancedRrs =
                         transaction.Rrs.TryWithSimulationTime(stepEnd);
                     if (!advancedRrs.IsValid)
@@ -1490,13 +956,10 @@ namespace ReactorSim.Game
                     double actualPowerFraction =
                         transaction.SpatialCandidate.ShapePowerWatts * averagePowerScale /
                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
-                    double powerQuality = 1.0 -
-                        Clamp(Math.Abs(actualPowerFraction - 1.0) / 0.02, 0.0, 1.0);
-                    double tiltQuality = 1.0 -
-                        Clamp(Math.Abs(ComputeSignedAxialTiltFraction(
-                            transaction.SpatialCandidate.SpatialSolve.Group2Flux)) / 0.05, 0.0, 1.0);
-                    transaction.SyntheticScore += stepSeconds *
-                        (0.35 * powerQuality + 0.15 * tiltQuality);
+                    transaction.SyntheticScore += PracticeScoring.OperatingPointsFromReadings(
+                        stepSeconds, actualPowerFraction,
+                        GamePresentationProjector.ComputeSignedAxialTiltFraction(
+                            transaction.SpatialCandidate.SpatialSolve.Group2Flux));
                     simulationCursor = stepEnd;
                     if (simulationCursor - transaction.LastFullCoreSolveSimulationTime >=
                         PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds - 1e-9)
@@ -1513,8 +976,7 @@ namespace ReactorSim.Game
 
                         if (transaction.Rrs.IsGameOver)
                         {
-                            return ContractValidationResult<PracticeTransaction>.Valid(
-                                transaction);
+                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
                         }
                     }
                 }
@@ -1530,7 +992,7 @@ namespace ReactorSim.Game
                     "The candidate state must finish at the exact planned authoritative simulation time.");
             }
 
-            return ContractValidationResult<PracticeTransaction>.Valid(transaction);
+            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
         }
 
         private ContractValidationResult<ulong> TryFindTerminalWallMilliseconds(
@@ -1541,7 +1003,7 @@ namespace ReactorSim.Game
             while (lowerBound < upperBound)
             {
                 ulong midpoint = lowerBound + (upperBound - lowerBound) / 2UL;
-                ContractValidationResult<Phase8ScoredAdvanceResultV1> planned =
+                ContractValidationResult<PracticeRunAdvance> planned =
                     _runtime.TryPlanAdvanceWallMilliseconds(midpoint);
                 if (!planned.IsValid)
                 {
@@ -1551,7 +1013,7 @@ namespace ReactorSim.Game
                         planned.FirstDiagnostic.Message);
                 }
 
-                ContractValidationResult<PracticeTransaction> transaction =
+                ContractValidationResult<PracticeCandidate> transaction =
                     TryBuildPracticeAdvance(planned.Value.Advance);
                 if (!transaction.IsValid)
                 {
@@ -1575,7 +1037,7 @@ namespace ReactorSim.Game
         }
 
         private ContractValidationResult<bool> TryBuildScheduledShape(
-            PracticeTransaction transaction,
+            PracticeAdvanceBuilder transaction,
             double simulationTimeSeconds)
         {
             if (!AreSameSimulationTime(
@@ -1593,7 +1055,8 @@ namespace ReactorSim.Game
                     transaction.CoreState,
                     transaction.Rrs,
                     simulationTimeSeconds,
-                    transaction.SpatialCandidate.SpatialSolve);
+                    transaction.SpatialCandidate.SpatialSolve,
+                    transaction.Xenon);
             if (!regulated.IsValid)
             {
                 return InvalidTransactionBoolean(
@@ -1613,21 +1076,35 @@ namespace ReactorSim.Game
             }
 
             transaction.SpatialCandidate = regulated.Value.Projection;
+            transaction.CoupledXenon = transaction.Xenon;
             transaction.Rrs = regulated.Value.State;
             transaction.LastFullCoreSolveSimulationTime = simulationTimeSeconds;
             transaction.PowerProjectionVersion = nextProjectionVersion.Value;
             return ContractValidationResult<bool>.Valid(true);
         }
 
-        private void ApplyPracticeTransaction(PracticeTransaction transaction)
+        private void ApplyPracticeCandidate(PracticeCandidate transaction)
         {
             _coreState = transaction.CoreState;
+            _xenon = transaction.Xenon;
+            _coupledXenon = transaction.CoupledXenon;
             _practiceRrs = transaction.Rrs;
             _lastFullCoreSolveSimulationTime =
                 transaction.LastFullCoreSolveSimulationTime;
             _syntheticScore = transaction.SyntheticScore;
+            _thermalEnergyJoules = transaction.ThermalEnergyJoules;
             _powerProjectionVersion = transaction.PowerProjectionVersion;
         }
+
+        private GameCorePresentationSnapshot CreateCorePresentationSnapshot(SyntheticGameCoreStateV1 state,
+            double powerAmplitude, EquilibriumCoreProjectionV1 projection, PracticeLiquidZoneRrsV1 rrs)
+            => GamePresentationProjector.Build(state, powerAmplitude, projection, rrs,
+                CreateXenonPresentationSnapshot(state.RefuellingOperationCount == 0 ? -1 : state.LastRefuelledChannel,
+                    _runtime.SimulationTimeSeconds), _runtime.NormalizedPowerFraction,
+                _powerProjectionVersion, _xenon, RefuellingIneligibilityReason);
+        private GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(int selectedChannelIndex, double simulationTimeSeconds)
+            => GamePresentationProjector.Poison(selectedChannelIndex, simulationTimeSeconds, _xenon, _coupledXenon,
+                _equilibriumSolver, _nonfuelNodes);
 
         private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
             SyntheticGameCoreStateV1 state)
@@ -1637,219 +1114,6 @@ namespace ReactorSim.Game
                 CurrentPowerFraction(),
                 _equilibriumSolver.CurrentProjection,
                 _practiceRrs);
-        }
-
-        private GameCorePresentationSnapshot CreateCorePresentationSnapshot(
-            SyntheticGameCoreStateV1 state,
-            double powerAmplitude,
-            EquilibriumCoreProjectionV1 projection,
-            PracticeLiquidZoneRrsV1 rrs)
-        {
-            GameXenonPresentationSnapshot xenon =
-                CreateXenonPresentationSnapshot(
-                    state.RefuellingOperationCount == 0
-                        ? -1
-                        : state.LastRefuelledChannel,
-                    _runtime.SimulationTimeSeconds);
-            var channelStates = new IReadOnlyList<BundleState>[
-                (int)GameCorePresentationConstants.ChannelCount];
-            for (uint channelIndex = 0;
-                 channelIndex < GameCorePresentationConstants.ChannelCount;
-                 channelIndex++)
-            {
-                IReadOnlyList<BundleState> bundles = state.GetChannel(channelIndex);
-                channelStates[(int)channelIndex] = bundles;
-            }
-
-            double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
-            double physicalShapeScale = amplitude;
-            double totalPowerWatts = projection.ShapePowerWatts * physicalShapeScale;
-            double actualPowerFraction = totalPowerWatts /
-                                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
-            double meanChannelPowerWatts = totalPowerWatts /
-                                           GameCorePresentationConstants.ChannelCount;
-            var channelPowerWatts = new double[
-                (int)GameCorePresentationConstants.ChannelCount];
-            for (int index = 0; index < projection.ShapeNodePowerWatts.Count; index++)
-            {
-                uint channelIndex = (uint)(index /
-                    (int)GameCorePresentationConstants.BundlePositionCount);
-                channelPowerWatts[(int)channelIndex] +=
-                    projection.ShapeNodePowerWatts[index] * physicalShapeScale;
-            }
-
-            var channels = new List<GameChannelPresentationSnapshot>(
-                (int)GameCorePresentationConstants.ChannelCount);
-            int nodeIndex = 0;
-            for (uint channelIndex = 0;
-                 channelIndex < GameCorePresentationConstants.ChannelCount;
-                 channelIndex++)
-            {
-                PracticeCoreGridPosition grid = PracticeCoreLayout.GetPosition(channelIndex);
-                IReadOnlyList<BundleState> bundles = channelStates[(int)channelIndex];
-                var bundleSnapshots = new List<GameBundlePresentationSnapshot>(
-                    (int)GameCorePresentationConstants.BundlePositionCount);
-                double burnupTotal = 0.0;
-                double channelThermalFlux = 0.0;
-                double axialThermalFluxMoment = 0.0;
-                for (int bundleIndex = 0; bundleIndex < bundles.Count; bundleIndex++)
-                {
-                    BundleState bundle = bundles[bundleIndex];
-                    double burnup = bundle.CurrentBurnupJPerKgHm /
-                                    GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
-                    double bundlePower =
-                        projection.ShapeNodePowerWatts[nodeIndex] * physicalShapeScale;
-                    double thermalFlux = projection.SpatialSolve.Group2Flux[nodeIndex++];
-                    burnupTotal += burnup;
-                    channelThermalFlux += thermalFlux;
-                    axialThermalFluxMoment += thermalFlux *
-                        (2.0 * bundle.Position.Value /
-                         (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
-                    bundleSnapshots.Add(
-                        new GameBundlePresentationSnapshot(
-                            bundle.Position.Value,
-                            bundle.BundleId.ToString(),
-                            bundle.MaterialVariantId.Value,
-                            burnup,
-                            bundlePower,
-                            bundle.InsertedAtSeconds,
-                            bundle.StateVersion));
-                }
-
-                double channelPower = channelPowerWatts[(int)channelIndex];
-                double localPower = meanChannelPowerWatts <= 0.0
-                    ? 1.0
-                    : channelPower / meanChannelPowerWatts;
-                double localTilt = channelThermalFlux <= 0.0
-                    ? 0.0
-                    : axialThermalFluxMoment / channelThermalFlux;
-                channels.Add(
-                    new GameChannelPresentationSnapshot(
-                        channelIndex,
-                        grid.Column,
-                        grid.Row,
-                        burnupTotal / GameCorePresentationConstants.BundlePositionCount,
-                        channelPower,
-                        localPower,
-                        localTilt,
-                        PracticeCoreLayout.GetFlowDirection(grid),
-                        bundleSnapshots,
-                        xenon.GetChannel(channelIndex)));
-            }
-
-            FullCoreDiffusionSolveResultV1 spatial = projection.SpatialSolve;
-            double targetPowerAmplitude = Clamp(
-                _runtime.NormalizedPowerFraction,
-                0.0,
-                1.5);
-            var physics = new GamePhysicsPresentationSnapshot(
-                EquilibriumCoreSolverIdentityV1.ModelId,
-                EquilibriumCoreSolverIdentityV1.FormulationId,
-                EquilibriumCoreSolverIdentityV1.ShapeMethodId,
-                EquilibriumCoreSolverIdentityV1.AmplitudeMethodId,
-                EquilibriumCoreSolverIdentityV1.ReactivityMethodId,
-                "converged",
-                true,
-                _powerProjectionVersion,
-                PracticeGameSessionFactory.PracticeReferencePowerWatts,
-                amplitude,
-                actualPowerFraction,
-                PracticeGameSessionFactory.PracticeReferencePowerWatts * targetPowerAmplitude,
-                totalPowerWatts,
-                meanChannelPowerWatts,
-                totalPowerWatts /
-                    (GameCorePresentationConstants.ChannelCount *
-                     GameCorePresentationConstants.BundlePositionCount),
-                spatial.EffectiveK,
-                spatial.Reactivity,
-                projection.WeightedPerturbationReactivity,
-                projection.ReactivityNumerator,
-                projection.ReactivityDenominator,
-                projection.ReactivityIdentity,
-                projection.ReactivityBindingDigestHex,
-                spatial.PowerBalanceRelativeError,
-                projection.SolverIdentity,
-                spatial.IterationCount,
-                spatial.ResidualRelativeInfinity,
-                rrs.CoreReactivity,
-                rrs.CompensatedNetReactivity,
-                rrs.AverageFillFraction,
-                rrs.AverageFillFraction,
-                0.0,
-                1.0,
-                rrs.LowExhaustion || rrs.HighExhaustion,
-                0.0,
-                rrs.CadenceIdentity,
-                "equilibrium-static-only-v1",
-                projection.ReactivityBindingDigestHex,
-                0,
-                0.0);
-            return new GameCorePresentationSnapshot(
-                channels,
-                physics,
-                xenon,
-                new GameRrsPresentationSnapshot(rrs),
-                ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux));
-        }
-
-        private static GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(
-            int selectedChannelIndex,
-            double simulationTimeSeconds)
-        {
-            var channelDiagnostics = new List<GameXenonChannelPresentationSnapshot>(
-                (int)GameCorePresentationConstants.ChannelCount);
-
-            for (uint channelIndex = 0;
-                 channelIndex < GameCorePresentationConstants.ChannelCount;
-                 channelIndex++)
-            {
-                channelDiagnostics.Add(
-                    new GameXenonChannelPresentationSnapshot(
-                        channelIndex,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0));
-            }
-
-            return new GameXenonPresentationSnapshot(
-                "xenon-unavailable-static-compatibility-v1",
-                "sha256:" + new string('0', 64),
-                0UL,
-                simulationTimeSeconds,
-                checked((int)(GameCorePresentationConstants.ChannelCount *
-                    GameCorePresentationConstants.BundlePositionCount)),
-                "xenon-unavailable-static-compatibility-v1",
-                false,
-                string.Empty,
-                string.Empty,
-                string.Empty,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                channelDiagnostics,
-                selectedChannelIndex);
-        }
-
-        private static string DigestHex(Digest32 digest)
-        {
-            var builder = new StringBuilder(digest.Bytes.Count * 2 + 7);
-            builder.Append("sha256:");
-            foreach (byte value in digest.Bytes)
-            {
-                builder.Append(value.ToString("x2", CultureInfo.InvariantCulture));
-            }
-
-            return builder.ToString();
         }
 
         private string FormatRefuellingMessage(
@@ -1878,24 +1142,6 @@ namespace ReactorSim.Game
             return Clamp(_runtime.NormalizedPowerFraction, 0.0, 1.5);
         }
 
-        private static double ComputeSignedAxialTiltFraction(
-            IReadOnlyList<double> nodeThermalFlux)
-        {
-            double totalFlux = 0.0;
-            double axialMoment = 0.0;
-            for (int index = 0; index < nodeThermalFlux.Count; index++)
-            {
-                double flux = nodeThermalFlux[index];
-                int position = index % (int)GameCorePresentationConstants.BundlePositionCount;
-                totalFlux += flux;
-                axialMoment += flux *
-                    (2.0 * position /
-                     (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
-            }
-
-            return totalFlux <= 0.0 ? 0.0 : axialMoment / totalFlux;
-        }
-
         private static double ComputeRrsReserveFraction(GameRrsPresentationSnapshot rrs)
         {
             return Clamp(2.0 * Math.Min(
@@ -1913,7 +1159,7 @@ namespace ReactorSim.Game
         {
             if (!AreSameSimulationTime(
                     _practiceRrs.SimulationTimeSeconds,
-                    simulationTimeSeconds))
+                    simulationTimeSeconds) || !AreSameSimulationTime(_xenon.SimulationTimeSeconds, simulationTimeSeconds))
             {
                 return ContractValidationResult<bool>.Invalid(
                     "GameSession.State.TimeMismatch",
@@ -1924,7 +1170,7 @@ namespace ReactorSim.Game
             return ContractValidationResult<bool>.Valid(true);
         }
 
-        private static ContractValidationResult<ulong> TryNextPowerProjectionVersion(
+        internal static ContractValidationResult<ulong> TryNextPowerProjectionVersion(
             ulong currentVersion)
         {
             if (currentVersion == ulong.MaxValue)
@@ -1948,12 +1194,12 @@ namespace ReactorSim.Game
             return !double.IsNaN(value) && !double.IsInfinity(value);
         }
 
-        private static ContractValidationResult<PracticeTransaction> InvalidTransaction(
+        private static ContractValidationResult<PracticeCandidate> InvalidTransaction(
             string code,
             string path,
             string message)
         {
-            return ContractValidationResult<PracticeTransaction>.Invalid(
+            return ContractValidationResult<PracticeCandidate>.Invalid(
                 code,
                 path,
                 message);

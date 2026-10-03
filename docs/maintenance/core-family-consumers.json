@@ -1,0 +1,3698 @@
+{
+  "method": "Conservative identifier scan including comments and peer type bodies; generated sources excluded. consumers records pre-relocation paths; currentConsumers and sameSourceConsumerTypes are refreshed by python tools/Audit-CoreFamilies.py. Shared contract consumers indicate compile-time reachability, not that gameplay invokes every method. No public types deleted; research assembly references are required for relocated APIs.",
+  "types": [
+    {
+      "type": "CompleteBurnupIntervalResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompleteBurnupIntervalTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c89ab2f882c9b83313723b81f79316c4c403c79422159ebe8eb6e82bb5832537"
+    },
+    {
+      "type": "CompleteBurnupIntervalTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "c89ab2f882c9b83313723b81f79316c4c403c79422159ebe8eb6e82bb5832537"
+    },
+    {
+      "type": "CompleteNuclideIntegrationRequestV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompleteNuclideIntegrationBatchTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteNuclideIntegrationBatchResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompleteNuclideIntegrationBatchTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteRefuellingRequestV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompleteRefuellingTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteNuclideIntegrationBatchTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteDischargeRecordV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompleteRefuellingTransactionV1",
+        "CompleteRefuellingTransitionResultV1",
+        "CompleteRefuellingTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteRefuellingTransactionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompleteRefuellingTransitionResultV1",
+        "CompleteRefuellingTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteRefuellingTransitionResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompleteRefuellingTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteRefuellingTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/TopologyInventoryRefuellingTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "923e97c5a1f76bb96b1102034c9c362b825ce26230db4d61a3f525b2e32e14d6"
+    },
+    {
+      "type": "CompleteBundleStateCodecV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+      "decision": "extracted shared Core primitive",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompleteStateDigestV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "0c6bfe11c7296e8085d4c585791f59228ff43c05eeba19c227a13fa5ea246e69"
+    },
+    {
+      "type": "CompleteStateDigestV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+      "decision": "extracted shared Core primitive",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "0c6bfe11c7296e8085d4c585791f59228ff43c05eeba19c227a13fa5ea246e69"
+    },
+    {
+      "type": "NuclideDataV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideStateEnvelopeV1",
+        "NuclideIntegrationInputV1",
+        "NuclideIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "PowerHistoryRecordV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/BundleInventory.cs",
+        "src/ReactorSim.Core/Domain/GameRefuellingContracts.cs",
+        "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/BundleInventory.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/GameRefuellingContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideDataV1",
+        "OptionalPowerWattsV1",
+        "NuclideTransitionRecordV1",
+        "NuclideStateEnvelopeV1",
+        "NuclideIntegrationInputV1",
+        "NuclideIntegrationTransitionV1",
+        "CompletePowerSnapshotBundleV1",
+        "CompletePowerSnapshotV1",
+        "CompletePowerSnapshotTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "OptionalPowerWattsV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/BundleInventory.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/BundleInventory.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "BundleCoefficientBindingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/BundleInventory.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/BundleInventory.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompletePowerSnapshotBundleV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "NuclideTransitionRecordV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideStateEnvelopeV1",
+        "NuclideIntegrationResultV1",
+        "NuclideIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "NuclideStateEnvelopeV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/BundleInventory.cs",
+        "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/BundleInventory.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideIntegrationResultV1",
+        "NuclideIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "NuclideIntegrationInputV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "NuclideIntegrationResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "NuclideIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "NuclideIntegrationTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "CompletePowerSnapshotBundleV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompletePowerSnapshotV1",
+        "CompletePowerSnapshotTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "CompletePowerSnapshotV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/LifecycleContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "CompletePowerSnapshotTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "CompletePowerSnapshotResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CompletePowerSnapshotTransitionV1"
+      ],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "CompletePowerSnapshotTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "Phase5CanonicalBytesV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/AdjointContracts.cs",
+        "src/ReactorSim.Core/Domain/AdjointReactivityContracts.cs",
+        "src/ReactorSim.Core/Domain/GpuCoupledSpatialFixtureContracts.cs",
+        "src/ReactorSim.Core/Domain/GpuSpatialPrototypeContracts.cs",
+        "src/ReactorSim.Core/Domain/IqsKineticsDataPack.cs",
+        "src/ReactorSim.Core/Domain/Phase5CompleteLifecycleContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6CanonicalDigestPrimitives.cs",
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+        "src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs",
+        "src/ReactorSim.Core/Domain/PracticeXenonContracts.cs",
+        "src/ReactorSim.Core/Domain/StaticAbsorptionOverlayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase5CompleteStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteLifecycleContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6CanonicalDigestPrimitives.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/AdjointContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/AdjointReactivityContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/CompleteStateDigestContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/GpuCoupledSpatialFixtureContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/GpuSpatialPrototypeContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/IqsKineticsDataPack.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/PracticeXenonContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/StaticAbsorptionOverlayContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "PowerHistoryRecordV1",
+        "BundleCoefficientBindingV1",
+        "NuclideTransitionRecordV1",
+        "NuclideStateEnvelopeV1",
+        "CompletePowerSnapshotV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "fbaf470ab6b22f5cdf22b5e19a74bf68e19f4ee16120fcf6a2d36c9493e44eed"
+    },
+    {
+      "type": "Phase5InvariantScopeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "Phase5InvariantReportV1",
+        "Phase5InvariantValidatorV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "ccc0d53947c00716d2344c8fee69e90845ae09ae5c7cfd8715e9f2e41a7d1dfb"
+    },
+    {
+      "type": "Phase5InvariantReportV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "Phase5InvariantValidatorV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "ccc0d53947c00716d2344c8fee69e90845ae09ae5c7cfd8715e9f2e41a7d1dfb"
+    },
+    {
+      "type": "Phase5InvariantValidatorV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "ccc0d53947c00716d2344c8fee69e90845ae09ae5c7cfd8715e9f2e41a7d1dfb"
+    },
+    {
+      "type": "AdjusterMotionModeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterBankStateV1",
+        "AdjusterSetStateV1",
+        "AdjusterMotionProjectionV1",
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterAvailableCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterQueueStateV1",
+        "AdjusterBankStateV1",
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterPendingCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterQueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterQueueStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterBankStateV1",
+        "AdjusterMotionProjectionV1",
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterBankTargetBindingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterBankGroupingV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterBankGroupingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "AdjusterBankTargetBindingV1",
+        "AdjusterBankStateV1",
+        "AdjusterSetStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterBankStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "AdjusterSetStateV1",
+        "AdjusterMotionProjectionV1",
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterSetStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterOptionalDoubleV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterQueueStateV1",
+        "AdjusterMotionProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterMotionProjectionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterMotionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterValidationV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "AdjusterAvailableCommandV1",
+        "AdjusterPendingCommandV1",
+        "AdjusterQueueStateV1",
+        "AdjusterBankGroupingV1",
+        "AdjusterBankStateV1",
+        "AdjusterSetStateV1",
+        "AdjusterMotionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterOptionalDigestV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterMotionProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "8432f1e0c1a7dbb6c99e41bfbf96f45aed680fe31ce99c01f6914ece16ed68eb"
+    },
+    {
+      "type": "AdjusterInfluenceMapEntryV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterInfluenceMapV1",
+        "AdjusterOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4c1877793a99a5f274a5ebd8c36df2055f5b700f1cdf106f7d7bbe3531d497d8"
+    },
+    {
+      "type": "AdjusterInfluenceMapV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "AdjusterInfluenceMapEntryV1",
+        "AdjusterOverlayValueV1",
+        "AdjusterOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4c1877793a99a5f274a5ebd8c36df2055f5b700f1cdf106f7d7bbe3531d497d8"
+    },
+    {
+      "type": "AdjusterOverlayValueV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterOverlayEvaluationV1",
+        "AdjusterOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4c1877793a99a5f274a5ebd8c36df2055f5b700f1cdf106f7d7bbe3531d497d8"
+    },
+    {
+      "type": "AdjusterOverlayEvaluationV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "AdjusterOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4c1877793a99a5f274a5ebd8c36df2055f5b700f1cdf106f7d7bbe3531d497d8"
+    },
+    {
+      "type": "AdjusterOverlayV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6AdjusterInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "4c1877793a99a5f274a5ebd8c36df2055f5b700f1cdf106f7d7bbe3531d497d8"
+    },
+    {
+      "type": "BulkPoisonModeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonStateV1",
+        "BulkPoisonAccountingV1",
+        "BulkPoisonActionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "81c488d1019d77dcf71cc399db115bdb9d31205ee592deb521bc0b7b4b258e62"
+    },
+    {
+      "type": "BulkPoisonStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonAccountingV1",
+        "BulkPoisonActionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "81c488d1019d77dcf71cc399db115bdb9d31205ee592deb521bc0b7b4b258e62"
+    },
+    {
+      "type": "BulkPoisonAccountingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "81c488d1019d77dcf71cc399db115bdb9d31205ee592deb521bc0b7b4b258e62"
+    },
+    {
+      "type": "BulkPoisonActionResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonAccountingV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "81c488d1019d77dcf71cc399db115bdb9d31205ee592deb521bc0b7b4b258e62"
+    },
+    {
+      "type": "BulkPoisonValidationV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonStateV1",
+        "BulkPoisonAccountingV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "81c488d1019d77dcf71cc399db115bdb9d31205ee592deb521bc0b7b4b258e62"
+    },
+    {
+      "type": "BulkPoisonInfluenceMapEntryV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonInfluenceMapV1",
+        "BulkPoisonOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "BulkPoisonInfluenceMapV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6BulkPoisonContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonInfluenceMapEntryV1",
+        "BulkPoisonOverlayValueV1",
+        "BulkPoisonOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "BulkPoisonOverlayValueV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonOverlayEvaluationV1",
+        "BulkPoisonOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "BulkPoisonOverlayEvaluationV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "BulkPoisonDisabledZeroAssertionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "BulkPoisonOverlayEvaluationV1",
+        "BulkPoisonOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "BulkPoisonOverlayV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6BulkPoisonInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "c4bd3a4787beeb90edd56fda8dc590e1759808f40c94d77917324d9c5670252f"
+    },
+    {
+      "type": "Phase6CanonicalDigestPrimitives",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6CanonicalDigestPrimitives.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6AdjusterContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6CanonicalDigestPrimitives.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6AdjusterContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "7ab73205a3fe1ceb4123ac23bd3bc110cf62aa20a046063249843b41968aa548"
+    },
+    {
+      "type": "LiquidZoneModeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneAssemblyBindingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneGroupingV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneGroupingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneStateV1",
+        "LiquidZoneSystemStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneQueueBindingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneSystemStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneDisabledZeroAssertionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneStateV1",
+        "LiquidZoneSystemStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneSystemStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "6d279648fdea2c39b02df983d85daaa0ff5db6d8dce013a631e1972508190506"
+    },
+    {
+      "type": "LiquidZoneInfluenceMapEntryV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneInfluenceMapV1",
+        "LiquidZoneOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "LiquidZoneInfluenceMapV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneInfluenceMapEntryV1",
+        "LiquidZoneOverlayValueV1",
+        "LiquidZoneOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "LiquidZoneOverlayValueV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneOverlayEvaluationV1",
+        "LiquidZoneOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "LiquidZoneOverlayEvaluationV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "LiquidZoneMotionResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "LiquidZoneOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "LiquidZoneOverlayV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6LiquidZoneInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "17473c86db80ca2d377ab8002af68880ee3c99c08a51d02bb4ed396cec3eee1a"
+    },
+    {
+      "type": "SyntheticPracticeRegulatorIdentityV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6PracticeRegulatorContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6PracticeRegulatorContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "SyntheticPracticeRegulatorV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "ba002358ed2fe96266f3c80ec9f4c056f2a9fb999d1f61fd01a889032523d478"
+    },
+    {
+      "type": "SyntheticPracticeRegulatorV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6PracticeRegulatorContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6PracticeRegulatorContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "ba002358ed2fe96266f3c80ec9f4c056f2a9fb999d1f61fd01a889032523d478"
+    },
+    {
+      "type": "P6T06QueueFamilyV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueValidationV1",
+        "P6T06OwnerKeyV1",
+        "P6T06TargetKeyV1",
+        "P6T06CommandCandidateV1",
+        "P6T06AvailableCommandV1",
+        "P6T06QueueCommandV1",
+        "P6T06QueueStateV1",
+        "P6T06ActuatorStateV1",
+        "P6T06MotionDiagnosticV1",
+        "P6T06QueueTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06SourceKindV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueValidationV1",
+        "P6T06CommandCandidateV1",
+        "P6T06QueueCommandV1",
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06MotionModeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueValidationV1",
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueueTransitionKindV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06SaturationStateV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06CommandCandidateV1",
+        "P6T06QueueCommandV1",
+        "P6T06SaturationDiagnosticV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06TargetKindV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06TargetKeyV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueueValidationV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06OwnerKeyV1",
+        "P6T06TargetKeyV1",
+        "P6T06CommandCandidateV1",
+        "P6T06AvailableCommandV1",
+        "P6T06QueueCommandV1",
+        "P6T06SourceBindingTokenV1",
+        "P6T06RrsControllerEventIdentityV1",
+        "P6T06QueueStateV1",
+        "P6T06ActuatorStateV1",
+        "P6T06QueueTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06OwnerKeyV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueCommandV1",
+        "P6T06QueueStateV1",
+        "P6T06QueueTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06TargetKeyV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06CommandCandidateV1",
+        "P6T06AvailableCommandV1",
+        "P6T06QueueCommandV1",
+        "P6T06QueueStateV1",
+        "P6T06ActuatorStateV1",
+        "P6T06MotionDiagnosticV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06CommandCandidateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06AvailableCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06MotionDiagnosticV1",
+        "P6T06QueueTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueueCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06SaturationDiagnosticV1",
+        "P6T06QueueTransitionV1",
+        "P6T06EnqueueResultV1",
+        "P6T06MotionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueuePhaseTokenV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06SourceBindingTokenV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06RrsControllerEventIdentityV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueueStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06EnqueueResultV1",
+        "P6T06MotionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06ActuatorStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06MotionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06SaturationDiagnosticV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06EnqueueResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06MotionDiagnosticV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06MotionResultV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06QueueTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1",
+        "P6T06EnqueueResultV1",
+        "P6T06MotionResultV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06EnqueueResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "P6T06MotionResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "P6T06QueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "95cab377ccca4f4d0def46865a08140d39b27012997b10ea851a265d2f527a53"
+    },
+    {
+      "type": "RrsFixtureV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsValidationV1",
+        "RrsRegionDefinitionV1",
+        "RrsRegionSetV1",
+        "RrsAvailableCommandV1",
+        "RrsQueueStateV1",
+        "RrsActuatorStateV1",
+        "RrsControllerStateV1",
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsModeV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsControllerStateV1",
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsControlPolarityV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsControllerStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsValidationV1",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsRegionDefinitionV1",
+        "RrsAvailableCommandV1",
+        "RrsQueueStateV1",
+        "RrsActuatorStateV1",
+        "RrsMeasurementSnapshotV1",
+        "RrsControllerStateV1",
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsRegionDefinitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsRegionSetV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsRegionSetV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsMeasurementSnapshotV1",
+        "RrsControllerStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsAvailableCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsQueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsPendingCommandV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsQueueStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsQueueStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsControllerStateV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsActuatorStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsControllerStateV1",
+        "RrsCommandProjectionV1",
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsMeasurementSnapshotV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsControllerStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsCommandProjectionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "RrsControllerProjectionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsControllerProjectionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase6QueueTransitionContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase6QueueTransitionContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "53d027f3cbbe460420cd8ec10f1fb1ac0b9ddaf06b58d0d307297bc11426ff08"
+    },
+    {
+      "type": "RrsInfluenceMapEntryV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsInfluenceMapV1",
+        "RrsOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "RrsInfluenceMapV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "RrsActuatorSnapshotV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "RrsOverlayValueV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsOverlayEvaluationV1",
+        "RrsOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "RrsOverlayEvaluationV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "RrsOverlayV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "RrsOverlayV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase6RrsInfluenceMapContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase6RrsInfluenceMapContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "31c9556e90e1ed01a3470e73f7885fcc33fc7dfb9e5784712f896c5bf64abe9f"
+    },
+    {
+      "type": "IntegrationStabilityPolicyV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7IntegrationContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7IntegrationContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "a99cafb50e2155806dd5f5ef80905fb8a2498954026299ad440984164d4be5c3"
+    },
+    {
+      "type": "IntegrationSubstepScheduleV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7IntegrationContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7IntegrationContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "IntegrationStabilityPolicyV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "a99cafb50e2155806dd5f5ef80905fb8a2498954026299ad440984164d4be5c3"
+    },
+    {
+      "type": "DelayedNeutronGroupV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "DelayedNeutronDataV1",
+        "KineticIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "DelayedNeutronDataV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "KineticStateV1",
+        "KineticIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "KineticStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "KineticIntegrationResultV1",
+        "KineticIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "KineticStepRecordV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "KineticIntegrationResultV1",
+        "KineticIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "KineticIntegrationResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "KineticIntegrationTransitionV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "KineticIntegrationTransitionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "7defaefeb3e6552cfbddc635af958a87969726824e429f5db09ba1e929c793c6"
+    },
+    {
+      "type": "KineticContractValidation",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7KineticsContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase7IntegrationContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/CanonicalKineticValidation.cs",
+      "decision": "extracted shared Core primitive",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase7IntegrationContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase7KineticsContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "f649dfaf0b9647e6b3bc106c25e6c492ef345f0fb0518249d5ec1213b500179f"
+    },
+    {
+      "type": "XenonBasisV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "src/ReactorSim.Core/Domain/SpatialOperatorContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/SpatialOperatorContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialCouplingResultV1",
+        "XenonSpatialCouplingV1"
+      ],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialNuclideVersionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialStateBindingV1",
+        "XenonSpatialCouplingV1"
+      ],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialStateBindingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialCouplingResultV1",
+        "XenonSpatialCouplingV1",
+        "XenonSpatialSolveResultV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialNodeInputV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialCouplingV1"
+      ],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialOverlayValueV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialCouplingResultV1",
+        "XenonSpatialCouplingV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialCouplingResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core.Research/IqsFullCoreSolver.cs",
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/IqsFullCoreSolver.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialCouplingV1",
+        "XenonSpatialSolveResultV1",
+        "XenonSpatialSolveV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialCouplingV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialSolveResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialSolveV1"
+      ],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialSolveV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialCouplingContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "shared runtime contract"
+      ],
+      "sourceSha256": "89d63a925420ebf8ce8b3034370f621d86340ed84dd70bfdf74b33b78ff77ba3"
+    },
+    {
+      "type": "XenonSpatialStateV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core/Domain/FullCoreDiffusionModelContracts.cs",
+          "category": "shared runtime contract"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialAdvanceResultV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "b09b17f06d67199b356416d7d8336ea1f9d99b998bf964802c79ec3e4d7f970a"
+    },
+    {
+      "type": "XenonSpatialAdvanceResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs"
+      ],
+      "source": "src/ReactorSim.Core/Domain/Phase7XenonSpatialStateContracts.cs",
+      "decision": "retained shared Core",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/KineticsXenonControlDeterminismTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "XenonSpatialStateV1"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "shared runtime contract"
+      ],
+      "sourceSha256": "b09b17f06d67199b356416d7d8336ea1f9d99b998bf964802c79ec3e4d7f970a"
+    },
+    {
+      "type": "ReducedPowerNodeInputV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/ReducedCorePowerContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/ReducedCorePowerContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "ReducedCorePowerModelV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4e45d254ae41cb98fddbbcb21d657596eb7a843ea59e45f10797436cbde27a9a"
+    },
+    {
+      "type": "ReducedPowerNodeResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/ReducedCorePowerContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/ReducedCorePowerContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "ReducedCorePowerProjectionV1",
+        "ReducedCorePowerModelV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4e45d254ae41cb98fddbbcb21d657596eb7a843ea59e45f10797436cbde27a9a"
+    },
+    {
+      "type": "ReducedCorePowerProjectionV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/ReducedCorePowerContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/ReducedCorePowerContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "ReducedCorePowerModelV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4e45d254ae41cb98fddbbcb21d657596eb7a843ea59e45f10797436cbde27a9a"
+    },
+    {
+      "type": "ReducedCorePowerModelV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/ReducedCorePowerContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/ReducedCorePowerContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "4e45d254ae41cb98fddbbcb21d657596eb7a843ea59e45f10797436cbde27a9a"
+    },
+    {
+      "type": "CommandReplayOperationKindV1",
+      "visibility": "public",
+      "kind": "enum",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandReplayEntryV1",
+        "CommandReplayLogV1",
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CommandReplayEntryV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandReplayLogV1",
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CommandReplayLogV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandReplayArchiveV1",
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CommandReplayResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandReplayLogV1",
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CommandReplayArchiveV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "StateArchiveCodecV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/ResearchDependencyBoundaryTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CommandReplayCodecV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "CodecFailure",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "StateArchiveCodecV1",
+        "CommandReplayCodecV1",
+        "JsonObjectReader",
+        "JsonCodec"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "JsonObjectReader",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "StateArchiveCodecV1",
+        "CommandReplayCodecV1",
+        "JsonCodec"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "JsonCodec",
+      "visibility": "internal",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "StateArchiveCodecV1",
+        "CommandReplayCodecV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "dc433162a8a2045a6c543ad4833bb03ca9de0c9f3b1c1784d93de5d49ccf1973"
+    },
+    {
+      "type": "BundlePowerSampleV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/BurnupTransitionContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/BurnupTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "AcceptedBundlePowerSnapshotV1",
+        "BurnupIntervalTransition"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "97114bc291e7655bc9f278dbad87da0333fdbe9f600903d482dad64242fe6275"
+    },
+    {
+      "type": "AcceptedBundlePowerSnapshotV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/BurnupTransitionContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/BurnupTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BurnupIntervalResultV1",
+        "BurnupIntervalTransition"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "97114bc291e7655bc9f278dbad87da0333fdbe9f600903d482dad64242fe6275"
+    },
+    {
+      "type": "BurnupIntervalRecordV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/BurnupTransitionContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5CompleteBurnupContracts.cs",
+        "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/BurnupTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5CompleteBurnupContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BurnupIntervalResultV1",
+        "BurnupIntervalTransition"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "97114bc291e7655bc9f278dbad87da0333fdbe9f600903d482dad64242fe6275"
+    },
+    {
+      "type": "BurnupIntervalResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/BurnupTransitionContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Domain/Phase5InvariantContracts.cs",
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/BurnupTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Legacy/Phase5InvariantContracts.cs",
+          "category": "retained research implementation"
+        },
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "BurnupIntervalTransition"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "97114bc291e7655bc9f278dbad87da0333fdbe9f600903d482dad64242fe6275"
+    },
+    {
+      "type": "BurnupIntervalTransition",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/BurnupTransitionContracts.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/BurnupTransitionContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "97114bc291e7655bc9f278dbad87da0333fdbe9f600903d482dad64242fe6275"
+    },
+    {
+      "type": "CommandApplicationResultV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/CommandApplicationContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/CommandApplicationContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [
+        "CommandApplicationV1"
+      ],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "4b3e3d6d4c0cd92ff4cc9944ff7e91be1c51171fafffc1bdc6e025ab7e591724"
+    },
+    {
+      "type": "CommandApplicationV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/CommandApplicationContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/CommandApplicationContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "4b3e3d6d4c0cd92ff4cc9944ff7e91be1c51171fafffc1bdc6e025ab7e591724"
+    },
+    {
+      "type": "StateSnapshotV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/StateSnapshotContracts.cs",
+      "consumers": [
+        "src/ReactorSim.Core/Serialization/StateSerializationReplayContracts.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/StateSnapshotContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "src/ReactorSim.Core.Research/Serialization/StateSerializationReplayContracts.cs",
+          "category": "retained research implementation"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "retained research implementation"
+      ],
+      "sourceSha256": "f4a6422454a0592f32354e427e3c9b78769fcc9c05e7e8de7e949eedc029e3c2"
+    },
+    {
+      "type": "FullCorePowerResponseV1",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/FullCorePowerResponseContracts.cs",
+      "consumers": [],
+      "source": "src/ReactorSim.Core.Research/Legacy/FullCorePowerResponseContracts.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "no external/peer consumer"
+      ],
+      "sourceSha256": "5625301a0d0334518dac94e6e72a6fd9b97de7d200c63c9ccf40c5f13380c5d6"
+    },
+    {
+      "type": "SyntheticCoreFixture",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/SyntheticFixtures.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/SyntheticFixtures.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [
+        "SyntheticFixtures"
+      ],
+      "consumerCategories": [
+        "executed invariant test",
+        "retained research implementation"
+      ],
+      "sourceSha256": "944a8fa298f89263b116fefefc572ee69101bebafaa5f0eb4bc173070642e75c"
+    },
+    {
+      "type": "SyntheticFixtures",
+      "visibility": "public",
+      "kind": "class",
+      "originalSource": "src/ReactorSim.Core/Domain/SyntheticFixtures.cs",
+      "consumers": [
+        "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs"
+      ],
+      "source": "src/ReactorSim.Core.Research/Legacy/SyntheticFixtures.cs",
+      "decision": "retained research; assembly relocated",
+      "currentConsumers": [
+        {
+          "source": "tests/ReactorSim.Core.Tests/BurnupAndPowerTests.cs",
+          "category": "executed invariant test"
+        }
+      ],
+      "sameSourceConsumerTypes": [],
+      "consumerCategories": [
+        "executed invariant test"
+      ],
+      "sourceSha256": "944a8fa298f89263b116fefefc572ee69101bebafaa5f0eb4bc173070642e75c"
+    }
+  ],
+  "affectedToolProjects": []
+}

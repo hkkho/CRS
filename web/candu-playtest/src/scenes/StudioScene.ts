@@ -18,17 +18,13 @@ export class StudioScene extends Phaser.Scene {
     canvas.tabIndex = -1;
     this.view = new StudioView(session, document.getElementById("game-root")!, (scene, state) => {
       if (session.isPending) return;
-      if (scene === "CoreDesignerScene") {
-        session.stopShift();
-        this.scene.start(scene, { returnChannelIndex: state.selectedChannelIndex, returnScene: "StudioScene" });
-      } else this.scene.start(scene, state);
+      session.stopShift();
+      this.scene.start(scene, { returnChannelIndex: state.selectedChannelIndex, studioNavigation: state });
     }, this.initial);
     this.events.once("shutdown", () => {
       this.view?.destroy();
       this.view = null;
-      canvas.removeAttribute("aria-hidden");
-      canvas.tabIndex = 0;
-      canvas.focus({ preventScroll: true });
+      // The destination view owns focus; canvas is a visual-only surface.
     });
   }
 }

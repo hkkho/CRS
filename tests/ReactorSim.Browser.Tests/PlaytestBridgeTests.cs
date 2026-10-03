@@ -64,6 +64,7 @@ namespace ReactorSim.Browser.Tests
                 mode => mode.GetProperty("id").GetString() == "lab");
             Assert.Contains("configure-cell", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
             Assert.Contains("solve", playMode.GetProperty("commands").EnumerateArray().Select(value => value.GetString()));
+            Assert.DoesNotContain(playMode.GetProperty("commands").EnumerateArray(), value => value.GetString()!.StartsWith("debug", StringComparison.Ordinal));
 
             JsonElement metadata = capabilities.GetProperty("metadata");
             JsonElement units = metadata.GetProperty("units");
@@ -90,9 +91,17 @@ namespace ReactorSim.Browser.Tests
             AssertAccepted(play);
             Assert.Equal("play", play.GetProperty("mode").GetString());
             AssertPlaySnapshot(play.GetProperty("snapshot"));
-            Assert.Equal(PracticeGameSessionFactory.KineticsDataPackVersion, play.GetProperty("snapshot").GetProperty("dataPackId").GetString());
+            Assert.Equal(PracticeGameSessionFactory.DiffusionDataPackVersion, play.GetProperty("snapshot").GetProperty("dataPackId").GetString());
             Assert.Equal(EquilibriumCoreSolverIdentityV1.ModelId, play.GetProperty("snapshot").GetProperty("physics").GetProperty("sourceId").GetString());
             Assert.True(play.GetProperty("snapshot").GetProperty("physics").GetProperty("isAuthoritative").GetBoolean());
+            var poison = play.GetProperty("snapshot").GetProperty("xenon");
+            Assert.True(poison.GetProperty("hasCoupling").GetBoolean());
+            Assert.True(poison.GetProperty("meanI135NumberDensityM3").GetDouble() > 0);
+            Assert.True(poison.GetProperty("meanXe135NumberDensityM3").GetDouble() > 0);
+            Assert.Equal(poison.GetProperty("stateDigestHex").GetString(),
+                poison.GetProperty("coupledStateDigestHex").GetString());
+            Assert.All(play.GetProperty("snapshot").GetProperty("rrs").GetProperty("zones").EnumerateArray(),
+                zone => Assert.True(zone.GetProperty("meanXe135NumberDensityM3").GetDouble() > 0));
             Assert.False(play.GetProperty("snapshot").TryGetProperty("lab", out _));
             AssertCoreDesignerFields(play.GetProperty("snapshot"));
         }
@@ -166,6 +175,7 @@ namespace ReactorSim.Browser.Tests
             AssertPlaySnapshot(advanced.GetProperty("snapshot"));
 
             JsonElement beforeCommit = advanced.GetProperty("snapshot");
+            Assert.Equal(JsonValueKind.Null, beforeCommit.GetProperty("maximumDischargedBurnupMwdPerKg").ValueKind);
             JsonElement committed = Parse(
                 PlaytestBridgeV2.Dispatch(
                     "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":" + PlayRefuelRequest + "}"));
@@ -174,6 +184,9 @@ namespace ReactorSim.Browser.Tests
             AssertPlaySnapshot(committed.GetProperty("snapshot"));
             Assert.Equal(1, committed.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
             Assert.Equal(124, committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.True(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble() > 0.0);
+            Assert.Equal(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble(),
+                committed.GetProperty("snapshot").GetProperty("maximumDischargedBurnupMwdPerKg").GetDouble());
             Assert.Equal(189, committed.GetProperty("snapshot").GetProperty("lastRefuelledChannel").GetInt32());
             Assert.Equal(189, committed.GetProperty("snapshot").GetProperty("xenon").GetProperty("selectedChannelIndex").GetInt32());
             Assert.Equal(189, committed.GetProperty("snapshot").GetProperty("xenon").GetProperty("selectedChannel").GetProperty("channelIndex").GetInt32());
@@ -235,6 +248,9 @@ namespace ReactorSim.Browser.Tests
                     "{\"protocol\":\"candu-playtest-v2\",\"type\":\"configure-cell\",\"channelIndex\":0,\"position\":0,\"hasFuel\":false,\"reflectiveFaces\":[]}"));
             AssertAccepted(configured);
             JsonElement beforeSolve = configured.GetProperty("snapshot");
+            Assert.False(beforeSolve.GetProperty("core").GetProperty("channels")[0].GetProperty("canRefuel").GetBoolean());
+            Assert.Contains("nonfuel", beforeSolve.GetProperty("core").GetProperty("channels")[0].GetProperty("refuellingIneligibilityReason").GetString());
+
             JsonElement reset = Parse(
                 PlaytestBridgeV2.Dispatch(
                     "{\"protocol\":\"candu-playtest-v2\",\"type\":\"solve\"}"));
@@ -356,6 +372,8 @@ namespace ReactorSim.Browser.Tests
         {
             JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertAccepted(initialized);
+            Assert.Equal(PracticeScoring.PolicyId, initialized.GetProperty("snapshot").GetProperty("scorePolicyId").GetString());
+            Assert.Equal(JsonValueKind.Null, initialized.GetProperty("snapshot").GetProperty("lastRefuellingScore").ValueKind);
             int legacyBytes = initialized.GetRawText().Length;
             Assert.True(legacyBytes > 1_000_000);
 
@@ -375,6 +393,12 @@ namespace ReactorSim.Browser.Tests
                         "commit-refuel",
                         "\"request\":" + PlayRefuelRequest)));
             AssertCompactPatch(committed, 1, 2);
+            JsonElement score = committed.GetProperty("snapshotPatch").GetProperty("lastRefuellingScore");
+            Assert.Equal(PracticeScoring.PolicyId, score.GetProperty("policyId").GetString());
+            Assert.Equal(score.GetProperty("dischargeReward").GetDouble() - score.GetProperty("freshFuelCost").GetDouble(),
+                score.GetProperty("netPoints").GetDouble(), 10);
+            Assert.Equal(committed.GetProperty("snapshotPatch").GetProperty("scoreDelta").GetDouble(), score.GetProperty("netPoints").GetDouble(), 10);
+
             Assert.True(committed.TryGetProperty("coreReplacement", out JsonElement replacement));
             Assert.Equal(380, replacement.GetProperty("channels").GetArrayLength());
             Assert.DoesNotContain("preview", committed.GetRawText(), StringComparison.Ordinal);
@@ -394,6 +418,9 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(advancePatch.GetProperty("simulationTimeSeconds").GetDouble(), exactAfterAdvance.GetProperty("simulationTimeSeconds").GetDouble(), 12);
             Assert.Equal(advancePatch.GetProperty("wallElapsedSeconds").GetDouble(), exactAfterAdvance.GetProperty("wallElapsedSeconds").GetDouble(), 12);
             Assert.Equal(advancePatch.GetProperty("scoreTotal").GetDouble(), exactAfterAdvance.GetProperty("scoreTotal").GetDouble(), 12);
+            Assert.Equal(score.GetRawText(), advancePatch.GetProperty("lastRefuellingScore").GetRawText());
+            Assert.Equal(score.GetRawText(), exactAfterAdvance.GetProperty("lastRefuellingScore").GetRawText());
+            Assert.Equal(advancePatch.GetProperty("scorePolicyId").GetString(), exactAfterAdvance.GetProperty("scorePolicyId").GetString());
             Assert.Equal(advancePatch.GetProperty("physics").GetRawText(), exactAfterAdvance.GetProperty("physics").GetRawText());
             Assert.Equal(advancePatch.GetProperty("xenon").GetRawText(), exactAfterAdvance.GetProperty("xenon").GetRawText());
             Assert.Equal(advancePatch.GetProperty("diagnostics").GetRawText(), exactAfterAdvance.GetProperty("diagnostics").GetRawText());

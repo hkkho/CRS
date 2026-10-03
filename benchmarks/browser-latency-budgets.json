@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "measuredAt": "2026-10-02",
+  "runtime": "local Release AOT Chromium, production worker; 100ms advance quantum",
+  "policy": "Machine-specific review guardrails, roughly observed maximum plus 25%, rounded up; repeat comparable runs before diagnosing regressions. Not watchdog limits or mandatory gameplay gates.",
+  "operations": [
+    {
+      "operation": "tick-1x",
+      "samples": 20,
+      "observedMaximumMs": 199.9,
+      "reviewBudgetMs": 250
+    },
+    {
+      "operation": "tick-10x",
+      "samples": 6,
+      "observedMaximumMs": 232.3,
+      "reviewBudgetMs": 300
+    },
+    {
+      "operation": "tick-60x",
+      "samples": 6,
+      "observedMaximumMs": 871.9,
+      "reviewBudgetMs": 1100
+    },
+    {
+      "operation": "refuel",
+      "samples": 3,
+      "observedMaximumMs": 262.8,
+      "reviewBudgetMs": 350
+    },
+    {
+      "operation": "shape-solve",
+      "samples": 3,
+      "observedMaximumMs": 1799.6,
+      "reviewBudgetMs": 2250
+    }
+  ],
+  "startup": {
+    "normalColdBeginReviewBudgetMs": 3500,
+    "constrainedColdBeginReviewBudgetMs": 30000,
+    "constrainedConditions": "page CPU4x, latency60ms, download1.5MB/s; worker CPU throttling not claimed"
+  },
+  "queuedPauseReviewBudgetMs": 1100,
+  "evidence": "tmp/phase3-pace-final.json; docs/performance/browser-phase3.md"
+}

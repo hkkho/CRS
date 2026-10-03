@@ -7,5 +7,8 @@
     <AnalysisLevel>10-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+    <DefineConstants Condition="'$(EnableRuntimeProfiling)' == 'true'">$(DefineConstants);RUNTIME_PROFILE</DefineConstants>
+    <DefineConstants Condition="'$(EnableCpuParallelism)' == 'true'">$(DefineConstants);CPU_PARALLEL</DefineConstants>
+    <DefineConstants Condition="'$(EnableResearchExperiments)' == 'true'">$(DefineConstants);RESEARCH_EXPERIMENTS</DefineConstants>
   </PropertyGroup>
 </Project>

@@ -1,3 +1,5 @@
+import { SessionPresentation } from "./SessionPresentation";
+import { isRunTerminal } from "./protocol";
 import {
   AUTHORITATIVE_WASM_UNAVAILABLE_MESSAGE,
   createCanduPlaytestBridge,
@@ -15,8 +17,12 @@ import type {
   CanduDispatchOptions,
   CanduSnapshot,
 } from "./protocol";
+import { ReactorHistory } from "./studio/ReactorHistory";
+import { ObservedPace, type PaceReading } from './observedPace';
 
 export interface SessionUpdate {
+  pace?: PaceReading;
+  changeKind?: "snapshot" | "status";
   status: BridgeStatus;
   snapshot: CanduSnapshot;
   pending: boolean;
@@ -31,6 +37,8 @@ export type SessionListener = (update: SessionUpdate) => void;
  * render snapshots and send protocol commands through this controller.
  */
 export class BridgeSessionController {
+  public readonly presentation = new SessionPresentation();
+  public readonly history = new ReactorHistory();
   private readonly bridge: CanduPlaytestBridgeLifecycle;
   private readonly scheduler: LiveClockScheduler;
   private readonly listeners = new Set<SessionListener>();
@@ -45,14 +53,20 @@ export class BridgeSessionController {
   private disposed = false;
   private lastError: string | null = null;
   private lastResponse: CanduCommandResponse | null = null;
+  private lastEmittedSnapshot: CanduSnapshot | null = null;
+  private readonly observedPace = new ObservedPace();
+  private readonly now: () => number;
+  private visible = true;
 
   public constructor(
     bridge: CanduPlaytestBridgeLifecycle = createCanduPlaytestBridge(),
     schedulerOptions: Pick<LiveClockSchedulerOptions, "now" | "setTimer" | "clearTimer"> = {},
   ) {
     this.bridge = bridge;
+    this.now = schedulerOptions.now ?? (() => performance.now());
     this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
+    this.history.record(this.snapshotValue);
     // Play is the only live session mode. Core Designer stays inside this
     // session and does not initialize a second fixture or mode.
     this.modeValue = "play";
@@ -107,11 +121,13 @@ export class BridgeSessionController {
   public startShift(): void {
     this.active = true;
     this.syncScheduler();
+    this.emit();
   }
 
   public stopShift(): void {
     this.active = false;
     this.syncScheduler();
+    this.emit();
   }
 
   public async initializeMode(mode: BridgeModeId): Promise<CanduSnapshot> {
@@ -125,12 +141,14 @@ export class BridgeSessionController {
 
     this.active = false;
     this.modePending = true;
+    this.presentation.clear();
     this.lastError = null;
     this.lastResponse = null;
     this.syncScheduler();
     this.emit();
     try {
       const snapshot = await this.bridge.initializeMode(mode);
+      this.history.clear();
       this.modeValue = mode;
       this.snapshotValue = snapshot;
       this.emit();
@@ -147,7 +165,9 @@ export class BridgeSessionController {
   }
 
   public setVisible(visible: boolean): void {
+    this.visible = visible;
     this.scheduler.setVisible(visible);
+    this.emit();
   }
 
   public async dispatch(
@@ -174,7 +194,10 @@ export class BridgeSessionController {
       const responseOptions = options ?? (isEngineeringCommand(command)
         ? { responseMode: "full" as const }
         : { responseMode: "compact" as const });
+      const previous = this.snapshotValue;
       const response = await this.bridge.dispatch(command, responseOptions);
+      this.presentation.accept(response, previous);
+      if (command.type === "reset" && response.accepted) this.history.clear();
       this.lastResponse = response;
       this.snapshotValue = response.snapshot;
       this.emit(response);
@@ -208,13 +231,16 @@ export class BridgeSessionController {
   }
 
   private canAdvance(): boolean {
+    return this.isPlaybackActive() && this.pendingCount === 0;
+  }
+
+  private isPlaybackActive(): boolean {
     return this.active &&
       this.statusValue.isWasmAvailable &&
       this.modeValue === "play" &&
-      this.pendingCount === 0 &&
       !this.snapshotValue.isPaused &&
       this.snapshotValue.playbackModeId !== "pause" &&
-      !this.snapshotValue.rrs.isGameOver;
+      !isRunTerminal(this.snapshotValue);
   }
 
   private syncScheduler(): void {
@@ -228,6 +254,12 @@ export class BridgeSessionController {
 
   private createUpdate(response: CanduCommandResponse | null = this.lastResponse): SessionUpdate {
     return {
+      pace: {
+        requested: this.snapshotValue.isPaused ? 'Paused' : this.snapshotValue.playbackModeId.replace('x', '×'),
+        simulatedMinutesPerSecond: this.observedPace.observe(this.isPlaybackActive() && this.visible ? this.snapshotValue.playbackModeId : null,
+          this.snapshotValue.simulationTimeSeconds, this.now()),
+        solving: this.pendingCount > 0,
+      },
       status: this.statusValue,
       snapshot: this.snapshotValue,
       pending: this.foregroundPendingCount > 0 || this.modePending,
@@ -237,7 +269,10 @@ export class BridgeSessionController {
   }
 
   private emit(response: CanduCommandResponse | null = null): void {
+    this.history.record(this.snapshotValue);
     const update = this.createUpdate(response ?? this.lastResponse);
+    update.changeKind = this.snapshotValue === this.lastEmittedSnapshot ? "status" : "snapshot";
+    this.lastEmittedSnapshot = this.snapshotValue;
     for (const listener of this.listeners) {
       listener(update);
     }

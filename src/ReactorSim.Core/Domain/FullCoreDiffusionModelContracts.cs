@@ -1011,6 +1011,9 @@ namespace ReactorSim.Core
             StaticAbsorptionOverlayV1? staticAbsorptionOverlay,
             Digest32? preparedInventoryBindingDigest)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("diffusion");
+#endif
 
             double[]? group1WarmStart = initialGroup1Flux?.ToArray();
             double[]? group2WarmStart = initialGroup2Flux?.ToArray();
@@ -1418,6 +1421,9 @@ namespace ReactorSim.Core
             SpatialCoefficientSet baseCoefficients,
             StaticAbsorptionOverlayV1 overlay)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("absorption-coefficients");
+#endif
             var effectiveNodes = new List<SpatialNodeCoefficients>(
                 baseCoefficients.NodeCount);
             foreach (SpatialNodeCoefficients baseNode in baseCoefficients.Nodes)
@@ -1462,6 +1468,9 @@ namespace ReactorSim.Core
         private ContractValidationResult<SpatialCoefficientSet> BuildCoefficientSet(
             BundleInventory inventory)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("base-coefficients");
+#endif
             var tables = _dataPack.CoefficientTables.ToDictionary(
                 table => table.MaterialVariantId,
                 table => table);

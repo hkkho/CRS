@@ -1,5 +1,4 @@
 import type { CanduChannelSnapshot, RefuelRequest } from "./protocol";
-import { clamp } from "./protocol";
 
 export interface RefuelDraft {
   channelIndex: number;
@@ -25,20 +24,12 @@ export function toggleRefuelDirection(direction: RefuelRequest["directionId"]): 
   return direction === "toward-end-a" ? "toward-end-b" : "toward-end-a";
 }
 
-export function toggleShiftCount(shiftCount: RefuelRequest["shiftCount"]): RefuelRequest["shiftCount"] {
-  return shiftCount === 4 ? 8 : 4;
-}
-
 export function canIssueRefuel(
   draft: RefuelDraft | null,
   freshBundlesAvailable: number,
   commandPending: boolean,
 ): draft is RefuelDraft {
   return draft !== null && !commandPending && freshBundlesAvailable >= draft.shiftCount;
-}
-
-export function adjustTarget(value: number, delta: number, minimum: number, maximum: number): number {
-  return clamp(Number((value + delta).toFixed(3)), minimum, maximum);
 }
 
 export function formatRefuelDirection(direction: RefuelRequest["directionId"]): string {

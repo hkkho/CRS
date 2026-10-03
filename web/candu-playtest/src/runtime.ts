@@ -8,7 +8,7 @@ export function setRuntimeSession(session: BridgeSessionController): void {
 
 export function getRuntimeSession(): BridgeSessionController {
   if (activeSession === null) {
-    throw new Error("The Phaser runtime session has not been registered.");
+    throw new Error("The browser runtime session has not been registered.");
   }
   return activeSession;
 }

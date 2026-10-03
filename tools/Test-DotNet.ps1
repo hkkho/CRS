@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Core', 'Game', 'Browser', 'All')]
-    [string]$Suite = 'All'
+    [string]$Suite = 'All',
+    [switch]$EnableResearchExperiments
 )
 
 Set-StrictMode -Version Latest
@@ -23,7 +24,8 @@ foreach ($selectedSuite in $selectedSuites) {
     }
 
     $resolvedProjectPath = (Resolve-Path -LiteralPath $projectPath).Path
-    & dotnet test $resolvedProjectPath --nologo --verbosity minimal
+    $testArguments = @($resolvedProjectPath, '--nologo', '--verbosity', 'minimal', "-p:EnableResearchExperiments=$($EnableResearchExperiments.IsPresent.ToString().ToLowerInvariant())")
+    & dotnet test @testArguments
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {
         throw "dotnet test failed for $selectedSuite (exit code $exitCode)."

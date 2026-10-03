@@ -62,6 +62,8 @@ export interface ZoneNodeBinding {
 }
 
 export interface CanduChannelSnapshot {
+  canRefuel?: boolean;
+  refuellingIneligibilityReason?: string;
   channelIndex: number;
   gridColumn: number;
   gridRow: number;
@@ -87,6 +89,8 @@ export interface CanduXenonChannelSnapshot {
 }
 
 export interface CanduXenonSnapshot {
+  coupledSimulationTimeSeconds?: number;
+  coupledStateDigestHex?: string;
   stateIdentity: string;
   stateDigestHex: string;
   stateVersion: number;
@@ -110,6 +114,8 @@ export interface CanduXenonSnapshot {
 }
 
 export interface CanduRrsZoneSnapshot {
+  meanI135NumberDensityM3?: number;
+  meanXe135NumberDensityM3?: number;
   logicalZoneId: number;
   fillFraction: number;
   referencePowerFraction: number;
@@ -119,6 +125,9 @@ export interface CanduRrsZoneSnapshot {
 }
 
 export interface CanduRrsSnapshot {
+  decisionCode?: string;
+  decisionExplanation?: string;
+  limitingZoneId?: number;
   absorptionReferenceFillFraction?: number;
   calibratedTotalZoneWorthMk?: number;
   controllerIdentity: string;
@@ -273,6 +282,44 @@ export interface CanduCoreSnapshot {
   channels: CanduChannelSnapshot[];
 }
 
+export type ShiftId = "free-practice" | "useful-fuel-day-v1";
+export interface ShiftProgress {
+  id: ShiftId;
+  seed: number;
+  title: string;
+  objective: string;
+  horizonSeconds: number;
+  remainingSeconds: number;
+  fuelBudget: number;
+  fuelConsumed: number;
+  usefulBundlesDischarged: number;
+  usefulBundlesRequired: number;
+  usefulBurnupThresholdMwdPerKg: number;
+  thermalEnergyMwh: number;
+  electricalEnergyMwhEstimate: number;
+  dischargeReward: number;
+  freshFuelCost: number;
+  operatingPoints: number;
+  outcome: "in-progress" | "success" | "missed" | "ended";
+  reward: string;
+  rewardEarned: boolean;
+}
+
+export interface RefuellingPlan {
+  directionId: RefuellingDirection; shiftCount: 4 | 8; incomingEnd: "A" | "B"; outgoingEnd: "A" | "B";
+  insertedPositions: number[]; dischargedPositions: number[]; retainedFromPositions: number[]; retainedToPositions: number[];
+}
+export interface FuelMovement {
+  operationId: number; channelIndex: number; plan: RefuellingPlan;
+  score: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number };
+  bundles: { bundleId: string; beforePosition?: number | null; afterPosition?: number | null; burnupMwdPerKg: number }[];
+}
+
+export interface RunProvenance {
+  kind: "standard-challenge" | "free-practice" | "modified-sandbox";
+  label: string; isModified: boolean; eligibleForStandardChallenge: boolean; reasons: string[];
+}
+
 export interface CanduSnapshot {
   protocol: typeof PROTOCOL_VERSION;
   source: ProtocolSource;
@@ -287,12 +334,25 @@ export interface CanduSnapshot {
   rrsReserveFraction: number;
   deviceAvailableFraction: number;
   pendingActionCount: number;
+  /** Optional for older v2 hosts. All objective rules come from Game. */
+  shift?: ShiftProgress;
+  provenance?: RunProvenance;
+  refuellingPlans?: RefuellingPlan[];
+  lastFuelMovement?: FuelMovement | null;
+  scorePolicyId?: string;
+  lastRefuellingScore?: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number } | null;
   scoreTotal: number;
   scoreDelta: number;
   isPaused: boolean;
+  /** Optional only for older v2 hosts. New hosts publish authoritative run state. */
+  runStatus?: "running" | "paused" | "completed" | "ended";
+  runEndReason?: string;
   playbackModeId: PlaybackModeId;
   freshBundlesAvailable: number;
   refuellingOperationCount: number;
+  /** Null until fuel is discharged; optional for older fixture snapshots. */
+  lastDischargedMaximumBurnupMwdPerKg?: number | null;
+  maximumDischargedBurnupMwdPerKg?: number | null;
   lastRefuelledChannel: number;
   lastRefuellingDirectionId: RefuellingDirection | null;
   lastRefuellingShiftCount: number;
@@ -315,12 +375,22 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "rrsReserveFraction"
   | "deviceAvailableFraction"
   | "pendingActionCount"
+  | "shift"
+  | "provenance"
+  | "refuellingPlans"
+  | "lastFuelMovement"
+  | "scorePolicyId"
+  | "lastRefuellingScore"
   | "scoreTotal"
   | "scoreDelta"
   | "isPaused"
+  | "runStatus"
+  | "runEndReason"
   | "playbackModeId"
   | "freshBundlesAvailable"
   | "refuellingOperationCount"
+  | "lastDischargedMaximumBurnupMwdPerKg"
+  | "maximumDischargedBurnupMwdPerKg"
   | "lastRefuelledChannel"
   | "lastRefuellingDirectionId"
   | "lastRefuellingShiftCount"
@@ -329,6 +399,11 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "rrs"
   | "diagnostics"
   | "lastEvent">;
+
+/** Run completion is separate from physical RRS exhaustion. */
+export function isRunTerminal(snapshot: CanduSnapshot): boolean {
+  return snapshot.runStatus === "completed" || snapshot.runStatus === "ended" || snapshot.rrs.isGameOver;
+}
 
 export interface RefuelRequest {
   channelIndex: number;
@@ -348,7 +423,7 @@ export type CanduCommand =
   | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: CoreBoundaryFace[] }
   | { type: "configure-zone-layout"; nodes: ZoneNodeBinding[] }
   | { type: "solve" }
-  | { type: "reset"; seed?: number };
+  | { type: "reset"; seed?: number; shiftId?: ShiftId };
 
 export interface CanduCommandResponse {
   protocol: typeof PROTOCOL_VERSION;
@@ -363,6 +438,7 @@ export interface CanduCommandResponse {
   coreReplacement?: CanduCoreSnapshot | null;
   stateDigest?: string;
   replayDigest?: string;
+  replayDigestAlgorithm?: string;
   diagnostics: Array<{
     level: DiagnosticLevel;
     code: string;
@@ -376,6 +452,8 @@ export interface CanduPlaytestWasmExports {
   initialize?: (requestJson: string) => string | Promise<string>;
   getSnapshotJson: () => string;
   dispatchJson: (commandJson: string) => string | Promise<string>;
+  dispatchProfileJson?: (commandJson: string) => string | Promise<string>;
+  getGpuPrototypeFixtureJson?: (requestJson: string) => string | Promise<string>;
 }
 
 export type BridgeResult<T> = T | Promise<T>;
@@ -705,7 +783,9 @@ function isCanduChannelSnapshot(
     return false;
   }
 
-  return value.bundles.every((bundle, position) =>
+  return (!hasOwn(value, "canRefuel") || isBoolean(value.canRefuel)) &&
+    (!hasOwn(value, "refuellingIneligibilityReason") || isString(value.refuellingIneligibilityReason)) &&
+    value.bundles.every((bundle, position) =>
     isCanduBundleSnapshot(bundle, position));
 }
 
@@ -853,6 +933,10 @@ function isCanduXenonSnapshot(value: unknown): value is CanduXenonSnapshot {
   ]) || !hasBooleanFields(value, ["hasCoupling"]) ||
       !hasNonNegativeIntegerFields(value, ["stateVersion", "nodeCount"]) ||
       !isFiniteNumber(value.simulationTimeSeconds) ||
+      (value.coupledSimulationTimeSeconds !== undefined &&
+        (!isFiniteNumber(value.coupledSimulationTimeSeconds) || value.coupledSimulationTimeSeconds < 0 ||
+          value.coupledSimulationTimeSeconds > value.simulationTimeSeconds)) ||
+      (value.coupledStateDigestHex !== undefined && typeof value.coupledStateDigestHex !== "string") ||
       !hasFiniteNumberFields(value, [
         "meanI135NumberDensityM3",
         "maxI135NumberDensityM3",
@@ -883,6 +967,8 @@ function isCanduRrsZoneSnapshot(
     "measuredPowerFraction",
     "shapeError",
   ]) && value.logicalZoneId === expectedZoneId &&
+    ["meanI135NumberDensityM3", "meanXe135NumberDensityM3"].every(field =>
+      value[field] === undefined || (typeof value[field] === "number" && Number.isFinite(value[field]) && value[field] >= 0)) &&
     hasFiniteNumberFields(value, [
       "fillFraction",
       "referencePowerFraction",
@@ -978,6 +1064,11 @@ function isCanduRrsSnapshot(value: unknown): value is CanduRrsSnapshot {
   if (value.calibratedTotalZoneWorthMk !== undefined &&
       (!isFiniteNumber(value.calibratedTotalZoneWorthMk) || value.calibratedTotalZoneWorthMk <= 0)) return false;
 
+  if (value.decisionCode !== undefined && (!isString(value.decisionCode) || ![
+    "already-balanced", "command-applied", "command-retained", "correction-applied", "retained-best", "fill-limits", "event-limit",
+    "exhausted-empty", "exhausted-full", "initial-reference"].includes(value.decisionCode))) return false;
+  if (value.decisionExplanation !== undefined && !isString(value.decisionExplanation)) return false;
+  if (value.limitingZoneId !== undefined && (!isNonNegativeInteger(value.limitingZoneId) || value.limitingZoneId >= 14)) return false;
   return value.zones.every((zone, zoneIndex) =>
     isCanduRrsZoneSnapshot(zone, zoneIndex));
 }
@@ -1054,6 +1145,45 @@ const SNAPSHOT_STATE_FIELDS = [
   "lastEvent",
 ] as const;
 
+function isRefuellingScore(value: unknown): boolean {
+  return isRecord(value) && isString(value.policyId) && value.policyId.length > 0 &&
+    hasFiniteNumberFields(value, ["dischargeReward", "freshFuelCost", "netPoints"]) &&
+    (value.dischargeReward as number) >= 0 && (value.freshFuelCost as number) >= 0;
+}
+
+function isRefuellingPlan(value: unknown): boolean {
+  return isRecord(value) && isRefuellingDirection(value.directionId) && [4, 8].includes(value.shiftCount as number) &&
+    ["A", "B"].includes(value.incomingEnd as string) && ["A", "B"].includes(value.outgoingEnd as string) &&
+    ["insertedPositions", "dischargedPositions", "retainedFromPositions", "retainedToPositions"].every(key =>
+      Array.isArray(value[key]) && (value[key] as unknown[]).every(p => isNonNegativeInteger(p) && (p as number) < 12));
+}
+function isFuelMovement(value: unknown): boolean {
+  return isRecord(value) && isNonNegativeInteger(value.operationId) && isNonNegativeInteger(value.channelIndex) &&
+    (value.channelIndex as number) < CORE_CHANNEL_COUNT && isRefuellingPlan(value.plan) && isRefuellingScore(value.score) &&
+    Array.isArray(value.bundles) && value.bundles.every(b => isRecord(b) && isString(b.bundleId) &&
+      isFiniteNumber(b.burnupMwdPerKg) && b.burnupMwdPerKg >= 0 &&
+      ["beforePosition", "afterPosition"].every(k => b[k] == null || isNonNegativeInteger(b[k]) && (b[k] as number) < 12));
+}
+
+function isRunProvenance(value: unknown): boolean {
+  return isRecord(value) && ["standard-challenge", "free-practice", "modified-sandbox"].includes(value.kind as string) &&
+    isString(value.label) && isBoolean(value.isModified) && isBoolean(value.eligibleForStandardChallenge) &&
+    Array.isArray(value.reasons) && value.reasons.every(r => isString(r) && r.length > 0) &&
+    value.isModified === (value.reasons.length > 0) && value.isModified === (value.kind === "modified-sandbox") &&
+    value.eligibleForStandardChallenge === (value.kind === "standard-challenge");
+}
+
+function isShiftProgress(value: unknown): value is ShiftProgress {
+  return isRecord(value) && ["free-practice", "useful-fuel-day-v1"].includes(value.id as string) &&
+    hasStringFields(value, ["title", "objective", "reward"]) &&
+    hasFiniteNumberFields(value, ["horizonSeconds", "remainingSeconds", "usefulBurnupThresholdMwdPerKg",
+      "thermalEnergyMwh", "electricalEnergyMwhEstimate", "dischargeReward", "freshFuelCost", "operatingPoints"]) &&
+    ["seed", "fuelBudget", "fuelConsumed", "usefulBundlesDischarged", "usefulBundlesRequired"].every(key => isNonNegativeInteger(value[key])) &&
+    ["horizonSeconds", "remainingSeconds", "usefulBurnupThresholdMwdPerKg", "thermalEnergyMwh", "electricalEnergyMwhEstimate",
+      "dischargeReward", "freshFuelCost"].every(key => (value[key] as number) >= 0) &&
+    ["in-progress", "success", "missed", "ended"].includes(value.outcome as string) && isBoolean(value.rewardEarned);
+}
+
 function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
   return hasOwnProperties(value, SNAPSHOT_STATE_FIELDS) &&
     hasStringFields(value, ["scenarioId", "dataPackId"]) &&
@@ -1068,9 +1198,20 @@ function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
       "scoreTotal",
       "scoreDelta",
     ]) && isNonNegativeInteger(value.pendingActionCount) &&
+    (!hasOwn(value, "shift") || isShiftProgress(value.shift)) &&
+    (!hasOwn(value, "provenance") || isRunProvenance(value.provenance)) &&
+    (!hasOwn(value, "refuellingPlans") || Array.isArray(value.refuellingPlans) && value.refuellingPlans.every(isRefuellingPlan)) &&
+    (!hasOwn(value, "lastFuelMovement") || value.lastFuelMovement === null || isFuelMovement(value.lastFuelMovement)) &&
+    (!hasOwn(value, "scorePolicyId") || isString(value.scorePolicyId) && value.scorePolicyId.length > 0) &&
+    (!hasOwn(value, "lastRefuellingScore") || value.lastRefuellingScore === null ||
+      isRefuellingScore(value.lastRefuellingScore)) &&
     isBoolean(value.isPaused) && isPlaybackModeId(value.playbackModeId) &&
+    (!hasOwn(value, "runStatus") || ["running", "paused", "completed", "ended"].includes(value.runStatus as string)) &&
+    (!hasOwn(value, "runEndReason") || isString(value.runEndReason)) &&
     isNonNegativeInteger(value.freshBundlesAvailable) &&
     isNonNegativeInteger(value.refuellingOperationCount) &&
+    ["lastDischargedMaximumBurnupMwdPerKg", "maximumDischargedBurnupMwdPerKg"].every(key =>
+      !hasOwn(value, key) || value[key] === null || isFiniteNumber(value[key]) && value[key] >= 0) &&
     isInteger(value.lastRefuelledChannel) &&
     value.lastRefuelledChannel >= -1 && value.lastRefuelledChannel < CORE_CHANNEL_COUNT &&
     (value.lastRefuellingDirectionId === null ||
@@ -1107,7 +1248,8 @@ function isCanduCommand(value: unknown): value is CanduCommand {
     case "resume":
       return true;
     case "reset":
-      return value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295);
+      return (value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295)) &&
+        (value.shiftId === undefined || ["free-practice", "useful-fuel-day-v1"].includes(value.shiftId as string));
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
@@ -1157,6 +1299,7 @@ function isProtocolResponseEnvelope(value: unknown): value is Record<string, unk
     (!hasOwn(value, "requiresResync") || isBoolean(value.requiresResync)) &&
     (!hasOwn(value, "stateDigest") || isString(value.stateDigest)) &&
     (!hasOwn(value, "replayDigest") || isString(value.replayDigest)) &&
+    (!hasOwn(value, "replayDigestAlgorithm") || isString(value.replayDigestAlgorithm)) &&
     (!hasOwn(value, "coreReplacement") || value.coreReplacement === null ||
       isCanduCoreSnapshot(value.coreReplacement)) &&
     (!hasOwn(value, "snapshotPatch") || value.snapshotPatch === null ||
@@ -1356,6 +1499,8 @@ export function findWasmExports(): CanduPlaytestWasmExports | null {
         ...(typeof initialize === "function" ? { initialize: initialize as CanduPlaytestWasmExports["initialize"] } : {}),
         getSnapshotJson: getSnapshotJson as CanduPlaytestWasmExports["getSnapshotJson"],
         dispatchJson: dispatchJson as CanduPlaytestWasmExports["dispatchJson"],
+        ...(typeof candidate.dispatchProfileJson === "function" ? { dispatchProfileJson: candidate.dispatchProfileJson as CanduPlaytestWasmExports["dispatchProfileJson"] } : {}),
+        ...(typeof candidate.getGpuPrototypeFixtureJson === "function" ? { getGpuPrototypeFixtureJson: candidate.getGpuPrototypeFixtureJson as CanduPlaytestWasmExports["getGpuPrototypeFixtureJson"] } : {}),
       };
     }
   }

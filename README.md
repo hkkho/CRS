@@ -3,25 +3,79 @@
 This repository is the source for the web-first CANDU on-power refuelling game
 deployed from `web/candu-playtest` to Vercel.
 
+The secondary host is [GitHub Pages](https://hkkho.github.io/CRS/).
+Both hosts deploy the validated shared WASM simulation from `main`;
+see [hosting and verification](docs/maintenance/hosting.md).
+
 The player keeps a deterministic practice reactor at useful power, manages RRS
 reserve, spends a finite fresh-bundle inventory, refuels channels, and builds
-score from stable operation and useful discharged burnup. Operations and Core
+score from stable operation and useful discharged burnup. Reactor Studio and Core
 Designer share one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
-In Operations, use **Find oldest fuel** (`N`) to inspect a candidate and `M`
-to switch between power and burnup maps. Choose direction (`D`) and shift size
-(`4` or `8`), then refuel (`R`). The response card compares local power, tilt,
+In Reactor Studio, use **Highest burnup** (`N`) to inspect a candidate and the
+map buttons to switch between power and burnup. Choose direction (`D`) and shift
+size (4 or 8 bundles), then refuel (`R`). The response card compares local power, tilt,
 reserve, fuel stock, and score; the zone strip shows all fourteen RRS fills.
 Useful discharged burnup earns points, while throwing away fresh fuel costs
-points. `Space` pauses/resumes; **New shift** resets the run and fuel budget.
+points. Stable operation earns up to one point per simulated hour, so a productive
+fuel move materially affects the score. The [balance report](docs/gameplay/score-balance.md)
+compares three seeds and four strategies. `Space` pauses/resumes; **New shift** resets the run and fuel budget.
 
-**Reactor Studio** is an alternative interface with a light instrument-board
-layout, round core map, fuel watchlist, horizontal bundle rack, and native
-keyboard-accessible controls. Open it from the title screen, or press `V` in
-Operations. **Tactical view** switches back while preserving the live run,
-selected channel, direction, and shift size. Core Designer returns to the view
-that opened it. In Studio, resume to apply power targets and pause to step time.
+The launcher has native **Begin shift**, seed and objective controls. Use Tab and
+Enter/Space throughout play. Designer has native channel/position selectors,
+readable cell measurements, fuel and boundary buttons, solve, zone geometry and
+return controls over the same live session. Both support a 320px-wide layout;
+continuous telemetry stays outside screen-reader announcements.
+
+**Reactor Studio** is the primary game interface with a CRT phosphor terminal
+layout, square channel cells, fuel watchlist, axial power/burnup line graphs, and native
+keyboard-accessible controls. **Begin shift** opens Studio. Core Designer returns
+to Studio while preserving history, selected channel, direction, and shift size.
+Resume to apply power targets and pause to step time. The native launcher and
+Studio start without Phaser; opening Designer loads its map on demand. The clock
+shows requested speed and observed simulation minutes per real second, including
+solver waits. History keeps all observations for inspection while reducing drawn
+paths. [Browser measurements and budgets](docs/performance/browser-phase3.md)
+record the startup/rendering improvements and their limits.
+
+Studio shows the current objective, seed, time remaining and fuel budget. Choose
+**One-day challenge** for a paused, 24-hour run: discharge at least eight bundles
+at 6 MWd/kg or above and reach the end with RRS headroom to earn the **Efficient
+refueller** badge. **Free practice** returns to the 30-day sandbox. No mandatory
+scripted moves are added.
+
+The shift report shows the ending reason, thermal energy and estimated electrical
+energy delivered, fresh fuel consumed, useful discharged bundles and cumulative
+operating/discharge/fuel-cost points. **Retry same seed** repeats the same objective
+and aged core; **Try new seed** starts the next deterministic core. Reports and
+badges belong to the current run and reset when a new run begins.
+
+Before ordering, the fuel strip names the incoming/outgoing ends and marks the
+positions that will leave, with their burnup. Confirmed moves retain bundle
+identities, old/new positions, discharge burnup and score across Designer visits.
+Highest burnup lists eligible channels only; a selected nonfuel channel explains
+why it cannot be refuelled. RRS feedback names the controller decision and the
+zone with least drain/fill headroom.
+
+Inspection in Designer preserves a standard run. Accepted fuel, reflective-face
+or zone-geometry edits mark the run **Modified sandbox** for the rest of that
+run, including after restoring the geometry. Sandbox runs remain playable and
+retain score/objective progress, but do not earn the standard challenge badge.
+Reset recreates a standard run with the selected seed and objective.
+
+The tabs show simulation-time line graphs for channel/bundle power peaks,
+thermal/electrical output, discharged burnup, all fourteen zone levels and their
+core mean, axial tilt, Keff/reactivity, reserve, fuel stock and score. Hover a graph
+or use the sample slider to read values, filter its time window, and toggle traces.
+History retains up to 4,096 observations in this browser session and clears on
+**New shift**. Discharge readings come from confirmed shared-simulation fuel moves;
+they remain unavailable until fuel has been discharged.
+
+The **Iodine & xenon** tab shows core poison inventories and all fourteen
+regional xenon traces. Poison follows bundle history, changes the solved power
+shape, and affects zone fills. See the [gameplay model](docs/physics/iodine-xenon-gameplay.md)
+for the analytic update and authored calibration.
 
 In **Core Designer**, open **Zone geometry** (`Z`) to inspect all twelve axial
 slices of the fourteen control regions and the homogenized absorber masks.
@@ -48,7 +102,7 @@ RFSP-inspired channel ages, eight-bundle history and burnup coverage.
 The active product path is intentionally narrow:
 
 ```text
-Phaser/Vite web client
+Native DOM/SVG web client + optional Phaser Designer
         |
 TypeScript protocol + Web Worker
         |
@@ -61,7 +115,7 @@ ReactorSim.Game
 ReactorSim.Core
 ```
 
-- `web/candu-playtest` owns the Phaser UI, browser protocol, worker transport,
+- `web/candu-playtest` owns the native DOM/SVG UI, optional Phaser Designer, browser protocol, worker transport,
   smoke test, and deployed reproduction benchmark.
 - `src/ReactorSim.BrowserHost` publishes the .NET browser-WASM host.
 - `src/ReactorSim.Browser` owns the versioned bridge contract.
@@ -75,9 +129,14 @@ ReactorSim.Core
 
 The exact active two-group equations are documented in
 [`docs/physics/active-two-group-solver.md`](docs/physics/active-two-group-solver.md).
+The current architecture is [docs/architecture.md](docs/architecture.md), and
+task status is [docs/REFACTORING_TASK_GUIDE.md](docs/REFACTORING_TASK_GUIDE.md).
 The current product contract is
 [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md), and the active
 work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).
+
+Current benchmarks, canonical pack staging and archived reproduction tools are
+indexed in [docs/maintenance/research-tools.md](docs/maintenance/research-tools.md).
 
 ## Local development
 

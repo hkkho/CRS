@@ -11,6 +11,28 @@ public sealed class SpatialSolveTests
     private static readonly string[] ExpectedEnergyGroupOrder = { "fast", "thermal" };
 
     [Fact]
+    public void ParallelOverflowReportsSameFirstRowAndClearsCompleteOutput()
+    {
+        var fixture = CreateFixture(3);
+        var serial = Require(SpatialOperator.TryCreate(fixture.Stencil, fixture.Coefficients, 1));
+        var parallel = Require(SpatialOperator.TryCreate(fixture.Stencil, fixture.Coefficients, 2));
+        // Two leakage terms at the middle row overflow despite finite input.
+        double[] flux = { 0, double.MaxValue, 0 };
+        var a = new double[3];
+        var b = new double[3];
+        Assert.False(serial.TryApply(SpatialEnergyGroup.Group1, flux, a, out var serialError));
+        for (int repeat = 0; repeat < 10; repeat++)
+        {
+            Array.Fill(b, 42);
+            Assert.False(parallel.TryApply(SpatialEnergyGroup.Group1, flux, b, out var error));
+            Assert.Equal(serialError.Code, error.Code);
+            Assert.Equal(serialError.Path, error.Path);
+            Assert.Equal(serialError.Message, error.Message);
+            Assert.All(b, v => Assert.Equal(0, v));
+        }
+    }
+
+    [Fact]
     public void ManufacturedTwoAndThreeNodeSolvesAreFiniteNormalizedAndSymmetric()
     {
         // A one-channel/two-position stencil keeps the manufactured fixture

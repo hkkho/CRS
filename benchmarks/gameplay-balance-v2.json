@@ -1,0 +1,1038 @@
+{
+  "seeds": [
+    1001,
+    1002,
+    1013
+  ],
+  "horizonSeconds": 86400,
+  "baseline": [
+    {
+      "seed": 1001,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 39953.4948080516,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 39953.4948080516,
+      "RrsReserveFraction": 0.811324671967037,
+      "moves": []
+    },
+    {
+      "seed": 1001,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 39830.37978952162,
+      "DischargeReward": 51.91152685948758,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 39858.29131638111,
+      "RrsReserveFraction": 0.7111698212647757,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524589
+          }
+        },
+        {
+          "channel": 324,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 25.99930188996299,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.99930188996299
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1001,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 39449.39524569529,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 39438.75739273358,
+      "RrsReserveFraction": 0.7985389247839676,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1001,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 40156.55073928045,
+      "DischargeReward": 74.81087126113763,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 40207.361610541586,
+      "RrsReserveFraction": 0.8117651946623318,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 324,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.448724222844234,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.448724222844234
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 42029.11167267955,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 42029.11167267955,
+      "RrsReserveFraction": 0.7217609417880341,
+      "moves": []
+    },
+    {
+      "seed": 1002,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.999999999998,
+      "ThermalEnergyMwh": 49535.99999999999,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 40802.22692227739,
+      "DischargeReward": 51.91402361945596,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 40830.14094589685,
+      "RrsReserveFraction": 0.9144386405028204,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524587
+          }
+        },
+        {
+          "channel": 181,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 26.001798649931374,
+            "FreshFuelCost": 12,
+            "NetPoints": 14.001798649931375
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.999999999998,
+      "ThermalEnergyMwh": 49535.99999999999,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 41638.75387866966,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 41628.116025707954,
+      "RrsReserveFraction": 0.7712625887228707,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 41895.585044759915,
+      "DischargeReward": 74.81628404763546,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 41946.40132880755,
+      "RrsReserveFraction": 0.9228268702836492,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 181,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.45413700934207,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.45413700934208
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 40130.84482132302,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 40130.84482132302,
+      "RrsReserveFraction": 0.7581051362402141,
+      "moves": []
+    },
+    {
+      "seed": 1013,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.99999999999,
+      "ThermalEnergyMwh": 49535.99999999997,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 39305.03442252913,
+      "DischargeReward": 51.93323796261614,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 39332.96766049174,
+      "RrsReserveFraction": 0.8069164467679706,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524587
+          }
+        },
+        {
+          "channel": 305,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 26.021012993091553,
+            "FreshFuelCost": 12,
+            "NetPoints": 14.021012993091553
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 39639.51310580862,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 39628.87525284691,
+      "RrsReserveFraction": 0.7700480588328933,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-discharge-per-bundle-v1",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 40110.242005517735,
+      "DischargeReward": 74.83422186252474,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 40161.07622738026,
+      "RrsReserveFraction": 0.9115834594753289,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 305,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-discharge-per-bundle-v1",
+            "DischargeReward": 37.47207482423134,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.472074824231342
+          }
+        }
+      ]
+    }
+  ],
+  "tuned": [
+    {
+      "seed": 1001,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 22.196386004473183,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 22.196386004473183,
+      "RrsReserveFraction": 0.811324671967037,
+      "moves": []
+    },
+    {
+      "seed": 1001,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 22.127988771956502,
+      "DischargeReward": 51.91152685948758,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 50.03951563144408,
+      "RrsReserveFraction": 0.7111698212647757,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524589
+          }
+        },
+        {
+          "channel": 324,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 25.99930188996299,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.99930188996299
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1001,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 21.916330692053023,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 11.278477730346424,
+      "RrsReserveFraction": 0.7985389247839676,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 75,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1001,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 22.309194855155738,
+      "DischargeReward": 74.81087126113763,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 73.12006611629337,
+      "RrsReserveFraction": 0.8117651946623318,
+      "moves": [
+        {
+          "channel": 75,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 324,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.448724222844234,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.448724222844234
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 23.349506484822097,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 23.349506484822097,
+      "RrsReserveFraction": 0.7217609417880341,
+      "moves": []
+    },
+    {
+      "seed": 1002,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.999999999998,
+      "ThermalEnergyMwh": 49535.99999999999,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 22.667903845709716,
+      "DischargeReward": 51.91402361945596,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 50.58192746516568,
+      "RrsReserveFraction": 0.9144386405028204,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524587
+          }
+        },
+        {
+          "channel": 181,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 26.001798649931374,
+            "FreshFuelCost": 12,
+            "NetPoints": 14.001798649931375
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.999999999998,
+      "ThermalEnergyMwh": 49535.99999999999,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 23.1326410437054,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 12.494788081998802,
+      "RrsReserveFraction": 0.7712625887228707,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 39,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1002,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 23.275325024866405,
+      "DischargeReward": 74.81628404763546,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 74.09160907250187,
+      "RrsReserveFraction": 0.9228268702836492,
+      "moves": [
+        {
+          "channel": 39,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 181,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.45413700934207,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.45413700934208
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "no-refuels",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600,
+      "ThermalEnergyMwh": 49536,
+      "FuelConsumed": 0,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 22.29491378962375,
+      "DischargeReward": 0,
+      "FreshFuelCost": 0,
+      "ScoreTotal": 22.29491378962375,
+      "RrsReserveFraction": 0.7581051362402141,
+      "moves": []
+    },
+    {
+      "seed": 1013,
+      "policy": "highest-burnup-default-direction",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15599.99999999999,
+      "ThermalEnergyMwh": 49535.99999999997,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 0,
+      "OperatingPoints": 21.836130234738242,
+      "DischargeReward": 51.93323796261614,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 49.76936819735438,
+      "RrsReserveFraction": 0.8069164467679706,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 25.912224969524587,
+            "FreshFuelCost": 12,
+            "NetPoints": 13.912224969524587
+          }
+        },
+        {
+          "channel": 305,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 26.021012993091553,
+            "FreshFuelCost": 12,
+            "NetPoints": 14.021012993091553
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "waste-reversal",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "missed",
+      "RewardEarned": false,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 32,
+      "UsefulBundlesDischarged": 4,
+      "OperatingPoints": 22.02195172544926,
+      "DischargeReward": 37.3621470382934,
+      "FreshFuelCost": 48,
+      "ScoreTotal": 11.38409876374266,
+      "RrsReserveFraction": 0.7700480588328933,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        },
+        {
+          "channel": 76,
+          "direction": "toward-end-a",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 0,
+            "FreshFuelCost": 12,
+            "NetPoints": -12
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1013,
+      "policy": "considered-discharge",
+      "scorePolicyId": "practice-fuel-and-operation-v2",
+      "survivalSeconds": 86400,
+      "RunStatus": "completed",
+      "reason": "Challenge day completed",
+      "Outcome": "success",
+      "RewardEarned": true,
+      "ElectricalEnergyMwhEstimate": 15600.000000000002,
+      "ThermalEnergyMwh": 49536.00000000001,
+      "FuelConsumed": 16,
+      "UsefulBundlesDischarged": 8,
+      "OperatingPoints": 22.283467780843523,
+      "DischargeReward": 74.83422186252474,
+      "FreshFuelCost": 24,
+      "ScoreTotal": 73.11768964336827,
+      "RrsReserveFraction": 0.9115834594753289,
+      "moves": [
+        {
+          "channel": 76,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 0,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.3621470382934,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.3621470382934
+          }
+        },
+        {
+          "channel": 305,
+          "direction": "toward-end-b",
+          "simulationTimeSeconds": 43200,
+          "LastRefuellingScore": {
+            "PolicyId": "practice-fuel-and-operation-v2",
+            "DischargeReward": 37.47207482423134,
+            "FreshFuelCost": 12,
+            "NetPoints": 25.472074824231342
+          }
+        }
+      ]
+    }
+  ]
+}

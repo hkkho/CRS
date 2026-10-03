@@ -452,7 +452,9 @@ namespace ReactorSim.Game
             double meanDynamicAbsorptionGroup2PerM,
             double maxDynamicAbsorptionGroup2PerM,
             IEnumerable<GameXenonChannelPresentationSnapshot> channels,
-            int selectedChannelIndex)
+            int selectedChannelIndex,
+            double coupledSimulationTimeSeconds = 0,
+            string coupledStateDigestHex = "")
         {
             if (string.IsNullOrWhiteSpace(stateIdentity) ||
                 string.IsNullOrWhiteSpace(stateDigestHex) ||
@@ -485,6 +487,8 @@ namespace ReactorSim.Game
             HasCoupling = hasCoupling;
             BaseCoefficientDigestHex = baseCoefficientDigestHex;
             DynamicXenonDigestHex = dynamicXenonDigestHex;
+            CoupledSimulationTimeSeconds = coupledSimulationTimeSeconds;
+            CoupledStateDigestHex = coupledStateDigestHex;
             EffectiveCoefficientDigestHex = effectiveCoefficientDigestHex;
             MeanI135NumberDensityM3 = meanI135NumberDensityM3;
             MaxI135NumberDensityM3 = maxI135NumberDensityM3;
@@ -532,6 +536,8 @@ namespace ReactorSim.Game
         public string BaseCoefficientDigestHex { get; }
 
         public string DynamicXenonDigestHex { get; }
+        public double CoupledSimulationTimeSeconds { get; }
+        public string CoupledStateDigestHex { get; }
 
         public string EffectiveCoefficientDigestHex { get; }
 
@@ -591,7 +597,9 @@ namespace ReactorSim.Game
             double referencePowerFraction,
             double targetPowerFraction,
             double measuredPowerFraction,
-            double shapeError)
+            double shapeError,
+            double meanI135NumberDensityM3 = 0,
+            double meanXe135NumberDensityM3 = 0)
         {
             if (logicalZoneId >= PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount)
             {
@@ -610,6 +618,8 @@ namespace ReactorSim.Game
             TargetPowerFraction = targetPowerFraction;
             MeasuredPowerFraction = measuredPowerFraction;
             ShapeError = shapeError;
+            MeanI135NumberDensityM3 = meanI135NumberDensityM3;
+            MeanXe135NumberDensityM3 = meanXe135NumberDensityM3;
         }
 
         public uint LogicalZoneId { get; }
@@ -623,6 +633,8 @@ namespace ReactorSim.Game
         public double MeasuredPowerFraction { get; }
 
         public double ShapeError { get; }
+        public double MeanI135NumberDensityM3 { get; }
+        public double MeanXe135NumberDensityM3 { get; }
 
         private static void RequireFraction(double value, string parameterName)
         {
@@ -652,13 +664,21 @@ namespace ReactorSim.Game
     public sealed class GameRrsPresentationSnapshot
     {
         internal GameRrsPresentationSnapshot(
-            PracticeLiquidZoneRrsV1 state)
+            PracticeLiquidZoneRrsV1 state, PracticeXenonStateV1? xenon = null)
         {
             if (state == null)
             {
                 throw new ArgumentNullException(nameof(state));
             }
 
+            var iodine = new double[14]; var xe = new double[14]; var counts = new int[14];
+            if (xenon != null)
+                for (int node = 0; node < xenon.Iodine.Count; node++)
+                {
+                    int zone = (int)state.Mapping.GetLogicalZoneId(new NodeKey(
+                        new ChannelId((uint)(node / 12)), new BundlePosition((uint)(node % 12))));
+                    iodine[zone] += xenon.Iodine[node]; xe[zone] += xenon.Xenon[node]; counts[zone]++;
+                }
             var zones = new List<GameRrsZonePresentationSnapshot>(
                 (int)PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount);
             for (uint zone = 0;
@@ -671,9 +691,15 @@ namespace ReactorSim.Game
                     state.ReferenceZonalPowerFractions[(int)zone],
                     state.TargetZonalPowerFractions[(int)zone],
                     state.MeasuredZonalPowerFractions[(int)zone],
-                    state.ZonalShapeErrors[(int)zone]));
+                    state.ZonalShapeErrors[(int)zone],
+                    counts[zone] == 0 ? 0 : iodine[zone] / counts[zone],
+                    counts[zone] == 0 ? 0 : xe[zone] / counts[zone]));
             }
 
+            DecisionCode = state.DecisionCode;
+            DecisionExplanation = ExplainDecision(state.DecisionCode);
+            LimitingZoneId = state.ZoneFills.Select((fill, index) => new { fill, index })
+                .OrderBy(zone => Math.Min(zone.fill, 1.0 - zone.fill)).ThenBy(zone => zone.index).First().index;
             ControllerIdentity = state.ControllerIdentity;
             MappingIdentity = state.MappingIdentity;
             MappingDigestHex = DigestHex(state.MappingDigest);
@@ -710,6 +736,24 @@ namespace ReactorSim.Game
             CadenceIdentity = state.CadenceIdentity;
             Zones = new ReadOnlyCollection<GameRrsZonePresentationSnapshot>(zones);
         }
+
+        public string DecisionCode { get; }
+        public string DecisionExplanation { get; }
+        public int LimitingZoneId { get; }
+
+        private static string ExplainDecision(string code) => code switch
+        {
+            "already-balanced" => "Already balanced; retained fills meet the controller tolerances.",
+            "command-applied" => "Accepted a regulating move.",
+            "command-retained" => "Retained the first regulating move; the tested second correction was not better.",
+            "correction-applied" => "Accepted the second regulating correction.",
+            "retained-best" => "Retained previous fills; no better admissible move was accepted.",
+            "fill-limits" => "A fill limit was reached; a regulating residual remains.",
+            "event-limit" => "The event movement limit was reached; a regulating residual remains.",
+            "exhausted-empty" => "Regulating reserve exhausted: all zones are empty.",
+            "exhausted-full" => "Regulating reserve exhausted: all zones are full.",
+            _ => "Initial reference; regulation has not yet run."
+        };
 
         public string ControllerIdentity { get; }
 
@@ -889,7 +933,8 @@ namespace ReactorSim.Game
             double localTiltFraction,
             FlowDirection flowDirection,
             IEnumerable<GameBundlePresentationSnapshot> bundles,
-            GameXenonChannelPresentationSnapshot xenon)
+            GameXenonChannelPresentationSnapshot xenon,
+            string refuellingIneligibilityReason = "")
         {
             if (bundles == null)
             {
@@ -904,6 +949,7 @@ namespace ReactorSim.Game
                     nameof(bundles));
             }
 
+            RefuellingIneligibilityReason = refuellingIneligibilityReason;
             ChannelIndex = channelIndex;
             GridColumn = gridColumn;
             GridRow = gridRow;
@@ -915,6 +961,10 @@ namespace ReactorSim.Game
             Xenon = xenon ?? throw new ArgumentNullException(nameof(xenon));
             Bundles = new ReadOnlyCollection<GameBundlePresentationSnapshot>(copy);
         }
+
+        /// <summary>Geometry eligibility; run state and stock are separate command constraints.</summary>
+        public bool CanRefuel => RefuellingIneligibilityReason.Length == 0;
+        public string RefuellingIneligibilityReason { get; }
 
         public uint ChannelIndex { get; }
 

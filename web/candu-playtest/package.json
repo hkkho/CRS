@@ -10,7 +10,10 @@
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke.mjs",
-    "benchmark": "node scripts/benchmark-wasm.mjs"
+    "benchmark": "node scripts/benchmark-wasm.mjs",
+    "benchmark:xenon": "node scripts/benchmark-xenon.mjs",
+    "benchmark:gpu": "node scripts/benchmark-gpu.mjs",
+    "test:gpu": "node --test scripts/gpu-prototype.test.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0",

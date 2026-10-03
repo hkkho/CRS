@@ -15,5 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ReactorSim.Browser\ReactorSim.Browser.csproj" />
     <Content Include="main.mjs" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="'$(EnableResearchExperiments)' == 'true'" Include="gpuSpatialPrototype.mjs" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="'$(EnableResearchExperiments)' == 'true'" Include="gpuCoupledSpatial.mjs" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

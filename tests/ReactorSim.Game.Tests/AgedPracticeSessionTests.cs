@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
 
@@ -8,7 +9,7 @@ namespace ReactorSim.Game.Tests;
 public sealed class AgedPracticeSessionTests
 {
     [Fact]
-    public void RefuellingRaisesZonesImmediatelyAndBurnupDrainsThemOnTheNextBoundary()
+    public void RefuellingRaisesZonesAndBurnupDrainsThemAsItExitsTheAcceptanceBand()
     {
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001);
         while (session.Snapshot.SimulationTimeSeconds < 14 * 3600)
@@ -23,21 +24,32 @@ public sealed class AgedPracticeSessionTests
             var fuel = session.RefuelChannel(channel.id, channel.direction, 8, "NAT-U-SYNTHETIC");
             Assert.True(fuel.Accepted, fuel.DiagnosticMessage);
             Assert.Equal(14 * 3600, session.Snapshot.SimulationTimeSeconds);
-            Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0, 2e-5);
+            Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0,
+                PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
         }
         foreach (var bundle in session.CoreState.EnumerateBundles())
             Assert.Equal(energyBefore.TryGetValue(bundle.BundleId, out double retainedEnergy) ? retainedEnergy : 0,
                 bundle.CumulativeFissionEnergyJ);
         double fuelledFill = session.CurrentLiquidZoneRrs.AverageFillFraction;
         double fuelledRho = session.CurrentLiquidZoneRrs.CoreReactivity;
-        Assert.InRange(fuelledFill - beforeFill, 0.05, 0.09);
+        // Fresh fuel now also removes its carried poison. Preserve the bounded
+        // feedback expectation while allowing that additional absorption change.
+        Assert.InRange(fuelledFill - beforeFill, 0.05, 0.10);
         Assert.Equal(112U, session.Snapshot.FreshBundlesAvailable);
         var burned = session.AdvanceWallMilliseconds(1000);
         Assert.True(burned.Accepted, burned.DiagnosticMessage);
         Assert.Equal(14.5 * 3600, session.Snapshot.SimulationTimeSeconds);
         Assert.True(session.CurrentLiquidZoneRrs.CoreReactivity < fuelledRho);
+        // Small burnup changes can remain inside both acceptance bands and
+        // retain fills. Regulation must resume as the accumulated deficit grows.
+        for (int boundary = 0; boundary < 6 && session.CurrentLiquidZoneRrs.AverageFillFraction >= fuelledFill; boundary++)
+        {
+            var continued = session.AdvanceWallMilliseconds(1000);
+            Assert.True(continued.Accepted, continued.DiagnosticMessage);
+        }
         Assert.True(session.CurrentLiquidZoneRrs.AverageFillFraction < fuelledFill);
-        Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0, 2e-5);
+        Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0,
+            PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
     }
 
     [Fact]

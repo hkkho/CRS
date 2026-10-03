@@ -4,7 +4,15 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(EnableResearchExperiments)' != 'true'">
+    <Compile Remove="Domain\GpuSpatialPrototypeContracts.cs;Domain\GpuCoupledSpatialFixtureContracts.cs" />
+  </ItemGroup>
+
   <ItemGroup>
+    <EmbeddedResource Condition="'$(EnableResearchExperiments)' == 'true'" Include="EmbeddedData\coupled-spatial-v1.wgsl"
+                      LogicalName="ReactorSim.Core.Gpu.coupled-spatial-v1.wgsl" />
+    <EmbeddedResource Condition="'$(EnableResearchExperiments)' == 'true'" Include="EmbeddedData\spatial-prototype-v1.wgsl"
+                      LogicalName="ReactorSim.Core.Gpu.spatial-prototype-v1.wgsl" />
     <PackageReference Include="Newtonsoft.Json" Version="[13.0.2]" />
   </ItemGroup>
 
@@ -14,4 +22,18 @@
     <EmbeddedResource Include="EmbeddedData\candu6-two-group-iqs-pack-v1.json"
                       LogicalName="ReactorSim.Core.Data.candu6-two-group-iqs-pack-v1.json" />
   </ItemGroup>
+  <Target Name="CheckCanonicalDiffusionPack" BeforeTargets="BeforeBuild">
+    <GetFileHash Files="$(MSBuildThisFileDirectory)..\..\data\packs\candu6-two-group-diffusion-pack-v1.json">
+      <Output TaskParameter="Items" ItemName="CanonicalDiffusionPackHash" />
+    </GetFileHash>
+    <GetFileHash Files="$(MSBuildThisFileDirectory)EmbeddedData\candu6-two-group-diffusion-pack-v1.json">
+      <Output TaskParameter="Items" ItemName="EmbeddedDiffusionPackHash" />
+    </GetFileHash>
+    <PropertyGroup>
+      <CanonicalDiffusionHash>@(CanonicalDiffusionPackHash->'%(FileHash)')</CanonicalDiffusionHash>
+      <EmbeddedDiffusionHash>@(EmbeddedDiffusionPackHash->'%(FileHash)')</EmbeddedDiffusionHash>
+    </PropertyGroup>
+    <Error Condition="'$(CanonicalDiffusionHash)' != '$(EmbeddedDiffusionHash)'"
+           Text="Embedded diffusion pack differs from canonical data/packs. Run tools/Sync-PhysicsPacks.ps1 -Stage." />
+  </Target>
 </Project>

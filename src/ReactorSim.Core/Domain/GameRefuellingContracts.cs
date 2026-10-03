@@ -12,6 +12,33 @@ namespace ReactorSim.Core
         TowardEndB = 1
     }
 
+    /// <summary>Authoritative position mapping, shared by execution and presentation. Positions are zero based.</summary>
+    public sealed class GameRefuellingPlanV1
+    {
+        public GameRefuellingPlanV1(GameRefuellingDirectionV1 direction, ushort shiftCount)
+        {
+            if (!Enum.IsDefined(typeof(GameRefuellingDirectionV1), direction) || (shiftCount != 4 && shiftCount != 8))
+                throw new ArgumentOutOfRangeException(nameof(shiftCount));
+            DirectionId = direction == GameRefuellingDirectionV1.TowardEndB ? "toward-end-b" : "toward-end-a";
+            ShiftCount = shiftCount;
+            bool towardB = direction == GameRefuellingDirectionV1.TowardEndB;
+            IncomingEnd = towardB ? "A" : "B";
+            OutgoingEnd = towardB ? "B" : "A";
+            InsertedPositions = Array.AsReadOnly(Enumerable.Range(towardB ? 0 : 12 - shiftCount, shiftCount).Select(i => (uint)i).ToArray());
+            DischargedPositions = Array.AsReadOnly(Enumerable.Range(towardB ? 12 - shiftCount : 0, shiftCount).Select(i => (uint)i).ToArray());
+            RetainedFromPositions = Array.AsReadOnly(Enumerable.Range(towardB ? 0 : shiftCount, 12 - shiftCount).Select(i => (uint)i).ToArray());
+            RetainedToPositions = Array.AsReadOnly(RetainedFromPositions.Select(i => towardB ? i + shiftCount : i - shiftCount).ToArray());
+        }
+        public string DirectionId { get; }
+        public ushort ShiftCount { get; }
+        public string IncomingEnd { get; }
+        public string OutgoingEnd { get; }
+        public IReadOnlyList<uint> InsertedPositions { get; }
+        public IReadOnlyList<uint> DischargedPositions { get; }
+        public IReadOnlyList<uint> RetainedFromPositions { get; }
+        public IReadOnlyList<uint> RetainedToPositions { get; }
+    }
+
     public sealed class GameRefuellingResultV1
     {
         internal GameRefuellingResultV1(
@@ -249,6 +276,9 @@ namespace ReactorSim.Core
         public ContractValidationResult<SyntheticGameCoreStateV1> TryAddFissionEnergy(
             IReadOnlyList<double> deltaFissionEnergyJ)
         {
+#if RUNTIME_PROFILE
+            using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("burnup");
+#endif
             if (deltaFissionEnergyJ == null)
             {
                 return ContractValidationResult<SyntheticGameCoreStateV1>.Invalid(
@@ -375,12 +405,10 @@ namespace ReactorSim.Core
             var inserted = new BundleState[shiftCount];
             var discharged = new BundleState[shiftCount];
 
-            uint insertedStart = direction == GameRefuellingDirectionV1.TowardEndB
-                ? 0
-                : BundlePositionCount - shiftCount;
+            var plan = new GameRefuellingPlanV1(direction, shiftCount);
             for (uint index = 0; index < shiftCount; index++)
             {
-                uint position = insertedStart + index;
+                uint position = plan.InsertedPositions[(int)index];
                 BundleState fresh = new BundleState(
                     StableIdFor(NextFreshBundleSequence + index),
                     new ChannelId(channelIndex),
@@ -394,30 +422,14 @@ namespace ReactorSim.Core
                 inserted[index] = fresh;
             }
 
-            if (direction == GameRefuellingDirectionV1.TowardEndB)
+            for (int index = 0; index < plan.RetainedFromPositions.Count; index++)
             {
-                for (uint position = 0; position < BundlePositionCount - shiftCount; position++)
-                {
-                    target[position + shiftCount] = Move(source[position], channelIndex, position + shiftCount);
-                }
-
-                for (uint index = 0; index < shiftCount; index++)
-                {
-                    discharged[index] = source[BundlePositionCount - shiftCount + index];
-                }
+                uint from = plan.RetainedFromPositions[index];
+                uint to = plan.RetainedToPositions[index];
+                target[to] = Move(source[from], channelIndex, to);
             }
-            else
-            {
-                for (uint position = shiftCount; position < BundlePositionCount; position++)
-                {
-                    target[position - shiftCount] = Move(source[position], channelIndex, position - shiftCount);
-                }
-
-                for (uint index = 0; index < shiftCount; index++)
-                {
-                    discharged[index] = source[index];
-                }
-            }
+            for (int index = 0; index < plan.DischargedPositions.Count; index++)
+                discharged[index] = source[plan.DischargedPositions[index]];
 
             nextChannels[channelIndex] = target;
             var nextState = new SyntheticGameCoreStateV1(
