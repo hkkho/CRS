@@ -1,4 +1,48 @@
-# Gameplay score balance — task 06
+# Channel ripple scoring — current policy v3
+
+`practice-channel-ripple-v3` scores closeness to a fixed **380-channel reference**.
+The nominal thermal total remains **2,064 MW**, or **5.431579 MW/channel** on
+average. Each channel has its own target; see
+[reference derivation](../physics/channel-power-reference.md).
+
+For channel `c`, ripple ratio is `r[c] = actual thermal watts[c] / reference watts[c]`.
+The target ratio is 1. The equal-channel RMS deviation is
+`e = sqrt(sum((r[c] - 1)^2) / 380)`. Each authoritative burnup integration
+interval earns `hours / (1 + (e / 0.10)^2)`, using the accepted shape and actual
+power amplitude for that interval. No wall-time or browser calculation affects
+points. Paused time earns nothing. Maximum is 1 point/hour (24/day, 720/30 days).
+A 5%, 10%, or 20% RMS deviation earns 0.8, 0.5, or 0.2 points/hour.
+The 10% scale is an authored gameplay curve, not a plant operating limit.
+The continuous curve rewards improvements even above 10% deviation.
+
+The reference is fixed at nominal full thermal power. Changing the operator's
+power target changes actual watts but does not move the scoring target. This
+also measures bulk power departure rather than silently normalizing it away.
+Tilt is still a displayed operational measurement; it is no longer a separate
+score term. All channels count equally, including low-power peripheral channels.
+
+Refuelling earns no immediate reward and carries no direct point deduction.
+Its effects on channel powers determine subsequent points. The compatibility
+refuelling breakdown publishes zero reward/cost/net points. Fuel stock, burnup
+history, useful-discharge progress, challenge outcome and badge rules continue
+to describe the run independently of scoring.
+
+The browser receives reference watts, all ripple ratios, RMS deviation and the
+current points/hour from Game in both full and compact snapshots. Studio shows
+the selected channel's actual/target watts and ratio, plus core RMS and rate.
+
+Reproduce the reference and three starting-seed readings:
+
+```powershell
+dotnet run --project tools/ChannelReferenceBenchmark -- tmp/channel-reference
+```
+
+The previous v2 balance study below is historical; its rewards, rankings and
+reported totals do not apply to v3.
+
+---
+
+## Historical gameplay score balance — task 06
 
 The old operating score could contribute 43,200 points per ideal day, compared
 with at most 48 points for an eight-bundle discharge. On seed 1002, the tested

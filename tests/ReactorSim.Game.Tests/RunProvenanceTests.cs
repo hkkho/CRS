@@ -35,6 +35,9 @@ public sealed class RunProvenanceTests
         Assert.Contains("Developer fuel grant", session.Snapshot.Provenance.Reasons);
         Assert.Single(edited.Snapshot.Provenance.Reasons);
         Assert.True(session.RefuelChannel(0, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
+        Assert.True(session.Resume().Accepted);
+        Assert.True(session.AdvanceWallMilliseconds(100).Accepted);
+        Assert.True(session.Snapshot.ScoreTotal > 0);
         Assert.True(session.DebugResetSyntheticResponse().Accepted);
         Assert.Contains("Developer score reset", session.Snapshot.Provenance.Reasons);
         Assert.True(PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true).Snapshot.Provenance.EligibleForStandardChallenge);

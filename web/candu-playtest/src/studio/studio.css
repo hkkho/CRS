@@ -34,7 +34,13 @@
 .studio-segments { display: inline-flex; background: #101f16; border: 1px solid var(--studio-border); border-radius: 0; padding: 3px; gap: 2px; }
 .studio-segments button { border: 0; background: transparent; border-radius: 0; padding: 6px 9px; font-size: 12px; white-space: nowrap; }
 .studio-segments button[aria-pressed="true"] { background: #a8eda3; color: #07100b; }
-.studio-workspace { display: grid; grid-template-columns: 210px minmax(380px, 1fr) 370px; gap: 16px; align-items: stretch; }
+.studio-map-modes { display: grid; grid-template-columns: repeat(2, auto); }
+.studio-channel-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.reactor-studio[data-map-mode="power"] .studio-legend-gradient,
+.reactor-studio[data-map-mode="bundle-power"] .studio-legend-gradient { background: linear-gradient(90deg, hsl(220 78% 55%), hsl(110 78% 55%), hsl(0 78% 55%)); }
+.reactor-studio[data-map-mode="ripple"] .studio-legend-gradient { background: linear-gradient(90deg, hsl(210 75% 35%), hsl(0 0% 90%), hsl(0 80% 50%)); }
+.studio-history[data-view-time="history"] .studio-history-inspect { border-color: #ffc56c; color: #ffc56c; }
+.studio-workspace { display: grid; grid-template-columns: 210px minmax(380px, 1fr) 370px; gap: 16px; align-items: start; }
 .studio-card { background: #0b1911; border: 1px solid var(--studio-border); border-radius: 0; padding: 19px; box-shadow: inset 0 0 25px #75cf8305; }
 .studio-watchlist > h2 { margin: 5px 0 10px; }
 .studio-description { color: #8fba93; font-size: 13px; }
@@ -58,14 +64,13 @@
 .studio-map-legend { display: flex; align-items: center; gap: 10px; color: #8fba93; font-size: 10px; }
 .studio-map-legend > span:last-child { margin-left: auto; white-space: nowrap; }
 .studio-legend-gradient { width: 65px; height: 6px; background: linear-gradient(90deg, #169b3c, #e4ce59); flex-shrink: 0; }
-.reactor-studio[data-map-mode="power"] .studio-legend-gradient { background: linear-gradient(90deg, #2563eb, #22d3ee, #fae047, #f97316, #dc2626); }
 .studio-channel-title { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 18px; }
 .studio-channel-title h2 { font-size: 29px; letter-spacing: -1px; }
 .studio-channel-title > span { border: 1px solid #315b3b; border-radius: 0; padding: 4px 7px; color: #b5edb0; font: 13px monospace; }
-.studio-channel-metrics { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 20px; }
+.studio-channel-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
 .studio-channel-metrics > div { display: flex; flex-direction: column; gap: 4px; }
 .studio-channel-metrics span { color: #8fba93; font: 10px Consolas, monospace; }
-.studio-channel-metrics strong { font: 25px Consolas, monospace; }
+.studio-channel-metrics strong { font: 19px Consolas, monospace; }
 .studio-channel-metrics > div:last-child { padding-left: 18px; border-left: 1px solid var(--studio-border); }
 .studio-rack-heading, .studio-rack-ends { display: flex; justify-content: space-between; align-items: center; color: #8fba93; font-size: 10px; }
 .studio-axial-profile { margin: 8px 0; padding: 5px 0; border: 1px solid #254830; background: #07110b; }
@@ -112,7 +117,7 @@
 .studio-history-heading p:last-child { font-size: 12px; color: #8fba93; margin-top: 6px; max-width: 750px; }
 .studio-history-heading label { display: grid; gap: 5px; font-size: 12px; }
 .studio-history-heading select { font: inherit; padding: 8px 12px; border: 1px solid var(--studio-border); background: #0b1911; border-radius: 0; color: #b5edb0; }
-.studio-history-inspect { display: flex; align-items: center; gap: 20px; padding: 10px 14px; background: #12251a; border-radius: 0; margin-bottom: 16px; font-size: 12px; }
+.studio-history-inspect { display: flex; align-items: center; gap: 20px; padding: 10px 14px; background: #12251a; border: 1px solid var(--studio-border); border-radius: 0; margin-bottom: 16px; font-size: 12px; }
 .studio-history-inspect label { display: flex; align-items: center; gap: 12px; }
 .studio-history-inspect input { width: 220px; accent-color: #a8eda3; }
 .studio-history-inspect output { flex: 1; font-family: Consolas, monospace; }

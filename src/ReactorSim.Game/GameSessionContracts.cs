@@ -43,7 +43,7 @@ namespace ReactorSim.Game
             GameCorePresentationSnapshot core,
             RefuellingScoreBreakdown? lastRefuellingScore,
             ShiftProgress shift,
-            RefuellingMovement? lastFuelMovement, RunProvenance provenance)
+            RefuellingMovement? lastFuelMovement, RunProvenance provenance, ChannelRippleSnapshot ripple)
         {
             ScenarioId = scenarioId;
             DifficultyId = difficultyId;
@@ -66,6 +66,7 @@ namespace ReactorSim.Game
             Shift = shift;
             LastFuelMovement = lastFuelMovement;
             Provenance = provenance;
+            Ripple = ripple;
             TurnSummaryCount = turnSummaryCount;
             OutcomeId = outcomeId;
             IsGameOver = isGameOver;
@@ -85,6 +86,7 @@ namespace ReactorSim.Game
         }
 
         public RunProvenance Provenance { get; }
+        public ChannelRippleSnapshot Ripple { get; }
         public ShiftProgress Shift { get; }
         public RefuellingMovement? LastFuelMovement { get; }
         public IReadOnlyList<GameRefuellingPlanV1> RefuellingPlans { get; } = System.Array.AsReadOnly(new[] {

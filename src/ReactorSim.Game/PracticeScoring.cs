@@ -23,28 +23,37 @@ namespace ReactorSim.Game
     /// <summary>Authored gameplay points; never a reactor feedback input.</summary>
     public static class PracticeScoring
     {
-        public const string PolicyId = "practice-fuel-and-operation-v2";
+        public const string PolicyId = "practice-channel-ripple-v3";
         public const double MaximumOperatingPointsPerHour = 1.0;
+        public const double RippleScaleFraction = 0.10;
 
-        public static double OperatingPoints(double simulationSeconds, double powerQuality, double tiltQuality)
+        public static double OperatingPoints(double simulationSeconds, double rmsRippleFraction)
         {
             if (!IsFinite(simulationSeconds) || simulationSeconds < 0.0 ||
-                !IsFinite(powerQuality) || powerQuality < 0.0 || powerQuality > 1.0 ||
-                !IsFinite(tiltQuality) || tiltQuality < 0.0 || tiltQuality > 1.0)
+                !IsFinite(rmsRippleFraction) || rmsRippleFraction < 0.0)
             {
                 throw new ArgumentOutOfRangeException(nameof(simulationSeconds),
-                    "Operating score requires nonnegative finite time and quality fractions from zero to one.");
+                    "Ripple score requires nonnegative finite time and RMS deviation.");
             }
 
-            return simulationSeconds / 3600.0 * MaximumOperatingPointsPerHour *
-                (0.7 * powerQuality + 0.3 * tiltQuality);
+            double relativeError = rmsRippleFraction / RippleScaleFraction;
+            return simulationSeconds / 3600.0 * MaximumOperatingPointsPerHour / (1.0 + relativeError * relativeError);
         }
 
-        internal static double OperatingPointsFromReadings(double seconds, double powerFraction, double tiltFraction)
+        public static double RmsRipple(IReadOnlyList<double> channelPowerWatts, IReadOnlyList<double> referenceWatts, double amplitude = 1.0)
         {
-            double powerQuality = 1.0 - Math.Max(0.0, Math.Min(1.0, Math.Abs(powerFraction - 1.0) / 0.02));
-            double tiltQuality = 1.0 - Math.Max(0.0, Math.Min(1.0, Math.Abs(tiltFraction) / 0.05));
-            return OperatingPoints(seconds, powerQuality, tiltQuality);
+            if (channelPowerWatts == null || referenceWatts == null || channelPowerWatts.Count == 0 ||
+                channelPowerWatts.Count != referenceWatts.Count || !IsFinite(amplitude) || amplitude < 0)
+                throw new ArgumentException("Matching channel vectors and finite nonnegative amplitude are required.");
+            double sum = 0;
+            for (int i = 0; i < channelPowerWatts.Count; i++)
+            {
+                if (!IsFinite(channelPowerWatts[i]) || channelPowerWatts[i] < 0 || !IsFinite(referenceWatts[i]) || referenceWatts[i] <= 0)
+                    throw new ArgumentException("Channel powers must be finite and nonnegative; references must be positive.");
+                double error = channelPowerWatts[i] * amplitude / referenceWatts[i] - 1.0;
+                sum += error * error;
+            }
+            return Math.Sqrt(sum / channelPowerWatts.Count);
         }
 
         internal static RefuellingScoreBreakdown DescribeRefuelling(GameRefuellingResultV1 result)
@@ -59,8 +68,7 @@ namespace ReactorSim.Game
         {
             if (burnupsMwDayPerKg == null) throw new ArgumentNullException(nameof(burnupsMwDayPerKg));
             double[] points = burnupsMwDayPerKg.Select(DischargeBundlePoints).ToArray();
-            return new RefuellingScoreBreakdown(points.Sum(point => point + 1.5),
-                points.Length * 1.5, points.Sum());
+            return new RefuellingScoreBreakdown(0.0, 0.0, points.Sum());
         }
 
         public static double DischargeBundlePoints(double burnupMwDayPerKg)
@@ -70,7 +78,7 @@ namespace ReactorSim.Game
                 throw new ArgumentOutOfRangeException(nameof(burnupMwDayPerKg));
             }
 
-            return 0.75 * Math.Max(0.0, Math.Min(10.0, burnupMwDayPerKg)) - 1.5;
+            return 0.0;
         }
     }
 }

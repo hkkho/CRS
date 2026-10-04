@@ -23,7 +23,7 @@ public sealed class AgedCoreSnapshotTests
         {
             var coefficients = table.TryLookup(burnup * 8.64e10).Value.Coefficients;
             Assert.Equal(0.11411937984496123 - 0.0020440310077519384 * (burnup - 20), coefficients.FissionGroup2PerM, 12);
-            Assert.Equal(2.286808433764792, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
+            Assert.Equal(2.2921431596342616, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
             Assert.True(coefficients.FissionGroup2PerM > 0);
             Assert.True(coefficients.AbsorptionGroup2PerM >= coefficients.FissionGroup2PerM);
         }

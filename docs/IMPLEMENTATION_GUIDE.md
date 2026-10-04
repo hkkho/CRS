@@ -11,7 +11,14 @@ score.
 The GitHub Pages-deployed `web/candu-playtest` is the product and primary acceptance
 path. The current game is intentionally a deterministic practice model: maintain
 average LZC level between 10% and 90% and absolute global tilt at or below 20%,
-conserve finite fresh bundles, and earn score through stable power and useful discharged burnup.
+conserve finite fresh bundles, and earn score by reducing channel ripple about a fixed time-average reference.
+
+The power-limit pack keeps full output at 2,064 MW thermal while starting below
+7,300 kW/channel and 935 kW/bundle. Studio presents absolute channel and bundle
+maps alongside actual/reference ripple. One time inspector selects a coherent
+complete observation across the view; live is the default, and operating
+commands are unavailable while reviewing historical data. Compact bridge
+measurement vectors refresh burnup between spatial solves.
 
 Shutdown, scram, accident progression, operator-training scenarios, full plant
 simulation, and plant-grade safety claims are out of scope.
@@ -52,15 +59,16 @@ calculating goal eligibility.
 
 Cumulative energy is committed with accepted burnup transactions. Startup fuel
 exposure is excluded; rejected/paused advances add no delivered energy. Fuel
-consumption, useful discharge and score components update on accepted refuelling.
+consumption and useful-discharge counts update on accepted refuelling.
 The ending card uses these totals and supports retaining or incrementing the
-seed while preserving the selected objective. Operating reward is capped at one point per simulated hour; discharge rewards
-and fuel costs retain the per-bundle rule. See `gameplay/score-balance.md`.
+seed while preserving the selected objective. Ripple reward is capped at one point per simulated hour; direct discharge rewards
+and fuel point costs are zero. See `gameplay/score-balance.md` and
+`physics/channel-power-reference.md`.
 
 ## Current implementation
 
 The browser uses the native DOM/SVG Reactor Studio game interface, with a
-native DOM launcher and Designer inspector over a Phaser core map, all using the public
+native DOM launcher, using the public
 `ReactorSim.Game` session through the versioned `candu-playtest-v2` browser
 bridge. The bridge runs in a worker and the client fails closed when the
 authoritative WASM module is unavailable.
@@ -68,26 +76,10 @@ authoritative WASM module is unavailable.
 Starting a run initializes one live 380-channel by 12-position `GameSession`
 and opens Reactor Studio. Studio owns pacing, channel inspection, refuelling,
 and the power/RRS/score/burnup/inventory feedback from the full-core snapshot.
-Core Designer opens from Studio as an engineering view of that same live
-session. Its `configure-cell` and `solve` commands pass through the bridge;
-successful edits replace the live equilibrium atomically, and returning to
-Studio preserves the run clock, inventory, score, and accepted refuelling
-state.
-
-Core Designer's **Zone geometry** (`Z`) view consumes authoritative per-node
-region IDs, independent absorber compartment IDs, and two absorption slopes.
-Its draft can repaint regions, clear absorber cells, and translate a mask across
-the lattice and axial positions. `configure-zone-layout` validates the complete
-mapping and solves a candidate before committing; rejection preserves physical
-state. Accepted edits retain fuel, time, inventory and score, rebuild spatial
-references, and use existing zone fills as the regulation starting point.
-The browser does not estimate the resulting reactivity.
-
 Reactor Studio opens from **Begin shift** on the title screen as the only gameplay
 presentation. It provides a round channel map,
 fuel-age shortlist, axial power and burnup line graphs, direct refuelling, pacing, power targets,
-operation impact, and all fourteen zone fills. Designer returns to Studio with
-selection, refuelling draft, map mode and active chart tab preserved.
+operation impact, and all fourteen zone fills. Selection, map mode and chart inspection stay within Studio.
 Studio subscriptions and DOM event handlers are removed
 on scene shutdown, and native focus remains stable through snapshot updates.
 
@@ -102,18 +94,25 @@ Game publishes the last discharge maximum and the shift's running discharge
 maximum in MWd/kg HM through full and compact Browser responses. Null means
 no accepted discharge yet; failed refuels leave these measurements unchanged.
 
-The last accepted fuel move includes an immutable Game-owned scoring summary:
-useful-discharge reward, positive fresh-fuel cost, signed net points and a policy
-ID. Full and compact responses retain it through advances and rejected commands,
-and reset clears it. Studio shows these components without recalculating the
-scoring formula. This operation summary excludes ordinary operating score.
+The last accepted fuel move retains its immutable compatibility scoring summary
+with policy ID `practice-channel-ripple-v3` and zero reward/cost/net points.
+Full and compact snapshots also carry the fixed 380 channel targets, actual-to-reference
+ratios, equal-channel RMS deviation and current points/hour. Game integrates
+`hours / (1 + (RMS / 0.10)^2)` over accepted simulation intervals. Refuelling and
+paused time earn no immediate points. Studio presents these authoritative readings.
 
 The finite fuel budget is `FreshBundlesAvailable`.
 `RefuelRequestsRemaining` is a scenario/runtime counter and must not be
 presented as fuel inventory.
 
 Free practice has no scripted target changes or synthetic refuel requests.
-Browser runs finish at the 30-day horizon or earlier LZC level or global tilt limit violations. Game owns
+Browser runs finish at the 30-day horizon or earlier LZC level, global tilt,
+channel power or bundle power limit violations. A channel above 7,300,000 W or
+any bundle above 935,000 W ends the run independently; exact equality is allowed.
+Limits use accepted shape powers multiplied by the applied power amplitude,
+including short ticks between spatial solves and paused refuelling transactions.
+Queued targets do not trip a limit until applied. The first violating wall tick
+ends an advance and freezes subsequent operations. Game owns
 the terminal decision; the browser receives `runStatus` and `runEndReason`
 separately from physical RRS exhaustion. Terminal runs retain their final score
 and inventory until reset. The top-level `targetPowerFraction` is the applied
@@ -131,9 +130,6 @@ The player repeatedly:
 - issues an eight-bundle order directly, automatically with channel flow;
 - observes the authoritative bundle movement, power/RRS response, discharged
   burnup, score, and event history;
-- opens Core Designer when an engineering inspection is useful, edits a live
-  cell or reflective boundary, solves the full core, then returns to the same
-  run; and
 - restarts after a terminal LZC level or global tilt limit violation and attempts a better run.
 
 The UI may sort observed fuel age, highlight inspection candidates, and compare
@@ -146,7 +142,7 @@ gameplay; formal source validation is not a development gate.
 Keep the browser a consumer of the shared application contract:
 
 ```text
-GitHub Pages-deployed DOM/SVG client + optional Phaser Designer
+GitHub Pages-deployed DOM/SVG client
               |
 TypeScript protocol + Web Worker
               |
@@ -165,7 +161,7 @@ project-authored deterministic two-group pack
 burnup, topology, regulating-system contracts, and spatial solving.
 `ReactorSim.Game` owns session orchestration, commands, and immutable
 presentation snapshots. `ReactorSim.Browser` serializes that contract.
-`ReactorSim.BrowserHost` publishes it for `browser-wasm`. Native views and Designer consume
+`ReactorSim.BrowserHost` publishes it for `browser-wasm`. Native views consume
 snapshots and send commands without reimplementing reactor physics.
 
 The active runtime never invokes external analysis tools. Project-authored
@@ -235,21 +231,22 @@ update and feeds the poison field into every diffusion/RRS trial. The original
 aged-core balance is preserved by a fixed authored reference calibration.
 See [iodine/xenon gameplay](physics/iodine-xenon-gameplay.md) for data, units,
 calibration, fuel movement and coupling cadence. Studio charts core and regional
-poison history through the shared simulation contract.
+poison history through the shared simulation contract. Current bundle densities
+are published as two immutable 4,560-element vectors in channel-major/position
+order, in both full and compact responses. They update on short ticks even when
+the accepted power shape/core replacement is retained. Studio plots these values
+without a second poison calculation. Fresh bundle IDs start at zero; retained
+bundle IDs carry their inventories through a move. Compact response payloads now
+budget 256 KiB (including the two vectors) rather than 32 KiB.
 
 ## Browser playtest notes
 
-Studio, the launcher and the Designer inspector use native controls. Designer's
-visual core map still uses a 1600 × 900 Phaser viewport with `Phaser.Scale.FIT`;
-the canvas is hidden from the accessible tree. All essential controls and cell
-readings remain available in the native inspector at a minimum 320px viewport.
-Zone geometry adds a native channel selector and one roving map Tab stop.
-The shared session live region announces operation results and terminal changes
-once, stays quiet through ticks, and moves inside the active geometry modal.
-The hidden telemetry mirror is for automation and is not a live region.
-`AppShell` starts the native launcher and Studio; it imports `designerRuntime`
-only when Designer opens, retains one controller/history, and sleeps the Phaser
-loop on return. Session notifications identify status versus snapshot changes.
+Studio and the launcher use native controls and DOM/SVG presentation at a
+minimum 320px viewport. The session live region announces operation results and
+terminal changes once and stays quiet through ticks. The hidden telemetry mirror
+is for automation and is not a live region. `AppShell` starts the native launcher
+and Studio over one controller/history.
+Session notifications identify status versus snapshot changes.
 Studio caches watchlist/graph/movement inputs and patches stable SVG nodes;
 history display reduction preserves extrema, gaps and step changes while keeping
 all 4,096 observations for exact inspection. Requested pace and observed sim
@@ -260,7 +257,7 @@ cold/throttled startup, rendering traces and production-worker latency budgets.
 The client sends only protocol commands to the worker-hosted
 bridge. State/replay digests and reproduction archives are developer-only
 contract tooling. Studio currently has no player replay export/import or feedback
-companion screen. The real zone-layout draft JSON export remains available.
+companion screen. Core Designer and its zone-layout editor have been removed from the browser product.
 
 For local development:
 
@@ -315,14 +312,13 @@ against https://hkkho.github.io/CRS/ with the expected commit identity.
 Functional acceptance uses the same smoke/reproduction scripts against a local
 production preview under `/CRS/` or the published Pages site. Begin shift, pause
 and inspect channels. Exercise automatic eight-bundle orders with both channel flows;
-compare power, tilt, RRS, stock and per-bundle score. There is no preview/cancel/
+compare power, tilt, RRS, stock and channel ripple. There is no preview/cancel/
 confirm flow. Rejected geometry, invalid orders and stock/terminal guards are
-checked separately for atomicity. Visit Designer repeatedly and retain draft,
-selection, tab, history and last response. Verify keyboard focus, 320px/zoom
+checked separately for atomicity. Switch history tabs and retain selection, history and last response. Verify keyboard focus, 320px/zoom
 reflow, quiet announcements and zero console/bridge errors.
 
-The score is `0.75 * clamp(discharged MWd/kg, 0, 10) - 1.5` per bundle, plus
-at most `hours * (0.7 * powerQuality + 0.3 * tiltQuality)` operating points.
+The score integrates `hours / (1 + (RMS channel deviation / 0.10)^2)` against
+the fixed 2,064 MW thermal channel reference; fuel moves earn no direct points.
 Use authoritative ending/objective/provenance fields rather than recomputing
 challenge eligibility in the client. See the active architecture for terminal
 and requested/observed pace contracts.
@@ -372,8 +368,8 @@ canonical bytes retain protocol v2. Shared compressed C#/TS fixtures are under
 `tests/Fixtures` and the original two-seed byte-hash baseline is under
 `benchmarks/phase4-contract-baseline.json`.
 
-The native shell injects one session into Studio and its optional Designer.
-Typed navigation retains selected channel, order draft, map mode and history tab.
+The native shell injects one session into Studio. Its view state retains the
+selected channel, order draft, map mode and history tab.
 Map, order/movement, and pending/control updates have focused DOM boundaries;
 Studio owns event routing and disposal. The controller owns a bounded view-only
 last-response summary so accepted fuel impact survives navigation. Reset clears

@@ -10,14 +10,15 @@ public sealed class PracticeRefuellingCampaignTests
     private const string FuelType = "NAT-U-SYNTHETIC";
 
     [Fact]
-    public void RepeatedRefuellingEjectsFreshFuelAndCostsScore()
+    public void RepeatedRefuellingEjectsFreshFuelWithoutInstantScore()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         var useful = session.RefuelChannel(CampaignChannel, "toward-end-b", 8, FuelType);
         Assert.True(useful.Accepted, useful.DiagnosticMessage);
         var waste = session.RefuelChannel(CampaignChannel, "toward-end-a", 8, FuelType);
         Assert.True(waste.Accepted, waste.DiagnosticMessage);
-        Assert.True(waste.Snapshot.LastRefuellingScore!.NetPoints < 0);
+        Assert.Equal(0, waste.Snapshot.LastRefuellingScore!.NetPoints);
+        Assert.Equal(useful.Snapshot.ScoreTotal, waste.Snapshot.ScoreTotal);
         Assert.Equal(useful.Snapshot.FreshBundlesAvailable - 8u, waste.Snapshot.FreshBundlesAvailable);
     }
 

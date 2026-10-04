@@ -83,7 +83,11 @@ must therefore be checked in simulation time and wall time separately.
 
 Existing xenon diagnostics now report live core/channel summaries. RRS regions
 add iodine/xenon means using the current measured-region map, independently of
-absorber masks. Studio's Iodine & xenon tab charts core means and fourteen
+absorber masks. Studio's channel inspector plots all twelve bundle iodine/xenon densities.
+Both full and compact responses publish current channel-major inventory vectors,
+so short ticks refresh these plots independently of the retained spatial solve.
+Fresh bundles are visibly zero immediately after a paused refuel; the four
+retained bundles remain nonzero. Studio's Iodine & xenon tab charts core means and fourteen
 regional xenon traces; the zone strip includes xenon in its tooltip.
 History is bounded observation data and contains no poison calculation.
 The current poison time/digest is distinct from the poison time/digest used by

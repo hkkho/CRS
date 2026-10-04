@@ -7,34 +7,62 @@ namespace ReactorSim.Game.Tests;
 
 public sealed class PracticeScoringTests
 {
-    private static readonly double[] MixedDischarge = { 0.0, 0.0, 20.0, 20.0 };
-
+    private static readonly double[] ZeroReference = { 0.0, 8.0 };
+    private static readonly double[] ShortReference = { 8.0 };
     [Fact]
-    public void ProductiveDischargeMattersAtTheScaleOfAWholeChallengeDay()
+    public void ScoreMeasuresChannelDeviationEvenWhenTotalPowerAndTiltMatch()
     {
-        double idealDay = PracticeScoring.OperatingPoints(86400, 1, 1);
-        Assert.Equal(24, idealDay);
-        Assert.Equal(idealDay, PracticeScoring.DescribeDischarge(Enumerable.Repeat(6.0, 8)).NetPoints);
-        Assert.Equal(-12, PracticeScoring.DescribeDischarge(Enumerable.Repeat(0.0, 8)).NetPoints);
-        Assert.Equal(0.7, PracticeScoring.OperatingPoints(3600, 1, 0), 12);
-        Assert.Equal(0.3, PracticeScoring.OperatingPoints(3600, 0, 1), 12);
-        Assert.Equal(0, PracticeScoring.OperatingPoints(3600, 0, 0));
-        Assert.Equal(PracticeScoring.OperatingPoints(3600, 0.8, 0.6),
-            PracticeScoring.OperatingPoints(1800, 0.8, 0.6) * 2, 12);
-        Assert.Throws<ArgumentOutOfRangeException>(() => PracticeScoring.OperatingPoints(double.NaN, 1, 1));
+        double[] reference = { 2.0, 8.0 };
+        double[] exact = { 2.0, 8.0 }, redistributed = { 2.4, 7.6 };
+        Assert.Equal(0, PracticeScoring.RmsRipple(exact, reference));
+        Assert.Equal(Math.Sqrt((0.2 * 0.2 + 0.05 * 0.05) / 2), PracticeScoring.RmsRipple(redistributed, reference), 12);
+        Assert.Equal(24, PracticeScoring.OperatingPoints(86400, 0));
+        Assert.Equal(0.8, PracticeScoring.OperatingPoints(3600, 0.05), 12);
+        Assert.Equal(0.5, PracticeScoring.OperatingPoints(3600, 0.10), 12);
+        Assert.Equal(0.2, PracticeScoring.OperatingPoints(3600, 0.20), 12);
+        Assert.True(PracticeScoring.OperatingPoints(3600, 0.30) < PracticeScoring.OperatingPoints(3600, 0.20));
+        Assert.Equal(PracticeScoring.OperatingPoints(3600, 0.08), PracticeScoring.OperatingPoints(1800, 0.08) * 2, 12);
+        Assert.Equal(0.2, PracticeScoring.RmsRipple(exact, reference, 0.8), 12);
+        Assert.Throws<ArgumentOutOfRangeException>(() => PracticeScoring.OperatingPoints(double.NaN, 0));
+        Assert.Throws<ArgumentException>(() => PracticeScoring.RmsRipple(exact, ZeroReference));
+        Assert.Throws<ArgumentException>(() => PracticeScoring.RmsRipple(exact, ShortReference));
     }
     [Fact]
-    public void ExcessBurnupCannotOffsetFreshFuelWasteBeyondThePerBundleCap()
+    public void RefuellingNeverAwardsInstantPointsOrLetsBurnupHideRipple()
     {
-        var breakdown = PracticeScoring.DescribeDischarge(MixedDischarge);
-        Assert.Equal(PracticeScoring.PolicyId, breakdown.PolicyId);
-        Assert.Equal(15.0, breakdown.DischargeReward);
-        Assert.Equal(6.0, breakdown.FreshFuelCost);
-        Assert.Equal(9.0, breakdown.NetPoints);
-        Assert.Equal(9.0, MixedDischarge.Sum(PracticeScoring.DischargeBundlePoints));
-        Assert.Equal(-6.0, Enumerable.Repeat(0.0, 4).Sum(PracticeScoring.DischargeBundlePoints));
-        Assert.Equal(48.0, Enumerable.Repeat(10.0, 8).Sum(PracticeScoring.DischargeBundlePoints));
-        Assert.Equal(48.0, Enumerable.Repeat(20.0, 8).Sum(PracticeScoring.DischargeBundlePoints));
+        foreach (double burnup in new[] { 0.0, 6.0, 20.0 })
+        {
+            var breakdown = PracticeScoring.DescribeDischarge(Enumerable.Repeat(burnup, 8));
+            Assert.Equal(PracticeScoring.PolicyId, breakdown.PolicyId);
+            Assert.Equal(0, breakdown.NetPoints);
+            Assert.Equal(0, breakdown.DischargeReward);
+            Assert.Equal(0, breakdown.FreshFuelCost);
+        }
         Assert.Throws<ArgumentOutOfRangeException>(() => PracticeScoring.DischargeBundlePoints(double.NaN));
+    }
+    [Fact]
+    public void ReferenceIsFixedAcrossSeedsRefuellingAndTimeAndSnapshotsMatchScoring()
+    {
+        var session = PracticeGameSessionFactory.Create();
+        var initial = session.Snapshot;
+        var other = PracticeGameSessionFactory.Create(1002).Snapshot;
+        Assert.Equal(initial.Ripple.ReferenceChannelPowerWatts, other.Ripple.ReferenceChannelPowerWatts);
+        Assert.Equal(2_064_000_000, initial.Ripple.ReferenceChannelPowerWatts.Sum(), 3);
+        Assert.All(initial.Ripple.ReferenceChannelPowerWatts, p => Assert.True(p > 0));
+        Assert.True(initial.Ripple.ReferenceChannelPowerWatts.Max() > initial.Ripple.ReferenceChannelPowerWatts.Min());
+        Assert.All(initial.Ripple.ReferenceChannelPowerWatts, p => Assert.InRange(p, 0, 7_300_000));
+        var moved = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
+        Assert.True(moved.Accepted, moved.DiagnosticMessage);
+        Assert.Equal(0, moved.Snapshot.ScoreTotal);
+        Assert.Equal(initial.Ripple.ReferenceChannelPowerWatts, moved.Snapshot.Ripple.ReferenceChannelPowerWatts);
+        double rate = moved.Snapshot.Ripple.PointsPerHour;
+        var advanced = session.AdvanceWallMilliseconds(60_000);
+        Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
+        Assert.Equal(rate * 600 / 3600, advanced.Snapshot.ScoreTotal, 10);
+        Assert.Equal(PracticeScoring.RmsRipple(advanced.Snapshot.Core.Channels.Select(c => c.PowerWatts).ToArray(),
+            initial.Ripple.ReferenceChannelPowerWatts), advanced.Snapshot.Ripple.RmsDeviationFraction, 12);
+        session.Pause();
+        var paused = session.AdvanceWallMilliseconds(1000);
+        Assert.Equal(advanced.Snapshot.ScoreTotal, paused.Snapshot.ScoreTotal);
     }
 }

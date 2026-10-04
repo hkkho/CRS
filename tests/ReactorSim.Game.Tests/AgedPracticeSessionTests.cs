@@ -32,9 +32,9 @@ public sealed class AgedPracticeSessionTests
                 bundle.CumulativeFissionEnergyJ);
         double fuelledFill = session.CurrentLiquidZoneRrs.AverageFillFraction;
         double fuelledRho = session.CurrentLiquidZoneRrs.CoreReactivity;
-        // Fresh fuel now also removes its carried poison. Preserve the bounded
-        // feedback expectation while allowing that additional absorption change.
-        Assert.InRange(fuelledFill - beforeFill, 0.05, 0.10);
+        // The flatter power-limit pack gives this old-channel pair less worth
+        // than the former peaked core; fresh fuel still raises zone levels.
+        Assert.InRange(fuelledFill - beforeFill, 0.03, 0.10);
         Assert.Equal(112U, session.Snapshot.FreshBundlesAvailable);
         var burned = session.AdvanceWallMilliseconds(1000);
         Assert.True(burned.Accepted, burned.DiagnosticMessage);
@@ -42,7 +42,7 @@ public sealed class AgedPracticeSessionTests
         Assert.True(session.CurrentLiquidZoneRrs.CoreReactivity < fuelledRho);
         // Small burnup changes can remain inside both acceptance bands and
         // retain fills. Regulation must resume as the accumulated deficit grows.
-        for (int boundary = 0; boundary < 6 && session.CurrentLiquidZoneRrs.AverageFillFraction >= fuelledFill; boundary++)
+        for (int boundary = 0; boundary < 24 && session.CurrentLiquidZoneRrs.AverageFillFraction >= fuelledFill; boundary++)
         {
             var continued = session.AdvanceWallMilliseconds(1000);
             Assert.True(continued.Accepted, continued.DiagnosticMessage);
@@ -71,6 +71,12 @@ public sealed class AgedPracticeSessionTests
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
         Assert.Equal(seed, session.Snapshot.Seed);
         Assert.True(session.Snapshot.RrsReserveFraction > 0);
+        Assert.False(session.Snapshot.IsGameOver);
+        Assert.All(session.Snapshot.Core.Channels, channel =>
+        {
+            Assert.InRange(channel.PowerWatts, 0, 7_300_000);
+            Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 935_000));
+        });
         Assert.InRange(System.Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0, 0.002);
         Assert.True(double.IsFinite(session.Snapshot.AxialTiltFraction));
         var refuel = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");

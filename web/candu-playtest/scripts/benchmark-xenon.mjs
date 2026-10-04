@@ -17,12 +17,12 @@ try {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"),
     undefined, { timeout: 120_000 });
-  const buildInfo = JSON.parse((await (await page.request.get(new URL("/wasm/build-info.json", url).href)).text()).replace(/^\uFEFF/, ""));
+  const buildInfo = JSON.parse((await (await page.request.get(new URL("wasm/build-info.json", page.url()).href)).text()).replace(/^\uFEFF/, ""));
   const result = await page.evaluate(async ({ sampleCount, profiling, campaign72Hours }) => {
     const app = document.querySelector('script[type="module"][src]');
     const scriptUrl = new URL(app.getAttribute("src"), location.href);
     const source = await (await fetch(scriptUrl)).text();
-    const match = source.match(/(?:\/assets\/)?wasmWorker-[A-Za-z0-9_-]+\.js/);
+    const match = source.match(/wasmWorker-[A-Za-z0-9_-]+\.js/);
     if (!match) throw new Error("Production worker asset was not found in the application bundle.");
     const worker = new Worker(new URL(match[0], scriptUrl), { type: "module" });
     let id = 0;

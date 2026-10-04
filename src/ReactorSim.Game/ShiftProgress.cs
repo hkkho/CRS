@@ -22,7 +22,7 @@ namespace ReactorSim.Game
             Title = challenge ? "One useful fuel day" : "Free practice";
             Objective = challenge
                 ? "Discharge 8 bundles at 6 MWd/kg or above, then finish the day with regulating headroom."
-                : "Explore refuelling, conserve fuel and build score.";
+                : "Keep channel powers close to their time-average reference to reduce ripple and build score.";
             HorizonSeconds = horizon;
             RemainingSeconds = Math.Max(0.0, horizon - time);
             FuelBudget = ReactorSim.Core.SyntheticGameCoreStateV1.DefaultFreshBundleCount;

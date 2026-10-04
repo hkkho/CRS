@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ReactorHistory, HISTORY_CAPACITY } from "./ReactorHistory";
+import { ReactorHistory, HISTORY_CAPACITY, HISTORY_SNAPSHOT_CAPACITY } from "./ReactorHistory";
 import { createUnavailableRrsSnapshot, type CanduSnapshot } from "../protocol";
 
 function snapshot(time = 0, operations = 0): CanduSnapshot {
@@ -55,5 +55,18 @@ describe("session observation history", () => {
     expect(history.samples).toHaveLength(HISTORY_CAPACITY);
     expect(history.samples[0].timeSeconds).toBe(1);
     expect(history.samples.at(-1)!.timeSeconds).toBe(HISTORY_CAPACITY);
+    expect(history.snapshotAt(history.inspectableSamples.at(-1)!)!.simulationTimeSeconds).toBe(HISTORY_CAPACITY);
+    expect(history.snapshotAt(history.samples[0])).toBeUndefined();
+  });
+  it("retains half-hour states and the latest frame, with a bounded full-state archive", () => {
+    const history = new ReactorHistory();
+    for (let i = 0; i <= HISTORY_SNAPSHOT_CAPACITY; i++) history.record(snapshot(i * 1800));
+    expect(history.inspectableSamples).toHaveLength(HISTORY_SNAPSHOT_CAPACITY);
+    history.record(snapshot(HISTORY_SNAPSHOT_CAPACITY * 1800 + 1));
+    const transient = history.inspectableSamples.at(-1)!;
+    history.pinObservation(transient);
+    history.record(snapshot(HISTORY_SNAPSHOT_CAPACITY * 1800 + 2));
+    expect(history.snapshotAt(transient)).toBeDefined();
+    expect(history.inspectableSamples).toHaveLength(HISTORY_SNAPSHOT_CAPACITY);
   });
 });

@@ -1,6 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { LauncherView } from "./LauncherView";
-import { DesignerControls } from "./DesignerControls";
 import { createSnapshot, createShift } from "./testSnapshot";
 import type { BridgeStatus, CanduCommandResponse } from "./protocol";
 import type { SessionUpdate } from "./sessionController";
@@ -42,27 +41,4 @@ it("keeps launch unavailable without the authoritative core and rejects an inval
   view.element.querySelector<HTMLInputElement>('input')!.value = "-1";
   view.element.querySelector('form')!.dispatchEvent(new SubmitEvent("submit", { cancelable: true }));
   expect(dispatch).not.toHaveBeenCalled();
-});
-
-it("exposes Designer actions and keeps inspector focus through authoritative updates", () => {
-  const snapshot = createSnapshot();
-  const actions = { selectChannel: vi.fn(), selectPosition: vi.fn(), toggleFuel: vi.fn(), toggleFace: vi.fn(), solve: vi.fn(), zones: vi.fn(), back: vi.fn() };
-  const view = new DesignerControls(document.body, actions); cleanup.push(() => view.destroy());
-  view.update(snapshot, 189, 0, false, true, "Ready");
-  const channel = view.element.querySelector<HTMLSelectElement>('[data-field="channel"]')!;
-  channel.focus(); channel.value = "190"; channel.dispatchEvent(new Event("change", { bubbles: true }));
-  expect(actions.selectChannel).toHaveBeenCalledWith(190);
-  view.update(snapshot, 190, 0, true, true, "Ready");
-  expect(document.activeElement).toBe(channel);
-  channel.value = "191"; channel.dispatchEvent(new Event("change", { bubbles: true }));
-  expect(channel.value).toBe("190"); expect(actions.selectChannel).toHaveBeenCalledTimes(1);
-  expect(view.element.querySelector<HTMLButtonElement>('[data-action="fuel"]')!.disabled).toBe(true);
-  snapshot.core.channels[190]!.bundles[0]!.reflectiveFaces = ["north"];
-  view.update(snapshot, 190, 0, false, true, "Accepted");
-  expect(view.element.querySelector('[data-face="north"]')!.getAttribute("aria-pressed")).toBe("true");
-  view.element.querySelector<HTMLButtonElement>('[data-face="north"]')!.click();
-  expect(actions.toggleFace).toHaveBeenCalledWith("north");
-  for (const [action, callback] of [["fuel", actions.toggleFuel], ["solve", actions.solve], ["zones", actions.zones], ["back", actions.back]] as const) {
-    view.element.querySelector<HTMLButtonElement>(`[data-action="${action}"]`)!.click(); expect(callback).toHaveBeenCalledTimes(1);
-  }
 });

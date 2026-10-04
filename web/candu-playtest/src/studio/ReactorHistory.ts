@@ -1,6 +1,7 @@
 import type { CanduSnapshot } from "../protocol";
 
 export const HISTORY_CAPACITY = 4096;
+export const HISTORY_SNAPSHOT_CAPACITY = 128;
 
 export interface ReactorHistoryPoint {
   timeSeconds: number;
@@ -32,12 +33,21 @@ export interface ReactorHistoryPoint {
 export class ReactorHistory {
   private readonly points: ReactorHistoryPoint[] = [];
   private lastSnapshot: CanduSnapshot | null = null;
+  private readonly snapshots = new Map<ReactorHistoryPoint, CanduSnapshot>();
+  private lastAnchor: ReactorHistoryPoint | null = null;
+  private transientPoint: ReactorHistoryPoint | null = null;
   public version = 0;
   public get samples(): readonly ReactorHistoryPoint[] { return this.points; }
+  public get inspectableSamples(): readonly ReactorHistoryPoint[] { return [...this.snapshots.keys()]; }
+  public snapshotAt(point: ReactorHistoryPoint): CanduSnapshot | undefined { return this.snapshots.get(point); }
+  public pinObservation(point: ReactorHistoryPoint): void { if (this.transientPoint === point) this.transientPoint = null; }
 
   public clear(): void {
     this.points.length = 0;
     this.lastSnapshot = null;
+    this.snapshots.clear();
+    this.lastAnchor = null;
+    this.transientPoint = null;
     this.version++;
   }
 
@@ -94,6 +104,15 @@ export class ReactorHistory {
         ? point[field].every((value, i) => value === last[field][i]) : point[field] === last[field];
     })) return;
     this.points.push(point);
+    // Keep complete states at half-hour observations and instantaneous moves,
+    // plus the freshest frame, without retaining every 100-ms browser tick.
+    if (this.transientPoint) this.snapshots.delete(this.transientPoint);
+    this.snapshots.set(point, snapshot);
+    const anchor = !this.lastAnchor || point.timeSeconds - this.lastAnchor.timeSeconds >= 1800 ||
+      point.operations !== this.lastAnchor.operations || point.thermalMw !== this.lastAnchor.thermalMw;
+    if (anchor) this.lastAnchor = point;
+    this.transientPoint = anchor ? null : point;
+    if (this.snapshots.size > HISTORY_SNAPSHOT_CAPACITY) this.snapshots.delete(this.snapshots.keys().next().value!);
     if (this.points.length > HISTORY_CAPACITY) this.points.shift();
     this.version++;
   }

@@ -427,8 +427,7 @@ namespace ReactorSim.Game
 
     /// <summary>
     /// Compact immutable spatial xenon diagnostics. Channel summaries are
-    /// intentionally limited to 380 presentation channels; nodewise Core
-    /// state and overlay arrays do not cross the Game boundary.
+    /// accompanied by bundle inventories in channel-major, axial-position order.
     /// </summary>
     public sealed class GameXenonPresentationSnapshot
     {
@@ -453,8 +452,10 @@ namespace ReactorSim.Game
             double maxDynamicAbsorptionGroup2PerM,
             IEnumerable<GameXenonChannelPresentationSnapshot> channels,
             int selectedChannelIndex,
-            double coupledSimulationTimeSeconds = 0,
-            string coupledStateDigestHex = "")
+            double coupledSimulationTimeSeconds,
+            string coupledStateDigestHex,
+            IReadOnlyList<double> nodeI135NumberDensityM3,
+            IReadOnlyList<double> nodeXe135NumberDensityM3)
         {
             if (string.IsNullOrWhiteSpace(stateIdentity) ||
                 string.IsNullOrWhiteSpace(stateDigestHex) ||
@@ -483,6 +484,14 @@ namespace ReactorSim.Game
             StateVersion = stateVersion;
             SimulationTimeSeconds = simulationTimeSeconds;
             NodeCount = nodeCount;
+            NodeI135NumberDensityM3 = Array.AsReadOnly(nodeI135NumberDensityM3.ToArray());
+            NodeXe135NumberDensityM3 = Array.AsReadOnly(nodeXe135NumberDensityM3.ToArray());
+            if (NodeI135NumberDensityM3.Count != nodeCount || NodeXe135NumberDensityM3.Count != nodeCount)
+                throw new ArgumentException("Poison presentation requires one inventory pair per bundle node.");
+            foreach (double value in NodeI135NumberDensityM3)
+                RequireFiniteNonnegative(value, nameof(nodeI135NumberDensityM3));
+            foreach (double value in NodeXe135NumberDensityM3)
+                RequireFiniteNonnegative(value, nameof(nodeXe135NumberDensityM3));
             CouplingIdentity = couplingIdentity;
             HasCoupling = hasCoupling;
             BaseCoefficientDigestHex = baseCoefficientDigestHex;
@@ -528,6 +537,10 @@ namespace ReactorSim.Game
         public double SimulationTimeSeconds { get; }
 
         public int NodeCount { get; }
+
+        /// <summary>Current atoms/m³ at channel * 12 + axial position.</summary>
+        public IReadOnlyList<double> NodeI135NumberDensityM3 { get; }
+        public IReadOnlyList<double> NodeXe135NumberDensityM3 { get; }
 
         public string CouplingIdentity { get; }
 

@@ -383,8 +383,9 @@ namespace ReactorSim.Browser.Tests
             AssertCompactPatch(paused, 0, 1);
             Assert.True(paused.GetProperty("snapshotPatch").GetProperty("isPaused").GetBoolean());
             Assert.DoesNotContain("channels", paused.GetRawText(), StringComparison.Ordinal);
-            Assert.True(paused.GetRawText().Length <= 32_768);
-            Assert.True(paused.GetRawText().Length <= legacyBytes * 0.05);
+            // Compact responses now include the current 4,560 bundle inventory pairs.
+            Assert.True(paused.GetRawText().Length <= 262_144);
+            Assert.True(paused.GetRawText().Length <= legacyBytes * 0.15);
 
             JsonElement committed = Parse(
                 PlaytestBridgeV2.Dispatch(

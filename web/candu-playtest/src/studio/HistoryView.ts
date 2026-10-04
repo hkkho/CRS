@@ -2,6 +2,7 @@ import { formatLiquidZoneRegion } from "../visuals";
 import { HISTORY_CAPACITY, ReactorHistory, type ReactorHistoryPoint } from "./ReactorHistory";
 import { displaySamples } from './displaySamples';
 import { patchMarkup } from './domPatch';
+import type { CanduSnapshot } from "../protocol";
 
 export type StudioTab = "reactor" | "power" | "burnup" | "zones" | "tilt" | "reactivity" | "xenon" | "fuel";
 const TABS: [StudioTab, string][] = [["reactor", "Reactor"], ["power", "Power peaks"],
@@ -37,8 +38,8 @@ function chartsFor(tab: StudioTab): Chart[] {
           color: COLORS[zone], dashed: zone >= 7, read: (point: ReactorHistoryPoint) => point.zoneXenon[zone] })) },
     ];
     case "power": return [
-      { title: "Maximum channel power", unit: "MW thermal", zero: true, series: [series("Hottest channel", "maxChannelMw")] },
-      { title: "Maximum bundle power", unit: "kW thermal", zero: true, series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
+      { title: "Maximum channel power", unit: "MW thermal", zero: true, reference: 7.3, series: [series("Hottest channel", "maxChannelMw")] },
+      { title: "Maximum bundle power", unit: "kW thermal", zero: true, reference: 935, series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
       { title: "Total reactor output", unit: "MW", zero: true, series: [series("Thermal", "thermalMw"), series("Electrical", "electricalMw", COLORS[2])] },
     ];
     case "burnup": return [
@@ -92,14 +93,15 @@ export class HistoryView {
   private lastVersion = -1;
   private charts: Chart[] = [];
 
-  public constructor(private readonly history: ReactorHistory, private readonly onTab: (tab: StudioTab) => void) {
+  public constructor(private readonly history: ReactorHistory, private readonly onTab: (tab: StudioTab) => void,
+    private readonly onInspection: (snapshot: CanduSnapshot | null) => void = () => {}) {
     this.element.className = "studio-history";
     this.element.innerHTML = `<div class="studio-tabs" role="tablist" aria-label="Reactor Studio tabs">${TABS.map(([id, label]) =>
       `<button id="studio-tab-${id}" role="tab" data-tab="${id}" aria-controls="${id === "reactor" ? "studio-reactor-panel" : "studio-history-panel"}" aria-selected="${id === "reactor"}" tabindex="${id === "reactor" ? 0 : -1}">${label}</button>`).join("")}</div>
+      <div class="studio-history-inspect"><label>View time <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Return to live</button></div>
       <section id="studio-history-panel" class="studio-history-panel" role="tabpanel" hidden>
         <div class="studio-history-heading"><div><p class="studio-eyebrow">SHIFT HISTORY / SIMULATION TIME</p><h2 data-history="title"></h2><p data-history="description"></p></div>
           <label>Time window <select data-history="window" aria-label="Graph time window"><option value="0">All recorded</option><option value="21600">Last 6 hours</option><option value="86400">Last 24 hours</option><option value="604800">Last 7 days</option></select></label></div>
-        <div class="studio-history-inspect"><label>Inspect a sample <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Latest</button></div>
         <div data-history="plots" class="studio-trend-grid"></div>
         <p data-history="note" class="studio-history-note"></p>
       </section>`;
@@ -110,7 +112,7 @@ export class HistoryView {
     this.element.addEventListener("keydown", this.onKeyDown);
     this.element.addEventListener("change", this.onWindow);
     this.inspector.addEventListener("input", this.onInspect);
-    this.plots.addEventListener("pointermove", this.onPointer);
+    this.plots.addEventListener("click", this.onPointer);
   }
 
   public setTab(tab: StudioTab): void {
@@ -130,28 +132,38 @@ export class HistoryView {
     this.text("title", TABS.find(([id]) => id === tab)![1]);
     this.text("description", tab === "burnup" ? "Confirmed discharge readings appear after a fuel move. The shift record never decreases."
       : tab === "zones" ? "Each compartment's water level, plus the core average. Toggle traces below; dashed traces belong to End B."
-      : "Published reactor measurements plotted against simulated elapsed time. Hover a graph or use the sample slider.");
+      : "Live measurements follow the newest data. Click a graph or move the time slider to inspect a retained snapshot across the whole view.");
     this.render(true);
   }
 
+  public followLive(): void {
+    this.inspectionTime = null;
+    this.inspectionPoint = null;
+  }
+
   public render(force = false): void {
-    if (this.tab === "reactor" || !force && this.lastVersion === this.history.version) return;
+    if (!force && this.lastVersion === this.history.version) return;
     this.lastVersion = this.history.version;
     const all = this.history.samples;
     const end = all.at(-1)?.timeSeconds ?? 0;
     const points = all.filter(point => !this.windowSeconds || point.timeSeconds >= end - this.windowSeconds);
-    let index = points.length - 1;
-    const exactIndex = this.inspectionPoint ? points.indexOf(this.inspectionPoint) : -1;
+    const inspectable = this.history.inspectableSamples;
+    let index = inspectable.length - 1;
+    const exactIndex = this.inspectionPoint ? inspectable.indexOf(this.inspectionPoint) : -1;
     if (exactIndex >= 0) index = exactIndex;
-    else if (this.inspectionTime !== null && points.length) {
-      index = points.reduce((best, point, i) => Math.abs(point.timeSeconds - this.inspectionTime!) < Math.abs(points[best].timeSeconds - this.inspectionTime!) ? i : best, index);
+    else if (this.inspectionTime !== null && inspectable.length) {
+      index = inspectable.reduce((best, point, i) => Math.abs(point.timeSeconds - this.inspectionTime!) < Math.abs(inspectable[best].timeSeconds - this.inspectionTime!) ? i : best, index);
     }
-    this.inspector.max = String(Math.max(0, points.length - 1));
-    this.inspector.value = String(Math.max(0, index)); this.inspector.disabled = points.length < 2;
-    const selected = points[index];
-    const readout = selected ? `${timeLabel(selected.timeSeconds)} since shift start${this.inspectionTime === null ? " · latest" : " · inspecting"}` : "Waiting for the first reactor snapshot";
+    this.inspector.max = String(Math.max(0, inspectable.length - 1));
+    this.inspector.value = String(Math.max(0, index)); this.inspector.disabled = inspectable.length < 2;
+    const selected = inspectable[index];
+    const readout = selected ? `${timeLabel(selected.timeSeconds)} since shift start${this.inspectionTime === null ? " · LIVE · latest" : " · HISTORY · controls disabled"}` : "Waiting for the first reactor snapshot";
+    this.element.dataset.viewTime = this.inspectionTime === null ? "live" : "history";
+    const live = this.element.querySelector<HTMLButtonElement>('[data-history="live"]')!;
+    live.disabled = this.inspectionTime === null;
+    live.textContent = this.inspectionTime === null ? "Following live" : "Return to live";
     this.text("readout", readout); this.inspector.setAttribute("aria-valuetext", readout);
-    this.text("note", `${points.length} samples shown · ${all.length} / ${HISTORY_CAPACITY} retained · History clears on New shift. Lines connect observed snapshots; time uses the simulation clock.`);
+    this.text("note", `${points.length} samples shown · ${all.length} / ${HISTORY_CAPACITY} trend samples retained · ${inspectable.length} complete snapshots available to inspect. History clears on New shift. Lines connect observed snapshots; time uses the simulation clock.`);
     this.charts.forEach((chart, chartIndex) => {
       let card = this.plots.children[chartIndex] as HTMLElement | undefined;
       if (!card) {
@@ -214,7 +226,7 @@ export class HistoryView {
   public destroy(): void {
     this.element.removeEventListener("click", this.onClick); this.element.removeEventListener("keydown", this.onKeyDown);
     this.element.removeEventListener("change", this.onWindow); this.inspector.removeEventListener("input", this.onInspect);
-    this.plots.removeEventListener("pointermove", this.onPointer); this.element.remove();
+    this.plots.removeEventListener("click", this.onPointer); this.element.remove();
   }
   private text(field: string, value: string): void { this.element.querySelector(`[data-history="${field}"]`)!.textContent = value; }
   private readonly onClick = (event: MouseEvent): void => {
@@ -224,7 +236,7 @@ export class HistoryView {
       const key = button.dataset.trace;
       if (this.hiddenSeries.has(key)) this.hiddenSeries.delete(key); else this.hiddenSeries.add(key);
       this.render(true);
-    } else if (button?.dataset.history === "live") { this.inspectionTime = null; this.inspectionPoint = null; this.render(true); }
+    } else if (button?.dataset.history === "live") { this.inspectionTime = null; this.inspectionPoint = null; this.render(true); this.onInspection(null); }
   };
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     const target = event.target as HTMLElement;
@@ -238,21 +250,26 @@ export class HistoryView {
   private readonly onWindow = (event: Event): void => {
     if ((event.target as HTMLElement).dataset.history !== "window") return;
     this.windowSeconds = Number((event.target as HTMLSelectElement).value);
-    this.inspectionTime = null; this.inspectionPoint = null; this.render(true);
+    this.inspectionTime = null; this.inspectionPoint = null; this.render(true); this.onInspection(null);
   };
   private readonly onInspect = (): void => {
-    const end = this.history.samples.at(-1)?.timeSeconds ?? 0;
-    const points = this.history.samples.filter(point => !this.windowSeconds || point.timeSeconds >= end - this.windowSeconds);
+    const points = this.history.inspectableSamples;
     this.inspectionPoint = points[Number(this.inspector.value)] ?? null;
+    if (this.inspectionPoint) this.history.pinObservation(this.inspectionPoint);
     this.inspectionTime = this.inspectionPoint?.timeSeconds ?? null; this.render(true);
+    this.onInspection(this.inspectionPoint ? this.history.snapshotAt(this.inspectionPoint) ?? null : null);
   };
-  private readonly onPointer = (event: PointerEvent): void => {
+  private readonly onPointer = (event: MouseEvent): void => {
     const svg = (event.target as Element).closest("svg");
     if (!svg || !this.history.samples.length) return;
     const bounds = svg.getBoundingClientRect();
     const end = this.history.samples.at(-1)!.timeSeconds;
     const start = this.history.samples.find(point => !this.windowSeconds || point.timeSeconds >= end - this.windowSeconds)!.timeSeconds;
     const fraction = Math.max(0, Math.min(1, ((event.clientX - bounds.left) / bounds.width * 900 - 74) / 802));
-    this.inspectionPoint = null; this.inspectionTime = start + fraction * (end - start); this.render(true);
+    const time = start + fraction * (end - start);
+    this.inspectionPoint = this.history.inspectableSamples.reduce((best, point) => Math.abs(point.timeSeconds - time) < Math.abs(best.timeSeconds - time) ? point : best);
+    this.history.pinObservation(this.inspectionPoint);
+    this.inspectionTime = this.inspectionPoint.timeSeconds; this.render(true);
+    this.onInspection(this.history.snapshotAt(this.inspectionPoint) ?? null);
   };
 }

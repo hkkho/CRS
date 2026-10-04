@@ -13,7 +13,7 @@ Describe approximations honestly; do not represent the model as a validated
 plant simulator.
 
 Keep deterministic rules in Core/Game, serialize them through Browser, and use
-native DOM controls and Phaser for presentation and input. Preserve finite values, units, inventory
+native DOM/SVG controls for presentation and input. Preserve finite values, units, inventory
 accounting, atomic failed commands, and reproducible replay. These protect a
 working game rather than certify the underlying physics data.
 
@@ -34,38 +34,45 @@ local work on unrelated infrastructure or historical provenance.
    not impose a cooldown.
 4. Run time to earn operating score; pause to inspect. Space toggles pause/resume.
 5. Watch all fourteen zone fills. Average LZC level below 10% or above 90%, or
-   absolute global tilt above 20%, ends the run. Start a new
+   absolute global tilt above 20%, any channel above 7,300 kW or any bundle
+   above 935 kW ends the run. These are actual thermal powers; equality is allowed. Start a new
    shift from Reactor Studio when ready to try another strategy.
+
+Studio provides channel kW, reference-ripple %, peak-bundle kW and burnup maps.
+Absolute map red points are 7,300 kW/channel and 935 kW/bundle; ripple is centered
+on 100% of the channel reference, reaching red at that channel's absolute cap.
+The shared time inspector follows live data and lets the player select complete
+historical observations across map, inspector and metrics, then Return to live.
+Operating controls are unavailable while inspecting history. See
+[power balance](physics/power-limit-balance.md) and [limits](gameplay/power-limits.md).
 
 Reactor Studio is the sole gameplay view. The simulation-time history tabs
 cover power peaks, confirmed discharge burnup, fourteen zone fills and their
 mean, iodine/xenon inventories, regional xenon, tilt, Keff/reactivity, average LZC level,
 fuel and score. History stays with the
-browser session across Core Designer visits and resets with a new shift. Accepted
-physical Designer edits mark a run as modified sandbox; inspection and rejected
+browser session and resets with a new shift. Core Designer has been removed. Accepted
+engineering commands in developer tools mark a run as modified sandbox; inspection and rejected
 edits preserve standard eligibility. Sandbox play remains available, with standard
 challenge rewards excluded until reset. Controller reason text and limiting-zone
 headroom come from the shared snapshot rather than a fill-delta guess.
 
 
-Refuelling points are awarded per discharged bundle using
-`0.75 * clamp(burnup_MWd_per_kg, 0, 10) - 1.5`. Fresh-fuel waste therefore costs
-points; reversing a shift cannot farm a fixed acceptance bonus. Operating points add at most one point per simulated hour:
-`hours * (0.7 * powerQuality + 0.3 * tiltQuality)`. The authored quality measures
-still use power near nominal and low core tilt. See the [same-seed balance
-comparison](gameplay/score-balance.md) for the rationale and limits. The current
-policy is `practice-fuel-and-operation-v2`; previous totals are not comparable
-across policy versions. This is a game balance choice, not an economic or
-reactor-design claim.
+Scoring policy `practice-channel-ripple-v3` measures channel powers against a
+fixed time-average reference for the current core without adjusters. The 380 targets
+sum to 2,064 MW thermal. Equal-channel RMS relative deviation determines the rate:
+`points/hour = 1 / (1 + (RMS / 0.10)^2)`. Refuelling earns no direct bonus or cost;
+its effects on ripple change future points. Old policy totals are not comparable.
+See [scoring](gameplay/score-balance.md) and
+[reference derivation](physics/channel-power-reference.md).
 
 ## Next improvements
 
 - Tune run duration and fuel budget from actual playthroughs.
 - RRS branch explanations and limiting-zone headroom are delivered (task 11).
 - Expand the existing one-day challenge after human playtest feedback.
-- Native launcher/Designer actions, keyboard play at 1280×720, 200% zoom emulation,
+- Native launcher/Studio actions, keyboard play at 1280×720, 200% zoom emulation,
   a 320px minimum layout and quiet operation announcements are delivered (task 13).
-  Phase 3 also delivers an on-demand Designer shell, cached/patchable rendering,
+  Phase 3 also delivers cached/patchable rendering,
   full-history display reduction and observed pace (tasks 14–16). See
   [measured results and budgets](performance/browser-phase3.md).
   Retain keyboard, narrow-layout and production-worker checks during the next
@@ -94,8 +101,9 @@ plant operations remain outside this game's scope.
 The Game clock/projection, instance bridge and frontend view boundaries preserve
 the same playable loop and protocol v2. The browser still consumes authoritative
 C# snapshots. Characterization compares complete serialized response bytes,
-shared fixtures cover transport variants, and repeated Designer navigation checks
-selection/draft/history/response retention and subscription cleanup. Research IQS
+shared fixtures cover transport variants, and Studio checks
+selection/history/response retention and subscription cleanup. Bundle iodine/xenon
+profiles now expose current per-bundle inventories, including fresh-fuel zeroes. Research IQS
 is separated from product dependencies; wider legacy retirement and experiment
 isolation remain Phase 5 tasks. See `REFACTORING_TASK_GUIDE.md` for final checks
 and the outstanding human/hosted-CI follow-ups.

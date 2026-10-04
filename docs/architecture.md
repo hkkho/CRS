@@ -5,7 +5,7 @@ This page describes the current product. The ordered work plan is
 [REFACTORING_TASK_GUIDE.md](REFACTORING_TASK_GUIDE.md).
 
 ```text
-Native launcher / Studio DOM and SVG  +  optional Phaser Designer
+Native launcher / Studio DOM and SVG
                        |
               one session controller
          typed v2 commands / serialized worker
@@ -27,7 +27,7 @@ The client formats observations and drafts; it does not calculate reactor
 responses. Accepted shared candidates own fuel, poison, equilibrium, RRS, clock
 and score. Failed commands preserve physical state. The bridge preserves protocol
 v2 names, missing/null encoding, units and digest algorithms. The controller owns
-history and view-only response summaries across injected Designer navigation.
+history and view-only response summaries across Studio history tab changes.
 
 The active clock is accelerated: requested browser 1× is 30 simulation minutes
 per real second; 10×/60× multiply that request. One pending quantum limits backlog.

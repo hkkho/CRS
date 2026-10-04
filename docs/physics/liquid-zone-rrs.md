@@ -30,8 +30,8 @@ regions split at row 11; central regions split at rows 8 and 14. Every one of
 the 4,560 nodes belongs to exactly one zone. This is a discretized regional
 absorption model, rather than an explicit model of individual absorber tubes.
 
-Region membership and absorber compartment ownership are now independent Core
-fields. Core Designer's **Zone geometry** (`Z`) view can display and edit both.
+Region membership and absorber compartment ownership are independent Core
+fields. The browser displays the default regions in Studio's liquid-zone view.
 The default applies effective absorption at every node. The
 [calibration](zone-calibration.md) sets empty-to-full worth to 6.5 mk, with
 nonnegative absorption referenced to empty zones. The earlier
@@ -42,6 +42,9 @@ nonnegative absorption referenced to empty zones. The earlier
 Each solve measures the fourteen fractions of total fission power. The initial
 equilibrium shape supplies their references, preserving the intended radial
 profile rather than imposing equal power on regions of different sizes.
+These power-fraction references are independent of the time-average channel
+targets used by scoring. The [nominal-flux audit](rrs-flux-audit.md) identifies
+the remaining gap in regional flux balancing.
 The controller treats net criticality and spatial shape as separate objectives.
 Controller convergence allows one percentage point of absolute error in each
 region's share of total power (fraction 0.01), alongside ±0.05 mk net reactivity.
@@ -68,7 +71,7 @@ The [Essential CANDU I&C chapter, section 4.1](https://unene.ca/essentialcandu/p
 describes combined bulk-power and spatial feedback, light-water absorption,
 and independent control of fourteen compartments. Actual plant control runs
 on much shorter intervals. This game uses a quasi-static equilibrium model:
-it recomputes after refuelling/designer edits and every 1,800 simulated seconds.
+it recomputes after refuelling and every 1,800 simulated seconds.
 Between solves it integrates burnup using the retained power shape. Browser 1x
 is 1,800 simulated seconds per real second, with a 100 ms wall control tick;
 10x and 60x multiply that base. Keff is the solver result and is never forced
@@ -76,5 +79,6 @@ to exactly one. The RRS drives it towards one while retaining finite residuals.
 
 Absorption strengths, response estimates, movement limits and equilibrium
 cadence are project-authored gameplay approximations. Tube geometry, valve
-dynamics, detector delays, xenon transients, and additional plant reactivity
-devices are outside this implementation.
+dynamics, detector delays, and additional plant reactivity devices are outside
+this implementation. Live [iodine/xenon departures](iodine-xenon-gameplay.md)
+are included in the controlled diffusion candidates.

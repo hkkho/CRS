@@ -4,7 +4,6 @@ import { verifyRecovery } from "./recovery-smoke.mjs";
 import { chromium } from "playwright";
 import { verifyShift } from "./shift-smoke.mjs";
 import { verifyStudio } from "./studio-smoke.mjs";
-import { verifyZoneLayout } from "./zone-layout-smoke.mjs";
 
 const baseUrl = process.argv[2] ?? process.env.PLAYTEST_URL;
 const wasmPath = process.argv[3] ?? process.env.PLAYTEST_WASM_PATH;
@@ -71,7 +70,7 @@ try {
 
   await page.getByRole("button", { name: "Begin shift", exact: true }).click();
   await page.locator(".reactor-studio").waitFor({ state: "visible" });
-  const studio = await verifyStudio(page, () => verifyZoneLayout(page));
+  const studio = await verifyStudio(page);
   const shift = await verifyShift(page);
 
   if (consoleErrors.length > 0 || pageErrors.length > 0) throw new Error(`Browser errors detected: ${[...consoleErrors, ...pageErrors].join(" | ")}`);

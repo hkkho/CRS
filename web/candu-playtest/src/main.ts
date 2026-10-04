@@ -1,11 +1,9 @@
 import { AppShell } from "./AppShell";
 import { SessionAnnouncements } from "./SessionAnnouncements";
 import { BridgeSessionController } from "./sessionController";
-import { setRuntimeSession } from "./runtime";
 import { BridgeRecoveryView } from "./BridgeRecoveryView";
 
 const session = new BridgeSessionController();
-setRuntimeSession(session);
 
 const statusMirror = document.getElementById("status-mirror");
 const recovery = new BridgeRecoveryView(document.body);

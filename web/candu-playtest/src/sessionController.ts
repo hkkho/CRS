@@ -33,7 +33,7 @@ export interface SessionUpdate {
 export type SessionListener = (update: SessionUpdate) => void;
 
 /**
- * Owns the browser bridge boundary and the wall-clock pump. Phaser scenes only
+ * Owns the browser bridge boundary and the wall-clock pump. Native views only
  * render snapshots and send protocol commands through this controller.
  */
 export class BridgeSessionController {
@@ -67,8 +67,7 @@ export class BridgeSessionController {
     this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
     this.history.record(this.snapshotValue);
-    // Play is the only live session mode. Core Designer stays inside this
-    // session and does not initialize a second fixture or mode.
+    // Play is the only live session mode.
     this.modeValue = "play";
     this.unsubscribeBridge = bridge.subscribe((status, snapshot) => {
       this.statusValue = status;

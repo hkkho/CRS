@@ -40,7 +40,7 @@ export interface CanduBundleSnapshot {
   insertedAtSeconds: number;
   stateVersion: number;
   isFresh: boolean;
-  /** Live Core Designer fields projected by the authoritative GameSession. */
+  /** Live cell geometry projected by the authoritative GameSession. */
   hasFuel: boolean;
   reflectiveFaces: CoreBoundaryFace[];
   group1Flux: number;
@@ -89,6 +89,9 @@ export interface CanduXenonChannelSnapshot {
 }
 
 export interface CanduXenonSnapshot {
+  /** Current atoms/m³, indexed by channelIndex * 12 + bundle position. Optional for older v2 hosts. */
+  nodeI135NumberDensityM3?: number[];
+  nodeXe135NumberDensityM3?: number[];
   coupledSimulationTimeSeconds?: number;
   coupledStateDigestHex?: string;
   stateIdentity: string;
@@ -340,6 +343,7 @@ export interface CanduSnapshot {
   refuellingPlans?: RefuellingPlan[];
   lastFuelMovement?: FuelMovement | null;
   scorePolicyId?: string;
+  ripple?: ChannelRippleSnapshot;
   lastRefuellingScore?: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number } | null;
   scoreTotal: number;
   scoreDelta: number;
@@ -364,6 +368,19 @@ export interface CanduSnapshot {
   lastEvent: CanduEvent | null;
 }
 
+export interface ChannelRippleSnapshot {
+  referenceId: string;
+  dataPackVersion: string;
+  coefficientBindingDigestHex: string;
+  referenceThermalPowerWatts: number;
+  maximumChannelPowerWatts?: number;
+  maximumBundlePowerWatts?: number;
+  referenceChannelPowerWatts: number[];
+  channelRippleFractions: number[];
+  rmsDeviationFraction: number;
+  pointsPerHour: number;
+}
+
 export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "scenarioId"
   | "dataPackId"
@@ -380,6 +397,7 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "refuellingPlans"
   | "lastFuelMovement"
   | "scorePolicyId"
+  | "ripple"
   | "lastRefuellingScore"
   | "scoreTotal"
   | "scoreDelta"
@@ -951,6 +969,10 @@ function isCanduXenonSnapshot(value: unknown): value is CanduXenonSnapshot {
     return false;
   }
 
+  const hasInventories = value.nodeI135NumberDensityM3 !== undefined || value.nodeXe135NumberDensityM3 !== undefined;
+  if (hasInventories && (![value.nodeI135NumberDensityM3, value.nodeXe135NumberDensityM3].every(inventory =>
+    Array.isArray(inventory) && inventory.length === CORE_CHANNEL_COUNT * CORE_BUNDLE_POSITION_COUNT &&
+      inventory.length === value.nodeCount && inventory.every(density => isFiniteNumber(density) && density >= 0)))) return false;
   return value.selectedChannel === null ||
     isCanduXenonChannelSnapshot(value.selectedChannel, value.selectedChannelIndex);
 }
@@ -1145,6 +1167,20 @@ const SNAPSHOT_STATE_FIELDS = [
   "lastEvent",
 ] as const;
 
+function isChannelRipple(value: unknown): boolean {
+  return isRecord(value) && isString(value.referenceId) && value.referenceId.length > 0 &&
+    isString(value.dataPackVersion) && /^[0-9a-f]{64}$/.test(value.coefficientBindingDigestHex as string) &&
+    isFiniteNumber(value.referenceThermalPowerWatts) && value.referenceThermalPowerWatts > 0 &&
+    (!hasOwn(value, "maximumChannelPowerWatts") || isFiniteNumber(value.maximumChannelPowerWatts) && value.maximumChannelPowerWatts > 0) &&
+    (!hasOwn(value, "maximumBundlePowerWatts") || isFiniteNumber(value.maximumBundlePowerWatts) && value.maximumBundlePowerWatts > 0) &&
+    isFiniteNumber(value.rmsDeviationFraction) && value.rmsDeviationFraction >= 0 &&
+    isFiniteNumber(value.pointsPerHour) && value.pointsPerHour >= 0 && value.pointsPerHour <= 1 &&
+    Array.isArray(value.referenceChannelPowerWatts) && value.referenceChannelPowerWatts.length === CORE_CHANNEL_COUNT &&
+    value.referenceChannelPowerWatts.every(p => isFiniteNumber(p) && p > 0) &&
+    Array.isArray(value.channelRippleFractions) && value.channelRippleFractions.length === CORE_CHANNEL_COUNT &&
+    value.channelRippleFractions.every(p => isFiniteNumber(p) && p >= 0);
+}
+
 function isRefuellingScore(value: unknown): boolean {
   return isRecord(value) && isString(value.policyId) && value.policyId.length > 0 &&
     hasFiniteNumberFields(value, ["dischargeReward", "freshFuelCost", "netPoints"]) &&
@@ -1203,6 +1239,7 @@ function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
     (!hasOwn(value, "refuellingPlans") || Array.isArray(value.refuellingPlans) && value.refuellingPlans.every(isRefuellingPlan)) &&
     (!hasOwn(value, "lastFuelMovement") || value.lastFuelMovement === null || isFuelMovement(value.lastFuelMovement)) &&
     (!hasOwn(value, "scorePolicyId") || isString(value.scorePolicyId) && value.scorePolicyId.length > 0) &&
+    (!hasOwn(value, "ripple") || isChannelRipple(value.ripple)) &&
     (!hasOwn(value, "lastRefuellingScore") || value.lastRefuellingScore === null ||
       isRefuellingScore(value.lastRefuellingScore)) &&
     isBoolean(value.isPaused) && isPlaybackModeId(value.playbackModeId) &&
@@ -1452,6 +1489,26 @@ export function materializeCompactSnapshot(
     } else {
       core = response.coreReplacement;
     }
+  }
+
+  if (response.coreMeasurements !== undefined && response.coreMeasurements !== null) {
+    const readings = response.coreMeasurements;
+    const count = CORE_CHANNEL_COUNT * CORE_BUNDLE_POSITION_COUNT;
+    if (!isRecord(readings) || !Array.isArray(readings.bundleBurnupMwdPerKg) || readings.bundleBurnupMwdPerKg.length !== count ||
+        !readings.bundleBurnupMwdPerKg.every(v => isFiniteNumber(v) && v >= 0) ||
+        !Array.isArray(readings.bundleStateVersions) || readings.bundleStateVersions.length !== count || !readings.bundleStateVersions.every(isNonNegativeInteger) ||
+        !Array.isArray(readings.bundleIsFresh) || readings.bundleIsFresh.length !== count || !readings.bundleIsFresh.every(isBoolean) ||
+        !Array.isArray(readings.channelAverageBurnupMwdPerKg) || readings.channelAverageBurnupMwdPerKg.length !== CORE_CHANNEL_COUNT || !readings.channelAverageBurnupMwdPerKg.every(v => isFiniteNumber(v) && v >= 0))
+      throw new Error("candu-playtest-v2 compact core measurements are malformed.");
+    const burnup = readings.bundleBurnupMwdPerKg as number[], versions = readings.bundleStateVersions as number[];
+    const fresh = readings.bundleIsFresh as boolean[], averageBurnup = readings.channelAverageBurnupMwdPerKg as number[];
+    core = { ...core, channels: core.channels.map(channel => {
+      const bundles = channel.bundles.map(bundle => {
+        const index = channel.channelIndex * CORE_BUNDLE_POSITION_COUNT + bundle.position;
+        return { ...bundle, currentBurnupMwdPerKg: burnup[index], stateVersion: versions[index], isFresh: fresh[index] };
+      });
+      return { ...channel, bundles, averageBurnupMwdPerKg: averageBurnup[channel.channelIndex] };
+    }) };
   }
 
   const snapshot: CanduSnapshot = {

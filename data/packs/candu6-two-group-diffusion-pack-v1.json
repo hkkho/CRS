@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "data_pack_id": "00000000-0000-0000-0000-000000000601",
-  "data_pack_version": "candu6-two-group-diffusion-v1-cycle190-650mwe-innerrel1e7",
+  "data_pack_version": "candu6-two-group-diffusion-v1-cycle190-650mwe-powerlimits-v2",
   "topology_schema_id": "candu6-380x12-grid-v1",
   "channel_count": 380,
   "bundle_position_count": 12,
@@ -13,22 +13,22 @@
   "model_id": "candu6-two-group-full-core-diffusion-v1",
   "solver_id": "spatial-eigen-jacobi-v1",
   "evidence_class": "synthetic-calibrated",
-  "source_provenance": "synthetic-calibrated; project-authored two-group surrogate, not validated plant depletion data; 190-FPD channel interval, 285-FPD mean bundle residence, 2064 MW thermal and 650 MW electric; eight-bundle shift exit target 6.2621359223300965 MWd-per-kg HM; burnup knots remapped by 0.391383495145631, fission contrast reduced to 0.4 with group yields preserved before neutron production multiplied by 0.9618135235607236 relative to zones65 source; bounded positive extrapolation through 30 MWd-per-kg; seed 1001 half-fill critical reference and 6.5-mk empty-to-full homogenized zones",
+  "source_provenance": "synthetic-calibrated; project-authored two-group surrogate, not validated plant depletion data; 190-FPD channel interval, 285-FPD mean bundle residence, 2064 MW thermal and 650 MW electric; eight-bundle shift exit target 6.2621359223300965 MWd-per-kg HM; burnup knots remapped by 0.391383495145631, fission contrast reduced to 0.4 with group yields preserved before neutron production multiplied by 0.9618135235607236 relative to zones65 source; bounded positive extrapolation through 30 MWd-per-kg; seed 1001 half-fill critical reference and 6.5-mk empty-to-full homogenized zones; power-limit rebalance v2: fourfold inter-node conductance and one-tenth effective boundary leakage, project-authored reflector and coupling surrogate without adjusters; neutron production rescaled by 1.0023328258680102 to restore half-fill criticality; no power clipping or derating",
   "source_toolchain": "project-authored offline-core-fuel-calibration-v1",
   "transform_id": "two-group-m1-scalar-node-centred-v1",
   "geometry": {
     "node_volume_m3": 0.05,
     "axial_edge_conductance_m2": {
-      "group1_m2": 0.0008,
-      "group2_m2": 0.0004
+      "group1_m2": 0.0032,
+      "group2_m2": 0.0016
     },
     "transverse_edge_conductance_m2": {
-      "group1_m2": 0.0012,
-      "group2_m2": 0.0006
+      "group1_m2": 0.0048,
+      "group2_m2": 0.0024
     },
     "vacuum_boundary_conductance_m2": {
-      "group1_m2": 0.0024,
-      "group2_m2": 0.0012
+      "group1_m2": 0.00023999999999999998,
+      "group2_m2": 0.00011999999999999999
     }
   },
   "solver": {
@@ -51,7 +51,7 @@
       "data_version": "synthetic-calibrated-natural-uranium-v5-cycle190",
       "material_variant_id": "NAT-U-SYNTHETIC",
       "units_profile_id": "SI-v1",
-      "source_provenance": "synthetic-calibrated; project-authored two-group surrogate, not validated plant depletion data; 190-FPD channel interval, 285-FPD mean bundle residence, 2064 MW thermal and 650 MW electric; eight-bundle shift exit target 6.2621359223300965 MWd-per-kg HM; burnup knots remapped by 0.391383495145631, fission contrast reduced to 0.4 with group yields preserved before neutron production multiplied by 0.9618135235607236 relative to zones65 source; bounded positive extrapolation through 30 MWd-per-kg; seed 1001 half-fill critical reference and 6.5-mk empty-to-full homogenized zones",
+      "source_provenance": "synthetic-calibrated; project-authored two-group surrogate, not validated plant depletion data; 190-FPD channel interval, 285-FPD mean bundle residence, 2064 MW thermal and 650 MW electric; eight-bundle shift exit target 6.2621359223300965 MWd-per-kg HM; burnup knots remapped by 0.391383495145631, fission contrast reduced to 0.4 with group yields preserved before neutron production multiplied by 0.9618135235607236 relative to zones65 source; bounded positive extrapolation through 30 MWd-per-kg; seed 1001 half-fill critical reference and 6.5-mk empty-to-full homogenized zones; power-limit rebalance v2: fourfold inter-node conductance and one-tenth effective boundary leakage, project-authored reflector and coupling surrogate without adjusters; neutron production rescaled by 1.0023328258680102 to restore half-fill criticality; no power clipping or derating",
       "rows": [
         {
           "burnup_j_per_kg_hm": 0,
@@ -59,8 +59,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.155,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.35445530723354274,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.35528218974331066,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -71,8 +71,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.157,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.35902892410107234,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.3598664760625792,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -83,8 +83,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.1518,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.34713752024549543,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.34794733163248104,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -95,8 +95,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.1494,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.34164918000446,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.3424461880493589,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -107,8 +107,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.149,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.340734456630954,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.34152933078550507,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -119,8 +119,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.147,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.3361608397634244,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.3369450444662366,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -131,8 +131,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.143,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.32701360602836527,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.32777647182769953,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -143,8 +143,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.139,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.3178663722933061,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.3186078991891625,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -155,8 +155,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.135,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.30871913855824695,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.30943932655062545,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -167,8 +167,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.131,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.29957190482318774,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.30027075391208835,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -179,8 +179,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.12433953488372093,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.28434069702248455,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.2850040143558267,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -191,8 +191,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.11411937984496123,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.26096916028546513,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.26157795589333194,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -203,8 +203,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.10389922480620155,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.23759762354844577,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.23815189743083734,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11
@@ -215,8 +215,8 @@
           "absorption_group2_per_m": 0.16,
           "fission_group1_per_m": 0.035,
           "fission_group2_per_m": 0.09367906976744186,
-          "nu_fission_group1_per_m": 0.07905016808075824,
-          "nu_fission_group2_per_m": 0.21422608681142638,
+          "nu_fission_group1_per_m": 0.07923457835772758,
+          "nu_fission_group2_per_m": 0.21472583896834269,
           "downscatter_group1_to_2_per_m": 0.2,
           "chi_group1": 1.0,
           "energy_per_fission_j": 3.204353268e-11

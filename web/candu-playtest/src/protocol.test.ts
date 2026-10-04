@@ -14,6 +14,52 @@ import {
 } from "./protocol";
 
 describe("candu-playtest-v2 protocol validation", () => {
+  it("updates immutable bundle burnup between solves from authoritative compact measurements", () => {
+    const base = createSnapshot();
+    const measurements = { bundleBurnupMwdPerKg: Array(4560).fill(1.5), bundleStateVersions: Array(4560).fill(42),
+      bundleIsFresh: Array(4560).fill(false), channelAverageBurnupMwdPerKg: Array(380).fill(1.5) };
+    const envelope = { ...responseEnvelope(base, 1), responseKind: "compact", baseSequence: base.sequence,
+      snapshotPatch: patchFor(base), coreMeasurements: measurements };
+    const result = parseProtocolResponse(envelope, base);
+    expect(result.snapshot.core.channels[210].bundles[4]).toMatchObject({ currentBurnupMwdPerKg: 1.5, stateVersion: 42, isFresh: false });
+    expect(result.snapshot.core.channels[210].averageBurnupMwdPerKg).toBe(1.5);
+    expect(result.snapshot.core).not.toBe(base.core);
+    expect(result.snapshot.core.channels[210].bundles[4].powerWatts).toBe(base.core.channels[210].bundles[4].powerWatts);
+    measurements.bundleBurnupMwdPerKg[0] = -1;
+    expect(() => parseProtocolResponse(envelope, base)).toThrow("core measurements");
+  });
+  it("validates authoritative ripple vectors and keeps older hosts readable", () => {
+    const snapshot = createSnapshot();
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.ripple = { referenceId: "test", dataPackVersion: "test", coefficientBindingDigestHex: "a".repeat(64),
+      referenceThermalPowerWatts: 2.064e9, referenceChannelPowerWatts: Array(380).fill(5e6),
+      channelRippleFractions: Array(380).fill(1.1), rmsDeviationFraction: 0.1, pointsPerHour: 0.5 };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.ripple.referenceChannelPowerWatts[0] = 0;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.ripple.referenceChannelPowerWatts[0] = 5e6;
+    snapshot.ripple.channelRippleFractions.pop();
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.ripple.channelRippleFractions.push(NaN);
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+  });
+  it("validates complete nonnegative bundle poison pairs and accepts older hosts", () => {
+    const snapshot = createSnapshot();
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.xenon.nodeCount = 4560;
+    snapshot.xenon.nodeI135NumberDensityM3 = Array(4560).fill(3e20);
+    snapshot.xenon.nodeXe135NumberDensityM3 = Array(4560).fill(2e20);
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.xenon.nodeXe135NumberDensityM3[123] = -1;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.xenon.nodeXe135NumberDensityM3[123] = Infinity;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.xenon.nodeXe135NumberDensityM3 = Array(4559).fill(0);
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    delete snapshot.xenon.nodeXe135NumberDensityM3;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+  });
+
   it("validates modified-run provenance and standard eligibility", () => {
     const snapshot = createSnapshot();
     snapshot.provenance = { kind: "modified-sandbox", label: "Modified sandbox", isModified: true,
@@ -128,7 +174,7 @@ describe("candu-playtest-v2 protocol validation", () => {
     }
   });
 
-  it("requires authoritative live designer fields on every bundle", () => {
+  it("requires authoritative live cell fields on every bundle", () => {
     const snapshot = createSnapshot();
     const bundle = snapshot.core.channels[0].bundles[0];
     expect(bundle.hasFuel).toBe(true);

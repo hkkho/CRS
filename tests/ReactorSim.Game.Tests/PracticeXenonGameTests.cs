@@ -24,15 +24,17 @@ public sealed class PracticeXenonGameTests
     }
 
     [Theory]
-    [InlineData("toward-end-a", 8)]
-    [InlineData("toward-end-b", 8)]
-    public void RefuellingCarriesRetainedBundlePoisonAndFreshFuelIsClean(string direction, ushort shift)
+    [InlineData(210U, "toward-end-a", 8)]
+    [InlineData(211U, "toward-end-b", 8)]
+    public void RefuellingCarriesRetainedBundlePoisonAndFreshFuelIsClean(uint channel, string direction, ushort shift)
     {
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        Assert.True(session.AdvanceWallMilliseconds(2000).Accepted);
+        Assert.True(session.Pause().Accepted);
         var old = session.CoreState.EnumerateBundles().Select((b, n) =>
             (b.BundleId, I: session.CurrentXenonState.Iodine[n], X: session.CurrentXenonState.Xenon[n]))
             .ToDictionary(b => b.BundleId);
-        var result = session.RefuelChannel(210, direction, shift, "NAT-U-SYNTHETIC");
+        var result = session.RefuelChannel(channel, direction, shift, "NAT-U-SYNTHETIC");
         Assert.True(result.Accepted, result.DiagnosticMessage);
         int fresh = 0, node = 0;
         foreach (var bundle in session.CoreState.EnumerateBundles())
@@ -51,9 +53,30 @@ public sealed class PracticeXenonGameTests
             node++;
         }
         Assert.Equal(shift, fresh);
+        Assert.Equal(session.CurrentXenonState.Iodine, result.Snapshot.Xenon.NodeI135NumberDensityM3);
+        Assert.Equal(session.CurrentXenonState.Xenon, result.Snapshot.Xenon.NodeXe135NumberDensityM3);
         var poison = session.CurrentXenonState;
-        Assert.False(session.RefuelChannel(210, direction, 3, "NAT-U-SYNTHETIC").Accepted);
+        Assert.False(session.RefuelChannel(channel, direction, 3, "NAT-U-SYNTHETIC").Accepted);
         Assert.Same(poison, session.CurrentXenonState);
+        Assert.True(session.AdvanceWallMilliseconds(1000).Accepted);
+        Assert.Same(poison, session.CurrentXenonState);
+
+        Assert.True(session.Resume().Accepted);
+        Assert.True(session.AdvanceWallMilliseconds(100).Accepted);
+        Assert.True(session.Pause().Accepted);
+        var advanced = session.Snapshot;
+        node = 0;
+        foreach (var bundle in session.CoreState.EnumerateBundles())
+        {
+            Assert.Equal(session.CurrentXenonState.Iodine[node], advanced.Xenon.NodeI135NumberDensityM3[node]);
+            Assert.Equal(session.CurrentXenonState.Xenon[node], advanced.Xenon.NodeXe135NumberDensityM3[node]);
+            if (!old.ContainsKey(bundle.BundleId))
+            {
+                Assert.True(advanced.Xenon.NodeI135NumberDensityM3[node] > 0);
+                Assert.True(advanced.Xenon.NodeXe135NumberDensityM3[node] > 0);
+            }
+            node++;
+        }
     }
 
     [Fact]

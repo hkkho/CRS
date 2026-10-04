@@ -9,7 +9,7 @@ import {
   projectChannelToFace,
 } from "./projection";
 
-describe("Phaser front-facing core projection helpers", () => {
+describe("Front-facing core projection helpers", () => {
   const layout = createCoreFaceLayout(40, 120, 1180, 660);
 
   it("keeps the 22 by 22 stepped grid truly orthographic", () => {

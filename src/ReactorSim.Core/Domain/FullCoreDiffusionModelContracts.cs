@@ -200,7 +200,7 @@ namespace ReactorSim.Core
     /// from the selected pack for every live bundle, and delegates the actual
     /// two-group solve to the existing deterministic SpatialEigenSolve.
     /// </summary>
-    public sealed class FullCoreDiffusionModelV1
+    public sealed partial class FullCoreDiffusionModelV1
     {
         private readonly CoreTopology _topology;
         private readonly SpatialStencil _stencil;
@@ -1466,7 +1466,7 @@ namespace ReactorSim.Core
         }
 
         private ContractValidationResult<SpatialCoefficientSet> BuildCoefficientSet(
-            BundleInventory inventory)
+            BundleInventory inventory, BurnupCoefficientValuesV1[]? averagedValues = null)
         {
 #if RUNTIME_PROFILE
             using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("base-coefficients");
@@ -1520,7 +1520,8 @@ namespace ReactorSim.Core
                         lookup.FirstDiagnostic.Message);
                 }
 
-                BurnupCoefficientValuesV1 values = lookup.Value.Coefficients;
+                BurnupCoefficientValuesV1 values = averagedValues == null
+                    ? lookup.Value.Coefficients : averagedValues[node.FlatIndex];
                 nodeCoefficients.Add(new SpatialNodeCoefficients(
                     node.Node,
                     _dataPack.NodeVolumeM3,

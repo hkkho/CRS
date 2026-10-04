@@ -210,7 +210,7 @@ namespace ReactorSim.Game
                 channelDiagnostics,
                 selectedChannelIndex,
                 coupled.SimulationTimeSeconds,
-                DigestHex(coupled.StateDigest));
+                DigestHex(coupled.StateDigest), xenon.Iodine, xenon.Xenon);
         }
         private static string DigestHex(Digest32 digest)
         {

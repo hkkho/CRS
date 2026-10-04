@@ -8,8 +8,8 @@ see [hosting and verification](docs/maintenance/hosting.md).
 
 The player keeps a deterministic practice reactor at useful power, manages average
 LZC level between 10% and 90%, spends a finite fresh-bundle inventory, and builds
-score from stable operation and useful discharged burnup. Reactor Studio and Core
-Designer share one authoritative `GameSession`; the browser never substitutes
+score by keeping channel powers close to their time-average reference. Reactor Studio consumes
+one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
 In Reactor Studio, use **Highest burnup** (`N`) to inspect a candidate and the
@@ -18,26 +18,24 @@ eight bundles with the selected channel’s flow. Adjacent channels have opposit
 flow directions. The power map runs from blue (low) through yellow to red (high).
 A shift ends
 when average LZC level falls below 10% or exceeds 90%, or absolute global tilt
-exceeds 20%. The response card compares local power, tilt,
+exceeds 20%, any channel exceeds 7,300 kW thermal, or any bundle exceeds
+935 kW thermal. Exact power-limit equality is allowed. The response card compares local power, tilt,
 average LZC level, fuel stock, and score; the zone strip shows all fourteen RRS fills.
-Useful discharged burnup earns points, while throwing away fresh fuel costs
-points. Stable operation earns up to one point per simulated hour, so a productive
-fuel move materially affects the score. The [balance report](docs/gameplay/score-balance.md)
-compares three seeds and four strategies. `Space` pauses/resumes; **New shift** resets the run and fuel budget.
+Score measures RMS deviation from the fixed channel targets, earning up to one
+point per simulated hour. Refuelling affects later score through its power response.
+The [scoring policy](docs/gameplay/score-balance.md) and
+[reference derivation](docs/physics/channel-power-reference.md) explain the 2,064 MW
+thermal profile without adjusters. `Space` pauses/resumes; **New shift** resets the run and fuel budget.
 
 The launcher has native **Begin shift**, seed and objective controls. Use Tab and
-Enter/Space throughout play. Designer has native channel/position selectors,
-readable cell measurements, fuel and boundary buttons, solve, zone geometry and
-return controls over the same live session. Both support a 320px-wide layout;
+Enter/Space throughout play. The native interface supports a 320px-wide layout;
 continuous telemetry stays outside screen-reader announcements.
 
 **Reactor Studio** is the primary game interface with a CRT phosphor terminal
 layout, square channel cells, fuel watchlist, axial power/burnup line graphs, and native
-keyboard-accessible controls. **Begin shift** opens Studio. Core Designer returns
-to Studio while preserving history, selected channel, and the automatic
-eight-bundle order.
+keyboard-accessible controls. **Begin shift** opens Studio with an automatic eight-bundle order.
 Resume to apply power targets and pause to step time. The native launcher and
-Studio start without Phaser; opening Designer loads its map on demand. The clock
+Studio use native DOM/SVG presentation. The clock
 shows requested speed and observed simulation minutes per real second, including
 solver waits. History keeps all observations for inspection while reducing drawn
 paths. [Browser measurements and budgets](docs/performance/browser-phase3.md)
@@ -57,16 +55,10 @@ badges belong to the current run and reset when a new run begins.
 
 Before ordering, the fuel strip names the incoming/outgoing ends and marks the
 positions that will leave, with their burnup. Confirmed moves retain bundle
-identities, old/new positions, discharge burnup and score across Designer visits.
+identities, old/new positions, discharge burnup and score throughout the shift.
 Highest burnup lists eligible channels only; a selected nonfuel channel explains
 why it cannot be refuelled. RRS feedback names the controller decision and the
 zone with least drain/fill headroom.
-
-Inspection in Designer preserves a standard run. Accepted fuel, reflective-face
-or zone-geometry edits mark the run **Modified sandbox** for the rest of that
-run, including after restoring the geometry. Sandbox runs remain playable and
-retain score/objective progress, but do not earn the standard challenge badge.
-Reset recreates a standard run with the selected seed and objective.
 
 The tabs show simulation-time line graphs for channel/bundle power peaks,
 thermal/electrical output, discharged burnup, all fourteen zone levels and their
@@ -79,15 +71,10 @@ they remain unavailable until fuel has been discharged.
 The **Iodine & xenon** tab shows core poison inventories and all fourteen
 regional xenon traces. Poison follows bundle history, changes the solved power
 shape, and affects zone fills. See the [gameplay model](docs/physics/iodine-xenon-gameplay.md)
-for the analytic update and authored calibration.
-
-In **Core Designer**, open **Zone geometry** (`Z`) to inspect all twelve axial
-slices of the fourteen control regions and the homogenized absorber masks.
-Paint region boundaries, set or clear absorber slopes, or move a compartment's
-mask independently of its measured region. Draft edits have undo and JSON
-export; **Apply layout & solve** commits through the shared simulation.
-The [zone calibration](docs/physics/zone-calibration.md) documents the current
-6.5 mk worth, positive absorption and balanced aged reference core.
+for the analytic update and authored calibration. The channel inspector plots
+per-bundle iodine and xenon in End A to End B order. Fresh bundles enter with
+zero of both; retained bundles carry their existing inventories. Pausing freezes
+these values; advancing simulation time builds poison in fresh fuel.
 
 The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
@@ -106,7 +93,7 @@ RFSP-inspired channel ages, eight-bundle history and burnup coverage.
 The active product path is intentionally narrow:
 
 ```text
-Native DOM/SVG web client + optional Phaser Designer
+Native DOM/SVG web client
         |
 TypeScript protocol + Web Worker
         |
@@ -119,7 +106,7 @@ ReactorSim.Game
 ReactorSim.Core
 ```
 
-- `web/candu-playtest` owns the native DOM/SVG UI, optional Phaser Designer, browser protocol, worker transport,
+- `web/candu-playtest` owns the native DOM/SVG UI, browser protocol, worker transport,
   smoke test, and deployed reproduction benchmark.
 - `src/ReactorSim.BrowserHost` publishes the .NET browser-WASM host.
 - `src/ReactorSim.Browser` owns the versioned bridge contract.

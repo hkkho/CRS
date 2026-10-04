@@ -18,6 +18,7 @@ export class LauncherView {
       <p class="workspace-kicker">CANDU / ON-POWER REFUELLING</p>
       <h1>Keep the core productive.</h1>
       <p class="launcher-intro">Read the fuel. Choose a channel. Refuel at power and keep room in the regulating zones.</p>
+      <p>Power limits: each channel at or below 7,300 kW and every bundle at or below 935 kW.</p>
       <div class="launcher-grid"><section><h2>Your next shift</h2>
         <p data-field="objective"></p><p data-field="connection"></p>
         <button data-action="begin" class="workspace-primary">Begin shift</button>
@@ -27,7 +28,7 @@ export class LauncherView {
         <label>Shift objective <select data-field="shift"><option value="free-practice">Free practice · 30 days</option><option value="useful-fuel-day-v1">One-day challenge</option></select></label>
         <button data-action="apply" type="submit">Use seed & objective</button></form>
         <button data-action="next">New aged core</button>
-        <p>The same seed recreates the same aged fuel. Designer edits stay playable and mark the run as a modified sandbox.</p>
+        <p>The same seed recreates the same aged fuel. Fresh fuel enters with zero iodine and xenon; retained bundles keep their inventories.</p>
         <p data-field="error"></p>
       </section></div>
       <p class="workspace-kicker">380 CHANNELS · 12 BUNDLE POSITIONS · ONE LIVE REACTOR</p>
@@ -52,7 +53,9 @@ export class LauncherView {
       button.setAttribute("aria-disabled", String(disabled));
       button.disabled = disabled && button !== document.activeElement;
     });
-    this.field("connection").textContent = update.pending ? "Preparing your core…" : ready ? "Live reactor ready." : update.status.detail;
+    this.field("connection").textContent = update.pending ? "Preparing your core…" : ready
+      ? update.snapshot.runStatus === "ended" ? `Starting core has ended: ${update.snapshot.runEndReason}` : "Live reactor ready."
+      : update.status.detail;
     if (wasDisabled && ready && !update.pending && (document.activeElement === document.body || document.activeElement?.tagName === "CANVAS")) this.field("begin").focus({ preventScroll: true });
     const shift = update.snapshot.shift;
     this.field("objective").textContent = shift ? `${shift.title} · seed ${shift.seed} · ${shift.fuelBudget} fresh bundles` : "Waiting for the live core.";

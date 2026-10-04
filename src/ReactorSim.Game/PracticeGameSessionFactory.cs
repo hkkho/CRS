@@ -17,13 +17,17 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-cycle190-650mwe";
+            "candu6-two-group-diffusion-v1-cycle190-650mwe-powerlimits-v2";
         public const double FullCoreDiffusionRecomputeIntervalSeconds = 1_800.0;
         // Burnup integrates thermal fission energy. Electrical output is a
         // separate presentation estimate at the authored conversion ratio.
         public const double PracticeReferenceThermalPowerWatts = 2_064_000_000.0;
         public const double PracticeReferenceElectricalPowerWatts = 650_000_000.0;
         public const double PracticeReferencePowerWatts = PracticeReferenceThermalPowerWatts;
+        private static readonly Lazy<PracticeChannelPowerReference> ChannelReference =
+            new Lazy<PracticeChannelPowerReference>(() => PracticeChannelPowerReference.Create(
+                Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6()), PracticeReferencePowerWatts));
+        public static PracticeChannelPowerReference ReferenceChannelPower => ChannelReference.Value;
 
         public static GameSession Create(ulong seed = 1001)
         {

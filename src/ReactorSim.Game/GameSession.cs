@@ -235,7 +235,8 @@ namespace ReactorSim.Game
             }
 
             ulong acceptedWallMilliseconds = wallMilliseconds;
-            if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate))
+            if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate,
+                transaction.Value.OperatingPowerAmplitude))
             {
                 ContractValidationResult<ulong> terminalWallMilliseconds =
                     TryFindTerminalWallMilliseconds(wallMilliseconds);
@@ -577,26 +578,34 @@ namespace ReactorSim.Game
                 _lastRefuellingScore,
                 new ShiftProgress(_challenge, _runtime.Seed, _runtime.ScenarioHorizonSeconds,
                     _runtime.SimulationTimeSeconds, IsRunTerminal,
-                    _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection),
+                    _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,
+                        _runtime.NormalizedPowerFraction),
                     _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
                     _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0),
-                _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons));
+                _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
+                new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
+                    CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude));
         }
 
-        private bool IsRunTerminal => HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection) ||
+        private bool IsRunTerminal => HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,
+            _runtime.NormalizedPowerFraction) ||
             _runtime.Outcome != PracticeRunOutcome.Running;
 
-        private static string OperatingEndReason(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection)
+        private static string OperatingEndReason(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection,
+            double powerAmplitude)
             => PracticeOperatingLimits.EndReason(rrs.AverageFillFraction,
-                GamePresentationProjector.ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux));
+                GamePresentationProjector.ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux),
+                projection.ShapeChannelPowerWatts.Max() * Clamp(powerAmplitude, 0, 1.5),
+                projection.ShapeNodePowerWatts.Max() * Clamp(powerAmplitude, 0, 1.5));
 
-        private static bool HasOperatingLoss(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection)
-            => rrs.IsGameOver || OperatingEndReason(rrs, projection).Length > 0;
+        private static bool HasOperatingLoss(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection,
+            double powerAmplitude)
+            => rrs.IsGameOver || OperatingEndReason(rrs, projection, powerAmplitude).Length > 0;
 
         private string RunEndReason => _practiceRrs.IsGameOver
             ? _practiceRrs.GameOverReason
-            : OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection).Length > 0
-                ? OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection)
+            : OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection, _runtime.NormalizedPowerFraction).Length > 0
+                ? OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection, _runtime.NormalizedPowerFraction)
             : _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon
                 ? _challenge ? "Challenge day completed" : "Practice horizon completed"
                 : _runtime.Outcome != PracticeRunOutcome.Running
@@ -617,7 +626,7 @@ namespace ReactorSim.Game
 
         private string RefuellingIneligibilityReason(uint channelIndex) =>
             _nonfuelNodes.Any(node => node.ChannelId.Value == channelIndex)
-                ? "This channel contains configured nonfuel cells. Restore every cell to fuel in Core Designer before refuelling."
+                ? "This channel contains configured nonfuel cells and cannot be refuelled."
                 : string.Empty;
 
         private ContractValidationResult<GameRefuellingResultV1> TryRefuel(
@@ -883,9 +892,9 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Message);
                         }
 
-                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate))
+                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate, requestedAmplitude))
                         {
-                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
+                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, requestedAmplitude));
                         }
 
                         if (scheduled.Value)
@@ -971,13 +980,9 @@ namespace ReactorSim.Game
 
                     transaction.PowerProjectionVersion = nextProjectionVersion.Value;
                     double averagePowerScale = integratedPowerScale / stepSeconds;
-                    double actualPowerFraction =
-                        transaction.SpatialCandidate.ShapePowerWatts * averagePowerScale /
-                        PracticeGameSessionFactory.PracticeReferencePowerWatts;
-                    transaction.SyntheticScore += PracticeScoring.OperatingPointsFromReadings(
-                        stepSeconds, actualPowerFraction,
-                        GamePresentationProjector.ComputeSignedAxialTiltFraction(
-                            transaction.SpatialCandidate.SpatialSolve.Group2Flux));
+                    transaction.SyntheticScore += PracticeScoring.OperatingPoints(stepSeconds,
+                        PracticeScoring.RmsRipple(transaction.SpatialCandidate.ShapeChannelPowerWatts,
+                            PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, averagePowerScale));
                     simulationCursor = stepEnd;
                     if (simulationCursor - transaction.LastFullCoreSolveSimulationTime >=
                         PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds - 1e-9)
@@ -992,10 +997,14 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Message);
                         }
 
-                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate))
+                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate, requestedAmplitude))
                         {
-                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
+                            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, requestedAmplitude));
                         }
+                    }
+                    if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate, requestedAmplitude))
+                    {
+                        return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, requestedAmplitude));
                     }
                 }
             }
@@ -1041,7 +1050,8 @@ namespace ReactorSim.Game
                         transaction.FirstDiagnostic.Message);
                 }
 
-                if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate))
+                if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate,
+                    transaction.Value.OperatingPowerAmplitude))
                 {
                     upperBound = midpoint;
                 }

@@ -13,6 +13,16 @@ function snapshot(channels: CanduChannelSnapshot[]): CanduSnapshot {
 }
 
 describe("gameplay presentation", () => {
+  it("compares shared ripple readings after refuelling without deriving a score", () => {
+    const before = snapshot([channel(3, 6)]), after = snapshot([channel(3, 5)]);
+    before.ripple = { channelRippleFractions: [1, 1, 1, 1.1], rmsDeviationFraction: 0.1, pointsPerHour: 0.5 } as CanduSnapshot['ripple'];
+    after.ripple = { channelRippleFractions: [1, 1, 1, 1.05], rmsDeviationFraction: 0.05, pointsPerHour: 0.8 } as CanduSnapshot['ripple'];
+    const text = refuelImpactText(before, after, 3);
+    expect(text).toContain('110.00% → 105.00% (target 100%)');
+    expect(text).toContain('RMS ripple  10.00% → 5.00%');
+    expect(text).toContain('Ripple points/hour  0.500 → 0.800');
+    expect(text).not.toContain('Discharge reward');
+  });
   it("ranks burnup deterministically without reordering the snapshot or selecting empty cells", () => {
     const channels = [channel(9, 7), channel(1, 100, false), channel(3, 7)];
     expect(highestBurnupChannel(channels)).toBe(3);

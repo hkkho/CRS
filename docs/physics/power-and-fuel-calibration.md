@@ -1,5 +1,9 @@
 # Power and fuel calibration
 
+The active pack now also includes the [power-limit spatial rebalance](power-limit-balance.md).
+Numerical benchmark results below describe the earlier pack and retain their
+original provenance. Thermal output and the authored fuel cycle remain unchanged.
+
 The user-confirmed reference is 650 MW electrical and 2,064 MW thermal.
 `PracticeReferencePowerWatts` remains an alias for the thermal reference.
 Core burnup integrates thermal fission energy in joules. The Game physics

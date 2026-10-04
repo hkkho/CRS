@@ -1,5 +1,5 @@
-/** Exercise the primary Studio view, history tabs and Designer in one live run. */
-export async function verifyStudio(page, verifyGeometry) {
+/** Exercise the primary Studio view, history tabs and bundle poison in one live run. */
+export async function verifyStudio(page) {
   const check = (condition, message) => { if (!condition) throw new Error(message); };
   const studio = page.locator('.reactor-studio');
   await studio.waitFor({ state: 'visible' });
@@ -23,9 +23,19 @@ export async function verifyStudio(page, verifyGeometry) {
   await studio.locator('[data-action="refuel"]').click();
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
   check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 120'), 'Studio fuel impact is missing.');
-  check((await studio.locator('[data-field="impact"]').textContent()).includes('Fresh fuel cost  −12.0'), 'Authoritative score breakdown is missing.');
+  check((await studio.locator('[data-field="impact"]').textContent()).includes('RMS ripple'), 'Authoritative ripple response is missing.');
+  check((await studio.locator('[data-field="ripple-score"]').textContent()).includes('points/h'), 'Live ripple score rate is missing.');
+  check((await studio.locator('[data-field="channel-reference"]').textContent()).includes('MW / reference'), 'Selected channel reference is missing.');
   check((await studio.locator('[data-field="movement-result"]').textContent()).includes('Confirmed move #1'), 'Confirmed identity summary is missing.');
-  check(await studio.locator('[data-axial]').count() === 2, 'Axial power/burnup graphs are missing.');
+  check(await studio.locator('[data-axial]').count() === 4, 'Axial power/burnup/iodine/xenon graphs are missing.');
+  const cleanPositions = await studio.locator('[data-confirmed="inserted"]').allTextContents();
+  check(cleanPositions.length === 8, 'Refuel did not publish eight inserted bundles.');
+  for (const label of cleanPositions) {
+    const position = Number(label.replace('New ', '')) - 1;
+    for (const metric of ['iodine', 'xenon']) {
+      check((await studio.locator(`[data-axial="${metric}"] [data-axial-position="${position}"] title`).textContent()).includes(': 0.00 '), `Fresh bundle ${position + 1} has ${metric}.`);
+    }
+  }
   if (process.env.PLAYTEST_CAPTURE_DIR) {
     await studio.locator('[data-field="movement-result"]').scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${process.env.PLAYTEST_CAPTURE_DIR}/studio-movement.png` });
@@ -58,43 +68,15 @@ export async function verifyStudio(page, verifyGeometry) {
   check(sampleCount >= 2, 'Advancing time did not record history.');
   await studio.locator('[data-history="window"]').selectOption('21600');
   await studio.locator('[data-history="inspector"]').fill('0');
-  check((await studio.locator('[data-history="readout"]').textContent()).includes('inspecting'), 'Sample inspection failed.');
+  check((await studio.locator('[data-history="readout"]').textContent()).includes('HISTORY'), 'Sample inspection failed.');
+  check(await studio.locator('[data-action="refuel"]').isDisabled(), 'Historical data allowed refuelling.');
   await studio.locator('[data-history="live"]').click();
   check((await studio.locator('[data-history="readout"]').textContent()).includes('latest'), 'Latest reading failed.');
-  const retainedImpact = await studio.locator('[data-field="impact"]').textContent();
-  const retainedFeedback = await studio.locator('[data-field="feedback"]').textContent();
-  await studio.locator('[data-action="designer"]').click();
-  await studio.waitFor({ state: 'detached' });
-    const canvas = page.locator('.designer-stage canvas');
-    await canvas.waitFor({ state: 'visible' });
-    check(await canvas.evaluate(node => node.width === 1600 && node.height === 900), 'Designer canvas dimensions changed.');
-  await page.waitForTimeout(200);
-  const zoneLayout = verifyGeometry ? await verifyGeometry() : null;
-  await page.keyboard.press('Escape');
-  await studio.waitFor({ state: 'visible' });
-  check(await studio.locator('[data-field="impact"]').textContent() === retainedImpact, 'Designer return lost the fuel impact.');
-  check(await studio.locator('[data-field="feedback"]').textContent() === retainedFeedback, 'Designer return lost the response feedback.');
-  for (let cycle = 0; cycle < 3; cycle++) {
-    await studio.locator('[data-action="designer"]').click();
-    await studio.waitFor({ state: 'detached' });
-    await page.locator('.designer-stage canvas').waitFor({ state: 'visible' });
-    await page.locator('.designer-controls').waitFor({ state: 'visible' });
-    await page.keyboard.press('Escape');
-    await studio.waitFor({ state: 'visible' });
-    check(await studio.locator('[data-tab="power"]').getAttribute('aria-selected') === 'true', 'Repeated navigation lost the selected tab.');
-    check(await studio.locator('[data-field="refuel"]').textContent() === 'Refuel 8 bundles →', 'Repeated navigation lost the eight-bundle order.');
-    check(await studio.locator('[data-field="direction"]').textContent() === direction, 'Repeated navigation lost the draft direction.');
-    check(await studio.locator('[data-field="impact"]').textContent() === retainedImpact, 'Repeated navigation lost the impact summary.');
-    check(await studio.evaluate(element => element === document.activeElement), 'Return did not focus Studio.');
-  }
-  check((await studio.locator('[data-field="movement-result"]').textContent()).includes('Confirmed move #1'), 'Designer return lost the movement summary.');
-  if (verifyGeometry) check(await studio.getAttribute('data-run-kind') === 'modified-sandbox', 'Accepted geometry edit is presented as a standard run.');
-  check(await studio.locator('[data-tab="power"]').getAttribute('aria-selected') === 'true', 'Designer return lost the history tab.');
-  check(Number(await studio.locator('[data-history="inspector"]').getAttribute('max')) >= sampleCount, 'Designer return lost the history.');
+  check(await studio.locator('[data-action="designer"]').count() === 0, 'Removed core designer is still offered.');
+  check(await page.locator('canvas').count() === 0, 'Removed designer canvas is still loaded.');
   await studio.locator('[data-tab="reactor"]').click();
-  check(await studio.locator('[data-field="channel"]').textContent() === chosen, 'Designer return lost the selected channel.');
-  check(await studio.locator('[data-field="direction"]').textContent() === direction, 'Designer return lost refuel direction.');
-  check(await studio.locator('[data-field="refuel"]').textContent() === 'Refuel 8 bundles →', 'Designer return lost the eight-bundle order.');
+  check(await studio.locator('[data-field="channel"]').textContent() === chosen, 'History tabs lost the selected channel.');
+  check(await studio.locator('[data-field="direction"]').textContent() === direction, 'History tabs lost refuel direction.');
   for (const width of [1600, 1280, 720]) {
     await page.setViewportSize({ width, height: width === 1600 ? 900 : 720 });
       check(await studio.evaluate(element => element.scrollWidth <= element.clientWidth), `Studio overflows at ${width}px.`);
@@ -121,5 +103,5 @@ export async function verifyStudio(page, verifyGeometry) {
   await studio.locator('[data-action="refuel"]').click();
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
   check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 120'), 'First post-reset fuel move did not publish its impact.');
-  return { channels: 380, zones: 14, historyTabs: 7, refuel: 'accepted', sessionPreserved: true, historyReset: true, desktopSizes: ['1600x900', '1280x720', '720x720'], zoneLayout };
+  return { channels: 380, zones: 14, historyTabs: 7, refuel: 'accepted', sessionPreserved: true, historyReset: true, desktopSizes: ['1600x900', '1280x720', '720x720'], freshBundlePoison: 'zero' };
 }

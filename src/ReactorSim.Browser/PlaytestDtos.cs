@@ -43,6 +43,7 @@ namespace ReactorSim.Browser
         public PlaytestSnapshotPatchDto? SnapshotPatch { get; set; }
 
         public PlaytestCoreDto? CoreReplacement { get; set; }
+        public PlaytestCoreMeasurementsDto? CoreMeasurements { get; set; }
 
         public string StateDigest { get; set; } = string.Empty;
 
@@ -52,6 +53,14 @@ namespace ReactorSim.Browser
 
         public List<PlaytestDiagnosticDto> Diagnostics { get; set; } =
             new List<PlaytestDiagnosticDto>();
+    }
+
+    internal sealed class PlaytestCoreMeasurementsDto
+    {
+        public double[] BundleBurnupMwdPerKg { get; set; } = Array.Empty<double>();
+        public ulong[] BundleStateVersions { get; set; } = Array.Empty<ulong>();
+        public bool[] BundleIsFresh { get; set; } = Array.Empty<bool>();
+        public double[] ChannelAverageBurnupMwdPerKg { get; set; } = Array.Empty<double>();
     }
 
     /// <summary>
@@ -86,6 +95,7 @@ namespace ReactorSim.Browser
         public ShiftProgress Shift { get; set; } = null!;
 
         public string ScorePolicyId { get; set; } = PracticeScoring.PolicyId;
+        public ChannelRippleSnapshot Ripple { get; set; } = null!;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public RefuellingScoreBreakdown? LastRefuellingScore { get; set; }
@@ -175,6 +185,7 @@ namespace ReactorSim.Browser
         public ShiftProgress Shift { get; set; } = null!;
 
         public string ScorePolicyId { get; set; } = PracticeScoring.PolicyId;
+        public ChannelRippleSnapshot Ripple { get; set; } = null!;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.Never)]
         public RefuellingScoreBreakdown? LastRefuellingScore { get; set; }
@@ -297,6 +308,8 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestXenonDto
     {
+        public IReadOnlyList<double> NodeI135NumberDensityM3 { get; set; } = Array.Empty<double>();
+        public IReadOnlyList<double> NodeXe135NumberDensityM3 { get; set; } = Array.Empty<double>();
         public double CoupledSimulationTimeSeconds { get; set; }
         public string CoupledStateDigestHex { get; set; } = string.Empty;
         public string StateIdentity { get; set; } = string.Empty;
