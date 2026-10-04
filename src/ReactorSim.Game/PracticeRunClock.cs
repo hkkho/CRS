@@ -104,9 +104,10 @@ namespace ReactorSim.Game
                     candidate.targets.Clear();
                     if (candidate.Outcome != PracticeRunOutcome.Running) break;
                     double start = candidate.SimulationTimeSeconds;
-                    candidate.SimulationTimeSeconds = Math.Min(ScenarioHorizonSeconds, start + AccelerationFactor * timeModel.WallControlTickSeconds);
+                    double end = start + AccelerationFactor * timeModel.WallControlTickSeconds;
+                    candidate.SimulationTimeSeconds = ScenarioHorizonSeconds > 0 ? Math.Min(ScenarioHorizonSeconds, end) : end;
                     if (candidate.SimulationTimeSeconds > start) segments.Add(new PracticeRunSegment(start, candidate.SimulationTimeSeconds, candidate.NormalizedPowerFraction));
-                    if (candidate.SimulationTimeSeconds >= ScenarioHorizonSeconds) candidate.Outcome = PracticeRunOutcome.SurvivedScenarioHorizon;
+                    if (ScenarioHorizonSeconds > 0 && candidate.SimulationTimeSeconds >= ScenarioHorizonSeconds) candidate.Outcome = PracticeRunOutcome.SurvivedScenarioHorizon;
                 }
                 if (candidate.Outcome != PracticeRunOutcome.Running) break;
             }

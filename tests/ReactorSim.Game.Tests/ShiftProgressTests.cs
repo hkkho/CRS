@@ -7,6 +7,28 @@ namespace ReactorSim.Game.Tests;
 
 public sealed class ShiftProgressTests
 {
+    [Fact]
+    public void MainBrowserRunIsStandardEndlessAndTracksUnlimitedFuelConsumption()
+    {
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        Assert.True(session.Snapshot.Shift.IsEndless);
+        Assert.True(session.Snapshot.Shift.UnlimitedFreshFuel);
+        Assert.Equal(0, session.Snapshot.Shift.HorizonSeconds);
+        Assert.Equal(0u, session.Snapshot.Shift.FuelBudget);
+        Assert.False(session.Snapshot.Provenance.IsModified);
+        var moved = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
+        Assert.True(moved.Accepted, moved.DiagnosticMessage);
+        Assert.Equal(8u, moved.Snapshot.Shift.FuelConsumed);
+        Assert.True(session.AdvanceWallMilliseconds(1000).Accepted);
+        Assert.True(session.CoreState.UnlimitedFreshFuel);
+        Assert.False(session.Snapshot.IsGameOver);
+        var challenge = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true).Snapshot;
+        Assert.False(challenge.Shift.IsEndless);
+        Assert.False(challenge.Shift.UnlimitedFreshFuel);
+        Assert.Equal(128u, challenge.FreshBundlesAvailable);
+        Assert.Equal(86400, challenge.Shift.HorizonSeconds);
+    }
+
     [Theory]
     [InlineData(false, false, 8u, "in-progress", false)]
     [InlineData(true, false, 8u, "ended", false)]

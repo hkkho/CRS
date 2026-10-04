@@ -6,6 +6,21 @@ namespace ReactorSim.Game.Tests;
 
 public sealed class PracticeRunClockTests
 {
+    [Fact]
+    public void EndlessClockContinuesPastOneHundredDaysAndStillHonorsOperatingLoss()
+    {
+        var model = Phase8TimeModelV1.TryCreate(100, 518400, 864000, 5184000, true).Value;
+        var mode = Phase8PlaybackModeV1.TryCreate("test", 864000, model).Value;
+        var clock = new PracticeRunClock("test", 1001, 0, model, mode);
+        Assert.True(clock.TryCommitAdvance(clock.TryPlanAdvanceWallMilliseconds(10200).Value).IsValid);
+        Assert.Equal(102 * 86400, clock.SimulationTimeSeconds);
+        Assert.Equal(PracticeRunOutcome.Running, clock.Outcome);
+        clock.TryQueuePowerTarget(.7);
+        Assert.True(clock.TryCommitAdvance(clock.TryPlanAdvanceWallMilliseconds(100).Value).IsValid);
+        Assert.Equal(PracticeRunOutcome.RecordLoss, clock.Outcome);
+        Assert.Equal(102 * 86400, clock.SimulationTimeSeconds);
+    }
+
     private static PracticeRunClock Create(double horizon = 600)
     {
         var model = Phase8TimeModelV1.TryCreate(100, 6, 10, 60, true).Value;

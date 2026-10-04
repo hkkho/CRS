@@ -23,11 +23,11 @@ export class StudioStatusView {
       if (action === "step") button.disabled ||= !snapshot.isPaused || isRunTerminal(snapshot);
       if (action === "target") button.disabled ||= snapshot.isPaused;
       if (["pause", "speed", "target"].includes(action ?? "")) button.disabled ||= isRunTerminal(snapshot);
-      if (action === "refuel") button.disabled ||= !isChannelRefuellable(channel) || !canIssueRefuel(draft, snapshot.freshBundlesAvailable, pending);
+      if (action === "refuel") button.disabled ||= !isChannelRefuellable(channel) || !canIssueRefuel(draft, snapshot.freshBundlesAvailable, pending, snapshot.shift?.unlimitedFreshFuel);
       if (action === "map") button.setAttribute("aria-pressed", String(button.dataset.map === mapMode));
       if (action === "speed") button.setAttribute("aria-pressed", String(button.dataset.speed === snapshot.playbackModeId && !snapshot.isPaused));
     });
     this.text("refuel", historical ? "Return to live to refuel" : isRunTerminal(snapshot) ? "Shift complete" : "Refuel 8 bundles →");
-    this.text("order-note", !isChannelRefuellable(channel) ? channel?.refuellingIneligibilityReason || "This channel contains nonfuel cells and cannot be refuelled." : snapshot.freshBundlesAvailable < 8 ? "Not enough fresh fuel. Start a new shift to restock." : `Cost: 8 fresh bundles · ${snapshot.freshBundlesAvailable} in stock${channel ? ` · ${channelHeadroom(snapshot, channel)}` : ""}`);
+    this.text("order-note", !isChannelRefuellable(channel) ? channel?.refuellingIneligibilityReason || "This channel contains nonfuel cells and cannot be refuelled." : !snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8 ? "Not enough fresh fuel. Start a new shift to restock." : `Cost: 8 fresh bundles · ${snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${snapshot.freshBundlesAvailable} in stock`}${channel ? ` · ${channelHeadroom(snapshot, channel)}` : ""}`);
   }
 }

@@ -293,6 +293,8 @@ export interface ShiftProgress {
   objective: string;
   horizonSeconds: number;
   remainingSeconds: number;
+  isEndless?: boolean;
+  unlimitedFreshFuel?: boolean;
   fuelBudget: number;
   fuelConsumed: number;
   usefulBundlesDischarged: number;
@@ -1211,6 +1213,10 @@ function isRunProvenance(value: unknown): boolean {
 
 function isShiftProgress(value: unknown): value is ShiftProgress {
   return isRecord(value) && ["free-practice", "useful-fuel-day-v1"].includes(value.id as string) &&
+    (value.isEndless === undefined || isBoolean(value.isEndless)) &&
+    (value.unlimitedFreshFuel === undefined || isBoolean(value.unlimitedFreshFuel)) &&
+    (value.isEndless !== true || (value.horizonSeconds === 0 && value.remainingSeconds === 0)) &&
+    (value.unlimitedFreshFuel !== true || value.fuelBudget === 0) &&
     hasStringFields(value, ["title", "objective", "reward"]) &&
     hasFiniteNumberFields(value, ["horizonSeconds", "remainingSeconds", "usefulBurnupThresholdMwdPerKg",
       "thermalEnergyMwh", "electricalEnergyMwhEstimate", "dischargeReward", "freshFuelCost", "operatingPoints"]) &&

@@ -44,13 +44,13 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
     ...(after.rrs.decisionExplanation ? [`RRS decision  ${after.rrs.decisionExplanation}`,
       `Regulating residual  ${after.rrs.controlledBaselineWeightedResidual.toExponential(2)} → ${after.rrs.combinedWeightedResidual.toExponential(2)} (this solve)`] : []),
     `LZC average level  ${(before.rrs.averageFillFraction * 100).toFixed(1)}% → ${(after.rrs.averageFillFraction * 100).toFixed(1)}%`,
-    `Fresh fuel   ${before.freshBundlesAvailable} → ${after.freshBundlesAvailable} bundles`,
+    after.shift?.unlimitedFreshFuel ? `Fresh fuel   Unlimited · ${after.lastFuelMovement?.plan.shiftCount ?? 8} bundles used` : `Fresh fuel   ${before.freshBundlesAvailable} → ${after.freshBundlesAvailable} bundles`,
     `Core power   ${getPowerLabel(before.physics.actualPowerFraction)} → ${getPowerLabel(after.physics.actualPowerFraction)} (regulated)`,
   ].join("\n");
 }
 
 export function operationGuidance(snapshot: CanduSnapshot): string {
   if (isRunTerminal(snapshot)) return `${snapshot.runEndReason || snapshot.rrs.gameOverReason || "Run complete"} — start a new shift to try a different fuel strategy.`;
-  if (snapshot.freshBundlesAvailable < 8) return "Fuel budget spent — keep running for ripple score, or start a new shift.";
+  if (!snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8) return "Fuel budget spent — keep running for ripple score, or start a new shift.";
   return "Inspect burnup → refuel 8 bundles with channel flow → compare the response. Keep LZC average level between 10% and 90%, global tilt within ±20%, channel power at or below 7,300 kW, and every bundle at or below 935 kW.";
 }

@@ -581,7 +581,8 @@ namespace ReactorSim.Game
                     _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,
                         _runtime.NormalizedPowerFraction),
                     _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
-                    _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0),
+                    _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0,
+                    _coreState.UnlimitedFreshFuel),
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
                 new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
                     CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude));
@@ -1155,8 +1156,8 @@ namespace ReactorSim.Game
                 : result.DischargedBundles.Average(
                     bundle => bundle.CurrentBurnupJPerKgHm /
                               GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
-            string inventory = "; " + _coreState.FreshBundlesAvailable.ToString(CultureInfo.InvariantCulture) +
-                               " fresh bundles remain";
+            string inventory = _coreState.UnlimitedFreshFuel ? "; unlimited fresh fuel" :
+                "; " + _coreState.FreshBundlesAvailable.ToString(CultureInfo.InvariantCulture) + " fresh bundles remain";
             return "Channel " + result.ChannelIndex.ToString(CultureInfo.InvariantCulture) +
                    " refuelled toward " + endName + " with " +
                    result.ShiftCount.ToString(CultureInfo.InvariantCulture) + " " +

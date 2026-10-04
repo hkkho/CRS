@@ -392,6 +392,7 @@ async function captureSnapshot(page, channelIndex, stateDigest, replayDigest) {
     const semanticSha256 = await helpers.sha256Hex(semantic);
     return {
       summary: helpers.compactSnapshotSummary(snapshot, selectedChannelIndex),
+      unlimitedFreshFuel: snapshot.shift?.unlimitedFreshFuel === true,
       semanticSha256,
       semanticJson: semanticSha256 === null ? semantic : undefined,
       semanticBytes: new TextEncoder().encode(semantic).byteLength,
@@ -545,7 +546,7 @@ async function runCase(page, definition, initialization) {
     throw new Error(`${definition.caseId} after snapshot sequence did not match the compact response.`);
   }
   if (after.summary.freshBundlesAvailable !==
-      before.summary.freshBundlesAvailable - definition.shiftCount) {
+      (after.unlimitedFreshFuel ? before.summary.freshBundlesAvailable : before.summary.freshBundlesAvailable - definition.shiftCount)) {
     throw new Error(`${definition.caseId} did not consume the requested fresh inventory.`);
   }
   if (after.summary.refuellingOperationCount !== before.summary.refuellingOperationCount + 1) {

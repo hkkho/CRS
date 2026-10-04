@@ -15,7 +15,7 @@ public sealed class LiveCoreDesignerGameSessionTests
     [Fact]
     public void ConfiguringLiveCellChangesTheAuthoritativeCoreSolve()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest();
         GameSessionSnapshot before = session.Snapshot;
         double beforeFlux = session.GetCellGroup1Flux(Channel, Position);
         double beforeChannelPower = before.Core.GetChannel(Channel).PowerWatts;
@@ -48,7 +48,7 @@ public sealed class LiveCoreDesignerGameSessionTests
     [Fact]
     public void LiveCoreConfigurationSurvivesRefuelAndHourlyRecompute()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest();
         GameSessionCommandResult configured = session.ConfigureCell(
             Channel,
             Position,
@@ -79,7 +79,7 @@ public sealed class LiveCoreDesignerGameSessionTests
     [Fact]
     public void NonfuelCellBlocksChannelRefuelUntilFuelIsRestored()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest();
         GameSessionCommandResult configured = session.ConfigureCell(
             Channel,
             Position,
@@ -133,7 +133,7 @@ public sealed class LiveCoreDesignerGameSessionTests
     [Fact]
     public void InvalidLiveCoreConfigurationRollsBackAtomically()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest();
         GameSessionSnapshot before = session.Snapshot;
         EquilibriumCoreProjectionV1 beforeProjection = session.CurrentEquilibriumProjection;
         bool beforeFuel = session.IsFuelCell(Channel, Position);
@@ -159,7 +159,7 @@ public sealed class LiveCoreDesignerGameSessionTests
     [Fact]
     public void DefaultLiveCoreIsAllFuelWithNoReflectiveOverrides()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest();
 
         Assert.True(session.IsFuelCell(Channel, Position));
         Assert.Empty(session.GetReflectiveFaces(Channel, Position));

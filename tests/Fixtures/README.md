@@ -21,4 +21,6 @@ acceptance baseline for Phase 4.
 The current wire fixtures include the with-flow aged-core orientation, two
 eight-bundle plans, automatic channel-flow orders, and LZC average-level
 diagnostics. They were deliberately regenerated for these gameplay changes.
+The main-game fixtures now include explicit endless and unlimited-fuel flags,
+zero numeric sentinels, and fuel-consumption accounting.
 The original Phase 4 hashes remain a historical refactor baseline.

@@ -50,6 +50,20 @@ function harness() {
 }
 
 describe("Reactor Studio live interface", () => {
+  it("presents unlimited fuel and endless time while permitting refuelling with the zero stock sentinel", () => {
+    const { view, session, emit, button } = harness();
+    session.snapshot = { ...session.snapshot, freshBundlesAvailable: 0,
+      shift: { ...createShift(), isEndless: true, unlimitedFreshFuel: true, horizonSeconds: 0, remainingSeconds: 0, fuelBudget: 0, fuelConsumed: 160 } };
+    emit();
+    expect(view.element.querySelector('[data-field="stock"]')!.textContent).toBe("∞");
+    expect(view.element.querySelector('[data-field="remaining"]')!.textContent).toBe("Endless run · Unlimited fresh fuel");
+    expect(view.element.querySelector('[data-field="fuel-used"]')!.textContent).toBe("160 bundles");
+    expect(view.element.querySelector('[data-field="order-note"]')!.textContent).toContain("Unlimited fresh fuel");
+    expect(button("refuel").disabled).toBe(false);
+    button("refuel").click();
+    expect(session.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-refuel" }));
+  });
+
   it("uses separate absolute, ripple and peak-bundle maps with operating-limit colors", () => {
     const { view, session, emit, button } = harness();
     session.snapshot = { ...session.snapshot, ripple: { referenceId: "test", dataPackVersion: "test", coefficientBindingDigestHex: "a".repeat(64),

@@ -42,13 +42,24 @@ namespace ReactorSim.Game
 
         public static GameSession CreateBrowserPlaytest(ulong seed = 1001, bool challenge = false)
         {
+            return CreateBrowserSession(seed, challenge, !challenge);
+        }
+
+        /// <summary>Retained bounded configuration for offline comparisons and scenario fixtures.</summary>
+        public static GameSession CreateBoundedBrowserPlaytest(ulong seed = 1001, bool challenge = false)
+        {
+            return CreateBrowserSession(seed, challenge, false);
+        }
+
+        private static GameSession CreateBrowserSession(ulong seed, bool challenge, bool endless)
+        {
             return CreateSession(
                 BrowserBaseSimulationSecondsPerWallSecond,
                 BrowserBaseSimulationSecondsPerWallSecond * 10.0,
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0,
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
-                challenge ? 24.0 * 60.0 * 60.0 : BrowserScenarioHorizonSeconds,
-                RealTimePlaybackModeId, seed, challenge);
+                endless ? 0 : challenge ? 24.0 * 60.0 * 60.0 : BrowserScenarioHorizonSeconds,
+                RealTimePlaybackModeId, seed, challenge, endless);
         }
 
         private static GameSession CreateSession(
@@ -59,7 +70,8 @@ namespace ReactorSim.Game
             double scenarioHorizonSeconds,
             string initialPlaybackModeId,
             ulong seed,
-            bool challenge = false)
+            bool challenge = false,
+            bool unlimitedFreshFuel = false)
         {
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
@@ -89,6 +101,7 @@ namespace ReactorSim.Game
             FullCoreDiffusionModelV1 fullCoreModel = Require(
                 FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
             SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreateAgedPractice(seed);
+            if (unlimitedFreshFuel) coreState = coreState.WithUnlimitedFreshFuel();
             EquilibriumCoreSolverV1 equilibriumSolver = Require(
                 EquilibriumCoreSolverV1.TryCreate(
                     fullCoreModel,

@@ -24,8 +24,9 @@ export function canIssueRefuel(
   draft: RefuelDraft | null,
   freshBundlesAvailable: number,
   commandPending: boolean,
+  unlimitedFreshFuel = false,
 ): draft is RefuelDraft {
-  return draft !== null && !commandPending && freshBundlesAvailable >= draft.shiftCount;
+  return draft !== null && !commandPending && (unlimitedFreshFuel || freshBundlesAvailable >= draft.shiftCount);
 }
 
 export function formatRefuelDirection(direction: RefuelRequest["directionId"]): string {

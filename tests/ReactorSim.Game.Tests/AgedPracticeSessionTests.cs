@@ -35,7 +35,8 @@ public sealed class AgedPracticeSessionTests
         // The flatter power-limit pack gives this old-channel pair less worth
         // than the former peaked core; fresh fuel still raises zone levels.
         Assert.InRange(fuelledFill - beforeFill, 0.03, 0.10);
-        Assert.Equal(112U, session.Snapshot.FreshBundlesAvailable);
+        Assert.True(session.Snapshot.Shift.UnlimitedFreshFuel);
+        Assert.Equal(0U, session.Snapshot.FreshBundlesAvailable);
         var burned = session.AdvanceWallMilliseconds(1000);
         Assert.True(burned.Accepted, burned.DiagnosticMessage);
         Assert.Equal(14.5 * 3600, session.Snapshot.SimulationTimeSeconds);
@@ -81,6 +82,7 @@ public sealed class AgedPracticeSessionTests
         Assert.True(double.IsFinite(session.Snapshot.AxialTiltFraction));
         var refuel = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         Assert.True(refuel.Accepted, refuel.DiagnosticMessage);
-        Assert.Equal(120U, refuel.Snapshot.FreshBundlesAvailable);
+        Assert.Equal(0U, refuel.Snapshot.FreshBundlesAvailable);
+        Assert.True(refuel.Snapshot.Shift.UnlimitedFreshFuel);
     }
 }

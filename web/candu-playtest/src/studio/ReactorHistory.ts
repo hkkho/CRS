@@ -21,7 +21,7 @@ export interface ReactorHistoryPoint {
   reactivityMk: number;
   coreReactivityMk: number;
   reservePercent: number;
-  freshBundles: number;
+  freshBundles: number | null;
   score: number;
   operations: number;
   meanIodine: number | null;
@@ -86,7 +86,7 @@ export class ReactorHistory {
       reactivityMk: snapshot.physics.reactivity * 1000,
       coreReactivityMk: snapshot.rrs.coreReactivity * 1000,
       reservePercent: snapshot.rrsReserveFraction * 100,
-      freshBundles: snapshot.freshBundlesAvailable,
+      freshBundles: snapshot.shift?.unlimitedFreshFuel ? null : snapshot.freshBundlesAvailable,
       score: snapshot.scoreTotal,
       operations: snapshot.refuellingOperationCount,
       meanIodine: snapshot.xenon?.hasCoupling ? snapshot.xenon.meanI135NumberDensityM3 / 1e20 : null,

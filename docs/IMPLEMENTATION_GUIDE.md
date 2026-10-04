@@ -51,7 +51,9 @@ the objective but cannot earn the standard badge. Consumers must use
 ## Shift objectives and endings
 
 Game publishes immutable `ShiftProgress` in full and compact browser snapshots.
-Free practice retains its 30-day horizon and existing inventory/scoring. The
+Free practice is endless with unlimited fresh fuel and unchanged scoring. Game
+publishes `IsEndless` and `UnlimitedFreshFuel`; zero horizon, remaining time,
+fuel budget and numeric stock are sentinels, not depleted inventory. The
 optional one-day challenge starts paused, requires eight useful discharged
 bundles (>= 6 MWd/kg), and awards a run-local badge only on horizon completion
 without terminal RRS exhaustion on an unmodified run. Studio displays this contract rather than
@@ -101,13 +103,16 @@ ratios, equal-channel RMS deviation and current points/hour. Game integrates
 `hours / (1 + (RMS / 0.10)^2)` over accepted simulation intervals. Refuelling and
 paused time earn no immediate points. Studio presents these authoritative readings.
 
-The finite fuel budget is `FreshBundlesAvailable`.
+Finite scenarios use `FreshBundlesAvailable`; when `Shift.UnlimitedFreshFuel`
+is true, Core accepts fuel moves without decrementing stock. Consumption remains
+counted in `Shift.FuelConsumed`, and the unlimited flag survives burnup updates.
 `RefuelRequestsRemaining` is a scenario/runtime counter and must not be
 presented as fuel inventory.
 
 Free practice has no scripted target changes or synthetic refuel requests.
-Browser runs finish at the 30-day horizon or earlier LZC level, global tilt,
-channel power or bundle power limit violations. A channel above 7,300,000 W or
+The main browser run has no duration or fuel cap. It ends on LZC level, global tilt,
+channel power or bundle power limit violations. Bounded scenarios also finish
+at their configured horizon. A channel above 7,300,000 W or
 any bundle above 935,000 W ends the run independently; exact equality is allowed.
 Limits use accepted shape powers multiplied by the applied power amplitude,
 including short ticks between spatial solves and paused refuelling transactions.
@@ -280,6 +285,13 @@ npm run build
 
 ## Active work plan
 
+The optional account panel provides GitHub OAuth through Supabase, private
+cloud progress/stats, local IndexedDB saves, offline production caching and an
+explicitly published self-reported endless leaderboard. Saves replay exact
+bridge commands in a separate worker and verify the shared state digest before
+adoption; terminal runs cannot continue. See
+[account setup and save limits](maintenance/player-accounts.md).
+
 The [repository knowledge library](maintenance/knowledge-library.md) indexes
 retained decisions, measurements, reproduction commands and cleanup policy.
 
@@ -290,7 +302,7 @@ architecture page is [architecture.md](architecture.md).
 
 ## Testing and launch checks
 
-Install a .NET 10.0.3xx SDK and Node 20.19+.
+Install a .NET 10.0.3xx SDK and Node 22.12+ (CI uses Node 24).
 
 Run the shared .NET suites:
 

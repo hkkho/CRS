@@ -24,6 +24,9 @@ describe("Refuelling draft state", () => {
     const draft = createRefuelDraft(channel);
 
     expect(canIssueRefuel(draft, 8, false)).toBe(true);
+    expect(canIssueRefuel(draft, 0, false, true)).toBe(true);
+    expect(canIssueRefuel(draft, 0, true, true)).toBe(false);
+    expect(canIssueRefuel(null, 0, false, true)).toBe(false);
     expect(canIssueRefuel({ ...draft, shiftCount: 8 }, 8, false)).toBe(true);
     expect(canIssueRefuel({ ...draft, shiftCount: 8 }, 4, false)).toBe(false);
     expect(canIssueRefuel(draft, 8, true)).toBe(false);

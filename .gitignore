@@ -13,6 +13,10 @@ web/candu-playtest/dist/
 web/candu-playtest/dist-pages/
 web/candu-playtest/node_modules/
 web/candu-playtest/tsconfig.tsbuildinfo
+web/candu-playtest/.env
+web/candu-playtest/.env.local
+web/candu-playtest/.env.*.local
+supabase/.temp/
 
 .vercel/
 output/

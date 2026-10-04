@@ -15,7 +15,8 @@ namespace ReactorSim.Game
 
         internal ShiftProgress(bool challenge, ulong seed, double horizon, double time,
             bool terminal, bool horizonCompleted, uint fuelConsumed, uint usefulDischarged,
-            double thermalEnergyJoules, double dischargeReward, double freshFuelCost, double score, bool standardRun = true)
+            double thermalEnergyJoules, double dischargeReward, double freshFuelCost, double score, bool standardRun = true,
+            bool unlimitedFreshFuel = false)
         {
             Id = challenge ? ChallengeId : PracticeId;
             Seed = seed;
@@ -24,8 +25,10 @@ namespace ReactorSim.Game
                 ? "Discharge 8 bundles at 6 MWd/kg or above, then finish the day with regulating headroom."
                 : "Keep channel powers close to their time-average reference to reduce ripple and build score.";
             HorizonSeconds = horizon;
+            IsEndless = horizon == 0;
+            UnlimitedFreshFuel = unlimitedFreshFuel;
             RemainingSeconds = Math.Max(0.0, horizon - time);
-            FuelBudget = ReactorSim.Core.SyntheticGameCoreStateV1.DefaultFreshBundleCount;
+            FuelBudget = unlimitedFreshFuel ? 0 : ReactorSim.Core.SyntheticGameCoreStateV1.DefaultFreshBundleCount;
             FuelConsumed = fuelConsumed;
             UsefulBundlesDischarged = usefulDischarged;
             UsefulBundlesRequired = challenge ? UsefulBundleGoal : 0;
@@ -48,6 +51,8 @@ namespace ReactorSim.Game
         public string Title { get; }
         public string Objective { get; }
         public double HorizonSeconds { get; }
+        public bool IsEndless { get; }
+        public bool UnlimitedFreshFuel { get; }
         public double RemainingSeconds { get; }
         public uint FuelBudget { get; }
         public uint FuelConsumed { get; }

@@ -1,0 +1,9 @@
+.player-toggle { position: fixed; bottom: .4rem; right: .6rem; z-index: 30; padding: .5rem .7rem; border: 1px solid #8bbba5; background: #10231d; color: #e4f4ea; font: 13px system-ui; cursor: pointer; }
+.player-panel { box-sizing: border-box; width: min(46rem, calc(100vw - 1rem)); max-height: 88vh; overflow: auto; border: 1px solid #8bbba5; background: #10201b; color: #edf8e9; padding: 1.3rem; font: 15px/1.5 system-ui; }
+.player-panel::backdrop { background: #000b; }
+.player-panel button { padding: .55rem .7rem; color: inherit; background: #213b30; border: 1px solid #8bbba5; font: inherit; cursor: pointer; }
+.player-panel button:disabled { opacity: .5; cursor: default; }
+.player-panel button:focus-visible, .player-toggle:focus-visible { outline: 3px solid #e1ffb0; outline-offset: 3px; }
+.player-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.player-panel [data-message] { color: #e1ffb0; }
+.player-panel [data-runs] p { border-bottom: 1px solid #426452; padding-bottom: .75rem; overflow-wrap: anywhere; }

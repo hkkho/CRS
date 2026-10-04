@@ -183,7 +183,10 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(2UL, committed.GetProperty("sequence").GetUInt64());
             AssertPlaySnapshot(committed.GetProperty("snapshot"));
             Assert.Equal(1, committed.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
-            Assert.Equal(120, committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(0, committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.True(committed.GetProperty("snapshot").GetProperty("shift").GetProperty("isEndless").GetBoolean());
+            Assert.True(committed.GetProperty("snapshot").GetProperty("shift").GetProperty("unlimitedFreshFuel").GetBoolean());
+            Assert.Equal(8, committed.GetProperty("snapshot").GetProperty("shift").GetProperty("fuelConsumed").GetInt32());
             Assert.True(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble() > 0.0);
             Assert.Equal(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble(),
                 committed.GetProperty("snapshot").GetProperty("maximumDischargedBurnupMwdPerKg").GetDouble());
@@ -204,7 +207,7 @@ namespace ReactorSim.Browser.Tests
                 committed.GetProperty("snapshot"),
                 rejected.GetProperty("snapshot"));
             Assert.Equal(1, rejected.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
-            Assert.Equal(120, rejected.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(0, rejected.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
         }
 
         [Fact]

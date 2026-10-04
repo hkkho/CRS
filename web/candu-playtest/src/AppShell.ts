@@ -11,7 +11,7 @@ export class AppShell {
     this.view = new LauncherView(session, parent, () => this.showStudio());
   }
 
-  private showStudio(): void {
+  public showStudio(): void {
     if (this.disposed) return;
     this.view?.destroy();
     this.session.startShift();

@@ -119,7 +119,7 @@ try {
       const snapshot = JSON.parse((await request({ type: "get-snapshot" })).resultJson);
       if (campaign72Hours && (snapshot.simulationTimeSeconds !== 72 * 3600 || campaignRefuels.length !== 2))
         throw new Error("72-hour fuelling campaign did not complete.");
-      if (campaign72Hours && (snapshot.freshBundlesAvailable !== 112 || snapshot.refuellingOperationCount !== 2))
+      if (campaign72Hours && (snapshot.freshBundlesAvailable !== (snapshot.shift?.unlimitedFreshFuel ? 0 : 112) || snapshot.refuellingOperationCount !== 2 || snapshot.shift.fuelConsumed !== 16))
         throw new Error("72-hour campaign fuel accounting differs from two eight-bundle operations.");
       if (!samples.every(sample => Number.isFinite(sample.meanXenon) && sample.meanXenon >= 0))
         throw new Error("Invalid xenon measurement.");

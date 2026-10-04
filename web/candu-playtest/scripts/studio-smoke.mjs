@@ -21,8 +21,8 @@ export async function verifyStudio(page) {
   check(await studio.locator('[data-movement="outgoing"]').count() === 8, 'Shared movement plan did not mark eight outgoing positions.');
   const direction = await studio.locator('[data-field="direction"]').textContent();
   await studio.locator('[data-action="refuel"]').click();
-  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
-  check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 120'), 'Studio fuel impact is missing.');
+  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Unlimited fresh fuel. 1 refuelling operations.'), undefined, { timeout: 120_000 });
+  check((await studio.locator('[data-field="impact"]').textContent()).includes('Unlimited · 8 bundles used'), 'Studio fuel impact is missing.');
   check((await studio.locator('[data-field="impact"]').textContent()).includes('RMS ripple'), 'Authoritative ripple response is missing.');
   check((await studio.locator('[data-field="ripple-score"]').textContent()).includes('points/h'), 'Live ripple score rate is missing.');
   check((await studio.locator('[data-field="channel-reference"]').textContent()).includes('MW / reference'), 'Selected channel reference is missing.');
@@ -92,7 +92,7 @@ export async function verifyStudio(page) {
   }
   await page.setViewportSize({ width: 1600, height: 900 });
   await studio.locator('[data-action="reset"]').click();
-  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('128 fresh bundles. 0 refuelling operations.'), undefined, { timeout: 120_000 });
+  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Unlimited fresh fuel. 0 refuelling operations.'), undefined, { timeout: 120_000 });
   check((await studio.locator('[data-field="impact"]').textContent()).includes('first fuel move'), 'New shift retained old fuel impact.');
   await studio.locator('[data-action="pause"]').click();
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Paused.'));
@@ -101,7 +101,7 @@ export async function verifyStudio(page) {
   check(Number(await studio.locator('[data-history="inspector"]').getAttribute('max')) < sampleCount, 'New shift retained old history samples.');
   await studio.locator('[data-tab="reactor"]').click();
   await studio.locator('[data-action="refuel"]').click();
-  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
-  check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 120'), 'First post-reset fuel move did not publish its impact.');
+  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Unlimited fresh fuel. 1 refuelling operations.'), undefined, { timeout: 120_000 });
+  check((await studio.locator('[data-field="impact"]').textContent()).includes('Unlimited · 8 bundles used'), 'First post-reset fuel move did not publish its impact.');
   return { channels: 380, zones: 14, historyTabs: 7, refuel: 'accepted', sessionPreserved: true, historyReset: true, desktopSizes: ['1600x900', '1280x720', '720x720'], freshBundlePoison: 'zero' };
 }

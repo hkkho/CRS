@@ -22,10 +22,11 @@ export class LauncherView {
       <div class="launcher-grid"><section><h2>Your next shift</h2>
         <p data-field="objective"></p><p data-field="connection"></p>
         <button data-action="begin" class="workspace-primary">Begin shift</button>
+        <p>No login required. Use <strong>Saves · Stats · Login</strong> for optional GitHub login, saved runs and the endless leaderboard.</p>
         <p>Use Tab to reach controls and Enter or Space to activate. Studio includes a keyboard channel map, fuel watchlist and history charts.</p>
       </section><section><h2>Choose a starting core</h2>
         <form><label>Core seed <input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label>
-        <label>Shift objective <select data-field="shift"><option value="free-practice">Free practice · 30 days</option><option value="useful-fuel-day-v1">One-day challenge</option></select></label>
+        <label>Shift objective <select data-field="shift"><option value="free-practice">Free practice · Endless</option><option value="useful-fuel-day-v1">One-day challenge</option></select></label>
         <button data-action="apply" type="submit">Use seed & objective</button></form>
         <button data-action="next">New aged core</button>
         <p>The same seed recreates the same aged fuel. Fresh fuel enters with zero iodine and xenon; retained bundles keep their inventories.</p>
@@ -58,7 +59,7 @@ export class LauncherView {
       : update.status.detail;
     if (wasDisabled && ready && !update.pending && (document.activeElement === document.body || document.activeElement?.tagName === "CANVAS")) this.field("begin").focus({ preventScroll: true });
     const shift = update.snapshot.shift;
-    this.field("objective").textContent = shift ? `${shift.title} · seed ${shift.seed} · ${shift.fuelBudget} fresh bundles` : "Waiting for the live core.";
+    this.field("objective").textContent = shift ? `${shift.title} · seed ${shift.seed} · ${shift.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${shift.fuelBudget} fresh bundles`}` : "Waiting for the live core.";
     // Preserve an unsubmitted seed/objective through pending/status emissions.
     if (shift && shift.seed !== this.lastSeed) { this.field<HTMLInputElement>("seed").value = String(shift.seed); this.lastSeed = shift.seed; }
     if (shift && shift.id !== this.lastShift) { this.field<HTMLSelectElement>("shift").value = shift.id; this.lastShift = shift.id; }

@@ -221,7 +221,7 @@ export class StudioView {
       this.text("score", snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 }));
       this.text("operations", String(snapshot.refuellingOperationCount));
       this.text("ripple-score", snapshot.ripple ? `RMS ripple ${(snapshot.ripple.rmsDeviationFraction * 100).toFixed(2)}% · ${snapshot.ripple.pointsPerHour.toFixed(3)} points/h` : "Reference unavailable from this host");
-      this.text("stock", String(snapshot.freshBundlesAvailable));
+      this.text("stock", snapshot.shift?.unlimitedFreshFuel ? "∞" : String(snapshot.freshBundlesAvailable));
       this.text("time", formatSimulationTime(snapshot.simulationTimeSeconds));
       this.text("status", isRunTerminal(snapshot) ? "Shift complete" : getOverallStatus(snapshot));
       this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)} · Global tilt ${getTiltLabel(snapshot.axialTiltFraction)} · Limit ±20% · End B positive`);
@@ -285,13 +285,13 @@ export class StudioView {
       this.text("objective-reward", provenance?.isModified ? "Explore freely; reset to begin a standard run with the same seed." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before refuelling.` : "No scripted moves. Choose your own refuelling strategy.");
       this.text("objective-progress", shift.usefulBundlesRequired > 0 ?
         `${shift.usefulBundlesDischarged} / ${shift.usefulBundlesRequired} useful bundles` : `${shift.usefulBundlesDischarged} useful bundles discharged`);
-      this.text("remaining", `${formatClockDuration(shift.remainingSeconds)} remaining · ${this.snapshot.freshBundlesAvailable} / ${shift.fuelBudget} fresh bundles left`);
+      this.text("remaining", shift.isEndless ? "Endless run · Unlimited fresh fuel" : `${formatClockDuration(shift.remainingSeconds)} remaining · ${this.snapshot.freshBundlesAvailable} / ${shift.fuelBudget} fresh bundles left`);
       this.text("ending-title", `${provenance?.isModified ? "Sandbox · " : ""}${shift.outcome === "missed" ? "Objective missed" : shift.outcome === "ended" ? "Shift ended early" : "Shift completed"}`);
       this.text("ending-reward", provenance?.isModified ? "Sandbox result: excluded from the standard challenge badge and score comparisons." : shift.rewardEarned ? `Earned: ${shift.reward}` : shift.outcome === "missed" ?
         `Discharged ${shift.usefulBundlesDischarged} of ${shift.usefulBundlesRequired} required useful bundles. Compare burnup at both ends and try again.` : "");
       this.text("energy", `${shift.electricalEnergyMwhEstimate.toLocaleString("en-US", { maximumFractionDigits: 1 })} MWh electric (estimate)`);
       this.text("thermal-energy", `${shift.thermalEnergyMwh.toLocaleString("en-US", { maximumFractionDigits: 1 })} MWh thermal`);
-      this.text("fuel-used", `${shift.fuelConsumed} / ${shift.fuelBudget} bundles`);
+      this.text("fuel-used", shift.unlimitedFreshFuel ? `${shift.fuelConsumed} bundles` : `${shift.fuelConsumed} / ${shift.fuelBudget} bundles`);
       this.text("useful-fuel", `${shift.usefulBundlesDischarged} discharged at ≥ ${shift.usefulBurnupThresholdMwdPerKg} MWd/kg`);
       this.text("final-score", `${this.snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 })} points`);
       this.text("score-components", `Ripple points ${shift.operatingPoints.toFixed(1)} · closer channel powers earn more · maximum 1 point/h`);
@@ -346,7 +346,7 @@ export class StudioView {
     switch (target.dataset.action) {
       case "map": this.mapMode = target.dataset.map as MapMode; this.render(); break;
       case "oldest": this.select(highestBurnupChannel(this.snapshot.core.channels) ?? this.selected); this.render(); break;
-      case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
+      case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
       case "pause": void this.send({ type: this.snapshot.isPaused ? "resume" : "pause" }); break;
       case "speed": void this.send({ type: "set-playback-mode", modeId: target.dataset.speed as PlaybackModeId }); break;
       case "reset":

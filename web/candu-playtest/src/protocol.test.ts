@@ -14,6 +14,18 @@ import {
 } from "./protocol";
 
 describe("candu-playtest-v2 protocol validation", () => {
+  it("accepts explicit endless fuel flags and rejects inconsistent sentinel values", () => {
+    const snapshot = createSnapshot();
+    snapshot.shift = { ...createShift(), isEndless: true, unlimitedFreshFuel: true,
+      horizonSeconds: 0, remainingSeconds: 0, fuelBudget: 0 };
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.shift.horizonSeconds = 86400;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+    snapshot.shift.horizonSeconds = 0;
+    snapshot.shift.fuelBudget = 128;
+    expect(isProtocolSnapshot(snapshot)).toBe(false);
+  });
+
   it("updates immutable bundle burnup between solves from authoritative compact measurements", () => {
     const base = createSnapshot();
     const measurements = { bundleBurnupMwdPerKg: Array(4560).fill(1.5), bundleStateVersions: Array(4560).fill(42),

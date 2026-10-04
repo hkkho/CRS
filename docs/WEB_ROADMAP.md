@@ -67,7 +67,8 @@ See [scoring](gameplay/score-balance.md) and
 
 ## Next improvements
 
-- Tune run duration and fuel budget from actual playthroughs.
+- Keep the main game endless with unlimited fresh fuel; add optional scenario
+  duration, fuel and other configuration controls after playtest feedback.
 - RRS branch explanations and limiting-zone headroom are delivered (task 11).
 - Expand the existing one-day challenge after human playtest feedback.
 - Native launcher/Studio actions, keyboard play at 1280×720, 200% zoom emulation,

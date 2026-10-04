@@ -25,7 +25,7 @@ Score measures RMS deviation from the fixed channel targets, earning up to one
 point per simulated hour. Refuelling affects later score through its power response.
 The [scoring policy](docs/gameplay/score-balance.md) and
 [reference derivation](docs/physics/channel-power-reference.md) explain the 2,064 MW
-thermal profile without adjusters. `Space` pauses/resumes; **New shift** resets the run and fuel budget.
+thermal profile without adjusters. `Space` pauses/resumes; **New shift** resets the run.
 
 The launcher has native **Begin shift**, seed and objective controls. Use Tab and
 Enter/Space throughout play. The native interface supports a 320px-wide layout;
@@ -41,10 +41,11 @@ solver waits. History keeps all observations for inspection while reducing drawn
 paths. [Browser measurements and budgets](docs/performance/browser-phase3.md)
 record the startup/rendering improvements and their limits.
 
-Studio shows the current objective, seed, time remaining and fuel budget. Choose
+The main **Free practice** game runs endlessly with unlimited fresh fuel. Studio
+tracks elapsed days, bundles consumed, energy and score. Choose
 **One-day challenge** for a paused, 24-hour run: discharge at least eight bundles
 at 6 MWd/kg or above and reach the end with average LZC level between 10% and 90%
-and global tilt within ±20% to earn the **Efficient refueller** badge. **Free practice** returns to the 30-day sandbox. No mandatory
+and global tilt within ±20% to earn the **Efficient refueller** badge. **Free practice** returns to the endless main game. No mandatory
 scripted moves are added.
 
 The shift report shows the ending reason, thermal energy and estimated electrical
@@ -130,6 +131,10 @@ Current benchmarks, canonical pack staging and archived reproduction tools are
 indexed in [docs/maintenance/research-tools.md](docs/maintenance/research-tools.md).
 
 ## Local development
+
+Optional GitHub login, private cloud saves, guest/offline play and the endless
+leaderboard are described in [player accounts and saves](docs/maintenance/player-accounts.md).
+Cloud features require the documented Supabase project configuration.
 
 Stage the authoritative browser bridge from the repository root:
 

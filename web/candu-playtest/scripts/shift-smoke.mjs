@@ -55,5 +55,8 @@ export async function verifyShift(page) {
   await idle();
   await studio.locator('[data-action="challenge"]').click();
   await page.waitForFunction(() => document.querySelector('[data-field="objective-title"]')?.textContent?.includes('Free practice'), undefined, { timeout: 120_000 });
+  await idle();
+  check(await studio.locator('[data-field="stock"]').textContent() === '∞', 'Main game did not restore unlimited fuel.');
+  check((await studio.locator('[data-field="remaining"]').textContent()).includes('Endless run'), 'Main game still has a duration cap.');
   return { challenge: 'completed', usefulBundles: useful, badge: 'earned', emptyRetry: 'missed', seededRetries: 'ok', practiceReturn: 'ok' };
 }

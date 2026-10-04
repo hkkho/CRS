@@ -98,7 +98,8 @@ namespace ReactorSim.Core
             ulong nextFreshBundleSequence,
             int lastRefuelledChannel,
             GameRefuellingDirectionV1 lastDirection,
-            ushort lastShiftCount)
+            ushort lastShiftCount,
+            bool unlimitedFreshFuel = false)
         {
             _channels = channels;
             FreshBundlesAvailable = freshBundlesAvailable;
@@ -107,9 +108,13 @@ namespace ReactorSim.Core
             LastRefuelledChannel = lastRefuelledChannel;
             LastDirection = lastDirection;
             LastShiftCount = lastShiftCount;
+            UnlimitedFreshFuel = unlimitedFreshFuel;
         }
 
         public uint FreshBundlesAvailable { get; }
+
+        /// <summary>When true, the numeric stock is a zero sentinel rather than a finite budget.</summary>
+        public bool UnlimitedFreshFuel { get; }
 
         public uint RefuellingOperationCount { get; }
 
@@ -120,6 +125,12 @@ namespace ReactorSim.Core
         public GameRefuellingDirectionV1 LastDirection { get; }
 
         public ushort LastShiftCount { get; }
+
+        public SyntheticGameCoreStateV1 WithUnlimitedFreshFuel()
+        {
+            return new SyntheticGameCoreStateV1(_channels, 0, RefuellingOperationCount,
+                NextFreshBundleSequence, LastRefuelledChannel, LastDirection, LastShiftCount, true);
+        }
 
         public static SyntheticGameCoreStateV1 CreatePractice()
         {
@@ -258,12 +269,12 @@ namespace ReactorSim.Core
 
             return new SyntheticGameCoreStateV1(
                 _channels,
-                checked(FreshBundlesAvailable + additionalBundles),
+                UnlimitedFreshFuel ? 0 : checked(FreshBundlesAvailable + additionalBundles),
                 RefuellingOperationCount,
                 NextFreshBundleSequence,
                 LastRefuelledChannel,
                 LastDirection,
-                LastShiftCount);
+                LastShiftCount, UnlimitedFreshFuel);
         }
 
         /// <summary>
@@ -338,7 +349,7 @@ namespace ReactorSim.Core
                     NextFreshBundleSequence,
                     LastRefuelledChannel,
                     LastDirection,
-                    LastShiftCount));
+                    LastShiftCount, UnlimitedFreshFuel));
         }
 
         public ContractValidationResult<GameRefuellingResultV1> TryRefuel(
@@ -391,7 +402,7 @@ namespace ReactorSim.Core
                     "Simulation time must be finite and nonnegative.");
             }
 
-            if (FreshBundlesAvailable < shiftCount)
+            if (!UnlimitedFreshFuel && FreshBundlesAvailable < shiftCount)
             {
                 return Invalid(
                     "GameRefuelling.FreshInventory.Insufficient",
@@ -434,12 +445,12 @@ namespace ReactorSim.Core
             nextChannels[channelIndex] = target;
             var nextState = new SyntheticGameCoreStateV1(
                 nextChannels,
-                FreshBundlesAvailable - shiftCount,
+                UnlimitedFreshFuel ? FreshBundlesAvailable : FreshBundlesAvailable - shiftCount,
                 checked(RefuellingOperationCount + 1),
                 checked(NextFreshBundleSequence + shiftCount),
                 checked((int)channelIndex),
                 direction,
-                shiftCount);
+                shiftCount, UnlimitedFreshFuel);
 
             return ContractValidationResult<GameRefuellingResultV1>.Valid(
                 new GameRefuellingResultV1(

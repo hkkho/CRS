@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from "vite";
+import { offlinePlugin } from './offlinePlugin';
 
 // Threaded WASM is an opt-in benchmark build. Shared memory requires isolation.
 export default defineConfig(({ mode }) => {
@@ -8,6 +9,7 @@ export default defineConfig(({ mode }) => {
   } : undefined;
 
   return {
+    plugins: mode === 'research' ? [] : [offlinePlugin()],
     // Research previews receive only their explicitly staged runtime.
     publicDir: mode === "research" ? false : "public",
     server: { headers },

@@ -29,6 +29,20 @@ The comparison command reads the tracked report directly, so it works in a fresh
 checkout. Array-only generated reports remain supported. This maintenance task
 does not claim to have regenerated the balance study.
 
+The [101-day playtest](../gameplay/long-run-playtest.md) supplies a separate
+duration/fuel-budget experiment and 1x/10x comparison. Run
+`dotnet run --project tools/LongRunPlaytest -c Release -- --policy=reserve --days=101 --pair=true --output=tmp/longrun-reserve-pair`.
+The offline tool uses the authoritative Game session and explicitly records
+horizon/fuel overrides. The browser replay in `scripts/long-run-playtest.mjs`
+consumes its order schedule through normal deployed WASM commands.
+
+The [channel-power maps](../gameplay/channel-power-maps.md) include a normal
+endless 101-day main-game run. Use `--endless=true` to measure the current
+browser configuration without debug stock or horizon overrides. Per-channel
+maxima and simulation-time weighted ripple are recorded in its report;
+`python tools/Plot-LongRunPower.py tmp/longrun-maps` validates the integrals
+and renders the standalone maps from all eight campaign reports.
+
 The historical P9 `--profile`/`--profile-manifest` mode is retired because its
 versioned parameter manifest is absent. It now fails immediately with a clear
 replacement message. Static benchmark mode remains runnable and was verified;

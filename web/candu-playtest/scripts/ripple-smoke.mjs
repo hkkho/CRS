@@ -36,7 +36,7 @@ try {
   check((await rate.textContent()).includes('points/h'), 'Ripple score rate is missing.');
   const score = await studio.locator('[data-field="score"]').textContent();
   await studio.locator('[data-action="refuel"]').click();
-  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
+  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Unlimited fresh fuel. 1 refuelling operations.'), undefined, { timeout: 120_000 });
   check(await studio.locator('[data-field="score"]').textContent() === score, 'Paused refuelling awarded instant points.');
   const refuelled = read(await reference.textContent());
   check(refuelled.target === initial.target, 'Refuelling rebased the reference.');
