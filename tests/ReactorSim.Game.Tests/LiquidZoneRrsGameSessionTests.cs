@@ -60,7 +60,7 @@ public sealed class LiquidZoneRrsGameSessionTests
             session.SetPlaybackMode(PracticeGameSessionFactory.DebugPlaybackModeId),
             session.Pause(),
             session.Resume(),
-            session.RefuelChannel(189, "toward-end-b", 4, "NAT-U-SYNTHETIC")
+            session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC")
         };
 
         foreach (GameSessionCommandResult rejected in rejectedCommands)
@@ -95,6 +95,42 @@ public sealed class LiquidZoneRrsGameSessionTests
         GameSessionCommandResult advance = restarted.AdvanceWallMilliseconds(100);
         Assert.True(advance.Accepted, advance.DiagnosticMessage);
         Assert.False(advance.Snapshot.IsGameOver);
+    }
+
+    [Theory]
+    [InlineData(0.09, true, "below 10%")]
+    [InlineData(0.10, false, "")]
+    [InlineData(0.90, false, "")]
+    [InlineData(0.91, true, "above 90%")]
+    public void AverageLevelLimitsEndTheRunBeforePhysicalExhaustion(double level, bool terminal, string reason)
+    {
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true);
+        ReplacePracticeRrs(session, CreateUniformFillState(session.CurrentLiquidZoneRrs, level));
+        var before = session.Snapshot;
+        Assert.False(before.Rrs.IsGameOver);
+        Assert.Equal(terminal, before.IsGameOver);
+        Assert.Contains(reason, before.GameOverReason);
+        if (!terminal) return;
+        Assert.Equal("ended", before.Shift.Outcome);
+        Assert.False(before.Shift.RewardEarned);
+        var rejected = session.AdvanceWallMilliseconds(1000);
+        Assert.False(rejected.Accepted);
+        Assert.Equal(before.SimulationTimeSeconds, rejected.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(before.Shift.ThermalEnergyMwh, rejected.Snapshot.Shift.ThermalEnergyMwh);
+        Assert.False(session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
+    }
+
+    [Fact]
+    public void OperatingLossTakesPrecedenceOverHorizonCompletion()
+    {
+        var session = PracticeGameSessionFactory.Create();
+        Assert.Equal("completed", session.AdvanceWallMilliseconds(60_000).Snapshot.RunStatus);
+        ReplacePracticeRrs(session, CreateUniformFillState(session.CurrentLiquidZoneRrs, 0.91));
+        var ended = session.Snapshot;
+        Assert.Equal("ended", ended.RunStatus);
+        Assert.Equal("ended", ended.Shift.Outcome);
+        Assert.Contains("above 90%", ended.GameOverReason);
+        Assert.False(ended.Shift.RewardEarned);
     }
 
     [Fact]
@@ -133,9 +169,9 @@ public sealed class LiquidZoneRrsGameSessionTests
         GameSession second = PracticeGameSessionFactory.Create();
 
         GameSessionCommandResult firstResult = first.RefuelChannel(
-            189, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+            189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         GameSessionCommandResult secondResult = second.RefuelChannel(
-            189, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+            189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
 
         Assert.True(firstResult.Accepted, firstResult.DiagnosticMessage);
         Assert.True(secondResult.Accepted, secondResult.DiagnosticMessage);
@@ -171,7 +207,7 @@ public sealed class LiquidZoneRrsGameSessionTests
         var acceptedRrs = first.CurrentLiquidZoneRrs;
         var acceptedProjection = first.CurrentEquilibriumProjection;
         GameSessionCommandResult rejected = first.RefuelChannel(
-            189, "toward-end-b", 4, "UNSUPPORTED-FUEL");
+            189, "toward-end-b", 8, "UNSUPPORTED-FUEL");
 
         Assert.False(rejected.Accepted);
         Assert.Same(acceptedRrs, first.CurrentLiquidZoneRrs);

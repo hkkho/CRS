@@ -59,7 +59,7 @@ function chartsFor(tab: StudioTab): Chart[] {
     case "reactivity": return [
       { title: "Effective multiplication factor", unit: "Keff", reference: 1, series: [series("Solved Keff", "effectiveK")] },
       { title: "Reactivity", unit: "mk", reference: 0, series: [series("Regulated net", "reactivityMk"), series("Core before RRS", "coreReactivityMk", COLORS[1])] },
-      { title: "Regulating headroom", unit: "% reserve", domain: [0, 100], series: [series("RRS reserve", "reservePercent", COLORS[2])] },
+      { title: "LZC average level", unit: "% full", domain: [0, 100], series: [series("LZC average level", "meanZoneFill", COLORS[2])] },
     ];
     case "fuel": return [
       { title: "Fresh fuel remaining", unit: "bundles", zero: true, series: [series("Fresh inventory", "freshBundles", COLORS[0], true)] },

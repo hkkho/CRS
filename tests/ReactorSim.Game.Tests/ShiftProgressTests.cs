@@ -31,16 +31,17 @@ public sealed class ShiftProgressTests
         Assert.Equal(86400, session.Snapshot.Shift.HorizonSeconds);
         Assert.Equal(ShiftProgress.ChallengeId, session.Snapshot.Shift.Id);
         var channel = session.Snapshot.Core.Channels.OrderByDescending(c => c.AverageBurnupMwDayPerKg).First();
-        var expectedUseful = Enumerable.Range(8, 4).Count(position =>
+        var expectedUseful = session.Snapshot.RefuellingPlans.Single(p => p.ShiftCount == 8 && p.DirectionId ==
+            (channel.FlowDirection == FlowDirection.EndAtoEndB ? "toward-end-b" : "toward-end-a")).DischargedPositions.Count(position =>
             session.CoreState.GetBundle(channel.ChannelIndex, (uint)position).CurrentBurnupJPerKgHm /
                 86_400_000_000.0 >= ShiftProgress.UsefulBurnupThresholdMwDayPerKg);
-        var moved = session.RefuelChannel(channel.ChannelIndex, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+        var moved = session.RefuelChannel(channel.ChannelIndex, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         Assert.True(moved.Accepted, moved.DiagnosticMessage);
-        Assert.Equal(4u, moved.Snapshot.Shift.FuelConsumed);
+        Assert.Equal(8u, moved.Snapshot.Shift.FuelConsumed);
         Assert.Equal((uint)expectedUseful, moved.Snapshot.Shift.UsefulBundlesDischarged);
         Assert.Equal(moved.Snapshot.LastRefuellingScore!.DischargeReward, moved.Snapshot.Shift.DischargeReward);
         Assert.Equal(moved.Snapshot.LastRefuellingScore.FreshFuelCost, moved.Snapshot.Shift.FreshFuelCost);
-        var rejected = session.RefuelChannel(999, "toward-end-b", 4, "NAT-U-SYNTHETIC");
+        var rejected = session.RefuelChannel(999, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         Assert.False(rejected.Accepted);
         Assert.Equal(moved.Snapshot.Shift.FuelConsumed, rejected.Snapshot.Shift.FuelConsumed);
         Assert.Equal(moved.Snapshot.Shift.DischargeReward, rejected.Snapshot.Shift.DischargeReward);

@@ -235,7 +235,7 @@ namespace ReactorSim.Game
             }
 
             ulong acceptedWallMilliseconds = wallMilliseconds;
-            if (transaction.Value.Rrs.IsGameOver)
+            if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate))
             {
                 ContractValidationResult<ulong> terminalWallMilliseconds =
                     TryFindTerminalWallMilliseconds(wallMilliseconds);
@@ -423,6 +423,15 @@ namespace ReactorSim.Game
                     RefuellingIneligibilityReason(channelIndex));
             }
 
+            if (shiftCount != 8)
+                return Rejected("GameRefuelling.ShiftCount.Unsupported", "Refuelling uses eight fresh bundles per move.");
+            if (channelIndex >= SyntheticGameCoreStateV1.ChannelCount)
+                return Rejected("GameRefuelling.Channel.OutOfRange", "Choose a channel from 0 through 379.");
+            // Adjacent channels have opposite flow. Always fuel with the selected channel's flow.
+            direction = Candu6CoreTopologyFactoryV1.GetFlowDirection(
+                Candu6CoreTopologyFactoryV1.GetPosition(channelIndex)) == FlowDirection.EndAtoEndB
+                ? GameRefuellingDirectionV1.TowardEndB : GameRefuellingDirectionV1.TowardEndA;
+
             ContractValidationResult<GameRefuellingResultV1> result = TryRefuel(
                 channelIndex,
                 direction,
@@ -568,17 +577,26 @@ namespace ReactorSim.Game
                 _lastRefuellingScore,
                 new ShiftProgress(_challenge, _runtime.Seed, _runtime.ScenarioHorizonSeconds,
                     _runtime.SimulationTimeSeconds, IsRunTerminal,
-                    _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !_practiceRrs.IsGameOver,
+                    _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection),
                     _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
                     _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0),
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons));
         }
 
-        private bool IsRunTerminal => _practiceRrs.IsGameOver ||
+        private bool IsRunTerminal => HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection) ||
             _runtime.Outcome != PracticeRunOutcome.Running;
+
+        private static string OperatingEndReason(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection)
+            => PracticeOperatingLimits.EndReason(rrs.AverageFillFraction,
+                GamePresentationProjector.ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux));
+
+        private static bool HasOperatingLoss(PracticeLiquidZoneRrsV1 rrs, EquilibriumCoreProjectionV1 projection)
+            => rrs.IsGameOver || OperatingEndReason(rrs, projection).Length > 0;
 
         private string RunEndReason => _practiceRrs.IsGameOver
             ? _practiceRrs.GameOverReason
+            : OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection).Length > 0
+                ? OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection)
             : _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon
                 ? _challenge ? "Challenge day completed" : "Practice horizon completed"
                 : _runtime.Outcome != PracticeRunOutcome.Running
@@ -865,7 +883,7 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Message);
                         }
 
-                        if (transaction.Rrs.IsGameOver)
+                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate))
                         {
                             return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
                         }
@@ -974,7 +992,7 @@ namespace ReactorSim.Game
                                 scheduled.FirstDiagnostic.Message);
                         }
 
-                        if (transaction.Rrs.IsGameOver)
+                        if (HasOperatingLoss(transaction.Rrs, transaction.SpatialCandidate))
                         {
                             return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance));
                         }
@@ -1023,7 +1041,7 @@ namespace ReactorSim.Game
                         transaction.FirstDiagnostic.Message);
                 }
 
-                if (transaction.Value.Rrs.IsGameOver)
+                if (HasOperatingLoss(transaction.Value.Rrs, transaction.Value.SpatialCandidate))
                 {
                     upperBound = midpoint;
                 }

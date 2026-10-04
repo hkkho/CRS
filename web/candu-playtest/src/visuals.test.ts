@@ -16,9 +16,9 @@ import {
 import type { CanduSnapshot } from "./protocol";
 
 describe("tactical playtest display helpers", () => {
-  it("keeps the heat scale ordered from cool navy to hot red", () => {
-    expect(getHeatColor(0.68)).toBe("rgb(20, 42, 59)");
-    expect(getHeatColor(1.26)).toBe("rgb(248, 92, 105)");
+  it("keeps the heat scale ordered from cool blue to hot red", () => {
+    expect(getHeatColor(0.4)).toBe("rgb(37, 99, 235)");
+    expect(getHeatColor(2.5)).toBe("rgb(220, 38, 38)");
     expect(getHeatColor(0.96)).not.toBe(getHeatColor(1.12));
   });
 
@@ -52,11 +52,11 @@ describe("tactical playtest display helpers", () => {
       physics: { actualPowerFraction: 1, totalPowerWatts: 1 },
       targetPowerFraction: 1,
       axialTiltFraction: 0,
-      rrsReserveFraction: 0.9,
+      rrs: { averageFillFraction: 0.5 },
     } as CanduSnapshot;
 
     expect(getOverallStatus(snapshot)).toBe("stable");
-    expect(getOverallStatus({ ...snapshot, rrsReserveFraction: 0.55 })).toBe("attention");
+    expect(getOverallStatus({ ...snapshot, rrs: { ...snapshot.rrs, averageFillFraction: 0.15 } })).toBe("attention");
     expect(getOverallStatus({ ...snapshot, axialTiltFraction: 0.06 })).toBe("watch");
   });
 });

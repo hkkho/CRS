@@ -88,7 +88,7 @@ public sealed class AgedCoreSnapshotTests
         {
             var grid = Candu6CoreTopologyFactoryV1.GetPosition(bundle.ChannelId.Value);
             int k = (int)bundle.Position.Value;
-            if (((grid.Column + grid.CartesianY) & 1) != 0) k = 11 - k;
+            if (Candu6CoreTopologyFactoryV1.GetFlowDirection(grid) == FlowDirection.EndBtoEndA) k = 11 - k;
             Assert.Equal(Burnup(k, ages[bundle.ChannelId.Value]) * 8.64e10, bundle.CurrentBurnupJPerKgHm, 5);
             Assert.True(table.TryLookup(bundle.CurrentBurnupJPerKgHm).IsValid);
             // Generous 2 MW/bundle exposure for the complete 30-day browser run.

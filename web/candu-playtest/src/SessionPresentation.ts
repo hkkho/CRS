@@ -4,7 +4,7 @@ import { refuelImpactText } from "./gameplayPresentation";
 /** Bounded view-only response summary, retained by the shared session across navigation. */
 export class SessionPresentation {
   message = "Choose a channel. Inspect the fuel. Make your move.";
-  impactText = "Local power, tilt, reserve and inventory will appear here after refuelling.";
+  impactText = "Local power, tilt, LZC level and inventory will appear here after refuelling.";
   result: "accepted" | "rejected" | undefined;
   private lastResponse: CanduCommandResponse | null = null;
   accept(response: CanduCommandResponse, previous: CanduSnapshot): void {
@@ -26,7 +26,7 @@ export class SessionPresentation {
   clear(): void {
     this.lastResponse = null;
     this.message = "Choose a channel. Inspect the fuel. Make your move.";
-    this.impactText = "Local power, tilt, reserve and inventory will appear here after refuelling.";
+    this.impactText = "Local power, tilt, LZC level and inventory will appear here after refuelling.";
     this.result = undefined;
   }
 }

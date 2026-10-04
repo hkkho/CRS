@@ -9,7 +9,8 @@ try {
   await page.locator('[data-action="begin"]').click();
   const studio = page.locator('.reactor-studio');
   await studio.locator('[data-speed="60x"]').click();
-  await page.waitForFunction(() => /Observed [\d.]+ sim min\/s.*Solving/.test(document.querySelector('[data-field="pace"]')?.textContent ?? ''), undefined, { timeout: 60000 });
+  await page.waitForFunction(() => /Observed [\d.]+ sim min\/s/.test(document.querySelector('[data-field="pace"]')?.textContent ?? ''), undefined, { timeout: 60000 });
+  if ((await studio.locator('[data-field="pace"]').textContent()).includes('Solving')) throw new Error('Clock calculation text is flashing.');
   if (!await studio.locator('[data-action="pause"]').isEnabled()) throw new Error('Clock solving blocked foreground pause.');
   const quiet = await page.locator('#session-announcements').textContent();
   await page.waitForTimeout(1000);

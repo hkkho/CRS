@@ -81,7 +81,7 @@ try {
       const samples=[],scenarios=[];
       for(const scenario of (probe ? ["aged"] : ["aged","refuel","poison-1h","moderator-reflective"])){
         console.info("gpu: "+scenario);
-        if(scenario === "refuel") await dispatch({type:"commit-refuel",request:{channelIndex:210,directionId:"toward-end-b",shiftCount:4,fuelTypeId:"NAT-U-SYNTHETIC"}});
+        if(scenario === "refuel") await dispatch({type:"commit-refuel",request:{channelIndex:210,directionId:"toward-end-b",shiftCount:8,fuelTypeId:"NAT-U-SYNTHETIC"}});
         if(scenario === "poison-1h"){await dispatch({type:"resume"});await dispatch({type:"queue-power-target",targetFraction:.95});await dispatch({type:"advance",wallMilliseconds:2000});await dispatch({type:"pause"});}
         if(scenario === "moderator-reflective") await dispatch({type:"configure-cell",channelIndex:210,position:5,hasFuel:false,reflectiveFaces:["end-a"]});
         const before=(await cpu.request({type:"get-snapshot"})).resultJson;

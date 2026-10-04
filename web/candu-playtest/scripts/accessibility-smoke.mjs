@@ -105,9 +105,9 @@ try {
   check((await studio.locator('[data-field="movement-result"]').textContent()).includes("Confirmed move #1"), "Keyboard refuelling failed.");
 
   // Unrelated buttons keep their arrow behavior/focus; only channel controls move the map.
-  const direction = studio.locator('[data-action="direction"]'); await tabTo(direction);
+  const direction = studio.locator('[data-action="oldest"]'); await tabTo(direction);
   const before = await studio.locator('[data-field="channel"]').textContent(); await page.keyboard.press("ArrowRight");
-  check(await direction.evaluate(element => element === document.activeElement) && await studio.locator('[data-field="channel"]').textContent() === before, "Arrow on direction button stole map focus.");
+  check(await direction.evaluate(element => element === document.activeElement) && await studio.locator('[data-field="channel"]').textContent() === before, "Arrow on watchlist button stole map focus.");
   await zoomDesktop(); await noOverflow(studio, "Studio at 200% equivalent width"); await capture("studio-zoom-width");
   await page.setViewportSize({ width: 320, height: 720 }); await noOverflow(studio, "Studio at 320px"); await capture("studio-320");
   await page.setViewportSize({ width: 1280, height: 720 });

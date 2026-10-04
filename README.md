@@ -1,22 +1,25 @@
 # CANDU Refuelling Game
 
 This repository is the source for the web-first CANDU on-power refuelling game
-deployed from `web/candu-playtest` to Vercel.
+deployed from `web/candu-playtest` to [GitHub Pages](https://hkkho.github.io/CRS/).
 
-The secondary host is [GitHub Pages](https://hkkho.github.io/CRS/).
-Both hosts deploy the validated shared WASM simulation from `main`;
+Pushes to `main` deploy the validated shared WASM simulation;
 see [hosting and verification](docs/maintenance/hosting.md).
 
-The player keeps a deterministic practice reactor at useful power, manages RRS
-reserve, spends a finite fresh-bundle inventory, refuels channels, and builds
+The player keeps a deterministic practice reactor at useful power, manages average
+LZC level between 10% and 90%, spends a finite fresh-bundle inventory, and builds
 score from stable operation and useful discharged burnup. Reactor Studio and Core
 Designer share one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
 In Reactor Studio, use **Highest burnup** (`N`) to inspect a candidate and the
-map buttons to switch between power and burnup. Choose direction (`D`) and shift
-size (4 or 8 bundles), then refuel (`R`). The response card compares local power, tilt,
-reserve, fuel stock, and score; the zone strip shows all fourteen RRS fills.
+map buttons to switch between power and burnup. Refuel (`R`) automatically inserts
+eight bundles with the selected channel’s flow. Adjacent channels have opposite
+flow directions. The power map runs from blue (low) through yellow to red (high).
+A shift ends
+when average LZC level falls below 10% or exceeds 90%, or absolute global tilt
+exceeds 20%. The response card compares local power, tilt,
+average LZC level, fuel stock, and score; the zone strip shows all fourteen RRS fills.
 Useful discharged burnup earns points, while throwing away fresh fuel costs
 points. Stable operation earns up to one point per simulated hour, so a productive
 fuel move materially affects the score. The [balance report](docs/gameplay/score-balance.md)
@@ -31,7 +34,8 @@ continuous telemetry stays outside screen-reader announcements.
 **Reactor Studio** is the primary game interface with a CRT phosphor terminal
 layout, square channel cells, fuel watchlist, axial power/burnup line graphs, and native
 keyboard-accessible controls. **Begin shift** opens Studio. Core Designer returns
-to Studio while preserving history, selected channel, direction, and shift size.
+to Studio while preserving history, selected channel, and the automatic
+eight-bundle order.
 Resume to apply power targets and pause to step time. The native launcher and
 Studio start without Phaser; opening Designer loads its map on demand. The clock
 shows requested speed and observed simulation minutes per real second, including
@@ -41,8 +45,8 @@ record the startup/rendering improvements and their limits.
 
 Studio shows the current objective, seed, time remaining and fuel budget. Choose
 **One-day challenge** for a paused, 24-hour run: discharge at least eight bundles
-at 6 MWd/kg or above and reach the end with RRS headroom to earn the **Efficient
-refueller** badge. **Free practice** returns to the 30-day sandbox. No mandatory
+at 6 MWd/kg or above and reach the end with average LZC level between 10% and 90%
+and global tilt within ±20% to earn the **Efficient refueller** badge. **Free practice** returns to the 30-day sandbox. No mandatory
 scripted moves are added.
 
 The shift report shows the ending reason, thermal energy and estimated electrical
@@ -66,7 +70,7 @@ Reset recreates a standard run with the selected seed and objective.
 
 The tabs show simulation-time line graphs for channel/bundle power peaks,
 thermal/electrical output, discharged burnup, all fourteen zone levels and their
-core mean, axial tilt, Keff/reactivity, reserve, fuel stock and score. Hover a graph
+core mean, axial tilt, Keff/reactivity, average LZC level, fuel stock and score. Hover a graph
 or use the sample slider to read values, filter its time window, and toggle traces.
 History retains up to 4,096 observations in this browser session and clears on
 **New shift**. Discharge readings come from confirmed shared-simulation fuel moves;
@@ -188,10 +192,10 @@ npm run smoke
 npm run benchmark -- --label=local --warm-samples=1
 ```
 
-The deployed acceptance path is the stable Vercel alias. The production workflow
-builds the .NET AOT WASM bridge, verifies the staged bridge, runs frontend
-tests/builds, deploys the prebuilt Vercel output, then performs smoke and
-reproduction-matrix checks against the stable deployment.
+The deployed acceptance path is [GitHub Pages](https://hkkho.github.io/CRS/).
+The production workflow builds the .NET AOT WASM bridge, verifies the staged
+bridge, runs frontend tests/builds and smoke/reproduction checks under `/CRS/`,
+then publishes the validated Pages artifact and verifies the deployed commit.
 
 ## Scope
 

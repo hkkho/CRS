@@ -175,7 +175,7 @@ namespace ReactorSim.Core
                 channels[channel] = new BundleState[BundlePositionCount];
                 Candu6GridPositionV1 gridPosition =
                     Candu6CoreTopologyFactoryV1.GetPosition(channel);
-                bool reverse = ((gridPosition.Column + gridPosition.CartesianY) & 1) != 0;
+                bool reverse = Candu6CoreTopologyFactoryV1.GetFlowDirection(gridPosition) == FlowDirection.EndBtoEndA;
                 for (uint position = 0; position < BundlePositionCount; position++)
                 {
                     int fromInlet = reverse ? 11 - (int)position : (int)position;

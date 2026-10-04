@@ -12,13 +12,9 @@ export async function verifyShift(page) {
   const seed = (await studio.locator('[data-field="objective-title"]').textContent()).split('SEED ')[1];
   check((await studio.locator('[data-field="objective"]').textContent()).includes('6 MWd/kg'), 'Useful discharge threshold is missing.');
   await studio.locator('[data-tab="reactor"]').click();
-  await studio.locator('[data-size="8"]').click();
   let useful = 0;
   for (let move = 0; move < 4 && useful < 8; move++) {
     await studio.locator('[data-action="oldest"]').click();
-    await studio.locator('[data-size="8"]').click();
-    // The authored aged snapshot retains older fuel at the opposite end to the default draft.
-    await studio.locator('[data-action="direction"]').click();
     const beforeStock = await studio.locator('[data-field="stock"]').textContent();
     await studio.locator('[data-action="refuel"]').click();
     await page.waitForFunction(before => document.querySelector('[data-field="stock"]')?.textContent !== before, beforeStock, { timeout: 120_000 });
@@ -63,8 +59,6 @@ export async function verifyShift(page) {
   useful = 0;
   for (let move = 0; move < 4 && useful < 8; move++) {
     await studio.locator('[data-action="oldest"]').click();
-    await studio.locator('[data-size="8"]').click();
-    await studio.locator('[data-action="direction"]').click();
     await studio.locator('[data-action="refuel"]').click(); await idle();
     useful = Number.parseInt(await studio.locator('[data-field="objective-progress"]').textContent(), 10);
   }

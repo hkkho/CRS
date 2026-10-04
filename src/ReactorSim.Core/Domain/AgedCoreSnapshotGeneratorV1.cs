@@ -9,7 +9,7 @@ namespace ReactorSim.Core
     /// </summary>
     public static class AgedCoreSnapshotGeneratorV1
     {
-        public const string ModelId = "patterned-channel-age-eight-shift-cycle190-v2";
+        public const string ModelId = "patterned-channel-age-eight-shift-with-flow-cycle190-v3";
         // Calibrated to this game's surrogate pack, not a natural-U plant target.
         public const double ChannelRefuellingIntervalFullPowerDays = 190.0;
         public const double MeanBundleResidenceFullPowerDays = 1.5 * ChannelRefuellingIntervalFullPowerDays;

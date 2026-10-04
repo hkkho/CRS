@@ -306,7 +306,7 @@ public sealed class PracticeLiquidZoneRrsTests
             solver, inventory.EnumerateBundles(), initial, 0.0));
         Require(solver.TryCommitCandidate(settled.Projection));
         var fuelled = Require(inventory.TryRefuel(
-            75, GameRefuellingDirectionV1.TowardEndA, 8, "NAT-U-SYNTHETIC", 0.0)).ResultingState;
+            75, GameRefuellingDirectionV1.TowardEndB, 8, "NAT-U-SYNTHETIC", 0.0)).ResultingState;
         var uncompensated = Require(solver.TrySolveCandidate(fuelled.EnumerateBundles()));
         var retained = Require(solver.TrySolveCandidate(
             Require(solver.TryPrepareCandidates(fuelled.EnumerateBundles())), uncompensated.SpatialSolve,

@@ -88,8 +88,6 @@ namespace ReactorSim.Game
         public ShiftProgress Shift { get; }
         public RefuellingMovement? LastFuelMovement { get; }
         public IReadOnlyList<GameRefuellingPlanV1> RefuellingPlans { get; } = System.Array.AsReadOnly(new[] {
-            new GameRefuellingPlanV1(GameRefuellingDirectionV1.TowardEndA, 4),
-            new GameRefuellingPlanV1(GameRefuellingDirectionV1.TowardEndB, 4),
             new GameRefuellingPlanV1(GameRefuellingDirectionV1.TowardEndA, 8),
             new GameRefuellingPlanV1(GameRefuellingDirectionV1.TowardEndB, 8) });
 
@@ -136,8 +134,7 @@ namespace ReactorSim.Game
         public string OutcomeId { get; }
 
         public string RunStatus => IsGameOver
-            ? OutcomeId == nameof(PracticeRunOutcome.SurvivedScenarioHorizon) && !Rrs.IsGameOver
-                ? "completed" : "ended"
+            ? Shift.Outcome == "ended" ? "ended" : "completed"
             : IsPaused ? "paused" : "running";
 
         public bool IsGameOver { get; }

@@ -24,7 +24,7 @@ public sealed class PracticeXenonGameTests
     }
 
     [Theory]
-    [InlineData("toward-end-a", 4)]
+    [InlineData("toward-end-a", 8)]
     [InlineData("toward-end-b", 8)]
     public void RefuellingCarriesRetainedBundlePoisonAndFreshFuelIsClean(string direction, ushort shift)
     {
@@ -107,7 +107,7 @@ public sealed class PracticeXenonGameTests
     public void HalfHourCouplingAgreesWithFiveMinuteReferenceAfterRefuelling()
     {
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
-        Assert.True(session.RefuelChannel(210, "toward-end-b", 4, "NAT-U-SYNTHETIC").Accepted);
+        Assert.True(session.RefuelChannel(210, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
         var model = FullCoreDiffusionModelV1.TryCreateCandu6(session.CurrentEquilibriumProjection.DataPack).Value;
         var solver = EquilibriumCoreSolverV1.TryCreate(model, session.CoreState.EnumerateBundles(),
             PracticeGameSessionFactory.PracticeReferencePowerWatts).Value;

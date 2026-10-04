@@ -1,6 +1,6 @@
 # Seeded aged-core starting snapshots
 
-The browser starts from `patterned-channel-age-eight-shift-cycle190-v2`, generated in
+The browser starts from `patterned-channel-age-eight-shift-with-flow-cycle190-v3`, generated in
 Core and solved by the existing full-core diffusion solver and bounded RRS.
 Default seed is 1001. The title's **New aged core** button advances the seed.
 Browser `initialize` and `reset` accept optional `seed` integers in
@@ -70,3 +70,10 @@ repository copies carry the same version, provenance and coefficient checksum.
 The pack ends at 30 MWd/kg; lookups outside its domain still fail. Tests check
 knots, interpolation, positive coefficients, yield relationships, matching
 pack copies, and generated inventory plus 30 days at 2 MW per bundle.
+
+Gameplay uses eight-bundle refuelling with channel flow. The aged inventory’s
+position-from-inlet index follows the same published topology flow direction
+(`EndAtoEndB` or `EndBtoEndA`), including the alternating direction of adjacent
+channels. This orientation correction uses model identity
+`patterned-channel-age-eight-shift-with-flow-cycle190-v3`; previous seeded
+physical digests are superseded.

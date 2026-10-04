@@ -60,7 +60,7 @@ public sealed class LiveCoreDesignerGameSessionTests
         GameSessionCommandResult refuel = session.RefuelChannel(
             RefuelChannel,
             "toward-end-b",
-            4,
+            8,
             "NAT-U-SYNTHETIC");
         Assert.True(refuel.Accepted, refuel.DiagnosticMessage);
 
@@ -68,7 +68,7 @@ public sealed class LiveCoreDesignerGameSessionTests
 
         Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
         Assert.Equal(3_600.0, advanced.Snapshot.SimulationTimeSeconds);
-        Assert.Equal(freshBefore - 4u, advanced.Snapshot.FreshBundlesAvailable);
+        Assert.Equal(freshBefore - 8u, advanced.Snapshot.FreshBundlesAvailable);
         Assert.Equal(1u, advanced.Snapshot.RefuellingOperationCount);
         Assert.False(session.IsFuelCell(Channel, Position));
         Assert.NotEmpty(session.GetReflectiveFaces(Channel, Position));
@@ -93,7 +93,7 @@ public sealed class LiveCoreDesignerGameSessionTests
         GameSessionCommandResult rejected = session.RefuelChannel(
             Channel,
             "toward-end-b",
-            4,
+            8,
             "NAT-U-SYNTHETIC");
 
         Assert.False(rejected.Accepted);
@@ -121,11 +121,11 @@ public sealed class LiveCoreDesignerGameSessionTests
         GameSessionCommandResult accepted = session.RefuelChannel(
             Channel,
             "toward-end-b",
-            4,
+            8,
             "NAT-U-SYNTHETIC");
         Assert.True(accepted.Accepted, accepted.DiagnosticMessage);
         Assert.Equal(
-            beforeRejectedRefuel.FreshBundlesAvailable - 4u,
+            beforeRejectedRefuel.FreshBundlesAvailable - 8u,
             accepted.Snapshot.FreshBundlesAvailable);
         Assert.Equal(1u, accepted.Snapshot.RefuellingOperationCount);
     }

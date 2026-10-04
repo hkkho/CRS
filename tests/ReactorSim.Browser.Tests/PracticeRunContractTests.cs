@@ -63,7 +63,7 @@ public sealed partial class PlaytestBridgeTests
     public void FuelMovementAndPlansSurviveFullCompactAndRejectedResponses()
     {
         var start = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
-        Assert.Equal(4, start.GetProperty("snapshot").GetProperty("refuellingPlans").GetArrayLength());
+        Assert.Equal(2, start.GetProperty("snapshot").GetProperty("refuellingPlans").GetArrayLength());
         var moved = Parse(PlaytestBridgeV2.Dispatch(CompactCommand(start.GetProperty("sequence").GetUInt64(), "commit-refuel",
             "\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-a\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}")));
         AssertAccepted(moved);
@@ -75,7 +75,7 @@ public sealed partial class PlaytestBridgeTests
         Assert.InRange(rrs.GetProperty("limitingZoneId").GetInt32(), 0, 13);
 
         Assert.Equal(20, full.GetProperty("lastFuelMovement").GetProperty("bundles").GetArrayLength());
-        var rejected = Parse(PlaytestBridgeV2.Dispatch("{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+        var rejected = Parse(PlaytestBridgeV2.Dispatch("{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
         Assert.False(rejected.GetProperty("accepted").GetBoolean());
         Assert.Equal(full.GetProperty("lastFuelMovement").GetRawText(), rejected.GetProperty("snapshot").GetProperty("lastFuelMovement").GetRawText());
     }

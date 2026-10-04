@@ -4,7 +4,7 @@ These instructions apply to the whole repository.
 
 ## Product priority
 
-- Treat `web/candu-playtest` and its Vercel deployment as the product and
+- Treat `web/candu-playtest` and its GitHub Pages deployment as the product and
   primary acceptance path.
 - Keep the browser client a consumer of the authoritative shared simulation;
   do not duplicate reactor rules in TypeScript or Phaser.
@@ -38,5 +38,5 @@ semantics when shared simulation code changes.
 - Use `tools/Test-DotNet.ps1` for shared Core/Game/Browser checks.
 - Use `tools/Test-Browser.ps1` for the browser bridge, Vitest, and production
   frontend build.
-- For deployment-sensitive changes, verify the Vercel smoke/reproduction path.
+- For deployment-sensitive changes, verify the GitHub Pages smoke/reproduction path.
 - Inspect the final diff and keep unrelated changes out of the commit.

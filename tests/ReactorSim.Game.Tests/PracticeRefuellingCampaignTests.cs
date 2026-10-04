@@ -10,16 +10,15 @@ public sealed class PracticeRefuellingCampaignTests
     private const string FuelType = "NAT-U-SYNTHETIC";
 
     [Fact]
-    public void ImmediatelyEjectingFreshFuelCostsScoreInsteadOfFarmingPoints()
+    public void RepeatedRefuellingEjectsFreshFuelAndCostsScore()
     {
         GameSession session = PracticeGameSessionFactory.Create();
-        var useful = session.RefuelChannel(CampaignChannel, "toward-end-b", 4, FuelType);
+        var useful = session.RefuelChannel(CampaignChannel, "toward-end-b", 8, FuelType);
         Assert.True(useful.Accepted, useful.DiagnosticMessage);
-        double beforeWaste = useful.Snapshot.ScoreTotal;
-        var waste = session.RefuelChannel(CampaignChannel, "toward-end-a", 4, FuelType);
+        var waste = session.RefuelChannel(CampaignChannel, "toward-end-a", 8, FuelType);
         Assert.True(waste.Accepted, waste.DiagnosticMessage);
-        Assert.Equal(beforeWaste - 6.0, waste.Snapshot.ScoreTotal, 8);
-        Assert.Equal(useful.Snapshot.FreshBundlesAvailable - 4u, waste.Snapshot.FreshBundlesAvailable);
+        Assert.True(waste.Snapshot.LastRefuellingScore!.NetPoints < 0);
+        Assert.Equal(useful.Snapshot.FreshBundlesAvailable - 8u, waste.Snapshot.FreshBundlesAvailable);
     }
 
     [Fact]
@@ -37,7 +36,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSessionCommandResult refuelled = session.RefuelChannel(
             CampaignChannel,
             "toward-end-a",
-            4,
+            8,
             FuelType);
 
         Assert.True(refuelled.Accepted, refuelled.DiagnosticMessage);
@@ -87,7 +86,7 @@ public sealed class PracticeRefuellingCampaignTests
     }
 
     [Fact]
-    public void DirectRefuelPublishesTheAcceptedFourBundleShift()
+    public void DirectRefuelPublishesTheAcceptedEightBundleShift()
     {
         GameSession session = PracticeGameSessionFactory.Create();
         GameSessionSnapshot before = session.Snapshot;
@@ -99,13 +98,13 @@ public sealed class PracticeRefuellingCampaignTests
         GameSessionCommandResult committed = session.RefuelChannel(
             CampaignChannel,
             "toward-end-b",
-            4,
+            8,
             FuelType);
 
         Assert.True(committed.Accepted, committed.DiagnosticMessage);
         GameChannelPresentationSnapshot committedChannel =
             committed.Snapshot.Core.GetChannel(CampaignChannel);
-        for (int position = 0; position < 4; position++)
+        for (int position = 4; position < 12; position++)
         {
             Assert.True(committedChannel.Bundles[position].IsFresh);
             Assert.NotEqual(
@@ -113,19 +112,19 @@ public sealed class PracticeRefuellingCampaignTests
                 committedChannel.Bundles[position].BundleId);
         }
 
-        for (int position = 4; position < 12; position++)
+        for (int position = 0; position < 4; position++)
         {
             Assert.Equal(
-                beforeChannel.Bundles[position - 4].BundleId,
+                beforeChannel.Bundles[position + 8].BundleId,
                 committedChannel.Bundles[position].BundleId);
         }
 
         Assert.Equal(1u, committed.Snapshot.RefuellingOperationCount);
-        Assert.Equal(before.FreshBundlesAvailable - 4u, committed.Snapshot.FreshBundlesAvailable);
+        Assert.Equal(before.FreshBundlesAvailable - 8u, committed.Snapshot.FreshBundlesAvailable);
         Assert.Equal((int)CampaignChannel, committed.Snapshot.LastRefuelledChannel);
-        Assert.Equal("toward-end-b", committed.Snapshot.LastRefuellingDirectionId);
-        Assert.Equal((ushort)4, committed.Snapshot.LastRefuellingShiftCount);
-        Assert.True(committed.Snapshot.ScoreTotal > before.ScoreTotal);
+        Assert.Equal("toward-end-a", committed.Snapshot.LastRefuellingDirectionId);
+        Assert.Equal((ushort)8, committed.Snapshot.LastRefuellingShiftCount);
+        Assert.Equal(committed.Snapshot.LastRefuellingScore!.NetPoints, committed.Snapshot.ScoreTotal - before.ScoreTotal, 10);
         Assert.True(
             committed.Snapshot.Rrs.CoreReactivity >
             before.Rrs.CoreReactivity);
@@ -151,7 +150,7 @@ public sealed class PracticeRefuellingCampaignTests
         GameSessionCommandResult rejected = session.RefuelChannel(
             CampaignChannel,
             "toward-end-b",
-            4,
+            8,
             "UNSUPPORTED-FUEL");
 
         Assert.False(rejected.Accepted);

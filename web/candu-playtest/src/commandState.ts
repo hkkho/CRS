@@ -11,17 +11,13 @@ export function createRefuelDraft(channel: Pick<CanduChannelSnapshot, "channelIn
   return {
     channelIndex: channel.channelIndex,
     directionId: channel.flowDirection,
-    shiftCount: 4,
+    shiftCount: 8,
     fuelTypeId: "NAT-U-SYNTHETIC",
   };
 }
 
 export function toRefuelRequest(draft: RefuelDraft): RefuelRequest {
   return { ...draft };
-}
-
-export function toggleRefuelDirection(direction: RefuelRequest["directionId"]): RefuelRequest["directionId"] {
-  return direction === "toward-end-a" ? "toward-end-b" : "toward-end-a";
 }
 
 export function canIssueRefuel(

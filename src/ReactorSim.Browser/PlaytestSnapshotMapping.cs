@@ -374,9 +374,9 @@ namespace ReactorSim.Browser
                     },
                     new PlaytestCheckDto
                     {
-                        Label = "RRS reserve",
-                        Value = FormatPercent(game.RrsReserveFraction),
-                        Status = game.RrsReserveFraction >= 0.72 ? "pass" : "watch"
+                        Label = "LZC average level",
+                        Value = FormatPercent(game.Rrs.AverageFillFraction),
+                        Status = game.Rrs.AverageFillFraction >= 0.3 && game.Rrs.AverageFillFraction <= 0.7 ? "pass" : "watch"
                     },
                     new PlaytestCheckDto
                     {

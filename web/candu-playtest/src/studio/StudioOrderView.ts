@@ -25,20 +25,22 @@ export class StudioOrderView {
     const key = JSON.stringify([plan, channel?.channelIndex, channel?.bundles]);
     if (key !== this.movementKey) {
       this.movementKey = key;
-      const box = this.field("movement-plan"); box.replaceChildren();
+      const box = this.field("movement-plan");
       if (plan && channel) {
-        const label = document.createElement("p");
+        // Keep the fuel strip stable as burnup readings change on clock ticks.
+        if (!box.firstElementChild) box.innerHTML = '<p></p><div class="studio-fuel-strip"></div>';
+        const label = box.firstElementChild!;
         label.textContent = `Fresh fuel enters End ${plan.incomingEnd}; positions ${plan.dischargedPositions.map(p => p + 1).join(", ")} leave End ${plan.outgoingEnd}.`;
-        const strip = document.createElement("div"); strip.className = "studio-fuel-strip";
-        channel.bundles.forEach(bundle => {
-          const cell = document.createElement("span"); const outgoing = plan.dischargedPositions.includes(bundle.position);
+        const strip = box.children[1];
+        while (strip.children.length > channel.bundles.length) strip.lastElementChild!.remove();
+        channel.bundles.forEach((bundle, index) => {
+          if (!strip.children[index]) strip.append(document.createElement("span"));
+          const cell = strip.children[index] as HTMLElement; const outgoing = plan.dischargedPositions.includes(bundle.position);
           cell.dataset.movement = outgoing ? "outgoing" : "retained";
           cell.textContent = `${bundle.position + 1}: ${bundle.currentBurnupMwdPerKg.toFixed(1)}`;
           cell.title = outgoing ? "Will be discharged · MWd/kg HM" : `Moves to position ${(plan.retainedToPositions[plan.retainedFromPositions.indexOf(bundle.position)] ?? bundle.position) + 1} · MWd/kg HM`;
-          strip.append(cell);
         });
-        box.append(label, strip);
-      }
+      } else box.replaceChildren();
     }
     const move = snapshot.lastFuelMovement;
     const resultKey = JSON.stringify(move);

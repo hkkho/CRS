@@ -67,7 +67,7 @@ try {
       if (campaign72Hours) await dispatch({ type: "reset", seed: 1001 });
       await dispatch({ type: "pause" });
       const refuel = campaign72Hours ? null : await dispatch({ type: "commit-refuel", request: { channelIndex: 210, directionId: "toward-end-b",
-        shiftCount: 4, fuelTypeId: "NAT-U-SYNTHETIC" } });
+        shiftCount: 8, fuelTypeId: "NAT-U-SYNTHETIC" } });
       await dispatch({ type: "resume" });
       if (!campaign72Hours) await dispatch({ type: "queue-power-target", targetFraction: 0.95 });
       const samples = [], campaignRefuels = [];

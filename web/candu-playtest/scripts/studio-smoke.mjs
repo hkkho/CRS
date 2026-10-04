@@ -18,8 +18,6 @@ export async function verifyStudio(page, verifyGeometry) {
   await studio.locator('[data-map="power"]').click();
   check(await studio.locator('rect[tabindex="0"]').getAttribute('fill') !== burnupFill, 'Studio power map did not update.');
   await studio.locator('[data-map="burnup"]').click();
-  await studio.locator('[data-size="8"]').click();
-  await studio.locator('[data-action="direction"]').click();
   check(await studio.locator('[data-movement="outgoing"]').count() === 8, 'Shared movement plan did not mark eight outgoing positions.');
   const direction = await studio.locator('[data-field="direction"]').textContent();
   await studio.locator('[data-action="refuel"]').click();
@@ -84,7 +82,7 @@ export async function verifyStudio(page, verifyGeometry) {
     await page.keyboard.press('Escape');
     await studio.waitFor({ state: 'visible' });
     check(await studio.locator('[data-tab="power"]').getAttribute('aria-selected') === 'true', 'Repeated navigation lost the selected tab.');
-    check(await studio.locator('[data-size="8"]').getAttribute('aria-pressed') === 'true', 'Repeated navigation lost the draft size.');
+    check(await studio.locator('[data-field="refuel"]').textContent() === 'Refuel 8 bundles →', 'Repeated navigation lost the eight-bundle order.');
     check(await studio.locator('[data-field="direction"]').textContent() === direction, 'Repeated navigation lost the draft direction.');
     check(await studio.locator('[data-field="impact"]').textContent() === retainedImpact, 'Repeated navigation lost the impact summary.');
     check(await studio.evaluate(element => element === document.activeElement), 'Return did not focus Studio.');
@@ -96,7 +94,7 @@ export async function verifyStudio(page, verifyGeometry) {
   await studio.locator('[data-tab="reactor"]').click();
   check(await studio.locator('[data-field="channel"]').textContent() === chosen, 'Designer return lost the selected channel.');
   check(await studio.locator('[data-field="direction"]').textContent() === direction, 'Designer return lost refuel direction.');
-  check(await studio.locator('[data-size="8"]').getAttribute('aria-pressed') === 'true', 'Designer return lost shift size.');
+  check(await studio.locator('[data-field="refuel"]').textContent() === 'Refuel 8 bundles →', 'Designer return lost the eight-bundle order.');
   for (const width of [1600, 1280, 720]) {
     await page.setViewportSize({ width, height: width === 1600 ? 900 : 720 });
       check(await studio.evaluate(element => element.scrollWidth <= element.clientWidth), `Studio overflows at ${width}px.`);
@@ -120,9 +118,8 @@ export async function verifyStudio(page, verifyGeometry) {
   check((await studio.locator('#studio-history-panel').textContent()).includes('No discharged fuel yet'), 'New shift retained old discharge readings.');
   check(Number(await studio.locator('[data-history="inspector"]').getAttribute('max')) < sampleCount, 'New shift retained old history samples.');
   await studio.locator('[data-tab="reactor"]').click();
-  await studio.locator('[data-size="4"]').click();
   await studio.locator('[data-action="refuel"]').click();
-  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('124 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
-  check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 124'), 'First post-reset fuel move did not publish its impact.');
+  await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('120 fresh bundles. 1 refuelling operations.'), undefined, { timeout: 120_000 });
+  check((await studio.locator('[data-field="impact"]').textContent()).includes('128 → 120'), 'First post-reset fuel move did not publish its impact.');
   return { channels: 380, zones: 14, historyTabs: 7, refuel: 'accepted', sessionPreserved: true, historyReset: true, desktopSizes: ['1600x900', '1280x720', '720x720'], zoneLayout };
 }

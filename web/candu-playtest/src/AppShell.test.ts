@@ -66,7 +66,7 @@ it("repeated navigation retains drafts and response summaries with exactly one a
   const listeners = new Set<(update: SessionUpdate) => void>();
   const presentation = new SessionPresentation();
   const response = { command: { type: "commit-refuel", request: { channelIndex: 210 } }, accepted: true,
-    message: "Four bundles refuelled.", snapshot: base.snapshot } as CanduCommandResponse;
+    message: "Eight bundles refuelled.", snapshot: base.snapshot } as CanduCommandResponse;
   presentation.accept(response, base.snapshot);
   const impact = presentation.impactText;
   const shared = { ...base, presentation, subscribe: (listener: (update: SessionUpdate) => void) => {
@@ -78,22 +78,22 @@ it("repeated navigation retains drafts and response summaries with exactly one a
   const runtime: DesignerRuntime = { start: vi.fn((state, onReturn) => { navigation = state; returnToStudio = onReturn; }), stop: vi.fn(), destroy: vi.fn() };
   shell = new AppShell(shared, document.body, vi.fn().mockResolvedValue(runtime));
   click('[data-action="begin"]');
-  click('[data-size="8"]'); click('[data-action="direction"]'); click('[data-map="power"]'); click('[data-tab="power"]');
+  click('[data-map="power"]'); click('[data-tab="power"]');
   for (let cycle = 0; cycle < 5; cycle++) {
     expect(listeners.size).toBe(1);
     click('[data-action="designer"]');
     await vi.waitFor(() => expect(runtime.start).toHaveBeenCalledTimes(cycle + 1));
     expect(listeners.size).toBe(0);
     expect(navigation.refuelDraft?.shiftCount).toBe(8);
-    expect(navigation.refuelDraft?.directionId).toBe(base.snapshot.core.channels[210].flowDirection === "toward-end-a" ? "toward-end-b" : "toward-end-a");
+    expect(navigation.refuelDraft?.directionId).toBe(base.snapshot.core.channels[210].flowDirection);
     expect(navigation.mapMode).toBe("power");
     returnToStudio(navigation);
     expect(listeners.size).toBe(1);
     expect(document.activeElement).toBe(document.querySelector('.reactor-studio'));
     expect(document.querySelector('[data-tab="power"]')!.getAttribute('aria-selected')).toBe('true');
     expect(document.querySelector('[data-field="impact"]')!.textContent).toBe(impact.replaceAll("\n", ""));
-    expect(document.querySelector('[data-field="feedback"]')!.textContent).toBe("Four bundles refuelled.");
-    expect(document.querySelector('[data-size="8"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(document.querySelector('[data-field="feedback"]')!.textContent).toBe("Eight bundles refuelled.");
+    expect(document.querySelector('[data-action="size"]')).toBeNull();
   }
   expect(shared.history).toBe(base.history);
   expect(shared.dispatch).not.toHaveBeenCalled();

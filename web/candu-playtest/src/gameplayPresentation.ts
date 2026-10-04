@@ -39,7 +39,7 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
     `Local tilt   ${getTiltLabel(oldChannel.localTiltFraction)} → ${getTiltLabel(newChannel.localTiltFraction)}`,
     ...(after.rrs.decisionExplanation ? [`RRS decision  ${after.rrs.decisionExplanation}`,
       `Regulating residual  ${after.rrs.controlledBaselineWeightedResidual.toExponential(2)} → ${after.rrs.combinedWeightedResidual.toExponential(2)} (this solve)`] : []),
-    `RRS reserve  ${(before.rrsReserveFraction * 100).toFixed(1)}% → ${(after.rrsReserveFraction * 100).toFixed(1)}%`,
+    `LZC average level  ${(before.rrs.averageFillFraction * 100).toFixed(1)}% → ${(after.rrs.averageFillFraction * 100).toFixed(1)}%`,
     `Fresh fuel   ${before.freshBundlesAvailable} → ${after.freshBundlesAvailable} bundles`,
     `Core power   ${getPowerLabel(before.physics.actualPowerFraction)} → ${getPowerLabel(after.physics.actualPowerFraction)} (regulated)`,
   ].join("\n");
@@ -47,6 +47,6 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
 
 export function operationGuidance(snapshot: CanduSnapshot): string {
   if (isRunTerminal(snapshot)) return `${snapshot.runEndReason || snapshot.rrs.gameOverReason || "Run complete"} — start a new shift to try a different fuel strategy.`;
-  if (snapshot.freshBundlesAvailable < 4) return "Fuel budget spent — keep running for operating score, or start a new shift.";
-  return "Compare burnup and both ends → choose 4 or 8 bundles → refuel → compare the response. Keep RRS reserve away from zero.";
+  if (snapshot.freshBundlesAvailable < 8) return "Fuel budget spent — keep running for operating score, or start a new shift.";
+  return "Inspect burnup → refuel 8 bundles with channel flow → compare the response. Keep LZC average level between 10% and 90%, and global tilt within ±20%.";
 }

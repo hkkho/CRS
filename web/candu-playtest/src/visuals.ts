@@ -1,15 +1,16 @@
 import type { CanduChannelSnapshot, CanduSnapshot, RefuellingDirection } from "./protocol";
 
 const HEAT_STOPS = [
-  { at: 0, color: [20, 42, 59] },
-  { at: 0.28, color: [38, 126, 133] },
-  { at: 0.55, color: [73, 190, 165] },
-  { at: 0.78, color: [240, 196, 105] },
-  { at: 1, color: [248, 92, 105] },
+  { at: 0, color: [37, 99, 235] },
+  { at: 0.25, color: [34, 211, 238] },
+  { at: 0.5, color: [250, 224, 71] },
+  { at: 0.75, color: [249, 115, 22] },
+  { at: 1, color: [220, 38, 38] },
 ] as const;
 
 export function getHeatColor(powerFraction: number): string {
-  const normalized = clamp((powerFraction - 0.68) / 0.58, 0, 1);
+  // The authored core peaks near 2.5 times its mean; keep that range distinguishable.
+  const normalized = clamp((powerFraction - 0.4) / 2.1, 0, 1);
   for (let index = 1; index < HEAT_STOPS.length; index += 1) {
     const stop = HEAT_STOPS[index];
     if (normalized <= stop.at) {
@@ -125,10 +126,11 @@ export function getChannelBand(channel: CanduChannelSnapshot): "low" | "nominal"
 export function getOverallStatus(snapshot: CanduSnapshot): "stable" | "watch" | "attention" {
   const powerError = Math.abs(snapshot.physics.actualPowerFraction - snapshot.targetPowerFraction);
   const tiltError = Math.abs(snapshot.axialTiltFraction);
-  if (powerError > 0.06 || tiltError > 0.1 || snapshot.rrsReserveFraction < 0.6) {
+  const level = snapshot.rrs.averageFillFraction;
+  if (powerError > 0.06 || tiltError > 0.1 || level < 0.2 || level > 0.8) {
     return "attention";
   }
-  if (powerError > 0.018 || tiltError > 0.045 || snapshot.rrsReserveFraction < 0.72) {
+  if (powerError > 0.018 || tiltError > 0.045 || level < 0.3 || level > 0.7) {
     return "watch";
   }
   return "stable";

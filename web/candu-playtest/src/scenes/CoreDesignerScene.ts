@@ -224,7 +224,7 @@ export class CoreDesignerScene extends Phaser.Scene {
       color: colorString(COLORS.ivory),
       fontStyle: "bold",
     }).setDepth(100);
-    this.liveRrsText = makeText(this, 445, 40, "RRS  —", {
+    this.liveRrsText = makeText(this, 445, 40, "LZC AVG  —", {
       fontFamily: FONTS.mono,
       fontSize: "13px",
       color: colorString(COLORS.cyan),
@@ -645,7 +645,7 @@ export class CoreDesignerScene extends Phaser.Scene {
   private refreshToolbar(): void {
     const power = finiteOr(this.snapshot.physics.actualPowerFraction, this.snapshot.normalizedPowerFraction);
     this.livePowerText?.setText(`POWER  ${formatPercent(power)}`);
-    this.liveRrsText?.setText(`RRS  ${formatPercent(this.snapshot.rrs.averageFillFraction)}`);
+    this.liveRrsText?.setText(`LZC AVG  ${formatPercent(this.snapshot.rrs.averageFillFraction)}`);
     this.liveScoreText?.setText(`SCORE  ${Math.round(this.snapshot.scoreTotal).toString().padStart(6, "0")}`);
     this.liveFreshText?.setText(`FRESH  ${this.snapshot.freshBundlesAvailable}`);
     this.liveTimeText?.setText(`TIME  ${formatSimulationTime(this.snapshot.simulationTimeSeconds)}`);

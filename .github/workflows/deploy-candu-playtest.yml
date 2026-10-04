@@ -1,4 +1,4 @@
-name: Deploy CANDU browser playtest
+name: Deploy CANDU to GitHub Pages
 
 on:
   push:
@@ -14,10 +14,6 @@ concurrency:
 
 permissions:
   contents: read
-
-env:
-  VERCEL_CLI_VERSION: 59.11.2
-  VERCEL_TELEMETRY_DISABLED: "1"
 
 jobs:
   validate:
@@ -58,7 +54,6 @@ jobs:
         run: .\tools\Build-BrowserWasm.ps1 -Configuration Release -CommitSha $env:BUILD_COMMIT_SHA -RunAOTCompilation -OmitPrecompressedAssets
 
       - name: Verify staged bridge output
-        id: staged-wasm
         shell: bash
         run: |
           set -euo pipefail
@@ -83,37 +78,11 @@ jobs:
             echo 'Precompressed .br/.gz assets were staged unexpectedly' >&2
             exit 1
           fi
-          wasm_url_path="/${wasm_file#web/candu-playtest/public/}"
-          echo "wasm_path=$wasm_url_path" >> "$GITHUB_OUTPUT"
           printf 'Staged bridge: %s\n' "$wasm_file"
 
       - name: Test browser contract and frontend, then build
         shell: pwsh
         run: ./tools/Test-Browser.ps1
-
-      - name: Install Chromium
-        working-directory: web/candu-playtest
-        run: npx playwright install --with-deps chromium
-
-      - name: Smoke test the production build before deployment
-        working-directory: web/candu-playtest
-        env:
-          PLAYTEST_URL: http://127.0.0.1:4173
-          PLAYTEST_WASM_PATH: ${{ steps.staged-wasm.outputs.wasm_path }}
-          PLAYTEST_CAPTURE_DIR: ${{ github.workspace }}/artifacts/predeploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          npm run preview -- --configLoader runner --host 127.0.0.1 --port 4173 --strictPort > "$PLAYTEST_CAPTURE_DIR/server.log" 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-          for attempt in {1..30}; do
-            if curl --fail --silent "$PLAYTEST_URL" > /dev/null; then break; fi
-            sleep 1
-          done
-          curl --fail --silent "$PLAYTEST_URL" > /dev/null
-          npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
 
       - name: Save validated authoritative bridge
         uses: actions/upload-artifact@v4
@@ -121,130 +90,6 @@ jobs:
           name: validated-wasm
           path: web/candu-playtest/public/wasm
           if-no-files-found: error
-          retention-days: 7
-
-      - name: Save validation diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: validation-diagnostics
-          path: artifacts/predeploy
-          if-no-files-found: ignore
-          retention-days: 7
-
-  deploy:
-    needs: validate
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.19.x
-          cache: npm
-          cache-dependency-path: web/candu-playtest/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: web/candu-playtest
-        run: npm ci
-
-      - name: Restore validated authoritative bridge
-        uses: actions/download-artifact@v4
-        with:
-          name: validated-wasm
-          path: web/candu-playtest/public/wasm
-
-      - name: Install Vercel CLI
-        run: npm install --global "vercel@${VERCEL_CLI_VERSION}"
-
-      - name: Link Vercel project
-        working-directory: web/candu-playtest
-        run: vercel link --yes --token "$VERCEL_TOKEN" --scope "$VERCEL_ORG_ID" --project "$VERCEL_PROJECT_ID"
-
-      - name: Pull Vercel production configuration
-        working-directory: web/candu-playtest
-        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
-
-      - name: Build Vercel production output
-        working-directory: web/candu-playtest
-        run: vercel build --prod --token "$VERCEL_TOKEN"
-
-      - name: Verify Vercel output contains the bridge
-        id: vercel-output
-        working-directory: web/candu-playtest
-        shell: bash
-        run: |
-          set -euo pipefail
-          main_asset="$(find .vercel/output -type f -path '*/wasm/main.mjs' -print -quit)"
-          wasm_asset="$(find .vercel/output -type f -name '*.wasm' -print -quit)"
-          test -n "$main_asset"
-          test -n "$wasm_asset"
-          test -s "$main_asset"
-          test -s "$wasm_asset"
-          node - "$main_asset" <<'NODE'
-          const fs = require('node:fs');
-          const content = fs.readFileSync(process.argv[2], 'utf8').trimStart();
-          if (content.startsWith('<')) throw new Error('Vercel output rewrote main.mjs to HTML');
-          NODE
-          case "$wasm_asset" in
-            .vercel/output/static/*) wasm_url_path="/${wasm_asset#.vercel/output/static/}" ;;
-            .vercel/output/*) wasm_url_path="/${wasm_asset#.vercel/output/}" ;;
-            *) echo "Unexpected Vercel output path: $wasm_asset" >&2; exit 1 ;;
-          esac
-          echo "wasm_path=$wasm_url_path" >> "$GITHUB_OUTPUT"
-          printf 'Vercel bridge assets: %s and %s\n' "$main_asset" "$wasm_asset"
-
-      - name: Deploy prebuilt production output
-        id: deploy
-        working-directory: web/candu-playtest
-        shell: bash
-        run: |
-          set -euo pipefail
-          deploy_url="$(vercel deploy --prebuilt --prod --archive=tgz --token "$VERCEL_TOKEN")"
-          test -n "$deploy_url"
-          echo "url=$deploy_url" >> "$GITHUB_OUTPUT"
-          printf 'Production deployment: %s\n' "$deploy_url"
-
-      - name: Install Chromium for post-deployment smoke test
-        working-directory: web/candu-playtest
-        run: npx playwright install --with-deps chromium
-
-      - name: Smoke test authoritative bridge
-        working-directory: web/candu-playtest
-        env:
-          PLAYTEST_CAPTURE_DIR: ${{ github.workspace }}/artifacts/postdeploy
-          PLAYTEST_URL: https://crs-candu-playtest.vercel.app
-          PLAYTEST_WASM_PATH: ${{ steps.vercel-output.outputs.wasm_path }}
-        run: |
-          mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          set -o pipefail
-          npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
-
-      - name: Benchmark authoritative reproduction matrix
-        working-directory: web/candu-playtest
-        env:
-          PLAYTEST_CAPTURE_DIR: ${{ github.workspace }}/artifacts/postdeploy
-          PLAYTEST_URL: https://crs-candu-playtest.vercel.app
-          PLAYTEST_EXPECTED_COMMIT_SHA: ${{ github.sha }}
-        run: |
-          mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          set -o pipefail
-          npm run benchmark -- --label=stable --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
-
-      - name: Save deployed diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-diagnostics
-          path: artifacts/postdeploy
-          if-no-files-found: ignore
           retention-days: 7
 
   pages-build:
@@ -266,7 +111,7 @@ jobs:
           path: web/candu-playtest/public/wasm
       - name: Build GitHub Pages site
         working-directory: web/candu-playtest
-        run: npm run build -- --base /CRS/ --outDir dist-pages
+        run: npm run build:pages
       - name: Install Chromium
         working-directory: web/candu-playtest
         run: npx playwright install --with-deps chromium
@@ -279,7 +124,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          npm run preview -- --outDir dist-pages --base /CRS/ --host 127.0.0.1 --port 4173 --strictPort > "$PLAYTEST_CAPTURE_DIR/server.log" 2>&1 &
+          npm run preview -- --configLoader runner --outDir dist-pages --base /CRS/ --host 127.0.0.1 --port 4173 --strictPort > "$PLAYTEST_CAPTURE_DIR/server.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true' EXIT
           for attempt in {1..30}; do
@@ -287,7 +132,11 @@ jobs:
             sleep 1
           done
           curl --fail --silent "$PLAYTEST_URL" > /dev/null
+          wasm_asset="$(find dist-pages/wasm -type f -name '*.wasm' -print -quit)"
+          test -n "$wasm_asset"
+          export PLAYTEST_WASM_PATH="/${wasm_asset#dist-pages/}"
           npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
+          npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 --expected-commit-sha=${{ github.sha }} 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
       - name: Upload Pages site
         uses: actions/upload-pages-artifact@v4
         with:

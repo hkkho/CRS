@@ -1,7 +1,7 @@
 # CANDU web game roadmap
 
 The product is `web/candu-playtest`, backed by the shared C# simulation and
-published through the existing Vercel pipeline.
+published through the GitHub Pages pipeline.
 
 ## Working standard
 
@@ -27,18 +27,19 @@ local work on unrelated infrastructure or historical provenance.
 
 1. Inspect the power or burnup map. Highest burnup is a navigation shortcut,
    not a prediction or mandatory move.
-2. Choose direction and four or eight bundles. Inspect the marked outgoing positions
+2. Refuel eight bundles automatically with channel flow. Inspect the marked outgoing positions
    and burnup; Core supplies the movement map. Fuel stock is the resource cost.
 3. Refuel directly and compare the accepted snapshot before/after: local power,
-   signed tilt, reserve, inventory, and score. Cosmetic transfer feedback does
+   signed tilt, average LZC level, inventory, and score. Cosmetic transfer feedback does
    not impose a cooldown.
 4. Run time to earn operating score; pause to inspect. Space toggles pause/resume.
-5. Watch all fourteen zone fills and retain regulating headroom. Start a new
+5. Watch all fourteen zone fills. Average LZC level below 10% or above 90%, or
+   absolute global tilt above 20%, ends the run. Start a new
    shift from Reactor Studio when ready to try another strategy.
 
 Reactor Studio is the sole gameplay view. The simulation-time history tabs
 cover power peaks, confirmed discharge burnup, fourteen zone fills and their
-mean, iodine/xenon inventories, regional xenon, tilt, Keff/reactivity, reserve,
+mean, iodine/xenon inventories, regional xenon, tilt, Keff/reactivity, average LZC level,
 fuel and score. History stays with the
 browser session across Core Designer visits and resets with a new shift. Accepted
 physical Designer edits mark a run as modified sandbox; inspection and rejected

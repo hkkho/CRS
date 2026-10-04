@@ -28,14 +28,12 @@ const pageErrors = [];
 const observedPages = new WeakSet();
 const browser = await chromium.launch({ headless: true });
 
-// Keep the matrix small enough for routine CI runs while covering every
-// direction/shift pair. Each representative gets both a paused and a live
+// Each representative uses its published flow and an eight-bundle shift,
+// with both a paused and a live
 // advance case, and every case is initialized from a fresh WASM session.
 const MATRIX_CASES = [
-  { advanceState: "paused", directionId: "toward-end-a", shiftCount: 4 },
-  { advanceState: "live", directionId: "toward-end-b", shiftCount: 4 },
-  { advanceState: "live", directionId: "toward-end-a", shiftCount: 8 },
-  { advanceState: "paused", directionId: "toward-end-b", shiftCount: 8 },
+  { advanceState: "paused", shiftCount: 8 },
+  { advanceState: "live", shiftCount: 8 },
 ];
 const CASE_ADVANCE_WALL_MILLISECONDS = 1_000;
 const REFUEL_CHANNEL_INDEX = 210;
@@ -470,10 +468,10 @@ function representative(role, channel) {
 
 function createMatrixCases(representatives) {
   return representatives.flatMap((channel) => MATRIX_CASES.map((entry) => ({
-    caseId: `${channel.role}-ch${channel.channelIndex}-${entry.advanceState}-${directionShortName(entry.directionId)}-${entry.shiftCount}`,
+    caseId: `${channel.role}-ch${channel.channelIndex}-${entry.advanceState}-${directionShortName(channel.flowDirection)}-${entry.shiftCount}`,
     channel,
     advanceState: entry.advanceState,
-    directionId: entry.directionId,
+    directionId: channel.flowDirection,
     shiftCount: entry.shiftCount,
   })));
 }
@@ -698,12 +696,12 @@ function representativeCoverage(representatives) {
   return {
     channelIndices: representatives.map((channel) => channel.channelIndex),
     roles: representatives.map((channel) => channel.role),
-    directions: ["toward-end-a", "toward-end-b"],
-    shiftCounts: [4, 8],
+    directions: [...new Set(representatives.map(channel => channel.flowDirection))],
+    shiftCounts: [8],
     advanceStates: ["paused", "live"],
-    directionShiftPairs: MATRIX_CASES.map((entry) => ({
-      directionId: entry.directionId,
-      shiftCount: entry.shiftCount,
+    directionShiftPairs: [...new Set(representatives.map(channel => channel.flowDirection))].map(directionId => ({
+      directionId,
+      shiftCount: 8,
     })),
     casesPerRepresentative: MATRIX_CASES.length,
     caseCount: representatives.length * MATRIX_CASES.length,

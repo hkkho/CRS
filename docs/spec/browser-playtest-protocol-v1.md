@@ -70,5 +70,5 @@ used as evidence that the Core algorithm matches Unity.
 
 The bridge is compiled to browser WASM and copied into
 `web/candu-playtest/public/wasm`. The Vite app and bridge assets are static and
-can be deployed from that directory to Vercel. No backend, authentication,
+can be deployed from that directory to GitHub Pages. No backend, authentication,
 telemetry, or DRAGON5/DONJON5 executable is part of this milestone.

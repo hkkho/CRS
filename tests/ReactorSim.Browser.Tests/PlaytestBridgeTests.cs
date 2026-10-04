@@ -17,7 +17,7 @@ namespace ReactorSim.Browser.Tests
         private const string LabRequest =
             "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"lab\"}";
         private const string PlayRefuelRequest =
-            "{\"channelIndex\":189,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}";
+            "{\"channelIndex\":189,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}";
         private static readonly string[] ExpectedOperations =
         {
             "GetCapabilities",
@@ -183,7 +183,7 @@ namespace ReactorSim.Browser.Tests
             Assert.Equal(2UL, committed.GetProperty("sequence").GetUInt64());
             AssertPlaySnapshot(committed.GetProperty("snapshot"));
             Assert.Equal(1, committed.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
-            Assert.Equal(124, committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(120, committed.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
             Assert.True(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble() > 0.0);
             Assert.Equal(committed.GetProperty("snapshot").GetProperty("lastDischargedMaximumBurnupMwdPerKg").GetDouble(),
                 committed.GetProperty("snapshot").GetProperty("maximumDischargedBurnupMwdPerKg").GetDouble());
@@ -196,7 +196,7 @@ namespace ReactorSim.Browser.Tests
 
             JsonElement rejected = Parse(
                 PlaytestBridgeV2.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
             AssertRejected(rejected);
             Assert.Equal(3UL, rejected.GetProperty("sequence").GetUInt64());
             AssertPlaySnapshot(rejected.GetProperty("snapshot"));
@@ -204,7 +204,7 @@ namespace ReactorSim.Browser.Tests
                 committed.GetProperty("snapshot"),
                 rejected.GetProperty("snapshot"));
             Assert.Equal(1, rejected.GetProperty("snapshot").GetProperty("refuellingOperationCount").GetInt32());
-            Assert.Equal(124, rejected.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
+            Assert.Equal(120, rejected.GetProperty("snapshot").GetProperty("freshBundlesAvailable").GetInt32());
         }
 
         [Fact]
@@ -353,7 +353,7 @@ namespace ReactorSim.Browser.Tests
             GameSessionCommandResult expectedCommit = direct.RefuelChannel(
                 189,
                 "toward-end-b",
-                4,
+                8,
                 "NAT-U-SYNTHETIC");
             JsonElement browserCommit = Parse(
                 PlaytestBridgeV2.Dispatch(
@@ -491,7 +491,7 @@ namespace ReactorSim.Browser.Tests
             JsonElement rejected = Parse(
                 PlaytestBridgeV2.Dispatch(
                     "{\"protocol\":\"candu-playtest-v2\",\"type\":\"lab-refuel\",\"request\":{" +
-                    "\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+                    "\"channelIndex\":0,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
             AssertRejected(rejected);
             Assert.Equal(before.GetProperty("core").GetRawText(), rejected.GetProperty("snapshot").GetProperty("core").GetRawText());
             Assert.False(rejected.GetProperty("snapshot").TryGetProperty("lab", out _));
@@ -581,7 +581,7 @@ namespace ReactorSim.Browser.Tests
                     "{\"protocol\":\"candu-playtest-v2\",\"type\":\"advance\",\"wallMilliseconds\":2000}"));
             return Parse(
                 PlaytestBridgeV2.Dispatch(
-                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
+                    "{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":12,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}"));
         }
 
         private static string CompactCommand(

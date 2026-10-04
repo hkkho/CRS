@@ -47,7 +47,6 @@ try {
   await returnToStudio();
   await page.waitForFunction(() => document.querySelector('[data-action="refuel"]')?.disabled === false, undefined, { timeout: 120000 });
   check(await studio.getAttribute("data-run-kind") === "modified-sandbox", "Restoring geometry erased the modification reason.");
-  await studio.locator('[data-size="8"]').click(); await studio.locator('[data-action="direction"]').click();
   check(await studio.locator('[data-movement="outgoing"]').count() === 8, "Shared position plan is missing.");
   await studio.locator('[data-action="refuel"]').click(); await idle();
   check((await studio.locator('[data-field="movement-result"]').textContent()).includes("Confirmed move #1"), "Confirmed movement is missing.");

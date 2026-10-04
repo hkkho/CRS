@@ -19,6 +19,8 @@ function channel(index: number, column: number, burnup: number): CanduChannelSna
 function harness() {
   let listener: ((update: SessionUpdate) => void) | null = null;
   const rrs = createUnavailableRrsSnapshot();
+  rrs.averageFillFraction = 0.58;
+  rrs.averageFillFraction = 0.58;
   rrs.zones = Array.from({ length: 14 }, (_, logicalZoneId) => ({ logicalZoneId, fillFraction: 0.58,
     referencePowerFraction: 0, targetPowerFraction: 0, measuredPowerFraction: 0, shapeError: 0 }));
   const snapshot = { sequence: 0, simulationTimeSeconds: 0, scoreTotal: 0, isPaused: true,
@@ -26,7 +28,7 @@ function harness() {
     targetPowerFraction: 1, axialTiltFraction: 0, playbackModeId: "pause", rrs,
     source: "wasm", physics: { isAuthoritative: true, effectiveK: 1, totalPowerWatts: 1000,
       reactivity: 0, actualPowerFraction: 1, targetPowerWatts: 1000, referencePowerWatts: 1000 },
-    core: { channels: [channel(210, 10, 6), channel(211, 11, 8)] } } as CanduSnapshot;
+    core: { channels: [channel(210, 10, 6), { ...channel(211, 11, 8), flowDirection: "toward-end-a" }] } } as CanduSnapshot;
   const status: BridgeStatus = { source: "wasm", title: "Ready", detail: "Ready", isWasmAvailable: true, capabilities: [] };
   const session = {
     snapshot, status, isPending: false, history: new ReactorHistory(),
@@ -40,25 +42,53 @@ function harness() {
   const navigate = vi.fn();
   const view = new StudioView(session, document.body, navigate);
   views.push(view);
-  const emit = (response: CanduCommandResponse | null = null, changeKind?: SessionUpdate['changeKind']) => {
+  const emit = (response: CanduCommandResponse | null = null, changeKind?: SessionUpdate['changeKind'], pace?: SessionUpdate['pace']) => {
     session.history.record(session.snapshot);
-    listener?.({ snapshot: session.snapshot, status, pending: session.isPending, response, error: null, changeKind });
+    listener?.({ snapshot: session.snapshot, status, pending: session.isPending, response, error: null, changeKind, pace });
   };
   const button = (action: string) => view.element.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)!;
   return { session, view, emit, button, navigate };
 }
 
 describe("Reactor Studio live interface", () => {
+  it("shows average LZC level and global tilt limits, with blue low power and red high power", () => {
+    const { session, view, emit } = harness();
+    session.snapshot.core.channels[0].localPowerFraction = 0.4;
+    session.snapshot.core.channels[1].localPowerFraction = 2.5;
+    view.element.querySelector<HTMLButtonElement>('[data-map="power"]')!.click();
+    expect(view.element.querySelector('rect[data-channel="210"]')!.getAttribute("fill")).toBe("rgb(37, 99, 235)");
+    expect(view.element.querySelector('rect[data-channel="211"]')!.getAttribute("fill")).toBe("rgb(220, 38, 38)");
+    expect(view.element.querySelector('[data-field="reserve"]')!.textContent).toBe("58.0%");
+    expect(view.element.textContent).toContain("LZC AVERAGE LEVEL");
+    expect(view.element.textContent).toContain("Limit ±20%");
+    expect(view.element.querySelector('[data-action="size"]')).toBeNull();
+    expect(view.element.querySelector('[data-action="direction"]')).toBeNull();
+    session.snapshot.rrs.averageFillFraction = .91; emit();
+    expect(view.element.querySelector('[data-field="status"]')!.textContent).toBe("attention");
+  });
+
+  it("keeps the refuel label and clock text stable while calculation status toggles", () => {
+    const { session, view, emit, button } = harness();
+    emit(null, "status", { requested: "1×", simulatedMinutesPerSecond: 3, solving: false });
+    const label = button("refuel").textContent;
+    const pace = view.element.querySelector('[data-field="pace"]')!.textContent;
+    session.isPending = true; emit(null, "status", { requested: "1×", simulatedMinutesPerSecond: 3, solving: true });
+    expect(button("refuel").textContent).toBe(label);
+    expect(view.element.querySelector('[data-field="pace"]')!.textContent).toBe(pace);
+    expect(view.element.querySelector('[data-field="pace"]')!.textContent).not.toContain("Solving");
+    expect(button("refuel").disabled).toBe(true);
+  });
+
   it('leaves map and axial nodes intact on status updates and patches changed readings', () => {
     const { session, view, emit, button } = harness();
     const bundle = view.element.querySelector('[data-axial="power"]')!;
     const map = view.element.querySelector('rect[data-channel="210"]')!;
-    button('direction').focus();
+    button('refuel').focus();
     const observer = new MutationObserver(() => {}); observer.observe(map, { subtree: true, attributes: true, childList: true });
     session.isPending = true; emit(null, 'status');
     expect(view.element.querySelector('[data-axial="power"]')).toBe(bundle);
     expect(observer.takeRecords()).toHaveLength(0);
-    expect(document.activeElement).toBe(button('direction'));
+    expect(document.activeElement).toBe(button('refuel'));
     session.isPending = false;
     session.snapshot.core.channels[0].bundles[0].powerWatts = 2000;
     emit();
@@ -69,9 +99,9 @@ describe("Reactor Studio live interface", () => {
   it("keeps arrows on unrelated buttons from selecting a channel or stealing focus", () => {
     const { view, button } = harness();
     const selected = view.element.querySelector('[data-field="channel"]')!.textContent;
-    button("direction").focus();
-    button("direction").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
-    expect(document.activeElement).toBe(button("direction"));
+    button("oldest").focus();
+    button("oldest").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(button("oldest"));
     expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe(selected);
   });
   it("labels modified results and excludes a standard reward while preserving reset", () => {
@@ -121,8 +151,8 @@ describe("Reactor Studio live interface", () => {
 
   it("renders authoritative movement plans and keeps confirmed identities on navigation", () => {
     const { session, view, emit } = harness();
-    const plan = { directionId: "toward-end-b" as const, shiftCount: 4 as const, incomingEnd: "A" as const, outgoingEnd: "B" as const,
-      insertedPositions: [0,1,2,3], dischargedPositions: [8,9,10,11], retainedFromPositions: [0,1,2,3,4,5,6,7], retainedToPositions: [4,5,6,7,8,9,10,11] };
+    const plan = { directionId: "toward-end-b" as const, shiftCount: 8 as const, incomingEnd: "A" as const, outgoingEnd: "B" as const,
+      insertedPositions: [0,1,2,3,4,5,6,7], dischargedPositions: [4,5,6,7,8,9,10,11], retainedFromPositions: [0,1,2,3], retainedToPositions: [8,9,10,11] };
     session.snapshot.refuellingPlans = [plan];
     session.snapshot.lastFuelMovement = { operationId: 1, channelIndex: 210, plan,
       score: { policyId: "test", dischargeReward: 12, freshFuelCost: 6, netPoints: 6 },
@@ -132,7 +162,7 @@ describe("Reactor Studio live interface", () => {
     const original = HTMLElement.prototype.animate;
     HTMLElement.prototype.animate = animate;
     const response = { sequence: 1, accepted: true, message: "Moved", snapshot: session.snapshot,
-      command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 4, directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
+      command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 8, directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
     emit({ ...response, accepted: false });
     expect(animate).not.toHaveBeenCalled();
     emit({ ...response, sequence: 2 });
@@ -140,8 +170,12 @@ describe("Reactor Studio live interface", () => {
     emit({ ...response, sequence: 3 });
     expect(animate).toHaveBeenCalledTimes(2);
     HTMLElement.prototype.animate = original;
-    expect(view.element.querySelector('[data-field="movement-plan"]')!.textContent).toContain("positions 9, 10, 11, 12 leave End B");
-    expect(view.element.querySelectorAll('[data-movement="outgoing"]')).toHaveLength(4);
+    expect(view.element.querySelector('[data-field="movement-plan"]')!.textContent).toContain("positions 5, 6, 7, 8, 9, 10, 11, 12 leave End B");
+    expect(view.element.querySelectorAll('[data-movement="outgoing"]')).toHaveLength(8);
+    const outgoing = view.element.querySelector('[data-movement="outgoing"]');
+    session.snapshot.core.channels[0].bundles[4].currentBurnupMwdPerKg += .1;
+    emit();
+    expect(view.element.querySelector('[data-movement="outgoing"]')).toBe(outgoing);
     expect(view.element.querySelector('[data-field="movement-result"]')!.textContent).toContain("old-identity: position 9 → discharged (8.00");
     const details = view.element.querySelector<HTMLDetailsElement>('[data-field="movement-result"] details')!;
     details.open = true;
@@ -203,20 +237,20 @@ describe("Reactor Studio live interface", () => {
     const move = (sequence: number, stock: number) => {
       session.snapshot = { ...session.snapshot, sequence, freshBundlesAvailable: stock };
       return { sequence, accepted: true, message: "Fuel moved.", snapshot: session.snapshot,
-        command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 4,
+        command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 8,
           directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
     };
-    emit(move(20, 124));
+    emit(move(20, 120));
     session.snapshot = { ...session.snapshot, sequence: 1, freshBundlesAvailable: 128 };
     const reset = { sequence: 1, accepted: true, snapshot: session.snapshot,
       command: { type: "reset" } } as CanduCommandResponse;
     emit(reset);
     expect(view.element.querySelector('[data-field="impact"]')!.textContent).toContain("first fuel move");
     expect(view.element.dataset.result).toBeUndefined();
-    const response = move(2, 124);
+    const response = move(2, 120);
     emit(response);
     const impact = view.element.querySelector('[data-field="impact"]')!.textContent;
-    expect(impact).toContain("128 → 124");
+    expect(impact).toContain("128 → 120");
     emit(response);
     expect(view.element.querySelector('[data-field="impact"]')!.textContent).toBe(impact);
   });
@@ -248,8 +282,7 @@ describe("Reactor Studio live interface", () => {
   it("uses Studio exclusively and transfers channel and draft to Core Designer", () => {
     const { session, button, view, navigate } = harness();
     button("oldest").click();
-    view.element.querySelector<HTMLButtonElement>('[data-size="8"]')!.click();
-    button("direction").click();
+    button("oldest").click();
     button("refuel").click();
     expect(session.dispatch).toHaveBeenCalledWith({ type: "commit-refuel", request: {
       channelIndex: 211, shiftCount: 8, directionId: "toward-end-a", fuelTypeId: "NAT-U-SYNTHETIC",
@@ -306,13 +339,13 @@ describe("Reactor Studio live interface", () => {
     const { session, view, emit } = harness();
     const circle = view.element.querySelector<SVGRectElement>('[data-channel="210"]')!;
     circle.focus();
-    session.snapshot = { ...session.snapshot, sequence: 1, freshBundlesAvailable: 124, scoreTotal: 12,
+    session.snapshot = { ...session.snapshot, sequence: 1, freshBundlesAvailable: 120, scoreTotal: 12,
       core: { ...session.snapshot.core, channels: [{ ...session.snapshot.core.channels[0], localTiltFraction: -0.03 }, session.snapshot.core.channels[1]] } };
     const response = { sequence: 1, accepted: true, message: "Channel refuelled.", snapshot: session.snapshot,
-      command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 4, directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
+      command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 8, directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
     emit(response);
     const impact = view.element.querySelector('[data-field="impact"]')!.textContent;
-    expect(impact).toContain("128 → 124"); expect(impact).toContain("+0.00% → -3.00%");
+    expect(impact).toContain("128 → 120"); expect(impact).toContain("+0.00% → -3.00%");
     emit(response);
     expect(view.element.querySelector('[data-field="impact"]')!.textContent).toBe(impact);
     expect(document.activeElement).toBe(circle);

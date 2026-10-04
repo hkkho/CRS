@@ -1,6 +1,6 @@
 import type { CanduChannelSnapshot } from "../protocol";
 import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../projection";
-import { getPowerLabel } from "../visuals";
+import { getHeatColor, getPowerLabel } from "../visuals";
 import { setAttribute } from "./domPatch";
 
 export class StudioMapView {
@@ -13,7 +13,7 @@ export class StudioMapView {
       if (!circle) continue;
       const amount = mode === "burnup" ? current.averageBurnupMwdPerKg / 10 : (current.localPowerFraction - 0.4) / 1.1;
       const fraction = Math.min(1, Math.max(0, amount));
-      setAttribute(circle, "fill", `hsl(${135 - fraction * 90} 72% ${32 + fraction * 30}%)`);
+      setAttribute(circle, "fill", mode === "power" ? getHeatColor(current.localPowerFraction) : `hsl(${135 - fraction * 90} 72% ${32 + fraction * 30}%)`);
       setAttribute(circle, "stroke", current.channelIndex === selected ? "#e1ffb0" : "#102a1c");
       setAttribute(circle, "stroke-width", current.channelIndex === selected ? "3" : "0.7");
       setAttribute(circle, "tabindex", current.channelIndex === selected ? "0" : "-1");

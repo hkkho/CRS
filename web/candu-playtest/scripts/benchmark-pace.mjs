@@ -40,7 +40,7 @@ try {
       await measure(`pause-${modeId}`, { type: 'pause' });
     }
     for (let i = 0; i < 3; i++) {
-      await measure('refuel', { type: 'commit-refuel', request: { ...createRefuelDraft(bridge.getSnapshot().core.channels.find(c => c.channelIndex === 210)), directionId: i % 2 ? 'toward-end-a' : 'toward-end-b', shiftCount: 4 } });
+      await measure('refuel', { type: 'commit-refuel', request: { ...createRefuelDraft(bridge.getSnapshot().core.channels.find(c => c.channelIndex === 210)) } });
       await measure('shape-solve', { type: 'solve' }, true);
     }
     // Exercise actual bounded scheduler and foreground queue against this worker.

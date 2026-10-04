@@ -58,7 +58,7 @@ try {
       };
       await dispatch({ type: "pause" });
       const refuel = await dispatch({ type: "commit-refuel", request: { channelIndex: 210,
-        directionId: "toward-end-b", shiftCount: 4, fuelTypeId: "NAT-U-SYNTHETIC" } });
+        directionId: "toward-end-b", shiftCount: 8, fuelTypeId: "NAT-U-SYNTHETIC" } });
       console.info("cpu-host: refuel accepted", refuel.wallMs);
       await dispatch({ type: "resume" });
       await dispatch({ type: "queue-power-target", targetFraction: .95 });

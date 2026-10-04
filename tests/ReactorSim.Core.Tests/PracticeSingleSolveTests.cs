@@ -69,7 +69,7 @@ public sealed class PracticeSingleSolveTests
             Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6()), original));
         var settled = Require(PracticeLiquidZoneRrsV1.TryInitializeSingleSolve(solver, core.EnumerateBundles(), initial));
         var poison = PracticeXenonStateV1.CreateEquilibrium(core, settled.Projection, 0);
-        var fuelled = Require(core.TryRefuel(210, GameRefuellingDirectionV1.TowardEndB, 8,
+        var fuelled = Require(core.TryRefuel(210, GameRefuellingDirectionV1.TowardEndA, 8,
             "NAT-U-SYNTHETIC", 0)).ResultingState;
         poison = poison.Rebind(fuelled).Advance(settled.Projection, 0.95, 180);
         var single = Require(PracticeLiquidZoneRrsV1.TryRunSingleSolve(solver,

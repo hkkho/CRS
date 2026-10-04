@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite . --configLoader runner",
     "build": "tsc -b && vite build . --configLoader runner",
+    "build:pages": "npm run build -- --base /CRS/ --outDir dist-pages",
     "preview": "vite preview",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",

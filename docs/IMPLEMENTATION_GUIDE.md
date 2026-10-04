@@ -5,21 +5,23 @@
 Build a responsive web game about keeping a CANDU reactor at useful steady
 power through on-power refuelling. The player inspects channels and bundles,
 chooses a refuelling operation, watches the authoritative reactor state update,
-and learns the relationship between fuel history, power shape, RRS reserve, and
+and learns the relationship between fuel history, power shape, average LZC level, and
 score.
 
-The Vercel-deployed `web/candu-playtest` is the product and primary acceptance
+The GitHub Pages-deployed `web/candu-playtest` is the product and primary acceptance
 path. The current game is intentionally a deterministic practice model: maintain
-RRS reserve away from both 0% and 100%, conserve finite fresh bundles, and earn
-score through stable power and useful discharged burnup.
+average LZC level between 10% and 90% and absolute global tilt at or below 20%,
+conserve finite fresh bundles, and earn score through stable power and useful discharged burnup.
 
 Shutdown, scram, accident progression, operator-training scenarios, full plant
 simulation, and plant-grade safety claims are out of scope.
 
 ### Understandable refuelling contracts
 
-Core's `GameRefuellingPlanV1` supplies the four/eight position maps used by both
-execution and the browser draft strip. Game retains the last immutable
+Core's `GameRefuellingPlanV1` supplies the position maps used by both
+execution and the browser draft strip. Gameplay publishes only eight-bundle plans;
+Game derives direction from channel flow and rejects four-bundle orders. The seeded
+aged inventory uses that same inlet orientation. Game retains the last immutable
 `RefuellingMovement` with bundle identities, nullable old/new positions, discharged
 burnup and scoring; no reactor response preview or confirmation gate is added.
 The bridge omits null positions, and frontend validation accepts this encoding.
@@ -111,7 +113,7 @@ The finite fuel budget is `FreshBundlesAvailable`.
 presented as fuel inventory.
 
 Free practice has no scripted target changes or synthetic refuel requests.
-Browser runs finish at the 30-day horizon or earlier RRS exhaustion. Game owns
+Browser runs finish at the 30-day horizon or earlier LZC level or global tilt limit violations. Game owns
 the terminal decision; the browser receives `runStatus` and `runEndReason`
 separately from physical RRS exhaustion. Terminal runs retain their final score
 and inventory until reset. The top-level `targetPowerFraction` is the applied
@@ -122,17 +124,17 @@ change it until time advances. Targets remain unavailable while paused.
 
 The player repeatedly:
 
-- runs or pauses the session and reads RRS reserve, actual power, score,
+- runs or pauses the session and reads average LZC level, actual power, score,
   inventory, and operation count;
 - selects a channel and inspects bundle positions, burnup, local power, and
   tilt;
-- chooses a direction and four- or eight-bundle shift and issues the order directly;
+- issues an eight-bundle order directly, automatically with channel flow;
 - observes the authoritative bundle movement, power/RRS response, discharged
   burnup, score, and event history;
 - opens Core Designer when an engineering inspection is useful, edits a live
   cell or reflective boundary, solves the full core, then returns to the same
   run; and
-- restarts after terminal RRS exhaustion and attempts a better run.
+- restarts after a terminal LZC level or global tilt limit violation and attempts a better run.
 
 The UI may sort observed fuel age, highlight inspection candidates, and compare
 accepted snapshots. These are presentation aids, not a second simulation.
@@ -144,7 +146,7 @@ gameplay; formal source validation is not a development gate.
 Keep the browser a consumer of the shared application contract:
 
 ```text
-Vercel-deployed DOM/SVG client + optional Phaser Designer
+GitHub Pages-deployed DOM/SVG client + optional Phaser Designer
               |
 TypeScript protocol + Web Worker
               |
@@ -202,8 +204,12 @@ The shared full-core adapter publishes explicit SI watts, normalized power,
 eigenvalue `k`, and `rho = (k - 1) / k`, together with solve identity and
 diagnostics. Short operation intervals reuse the retained equilibrium projection
 for deterministic burnup integration. The browser displays signed axial tilt
-from the solved thermal flux and two-sided RRS reserve from the live liquid-zone
-fill limits. The practice score uses the spatial tilt and power projection,
+from the solved thermal flux and average LZC water level from all fourteen
+compartments. Game ends a run below 10% or above 90% average level, or beyond
+±20% global tilt. Physical RRS exhaustion remains a separate diagnostic.
+The legacy `rrsReserveFraction` wire field retains its headroom meaning; player
+displays use `rrs.averageFillFraction`. The power map uses blue through red.
+Clock updates keep movement nodes stable and do not flash calculation text. The practice score uses the spatial tilt and power projection,
 without the legacy scenario tilt/control-margin score. Burnup can change the
 equilibrium reactivity at the half-hour full-core solve. Iodine/xenon history
 evolves analytically between those solves; prompt neutron kinetics remain out
@@ -302,13 +308,13 @@ powershell -ExecutionPolicy Bypass -File tools/Test-Browser.ps1
 ```
 
 The production GitHub workflow additionally publishes the Release AOT
-`browser-wasm` bridge, verifies the Vercel build output, deploys the prebuilt
-artifact, then runs the browser smoke test and reproduction matrix against the
-stable alias.
+`browser-wasm` bridge, builds and verifies the `/CRS/` Pages output, deploys the
+validated artifact, then runs the browser smoke test and reproduction matrix
+against https://hkkho.github.io/CRS/ with the expected commit identity.
 
 Functional acceptance uses the same smoke/reproduction scripts against a local
-production preview or the stable deployed alias. Begin shift, pause and inspect
-channels. Exercise four- and eight-bundle direct orders in both directions;
+production preview under `/CRS/` or the published Pages site. Begin shift, pause
+and inspect channels. Exercise automatic eight-bundle orders with both channel flows;
 compare power, tilt, RRS, stock and per-bundle score. There is no preview/cancel/
 confirm flow. Rejected geometry, invalid orders and stock/terminal guards are
 checked separately for atomicity. Visit Designer repeatedly and retain draft,

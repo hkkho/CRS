@@ -17,7 +17,7 @@ public sealed class PracticeRunLifecycleTests
         Assert.Equal(600, completed.Snapshot.SimulationTimeSeconds);
         Assert.Contains("horizon", completed.Snapshot.GameOverReason);
         Assert.False(session.AdvanceWallMilliseconds(100).Accepted);
-        Assert.False(session.RefuelChannel(189, "toward-end-b", 4, "NAT-U-SYNTHETIC").Accepted);
+        Assert.False(session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
         Assert.False(session.QueuePowerTarget(0.95).Accepted);
         Assert.False(session.Resume().Accepted);
         Assert.False(session.DebugGrantFreshBundles(4).Accepted);

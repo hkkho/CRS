@@ -11,7 +11,7 @@ if (args[0] == "--fixtures")
     string initialize = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":1001}";
     Add("full", "initialize", initialize, runtime.Initialize(initialize));
     Dispatch("compact", "{\"type\":\"pause\"}", 0);
-    Dispatch("replacement", "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}", 1);
+    Dispatch("replacement", "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}", 1);
     Dispatch("failure", "{\"type\":\"queue-power-target\",\"targetFraction\":0.95}", 2);
     Dispatch("resync", "{\"type\":\"resume\"}", 0);
     Dispatch("reset", "{\"type\":\"reset\"}", 3);
@@ -46,8 +46,8 @@ foreach (int seed in new[] { 1001, 1002 })
         "{\"type\":\"resume\"}",
         "{\"type\":\"queue-power-target\",\"targetFraction\":0.95}",
         "{\"type\":\"advance\",\"wallMilliseconds\":100}",
-        "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}",
-        "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":4,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}",
+        "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}",
+        "{\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":999,\"directionId\":\"toward-end-b\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}}",
         "{\"type\":\"set-playback-mode\",\"modeId\":\"10x\"}",
         "{\"type\":\"advance\",\"wallMilliseconds\":100}",
         "{\"type\":\"solve\"}",

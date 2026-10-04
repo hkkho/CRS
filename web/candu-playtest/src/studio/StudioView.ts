@@ -1,7 +1,7 @@
 import { isRunTerminal, type CanduCommandResponse } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
 import type { CanduChannelSnapshot, CanduCommand, CanduSnapshot, PlaybackModeId } from "../protocol";
-import { canIssueRefuel, createRefuelDraft, formatRefuelDirection, toggleRefuelDirection, toRefuelRequest, type RefuelDraft } from "../commandState";
+import { canIssueRefuel, createRefuelDraft, formatRefuelDirection, toRefuelRequest, type RefuelDraft } from "../commandState";
 import { highestBurnupChannel, isChannelRefuellable, channelHeadroom, operationGuidance } from "../gameplayPresentation";
 import { findAdjacentChannelIndex, gridCoordinateLabel } from "../projection";
 import { formatEffectiveK, formatLiquidZoneRegion, formatSimulationTime, formatClockDuration, getOverallStatus, getPowerLabel, getTiltLabel } from "../visuals";
@@ -63,9 +63,9 @@ export class StudioView {
         </section>
         <section class="studio-metrics" aria-label="Live reactor status">
           <article><span class="studio-eyebrow">REGULATED POWER</span><strong data-field="power"></strong><small>Target <span data-field="power-target"></span></small><small data-field="power-rating"></small></article>
-          <article><span class="studio-eyebrow">RRS RESERVE</span><strong data-field="reserve"></strong><small data-field="status"></small></article>
+          <article><span class="studio-eyebrow">LZC AVERAGE LEVEL</span><strong data-field="reserve"></strong><small>Keep between 10% and 90%</small><small data-field="status"></small></article>
           <article><span class="studio-eyebrow">SHIFT SCORE</span><strong data-field="score"></strong><small><span data-field="operations"></span> fuel moves completed</small></article>
-          <article><span class="studio-eyebrow">FRESH BUNDLES</span><strong data-field="stock"></strong><small>4 or 8 bundles per move</small></article>
+          <article><span class="studio-eyebrow">FRESH BUNDLES</span><strong data-field="stock"></strong><small>8 bundles per move · with flow</small></article>
           <article class="studio-clock"><span class="studio-eyebrow">SIMULATION CLOCK</span><strong data-field="time"></strong><div class="studio-segments" aria-label="Playback speed"><button data-action="pause" aria-label="Pause simulation" data-field="pause">Ⅱ</button><button data-action="speed" data-speed="1x">1×</button><button data-action="speed" data-speed="10x">10×</button><button data-action="speed" data-speed="60x">60×</button></div><small data-field="pace" title="Observed simulation minutes per real second includes time spent solving. Requested speed is a target; no catch-up work is queued."></small></article>
         </section>
         <div data-field="history"></div>
@@ -87,17 +87,17 @@ export class StudioView {
             <div class="studio-channel-metrics"><div><span>LOCAL POWER</span><strong data-field="local-power"></strong></div><div><span>SIGNED TILT · B+</span><strong data-field="local-tilt"></strong></div></div>
             <div class="studio-rack-heading"><span class="studio-eyebrow">12 BUNDLE POSITIONS</span><span data-field="burnup"></span></div>
             <div data-field="bundles" class="studio-axial-profile" aria-label="Selected channel axial power and burnup profiles"></div><div class="studio-rack-ends"><span>END A / 01</span><span>AXIAL BUNDLE POSITION</span><span>12 / END B</span></div>
-            <div class="studio-order"><label>Fuel direction<button data-action="direction" data-field="direction"></button></label><div class="studio-order-size"><span>Shift size</span><div class="studio-segments"><button data-action="size" data-size="4">4 bundles</button><button data-action="size" data-size="8">8 bundles</button></div></div>
+            <div class="studio-order"><p class="studio-order-size"><span>Fuel with flow</span><strong data-field="direction"></strong></p>
             <button data-action="refuel" data-field="refuel" class="studio-primary">Refuel channel →</button><p class="studio-order-note" data-field="order-note"></p><div data-field="movement-plan" class="studio-movement"></div></div>
             <details class="studio-controls"><summary>Power &amp; time controls</summary><label>Power target <output data-field="target-output"></output><input data-field="target-input" type="range" min="80" max="120" step="1" aria-label="Power target percent" /></label><div><button data-action="target">Apply target</button><button data-action="step">Advance 1 hour</button></div><small>Resume to apply a power target. Pause to step time.</small></details>
           </section>
         </main>
         <section class="studio-bottom">
-          <article class="studio-card studio-result"><div class="studio-card-heading"><h2>Last fuel move</h2><span class="studio-eyebrow">EQUILIBRIUM RESPONSE</span></div><p data-field="feedback"></p><div data-field="movement-result" class="studio-movement-result"></div><div class="studio-impact-grid" data-field="impact">Local power, tilt, reserve and inventory will appear here after refuelling.</div></article>
+          <article class="studio-card studio-result"><div class="studio-card-heading"><h2>Last fuel move</h2><span class="studio-eyebrow">EQUILIBRIUM RESPONSE</span></div><p data-field="feedback"></p><div data-field="movement-result" class="studio-movement-result"></div><div class="studio-impact-grid" data-field="impact">Local power, tilt, LZC level and inventory will appear here after refuelling.</div></article>
           <article class="studio-card studio-zones"><div class="studio-card-heading"><h2>Regulating headroom</h2><span class="studio-eyebrow">14 LIQUID ZONES</span></div><div data-field="zones" class="studio-zone-strip"></div><p data-field="zone-note"></p></article>
         </section>
         </div>
-        <footer class="studio-footer"><span data-field="guidance"></span><span>SPACE pause / resume · R refuel · D direction</span></footer>
+        <footer class="studio-footer"><span data-field="guidance"></span><span>SPACE pause / resume · R refuel</span></footer>
       </div>`;
     this.element.querySelectorAll<HTMLElement>("[data-field]").forEach(field => this.fields.set(field.dataset.field!, field));
     parent.append(this.element);
@@ -114,7 +114,6 @@ export class StudioView {
     this.animatedOperation = this.snapshot.lastFuelMovement?.operationId;
     this.buildZones();
     this.select(initial.selectedChannelIndex ?? 210);
-    if (initial.refuelDraft?.channelIndex === this.selected) this.draft = { ...initial.refuelDraft };
     this.element.addEventListener("click", this.onClick);
     this.element.addEventListener("keydown", this.onKeyDown);
     this.field<HTMLInputElement>("target-input").addEventListener("input", this.onTargetInput);
@@ -204,13 +203,13 @@ export class StudioView {
       this.text("power-target", getPowerLabel(snapshot.targetPowerFraction));
       this.text("power-rating", snapshot.physics.electricalPowerWatts === undefined ? "" :
         `${(snapshot.physics.electricalPowerWatts / 1e6).toFixed(0)} MW electric · ${(snapshot.physics.totalPowerWatts / 1e6).toFixed(0)} MW thermal`);
-      this.text("reserve", `${(snapshot.rrsReserveFraction * 100).toFixed(0)}%`);
+      this.text("reserve", `${(snapshot.rrs.averageFillFraction * 100).toFixed(1)}%`);
       this.text("score", snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 }));
       this.text("operations", String(snapshot.refuellingOperationCount));
       this.text("stock", String(snapshot.freshBundlesAvailable));
       this.text("time", formatSimulationTime(snapshot.simulationTimeSeconds));
       this.text("status", isRunTerminal(snapshot) ? "Shift complete" : getOverallStatus(snapshot));
-      this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)} · Core tilt ${getTiltLabel(snapshot.axialTiltFraction)} · End B positive`);
+      this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)} · Global tilt ${getTiltLabel(snapshot.axialTiltFraction)} · Limit ±20% · End B positive`);
       this.text("guidance", operationGuidance(snapshot));
 
       this.text("pause", snapshot.isPaused ? "▶" : "Ⅱ");
@@ -222,7 +221,8 @@ export class StudioView {
       this.text("burnup", channel ? `${channel.averageBurnupMwdPerKg.toFixed(1)} avg` : "—");
       this.text("direction", this.draft ? formatRefuelDirection(this.draft.directionId) : "Select a channel");
       this.text("map-tag", `LIVE / ${this.mapMode.toUpperCase()}`);
-      this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM" : "Low → high local power · relative to core mean");
+      this.element.dataset.mapMode = this.mapMode;
+      this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM" : "Blue 40% → red 250% · core mean = 100%");
       this.mapView.update(snapshot, this.selected, this.mapMode);
       this.renderWatchlist();
       this.orderView.update(snapshot, this.draft, channel);
@@ -260,7 +260,7 @@ export class StudioView {
     if (shift) {
       this.text("objective-title", `${shift.title} / SEED ${shift.seed}`);
       this.text("objective", shift.objective);
-      this.text("objective-reward", provenance?.isModified ? "Explore freely; reset to begin a standard run with the same seed." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before choosing direction.` : "No scripted moves. Choose your own refuelling strategy.");
+      this.text("objective-reward", provenance?.isModified ? "Explore freely; reset to begin a standard run with the same seed." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before refuelling.` : "No scripted moves. Choose your own refuelling strategy.");
       this.text("objective-progress", shift.usefulBundlesRequired > 0 ?
         `${shift.usefulBundlesDischarged} / ${shift.usefulBundlesRequired} useful bundles` : `${shift.usefulBundlesDischarged} useful bundles discharged`);
       this.text("remaining", `${formatClockDuration(shift.remainingSeconds)} remaining · ${this.snapshot.freshBundlesAvailable} / ${shift.fuelBudget} fresh bundles left`);
@@ -325,8 +325,6 @@ export class StudioView {
         refuelDraft: this.draft ?? undefined, selectedTab: this.historyView.tab, mapMode: this.mapMode }); break;
       case "map": this.mapMode = target.dataset.map === "power" ? "power" : "burnup"; this.render(); break;
       case "oldest": this.select(highestBurnupChannel(this.snapshot.core.channels) ?? this.selected); this.render(); break;
-      case "size": if (this.draft) this.draft.shiftCount = target.dataset.size === "8" ? 8 : 4; this.render(); break;
-      case "direction": if (this.draft) this.draft.directionId = toggleRefuelDirection(this.draft.directionId); this.render(); break;
       case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
       case "pause": void this.send({ type: this.snapshot.isPaused ? "resume" : "pause" }); break;
       case "speed": void this.send({ type: "set-playback-mode", modeId: target.dataset.speed as PlaybackModeId }); break;
@@ -353,7 +351,7 @@ export class StudioView {
     // Let native buttons retain Space/Enter activation and focus behavior.
     if ((key === " " || key === "enter") && target.closest("button, summary")) return;
     if ((key === "enter" || key === " ") && target.hasAttribute("data-channel")) { event.preventDefault(); return; }
-    const action = ({ " ": "pause", r: "refuel", d: "direction", n: "oldest" } as Record<string, string>)[key];
+    const action = ({ " ": "pause", r: "refuel", n: "oldest" } as Record<string, string>)[key];
     if (action) { event.preventDefault(); this.element.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)?.click(); }
   };
 }
