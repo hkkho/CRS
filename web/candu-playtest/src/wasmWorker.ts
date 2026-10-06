@@ -6,7 +6,7 @@ import {
 } from "./protocol";
 
 type WorkerRequest =
-  | { id: number; type: "initialize"; mode: BridgeModeId }
+  | { id: number; type: "initialize"; mode: BridgeModeId; seed: number }
   | { id: number; type: "get-snapshot" }
   | { id: number; type: "gpu-fixture"; requestJson: string }
   | { id: number; type: "dispatch"; commandJson: string; profile?: boolean };
@@ -84,7 +84,7 @@ async function dispatchRequest(api: CanduPlaytestWasmExports, request: WorkerReq
       if (api.initialize === undefined) {
         return api.getSnapshotJson();
       }
-      return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode })));
+      return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode, seed: request.seed })));
     case "get-snapshot":
       return normalizeJson(await api.getSnapshotJson());
     case "gpu-fixture":

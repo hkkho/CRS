@@ -6,9 +6,25 @@ import {
   type WorkerProtocolWorker,
 } from "./bridge";
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("WorkerProtocolBridge lifecycle", () => {
+  it("sends a cryptographic seed for new worker cores and preserves explicit replay seeds", async () => {
+    vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(array => { (array as Uint32Array)[0] = 3456789012; return array; });
+    const harness = createWorkerHarness();
+    const bridge = new WorkerProtocolBridge({ createWorker: () => harness.worker });
+    harness.emitReady();
+    for (const explicit of [undefined, 1001]) {
+      const pending = bridge.initialize('play', explicit);
+      await flushMicrotasks();
+      const request = harness.postedMessages.at(-1) as { id: number; seed: number };
+      expect(request.seed).toBe(explicit ?? 3456789012);
+      harness.worker.onmessage?.({ data: { type: 'result', id: request.id, wasmCallDurationMs: 0,
+        returnedUtf8PayloadBytes: 1, resultJson: JSON.stringify(createSnapshot()) } } as MessageEvent);
+      await pending;
+    }
+    bridge.dispose();
+  });
   it("fails startup closed when the worker never becomes ready", async () => {
     vi.useFakeTimers();
     const harness = createWorkerHarness();

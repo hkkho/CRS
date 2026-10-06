@@ -1,3 +1,4 @@
+import { randomCoreSeed } from "../coreSeed";
 import { isRunTerminal, type CanduCommandResponse } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
 import type { CanduChannelSnapshot, CanduCommand, CanduSnapshot, PlaybackModeId } from "../protocol";
@@ -280,7 +281,7 @@ export class StudioView {
     if (shift) {
       this.text("objective-title", `${shift.title} / SEED ${shift.seed}`);
       this.text("objective", shift.objective);
-      this.text("objective-reward", provenance?.isModified ? "Explore freely; reset to begin a standard run with the same seed." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before refuelling.` : "No scripted moves. Choose your own refuelling strategy.");
+      this.text("objective-reward", provenance?.isModified ? "Explore freely; start a new shift to begin a standard run." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before refuelling.` : "No scripted moves. Choose your own refuelling strategy.");
       this.text("objective-progress", shift.usefulBundlesRequired > 0 ?
         `${shift.usefulBundlesDischarged} / ${shift.usefulBundlesRequired} useful bundles` : `${shift.usefulBundlesDischarged} useful bundles discharged`);
       this.text("remaining", shift.isEndless ? "Endless run · Unlimited fresh fuel" : `${formatClockDuration(shift.remainingSeconds)} remaining · ${this.snapshot.freshBundlesAvailable} / ${shift.fuelBudget} fresh bundles left`);
@@ -347,10 +348,10 @@ export class StudioView {
       case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
       case "pause": void this.send({ type: this.snapshot.isPaused ? "resume" : "pause" }); break;
       case "speed": void this.send({ type: "set-playback-mode", modeId: target.dataset.speed as PlaybackModeId }); break;
-      case "reset":
       case "retry": void this.send({ type: "reset" }); break;
-      case "new-seed": void this.send({ type: "reset", seed: ((this.snapshot.shift?.seed ?? 1001) + 1) >>> 0 }); break;
-      case "challenge": void this.send({ type: "reset", shiftId: this.snapshot.shift?.id === "useful-fuel-day-v1" ? "free-practice" : "useful-fuel-day-v1" }); break;
+      case "reset":
+      case "new-seed": void this.send({ type: "reset", seed: randomCoreSeed(this.snapshot.shift?.seed) }); break;
+      case "challenge": void this.send({ type: "reset", seed: randomCoreSeed(this.snapshot.shift?.seed), shiftId: this.snapshot.shift?.id === "useful-fuel-day-v1" ? "free-practice" : "useful-fuel-day-v1" }); break;
       case "step": void this.send({ type: "step", simulationSeconds: 3600 }); break;
       case "target": void this.send({ type: "queue-power-target", targetFraction: Number(this.field<HTMLInputElement>("target-input").value) / 100 }); break;
     }

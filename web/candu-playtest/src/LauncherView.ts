@@ -1,3 +1,4 @@
+import { randomCoreSeed } from "./coreSeed";
 import type { CanduCommand, ShiftId } from "./protocol";
 import type { BridgeSessionController, SessionUpdate } from "./sessionController";
 import "./workspace.css";
@@ -86,7 +87,7 @@ export class LauncherView {
     if (action === "begin" && !this.starting && !this.session.isPending && this.session.status.isWasmAvailable) {
       this.starting = true; this.begin();
     }
-    if (action === "next") void this.reset({ type: "reset", seed: ((this.session.snapshot.shift?.seed ?? 1001) + 1) >>> 0,
+    if (action === "next") void this.reset({ type: "reset", seed: randomCoreSeed(this.session.snapshot.shift?.seed),
       shiftId: this.field<HTMLSelectElement>("shift").value as ShiftId });
   };
 

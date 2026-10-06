@@ -51,7 +51,10 @@ export async function verifyShift(page) {
   check((await studio.locator('[data-field="ending-title"]').textContent()) === 'Objective missed', 'Empty retry incorrectly met the challenge.');
   check(!(await studio.locator('[data-field="ending-reward"]').textContent()).includes('Earned:'), 'Empty retry awarded a badge.');
   await studio.locator('[data-action="new-seed"]').click();
-  await page.waitForFunction(nextSeed => document.querySelector('[data-field="objective-title"]')?.textContent?.endsWith(`SEED ${nextSeed}`), (Number(seed) + 1) >>> 0, { timeout: 120_000 });
+  await page.waitForFunction(previousSeed => {
+    const title = document.querySelector('[data-field="objective-title"]')?.textContent;
+    return title?.includes('SEED ') && !title.endsWith(`SEED ${previousSeed}`);
+  }, seed, { timeout: 120_000 });
   await idle();
   await studio.locator('[data-action="challenge"]').click();
   await page.waitForFunction(() => document.querySelector('[data-field="objective-title"]')?.textContent?.includes('Free practice'), undefined, { timeout: 120_000 });

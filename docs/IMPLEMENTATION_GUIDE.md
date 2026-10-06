@@ -62,7 +62,7 @@ calculating goal eligibility.
 Cumulative energy is committed with accepted burnup transactions. Startup fuel
 exposure is excluded; rejected/paused advances add no delivered energy. Fuel
 consumption and useful-discharge counts update on accepted refuelling.
-The ending card uses these totals and supports retaining or incrementing the
+The ending card uses these totals and supports retaining or randomly replacing the
 seed while preserving the selected objective. Ripple reward is capped at one point per simulated hour; direct discharge rewards
 and fuel point costs are zero. See `gameplay/score-balance.md` and
 `physics/channel-power-reference.md`.

@@ -271,7 +271,7 @@ async function initialize(page) {
     if (helpers === undefined) throw new Error("Benchmark page helpers were not installed.");
     const bridge = globalThis.__canduBenchmarkBridge;
     if (bridge !== null && bridge !== undefined) {
-      const snapshot = await bridge.initialize("play");
+      const snapshot = await bridge.initialize("play", 1001);
       const raw = globalThis.__canduBenchmarkLastRawResponse;
       const response = raw === null || raw === undefined ? null : JSON.parse(raw);
       const metric = helpers.lastMetric(bridge.getTransportMetrics(), "initialize");
@@ -286,7 +286,7 @@ async function initialize(page) {
 
     const api = globalThis.__canduBenchmarkApi;
     const started = performance.now();
-    const raw = await api.initialize(JSON.stringify({ protocol: "candu-playtest-v2", mode: "play" }));
+    const raw = await api.initialize(JSON.stringify({ protocol: "candu-playtest-v2", mode: "play", seed: 1001 }));
     const wasmCallDurationMs = performance.now() - started;
     const parseStarted = performance.now();
     const response = JSON.parse(raw);

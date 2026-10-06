@@ -2,7 +2,10 @@
 
 The browser starts from `patterned-channel-age-eight-shift-with-flow-cycle190-v3`, generated in
 Core and solved by the existing full-core diffusion solver and bounded RRS.
-Default seed is 1001. The title's **New aged core** button advances the seed.
+The browser draws a cryptographically random 32-bit seed on loading and when
+**New aged core**, **New shift**, or **Try new seed** is selected. Explicit seed
+entry and **Retry same seed** preserve reproducibility. Offline fixtures retain
+fixed seeds, including 1001, so numerical regressions can be compared.
 Browser `initialize` and `reset` accept optional `seed` integers in
 0..4294967295; reset without a seed recreates the current seed. The request is
 recorded in replay history. Game/Core APIs accept unsigned 64-bit seeds.

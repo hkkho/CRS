@@ -51,7 +51,7 @@ scripted moves are added.
 The shift report shows the ending reason, thermal energy and estimated electrical
 energy delivered, fresh fuel consumed, useful discharged bundles and cumulative
 operating/discharge/fuel-cost points. **Retry same seed** repeats the same objective
-and aged core; **Try new seed** starts the next deterministic core. Reports and
+and aged core; **Try new seed** draws a random new core. Reports and
 badges belong to the current run and reset when a new run begins.
 
 Before ordering, the fuel strip names the incoming/outgoing ends and marks the
@@ -88,7 +88,9 @@ channel/bundle power use thermal fission energy; Reactor Studio shows both
 core totals. The electrical conversion is an authored presentation estimate.
 
 Runs now start from a seeded aged-core snapshot. **New aged core** on the title
-screen chooses the next seed; **New shift** recreates the current seed.
+screen and **New shift** draw a random 32-bit seed using browser cryptographic
+randomness, as does initial loading. Explicit seed entry and **Retry same seed**
+recreate a deterministic core.
 The [aged-core model notes](docs/physics/aged-core-starts.md) describe the
 RFSP-inspired channel ages, eight-bundle history and burnup coverage.
 

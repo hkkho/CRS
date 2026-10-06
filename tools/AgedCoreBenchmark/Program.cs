@@ -7,6 +7,12 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--fuelling-100-days")
+{
+    FuellingCapabilityBenchmark.Run(args.Length > 1 ? args[1] : "artifacts/fuelling-100-days",
+        args.Length > 2 ? uint.Parse(args[2], CultureInfo.InvariantCulture) : BitConverter.ToUInt32(System.Security.Cryptography.RandomNumberGenerator.GetBytes(4)));
+    return;
+}
 if (args.Length > 0 && args[0] == "--fit-reactivity-scale")
 {
     if (args.Length != 3)

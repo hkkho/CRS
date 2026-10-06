@@ -192,3 +192,17 @@ It writes a proposal rather than modifying runtime data. Acceptance requires
 both 16-bundle worth and one-day fixed-zone decay within 0.4-0.7 mk, and
 approximately 6.5 mk empty-to-full zone worth. The applied pack is versioned
 separately; provenance and checksum updates accompany its installation.
+
+## 100-day fuelling capability
+
+`dotnet run --project tools/AgedCoreBenchmark -c Release -- --fuelling-100-days artifacts/fuelling-100-days [SEED]`
+
+Omitting the seed draws a cryptographic uint32 and records it for replay.
+The authoritative endless browser session advances every 180 simulated seconds,
+with normal xenon, LZC and terminal power limits. An offline player policy refuels
+eight bundles along channel flow whenever mean zone fill falls below 45%. If
+paired regional fills differ by more than one percentage point, it chooses the
+oldest eligible channel in the lowest-fill region; otherwise it chooses the oldest
+globally. It checks power/fuel accounting at every step, records hourly and move
+samples, and checkpoints `report.json` hourly. A terminal state ends the
+attempt and is reported as failure to reach 100 days, never bypassed.

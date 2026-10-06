@@ -288,7 +288,7 @@ describe("Reactor Studio live interface", () => {
     expect(returned.element.querySelector('[data-field="movement-result"]')!.textContent).toContain("Confirmed move #1");
   });
 
-  it("shows supplied objective progress and cumulative report, then retries with the same or next seed", () => {
+  it("shows supplied objective progress and cumulative report, then retries with the same or random seed", () => {
     const { session, view, emit, button } = harness();
     session.snapshot.shift = createShift();
     emit();
@@ -306,14 +306,18 @@ describe("Reactor Studio live interface", () => {
     expect(document.activeElement).toBe(view.element.querySelector('[data-field="ending-title"]'));
     button("retry").click();
     expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset" });
+    const entropy = vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(array => { (array as Uint32Array)[0] = 987654321; return array; });
     button("new-seed").click();
-    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 43 });
+    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 987654321 });
+    button("reset").click();
+    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 987654321 });
+    entropy.mockRestore();
     session.snapshot.runStatus = "running";
     session.snapshot.shift = createShift();
     emit();
     expect(view.element.querySelector<HTMLElement>('[data-field="ending"]')!.hidden).toBe(true);
     button("challenge").click();
-    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", shiftId: "free-practice" });
+    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: expect.any(Number), shiftId: "free-practice" });
   });
 
   it("announces the earned badge supplied by the shared game", () => {

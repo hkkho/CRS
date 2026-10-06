@@ -1,3 +1,4 @@
+import { randomCoreSeed } from "./coreSeed";
 import {
   CORE_BUNDLE_POSITION_COUNT,
   CORE_CHANNEL_COUNT,
@@ -127,13 +128,13 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
     return this.metrics.slice();
   }
 
-  async initialize(mode: BridgeModeId): Promise<CanduSnapshot> {
+  async initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed)): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
 
     const callStarted = nowMs();
-    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode }));
+    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed }));
     const callDuration = nowMs() - callStarted;
     const parseStarted = nowMs();
     try {
@@ -253,6 +254,7 @@ interface WorkerRequest {
   id: number;
   type: "initialize" | "get-snapshot" | "dispatch";
   mode?: BridgeModeId;
+  seed?: number;
   commandJson?: string;
 }
 
@@ -375,10 +377,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     this.terminateWorker();
   }
 
-  initialize(mode: BridgeModeId): Promise<CanduSnapshot> {
+  initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed)): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
-      const result = await this.request({ id: 0, type: "initialize", mode });
+      const result = await this.request({ id: 0, type: "initialize", mode, seed });
       const parseStarted = nowMs();
       let snapshot: CanduSnapshot;
       let response: CanduCommandResponse;
