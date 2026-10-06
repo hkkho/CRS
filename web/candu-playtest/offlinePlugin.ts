@@ -33,7 +33,9 @@ const BASE = ${JSON.stringify(config.base)};
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   try {
-    for (let i = 0; i < ASSETS.length; i += 12) await cache.addAll(ASSETS.slice(i, i + 12));
+    // Revalidate HTTP-cached HTML and WASM so a new cache cannot mix builds.
+    for (let i = 0; i < ASSETS.length; i += 12)
+      await cache.addAll(ASSETS.slice(i, i + 12).map(url => new Request(url, { cache: 'reload' })));
   } catch (error) { await caches.delete(CACHE); throw error; }
 })()));
 self.addEventListener('activate', event => event.waitUntil((async () => {
