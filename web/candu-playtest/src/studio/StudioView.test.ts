@@ -243,7 +243,7 @@ describe("Reactor Studio live interface", () => {
     session.snapshot.core.channels[1].canRefuel = false;
     session.snapshot.core.channels[1].refuellingIneligibilityReason = "Channel contains a nonfuel cell.";
     emit(); button("oldest").click();
-    expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe("Channel 210");
+    expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe("L11");
     view.element.querySelector<SVGRectElement>('rect[data-channel="211"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(button("refuel").disabled).toBe(true);
     expect(view.element.querySelector('[data-field="order-note"]')!.textContent).toContain("nonfuel cell");
@@ -378,6 +378,9 @@ describe("Reactor Studio live interface", () => {
     emit();
     expect(view.element.querySelector('[data-field="power-rating"]')?.textContent)
       .toBe("650 MW electric · 2064 MW thermal");
+    expect(view.element.querySelector('.studio-metrics [data-field="power-rating"]')).toBeNull();
+    expect(view.element.querySelector('[data-field="power"]')).toBeNull();
+    expect(view.element.querySelector('.studio-metrics')!.textContent).not.toContain('REGULATED POWER');
   });
 
   it("uses Studio exclusively and refuels eight bundles with channel flow", () => {
@@ -449,7 +452,7 @@ describe("Reactor Studio live interface", () => {
     expect(document.activeElement).toBe(circle);
     circle.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
     expect(document.activeElement?.getAttribute("data-channel")).toBe("211");
-    expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe("Channel 211");
+    expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe("L12");
   });
 
   it("keeps range keyboard editing separate from gameplay shortcuts and dispatches controls", () => {

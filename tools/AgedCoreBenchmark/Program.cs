@@ -7,6 +7,18 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--fit-reactivity-scale")
+{
+    if (args.Length != 3)
+        throw new ArgumentException("Usage: --fit-reactivity-scale SOURCE_PACK OUTPUT_DIRECTORY");
+    ReactivityScaleCalibration.Run(args[1], args[2]);
+    return;
+}
+if (args.Length > 0 && args[0] == "--reactivity-scale")
+{
+    AuditReactivityScale(args.Length > 1 ? args[1] : "artifacts/reactivity-scale.json");
+    return;
+}
 if (args.Length > 0 && args[0] == "--fit-core")
 {
     CoreFuelCalibration.Run(args.Length > 1 ? args[1] : "artifacts/core-fuel-calibration", args.Length > 2 ? args[2] : null);
@@ -133,6 +145,41 @@ static ReactivityProbe Probe(BundleState[] bundles)
     if (!solution.IsValid) throw new InvalidOperationException(solution.FirstDiagnostic.ToString());
     var spatial = solution.Value.CurrentProjection.SpatialSolve;
     return new ReactivityProbe(solution.Value.CurrentProjection.RelativeReactivity, spatial.IterationCount, spatial.ResidualRelativeInfinity);
+}
+
+static void AuditReactivityScale(string outputPath)
+{
+    var initial = SyntheticGameCoreStateV1.CreateAgedPractice(1001);
+    var solver = Require(EquilibriumCoreSolverV1.TryCreate(TightModel(), initial.EnumerateBundles(),
+        PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts));
+    var mapping = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+    var fills = new double[14];
+    EquilibriumCoreProjectionV1 Solve(SyntheticGameCoreStateV1 state, double fill)
+    {
+        Array.Fill(fills, fill);
+        return Require(solver.TrySolveCandidate(state.EnumerateBundles(), Require(mapping.TryBuildOverlay(fills))));
+    }
+    var half = Solve(initial, .5);
+    var empty = Solve(initial, 0);
+    var full = Solve(initial, 1);
+    var burned = Require(initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray()));
+    var after = Solve(burned, .5);
+    var report = new
+    {
+        dataPack = PracticeGameSessionFactory.DiffusionDataPackVersion,
+        seed = 1001,
+        referenceThermalPowerWatts = PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts,
+        method = "Tight independent static solves; rho=(k-1)/k and mk=1000*rho. Burnup adds one full-power day of thermal energy using the initial half-fill shape, with zones fixed at 50% and no evolving xenon or refuelling. Zone worth is rho(empty)-rho(full) on the identical initial inventory. These are local authored-model measurements, not universal plant constants.",
+        burnupLossMkPerFullPowerDay = 1000 * (half.RelativeReactivity - after.RelativeReactivity),
+        totalFourteenZoneWorthMk = 1000 * (empty.RelativeReactivity - full.RelativeReactivity),
+        halfFillK = half.SpatialSolve.EffectiveK,
+        afterOneFullPowerDayK = after.SpatialSolve.EffectiveK,
+        emptyK = empty.SpatialSolve.EffectiveK,
+        fullK = full.SpatialSolve.EffectiveK,
+    };
+    Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
+    File.WriteAllText(outputPath, JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
+    Console.WriteLine(File.ReadAllText(outputPath));
 }
 
 static FullCoreDiffusionModelV1 TightModel(string? sourcePackPath = null)

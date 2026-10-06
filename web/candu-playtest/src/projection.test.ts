@@ -31,7 +31,7 @@ describe("Front-facing core projection helpers", () => {
   it("formats the CANDU row/column coordinate without inventing a channel", () => {
     expect(CANDU6_ROW_LABELS).toHaveLength(22);
     expect(gridCoordinateLabel({ gridColumn: 4, gridRow: 8 })).toBe("J05");
-    expect(channelDisplayId(7)).toBe("CH 007");
+    expect(channelDisplayId({ gridColumn: 4, gridRow: 10 })).toBe("L05");
   });
 
   it("maps pointer coordinates back to the same direct row and column", () => {

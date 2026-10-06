@@ -1158,7 +1158,7 @@ namespace ReactorSim.Game
                               GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
             string inventory = _coreState.UnlimitedFreshFuel ? "; unlimited fresh fuel" :
                 "; " + _coreState.FreshBundlesAvailable.ToString(CultureInfo.InvariantCulture) + " fresh bundles remain";
-            return "Channel " + result.ChannelIndex.ToString(CultureInfo.InvariantCulture) +
+            return "Channel " + PracticeCoreLayout.GetChannelName(result.ChannelIndex) +
                    " refuelled toward " + endName + " with " +
                    result.ShiftCount.ToString(CultureInfo.InvariantCulture) + " " +
                    result.FuelTypeId + " bundles; discharged burnup " +

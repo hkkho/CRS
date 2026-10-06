@@ -127,7 +127,7 @@ public sealed class PracticeXenonGameTests
     }
 
     [Fact]
-    public void HalfHourCouplingAgreesWithFiveMinuteReferenceAfterRefuelling()
+    public void ThreeMinuteCouplingAgreesWithOneMinuteReferenceAfterRefuelling()
     {
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
         Assert.True(session.RefuelChannel(210, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
@@ -149,7 +149,7 @@ public sealed class PracticeXenonGameTests
             }
             return (poison, rrs, projection);
         }
-        var production = Run(1800); var reference = Run(300);
+        var production = Run(PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds); var reference = Run(60);
         double peak = reference.Poison.Xenon.Max();
         double poisonError = production.Poison.Xenon.Select((x, n) => Math.Abs(x - reference.Poison.Xenon[n]) / peak).Max();
         double fillError = production.Rrs.ZoneFills.Select((f, n) => Math.Abs(f - reference.Rrs.ZoneFills[n])).Max();

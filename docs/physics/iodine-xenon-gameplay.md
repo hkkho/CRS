@@ -58,7 +58,7 @@ hides an invalid update. The legacy explicit Euler contracts remain unchanged.
 ## Coupling and fuel behavior
 
 Short ticks integrate burnup and poison using the retained accepted shape.
-The existing 1,800-second shape boundary performs a warm-started diffusion/RRS
+Each 180-second browser simulation step performs a warm-started diffusion/RRS
 event with updated burnup and a frozen poison overlay. The same overlay enters
 the uncompensated baseline and every zone verification/correction trial.
 There is no second direct xenon-reactivity term. More regional poison changes

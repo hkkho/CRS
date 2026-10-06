@@ -22,13 +22,19 @@ public sealed class GameplayBalanceTests
             Assert.True(waste.RefuelChannel(channel, productive, 8, "NAT-U-SYNTHETIC").Accepted);
         foreach (var session in new[] { idle, useful, waste })
         {
-            var result = session.AdvanceWallMilliseconds(60_000);
-            Assert.True(result.Accepted, result.DiagnosticMessage);
-            Assert.Equal(600, result.Snapshot.SimulationTimeSeconds);
-            Assert.InRange(result.Snapshot.Shift.OperatingPoints, 0, 600.0 / 3600.0);
+            double expected = 0;
+            foreach (ulong milliseconds in new ulong[] { 18_000, 18_000, 18_000, 6_000 })
+            {
+                double beforeTime = session.Snapshot.SimulationTimeSeconds;
+                double rate = session.Snapshot.Ripple.PointsPerHour;
+                var result = session.AdvanceWallMilliseconds(milliseconds);
+                Assert.True(result.Accepted, result.DiagnosticMessage);
+                expected += rate * (result.Snapshot.SimulationTimeSeconds - beforeTime) / 3600;
+            }
+            Assert.Equal(600, session.Snapshot.SimulationTimeSeconds);
+            Assert.InRange(session.Snapshot.Shift.OperatingPoints, 0, 600.0 / 3600.0);
+            Assert.Equal(expected, session.Snapshot.ScoreTotal, 10);
         }
-        foreach (var session in new[] { idle, useful, waste })
-            Assert.Equal(session.Snapshot.Ripple.PointsPerHour * 600 / 3600, session.Snapshot.ScoreTotal, 10);
         Assert.Equal(8u, useful.Snapshot.Shift.FuelConsumed);
         Assert.Equal(40u, waste.Snapshot.Shift.FuelConsumed);
         Assert.Equal(344, useful.Snapshot.Shift.ThermalEnergyMwh, 6);

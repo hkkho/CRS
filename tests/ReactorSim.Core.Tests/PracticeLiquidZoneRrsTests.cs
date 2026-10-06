@@ -216,7 +216,7 @@ public sealed class PracticeLiquidZoneRrsTests
     }
 
     [Fact]
-    public void CalibratedZonesHaveValidPositiveAbsorptionAndSixToSevenMkWorth()
+    public void CalibratedZonesHaveValidPositiveAbsorptionAndApproximatelySevenMkWorth()
     {
         CreateRunFixture(out var inventory, out var solver, out _);
         var mapping = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
@@ -228,7 +228,7 @@ public sealed class PracticeLiquidZoneRrsTests
 
         double empty = RhoAt(0), half = RhoAt(0.5), full = RhoAt(1);
         Assert.True(empty > half && half > full);
-        Assert.InRange(1000 * (empty - full), 6, 7);
+        Assert.InRange(1000 * (empty - full), 6.95, 7.05);
         Assert.InRange(Math.Abs(1000 * half), 0, 0.05);
         Assert.Equal(0, PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction);
     }

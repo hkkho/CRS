@@ -20,7 +20,7 @@
 .studio-brand-dot { color: var(--studio-accent); }
 .studio-eyebrow { font: 11px/1.5 Consolas, monospace; letter-spacing: 1.15px; color: #8fba93; }
 .studio-quiet { background: transparent !important; }
-.studio-metrics { display: grid; grid-template-columns: repeat(4, 1fr) 1.5fr; margin-bottom: 14px; border-top: 1px solid #315b3b; border-bottom: 1px solid #315b3b; }
+.studio-metrics { display: grid; grid-template-columns: repeat(3, 1fr) 1.5fr; margin-bottom: 14px; border-top: 1px solid #315b3b; border-bottom: 1px solid #315b3b; }
 .studio-metrics article { padding: 9px 22px; border-right: 1px solid #254830; display: flex; flex-direction: column; gap: 2px; }
 .studio-metrics article:first-child { padding-left: 0; }
 .studio-metrics article:last-child { border: 0; }

@@ -105,8 +105,8 @@ export function gridCoordinateLabel(channel: Pick<CanduChannelSnapshot, "gridCol
   return `${row}${String(channel.gridColumn + 1).padStart(2, "0")}`;
 }
 
-export function channelDisplayId(channelIndex: number): string {
-  return `CH ${String(channelIndex).padStart(3, "0")}`;
+export function channelDisplayId(channel: Pick<CanduChannelSnapshot, "gridColumn" | "gridRow">): string {
+  return gridCoordinateLabel(channel);
 }
 
 export function findAdjacentChannelIndex(

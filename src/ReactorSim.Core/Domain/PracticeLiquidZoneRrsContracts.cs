@@ -21,9 +21,9 @@ namespace ReactorSim.Core
         public const uint NodeCount = ChannelCount * BundlePositionCount;
         public const double InitialFillFraction = 0.5;
         public const double AbsorptionReferenceFillFraction = 0.0;
-        public const double CalibratedTotalZoneWorthMk = 6.5;
-        public const double Group1AbsorptionPerMPerFillFraction = 0.0015964146304331297;
-        public const double Group2AbsorptionPerMPerFillFraction = 0.0006385658521732518;
+        public const double CalibratedTotalZoneWorthMk = 7.0;
+        public const double Group1AbsorptionPerMPerFillFraction = 0.0017230342616652234;
+        public const double Group2AbsorptionPerMPerFillFraction = 0.0006892137046660893;
         public const int ResponseVariableCount = (int)LogicalZoneCount;
         public const int ResponseOutputCount = ResponseVariableCount + 1;
         public const double ResponseGroup1AbsorptionWeight = 0.65;
@@ -51,9 +51,9 @@ namespace ReactorSim.Core
             "synthetic-practice-liquid-zone-response-common-shape-v3";
         public const string MappingIdentity = "candu6-regions-independent-absorber-masks-380x12-v3";
         public const string OverlayIdentity = "synthetic-practice-liquid-zone-positive-absorption-v2";
-        public const string CadenceIdentity = "equilibrium-half-hour-and-event-rrs-v2";
+        public const string CadenceIdentity = "equilibrium-three-minute-step-and-event-rrs-v3";
         public const string Provenance =
-            "project-authored-synthetic; independent regional measurement and homogenized absorber masks; positive absorption calibrated to 6.5 mk with seed-1001 reference critical at half fill";
+            "project-authored-synthetic; independent regional measurement and homogenized absorber masks; positive absorption calibrated to 7 mk with seed-1001 reference critical at half fill";
     }
 
     /// <summary>

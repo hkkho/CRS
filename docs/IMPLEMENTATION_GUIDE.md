@@ -17,8 +17,8 @@ The power-limit pack keeps full output at 2,064 MW thermal while starting below
 7,300 kW/channel and 935 kW/bundle. Studio presents absolute channel and bundle
 maps alongside actual/reference ripple. One time inspector selects a coherent
 complete observation across the view; live is the default, and operating
-commands are unavailable while reviewing historical data. Compact bridge
-measurement vectors refresh burnup between spatial solves.
+commands are unavailable while reviewing historical data. Every browser simulation
+step refreshes the spatial solution and compact responses carry the updated core.
 
 Shutdown, scram, accident progression, operator-training scenarios, full plant
 simulation, and plant-grade safety claims are out of scope.
@@ -198,13 +198,13 @@ transaction, replay, fallback and rollout gates.
 ## Current physics and provenance
 
 The practice session uses the project-authored
-`candu6-two-group-diffusion-v1-cycle190-650mwe-innerrel1e7` path. It is a
+`candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3` path. It is a
 regulated steady-state practice model rather than a sub-second transient claim.
 
 The shared full-core adapter publishes explicit SI watts, normalized power,
 eigenvalue `k`, and `rho = (k - 1) / k`, together with solve identity and
-diagnostics. Short operation intervals reuse the retained equilibrium projection
-for deterministic burnup integration. The browser displays signed axial tilt
+diagnostics. Each browser step integrates burnup with the previous projection,
+then refreshes the equilibrium and LZC calculation. The browser displays signed axial tilt
 from the solved thermal flux and average LZC water level from all fourteen
 compartments. Game ends a run below 10% or above 90% average level, or beyond
 ±20% global tilt. Physical RRS exhaustion remains a separate diagnostic.
@@ -212,7 +212,7 @@ The legacy `rrsReserveFraction` wire field retains its headroom meaning; player
 displays use `rrs.averageFillFraction`. The power map uses blue through red.
 Clock updates keep movement nodes stable and do not flash calculation text. The practice score uses the spatial tilt and power projection,
 without the legacy scenario tilt/control-margin score. Burnup can change the
-equilibrium reactivity at the half-hour full-core solve. Iodine/xenon history
+equilibrium reactivity at each three-minute browser step's full-core/LZC solve. Iodine/xenon history
 evolves analytically between those solves; prompt neutron kinetics remain out
 of scope.
 
@@ -223,7 +223,7 @@ adjusts spatial shape within the criticality band. It measures the diffusion
 response and uses a secant correction for an inaccurate initial estimate.
 See [independent regulation](physics/rrs-independent-regulation.md) for the
 acceptance policy and refuelling regression. Browser 1x advances 30 simulated
-minutes per real second; each base second recomputes Keff and zone fills.
+minutes per real second; each 100 ms control step recomputes Keff and zone fills.
 See [liquid-zone RRS](physics/liquid-zone-rrs.md) for the region numbering,
 source diagrams, controller limits, and approximation details.
 
@@ -241,8 +241,9 @@ are published as two immutable 4,560-element vectors in channel-major/position
 order, in both full and compact responses. They update on short ticks even when
 the accepted power shape/core replacement is retained. Studio plots these values
 without a second poison calculation. Fresh bundle IDs start at zero; retained
-bundle IDs carry their inventories through a move. Compact response payloads now
-budget 256 KiB (including the two vectors) rather than 32 KiB.
+bundle IDs carry their inventories through a move. Core-retaining compact responses
+budget 256 KiB (including the two vectors) rather than 32 KiB; simulation steps
+also include the refreshed core replacement.
 
 ## Browser playtest notes
 

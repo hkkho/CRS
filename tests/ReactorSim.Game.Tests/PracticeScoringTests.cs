@@ -55,10 +55,19 @@ public sealed class PracticeScoringTests
         Assert.True(moved.Accepted, moved.DiagnosticMessage);
         Assert.Equal(0, moved.Snapshot.ScoreTotal);
         Assert.Equal(initial.Ripple.ReferenceChannelPowerWatts, moved.Snapshot.Ripple.ReferenceChannelPowerWatts);
-        double rate = moved.Snapshot.Ripple.PointsPerHour;
-        var advanced = session.AdvanceWallMilliseconds(60_000);
-        Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
-        Assert.Equal(rate * 600 / 3600, advanced.Snapshot.ScoreTotal, 10);
+        // Integrate each retained-shape interval; the rate now refreshes every
+        // three simulated minutes rather than staying fixed for this run.
+        double expected = 0;
+        GameSessionCommandResult advanced = moved;
+        foreach (ulong milliseconds in new ulong[] { 18_000, 18_000, 18_000, 6_000 })
+        {
+            double beforeTime = session.Snapshot.SimulationTimeSeconds;
+            double rate = session.Snapshot.Ripple.PointsPerHour;
+            advanced = session.AdvanceWallMilliseconds(milliseconds);
+            Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
+            expected += rate * (advanced.Snapshot.SimulationTimeSeconds - beforeTime) / 3600;
+        }
+        Assert.Equal(expected, advanced.Snapshot.ScoreTotal, 10);
         Assert.Equal(PracticeScoring.RmsRipple(advanced.Snapshot.Core.Channels.Select(c => c.PowerWatts).ToArray(),
             initial.Ripple.ReferenceChannelPowerWatts), advanced.Snapshot.Ripple.RmsDeviationFraction, 12);
         session.Pause();

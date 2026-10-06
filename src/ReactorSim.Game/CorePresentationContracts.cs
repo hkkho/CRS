@@ -1072,6 +1072,13 @@ namespace ReactorSim.Game
     /// </summary>
     internal static class PracticeCoreLayout
     {
+        internal static string GetChannelName(uint channelIndex)
+        {
+            const string rows = "ABCDEFGHJKLMNOPQRSTUVW";
+            PracticeCoreGridPosition position = GetPosition(channelIndex);
+            return rows[position.Row] + (position.Column + 1).ToString("00", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         public static PracticeCoreGridPosition GetPosition(uint channelIndex)
         {
             Candu6GridPositionV1 position = Candu6CoreTopologyFactoryV1.GetPosition(channelIndex);

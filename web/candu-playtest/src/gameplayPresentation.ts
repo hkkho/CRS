@@ -1,6 +1,7 @@
 import { isRunTerminal } from "./protocol";
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 import { getPowerLabel, getTiltLabel } from "./visuals";
+import { gridCoordinateLabel } from "./projection";
 
 /** Inspection aid only: average burnup is neither residence age nor a predicted response. */
 export function isChannelRefuellable(channel: CanduChannelSnapshot | undefined): boolean {
@@ -30,7 +31,7 @@ export function refuelImpactText(before: CanduSnapshot, after: CanduSnapshot, ch
   const breakdown = after.lastRefuellingScore;
   const score = breakdown?.netPoints ?? after.scoreTotal - before.scoreTotal;
   return [
-    `CH ${channelIndex} · EQUILIBRIUM RESPONSE · ${score >= 0 ? "+" : ""}${score.toFixed(1)} SCORE`,
+    `${gridCoordinateLabel(newChannel)} · EQUILIBRIUM RESPONSE · ${score >= 0 ? "+" : ""}${score.toFixed(1)} SCORE`,
     ...(before.ripple && after.ripple ? [
       `Channel ripple  ${(before.ripple.channelRippleFractions[channelIndex] * 100).toFixed(2)}% → ${(after.ripple.channelRippleFractions[channelIndex] * 100).toFixed(2)}% (target 100%)`,
       `RMS ripple  ${(before.ripple.rmsDeviationFraction * 100).toFixed(2)}% → ${(after.ripple.rmsDeviationFraction * 100).toFixed(2)}%`,

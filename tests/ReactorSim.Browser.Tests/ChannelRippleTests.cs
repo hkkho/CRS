@@ -19,12 +19,11 @@ public sealed partial class PlaytestBridgeTests
         Assert.Equal("practice-channel-ripple-v3", before.GetProperty("scorePolicyId").GetString());
         var tick = Parse(runtime.Dispatch(CompactCommand(0, "advance", "\"wallMilliseconds\":100")));
         AssertAccepted(tick);
-        Assert.False(tick.TryGetProperty("coreReplacement", out _));
-        var measurements = tick.GetProperty("coreMeasurements");
+        Assert.True(tick.TryGetProperty("coreReplacement", out var refreshedCore));
         var fullAfter = Parse(runtime.GetSnapshotJson());
-        Assert.Equal(4560, measurements.GetProperty("bundleBurnupMwdPerKg").GetArrayLength());
+        Assert.Equal(4560, refreshedCore.GetProperty("channels").EnumerateArray().Sum(c => c.GetProperty("bundles").GetArrayLength()));
         Assert.Equal(fullAfter.GetProperty("core").GetProperty("channels")[0].GetProperty("bundles")[0].GetProperty("currentBurnupMwdPerKg").GetDouble(),
-            measurements.GetProperty("bundleBurnupMwdPerKg")[0].GetDouble());
+            refreshedCore.GetProperty("channels")[0].GetProperty("bundles")[0].GetProperty("currentBurnupMwdPerKg").GetDouble());
         var patch = tick.GetProperty("snapshotPatch");
         var ripple = patch.GetProperty("ripple");
         Assert.Equal(reference.GetRawText(), ripple.GetProperty("referenceChannelPowerWatts").GetRawText());

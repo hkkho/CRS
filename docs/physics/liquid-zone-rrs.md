@@ -33,7 +33,7 @@ absorption model, rather than an explicit model of individual absorber tubes.
 Region membership and absorber compartment ownership are independent Core
 fields. The browser displays the default regions in Studio's liquid-zone view.
 The default applies effective absorption at every node. The
-[calibration](zone-calibration.md) sets empty-to-full worth to 6.5 mk, with
+[current calibration](reactivity-scale-v3.md) sets empty-to-full worth to about 7 mk, with
 nonnegative absorption referenced to empty zones. The earlier
 [geometry audit](zone-geometry-audit.md) records the superseded excessive worth.
 
@@ -71,10 +71,10 @@ The [Essential CANDU I&C chapter, section 4.1](https://unene.ca/essentialcandu/p
 describes combined bulk-power and spatial feedback, light-water absorption,
 and independent control of fourteen compartments. Actual plant control runs
 on much shorter intervals. This game uses a quasi-static equilibrium model:
-it recomputes after refuelling and every 1,800 simulated seconds.
+it recomputes after refuelling and every 180 simulated seconds (each 1x browser step).
 Between solves it integrates burnup using the retained power shape. Browser 1x
 is 1,800 simulated seconds per real second, with a 100 ms wall control tick;
-10x and 60x multiply that base. Keff is the solver result and is never forced
+10x and 60x multiply that base and retain the same 180-second solver substeps. Keff is the solver result and is never forced
 to exactly one. The RRS drives it towards one while retaining finite residuals.
 
 Absorption strengths, response estimates, movement limits and equilibrium

@@ -371,7 +371,7 @@ namespace ReactorSim.Browser.Tests
         }
 
         [Fact]
-        public void CompactPlayResponsesCarryPatchWithoutCoreAndCommitCarriesReplacement()
+        public void CompactPlayResponsesOmitRetainedCoreAndSolvesCarryReplacement()
         {
             JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             AssertAccepted(initialized);
@@ -416,8 +416,9 @@ namespace ReactorSim.Browser.Tests
                 PlaytestBridgeV2.Dispatch(
                     CompactCommand(3, "advance", "\"wallMilliseconds\":100")));
             AssertCompactPatch(advanced, 3, 4);
-            Assert.DoesNotContain("channels", advanced.GetRawText(), StringComparison.Ordinal);
+            Assert.True(advanced.TryGetProperty("coreReplacement", out JsonElement refreshedCore));
             JsonElement exactAfterAdvance = Parse(PlaytestBridgeV2.GetSnapshotJson());
+            Assert.Equal(exactAfterAdvance.GetProperty("core").GetRawText(), refreshedCore.GetRawText());
             JsonElement advancePatch = advanced.GetProperty("snapshotPatch");
             Assert.Equal(advancePatch.GetProperty("simulationTimeSeconds").GetDouble(), exactAfterAdvance.GetProperty("simulationTimeSeconds").GetDouble(), 12);
             Assert.Equal(advancePatch.GetProperty("wallElapsedSeconds").GetDouble(), exactAfterAdvance.GetProperty("wallElapsedSeconds").GetDouble(), 12);

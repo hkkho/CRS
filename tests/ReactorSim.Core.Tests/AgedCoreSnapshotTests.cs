@@ -19,11 +19,16 @@ public sealed class AgedCoreSnapshotTests
         Assert.Equal(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
             "data/packs/candu6-two-group-diffusion-pack-v1.json")), reader.ReadToEnd());
         var table = Assert.Single(pack.CoefficientTables);
-        foreach (double burnup in new[] { 20.0, 22.5, 25.0, 27.5, 30.0 })
+        // The v3 positive contrast fit changes knot values; interpolation
+        // remains linear between the independently recorded calibrated knots.
+        double[] burnups = { 20.0, 22.5, 25.0, 27.5, 30.0 };
+        double[] fissions = { 0.08853983852813722, (0.08853983852813722 + 0.0745789698581808) / 2,
+            0.0745789698581808, (0.0745789698581808 + 0.0617122309172222) / 2, 0.0617122309172222 };
+        for (int index = 0; index < burnups.Length; index++)
         {
-            var coefficients = table.TryLookup(burnup * 8.64e10).Value.Coefficients;
-            Assert.Equal(0.11411937984496123 - 0.0020440310077519384 * (burnup - 20), coefficients.FissionGroup2PerM, 12);
-            Assert.Equal(2.2921431596342616, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
+            var coefficients = table.TryLookup(burnups[index] * 8.64e10).Value.Coefficients;
+            Assert.Equal(fissions[index], coefficients.FissionGroup2PerM, 12);
+            Assert.Equal(2.3545374695837316, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
             Assert.True(coefficients.FissionGroup2PerM > 0);
             Assert.True(coefficients.AbsorptionGroup2PerM >= coefficients.FissionGroup2PerM);
         }

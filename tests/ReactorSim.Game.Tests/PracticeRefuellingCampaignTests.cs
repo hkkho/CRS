@@ -165,7 +165,7 @@ public sealed class PracticeRefuellingCampaignTests
     }
 
     [Fact]
-    public void BrowserAdvanceBeforeHourlyBoundaryReusesStaticEquilibriumProjection()
+    public void EveryBrowserControlStepRecomputesEquilibriumAndLiquidZones()
     {
         GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
         EquilibriumCoreProjectionV1 before = session.CurrentEquilibriumProjection;
@@ -174,7 +174,10 @@ public sealed class PracticeRefuellingCampaignTests
 
         Assert.True(advanced.Accepted, advanced.DiagnosticMessage);
         Assert.Equal(180.0, advanced.Snapshot.SimulationTimeSeconds);
-        Assert.Same(before, session.CurrentEquilibriumProjection);
+        Assert.NotSame(before, session.CurrentEquilibriumProjection);
+        Assert.Equal(180.0, session.CurrentLiquidZoneRrs.SimulationTimeSeconds);
+        Assert.Equal("equilibrium-three-minute-step-and-event-rrs-v3",
+            session.CurrentLiquidZoneRrs.CadenceIdentity);
         Assert.Equal(
             EquilibriumCoreSolverIdentityV1.ModelId,
             advanced.Snapshot.Physics.SourceId);
@@ -233,6 +236,24 @@ public sealed class PracticeRefuellingCampaignTests
         Assert.Equal(
             oneAdvance.CurrentEquilibriumProjection.ReactivityBindingDigest,
             twoAdvances.CurrentEquilibriumProjection.ReactivityBindingDigest);
+    }
+
+    [Fact]
+    public void OneAndTenTimesPlaybackUseIdenticalLiquidZoneSubsteps()
+    {
+        var normal = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var fast = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        Assert.True(fast.SetPlaybackMode(PracticeGameSessionFactory.PlayPlaybackModeId).Accepted);
+        var normalResult = normal.AdvanceWallMilliseconds(1000);
+        var fastResult = fast.AdvanceWallMilliseconds(100);
+        Assert.True(normalResult.Accepted, normalResult.DiagnosticMessage);
+        Assert.True(fastResult.Accepted, fastResult.DiagnosticMessage);
+        Assert.Equal(1800, normalResult.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(normalResult.Snapshot.SimulationTimeSeconds, fastResult.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(normal.CurrentEquilibriumProjection.ReactivityBindingDigest,
+            fast.CurrentEquilibriumProjection.ReactivityBindingDigest);
+        Assert.Equal(normal.CurrentLiquidZoneRrs.ZoneFills, fast.CurrentLiquidZoneRrs.ZoneFills);
+        Assert.Equal(normalResult.Snapshot.ScoreTotal, fastResult.Snapshot.ScoreTotal, 12);
     }
 
     private static void AssertAcceptedStateEqual(

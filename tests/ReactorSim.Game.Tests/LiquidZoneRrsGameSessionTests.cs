@@ -134,7 +134,7 @@ public sealed class LiquidZoneRrsGameSessionTests
     }
 
     [Fact]
-    public void ShortTickReusesProjectionWhileBaseSecondRunsHalfHourRrsAndChangesKeff()
+    public void EachBrowserStepRunsLiquidZoneRrsAndChangesKeff()
     {
         GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
         var initialProjection = session.CurrentEquilibriumProjection;
@@ -143,7 +143,8 @@ public sealed class LiquidZoneRrsGameSessionTests
         GameSessionCommandResult shortTick = session.AdvanceWallMilliseconds(100);
 
         Assert.True(shortTick.Accepted, shortTick.DiagnosticMessage);
-        Assert.Same(initialProjection, session.CurrentEquilibriumProjection);
+        Assert.NotSame(initialProjection, session.CurrentEquilibriumProjection);
+        Assert.Equal(180.0, session.CurrentLiquidZoneRrs.SimulationTimeSeconds);
         Assert.Equal(initialFills, session.CurrentLiquidZoneRrs.ZoneFills);
 
         GameSessionCommandResult boundary = session.AdvanceWallMilliseconds(900);

@@ -6,6 +6,9 @@ export async function verifyStudio(page) {
   check(await studio.locator('[data-action="classic"]').count() === 0, 'Retired Tactical view is still offered.');
   check(await studio.locator('rect[data-channel]').count() === 380, 'Studio did not render 380 authoritative channels.');
   check(await studio.locator('.studio-zone').count() === 14, 'Studio did not render 14 zone fills.');
+  check(await studio.locator('.studio-metrics article').count() === 4, 'Studio still includes the redundant regulated-power box.');
+  check(await studio.locator('[data-field="power"]').count() === 0, 'Redundant regulated-power field remains.');
+  check(/^[A-HJ-W]\d{2}$/.test(await studio.locator('[data-field="channel"]').textContent()), 'Selected channel is not identified by its core name.');
   check((await studio.locator('[data-field="power-rating"]').textContent()).includes('MW thermal'), 'Studio power units are missing.');
   await studio.locator('[data-action="pause"]').click();
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('Paused.'));

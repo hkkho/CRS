@@ -17,8 +17,11 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-cycle190-650mwe-powerlimits-v2";
-        public const double FullCoreDiffusionRecomputeIntervalSeconds = 1_800.0;
+            "candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3";
+        // One full-power browser control step. Faster playback subdivides at
+        // this same simulated interval so burnup, xenon and LZC remain aligned.
+        public const double FullCoreDiffusionRecomputeIntervalSeconds =
+            BrowserBaseSimulationSecondsPerWallSecond * WallControlTickMilliseconds / 1000.0;
         // Burnup integrates thermal fission energy. Electrical output is a
         // separate presentation estimate at the authored conversion ratio.
         public const double PracticeReferenceThermalPowerWatts = 2_064_000_000.0;

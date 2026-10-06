@@ -1,5 +1,10 @@
 # Power and fuel calibration
 
+The current [v3 reactivity calibration](reactivity-scale-v3.md) supersedes the
+burnup-decay and zone-worth numbers below: approximately 0.5 mk per FPD and
+7 mk total, with a full-core/LZC solve every three-minute browser step.
+Thermal output, the fuel-cycle interval and heavy-metal mass remain unchanged.
+
 The active pack now also includes the [power-limit spatial rebalance](power-limit-balance.md).
 Numerical benchmark results below describe the earlier pack and retain their
 original provenance. Thermal output and the authored fuel cycle remain unchanged.

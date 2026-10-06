@@ -2,6 +2,7 @@ import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
 import type { RefuelDraft } from "../commandState";
 import { patchMarkup } from "./domPatch";
 import { bundleLimit } from "./powerReadings";
+import { gridCoordinateLabel } from "../projection";
 
 export class StudioOrderView {
   private bundlesKey = "";
@@ -57,7 +58,8 @@ export class StudioOrderView {
     if (!move) return;
     const label = document.createElement("p");
     const discharged = move.bundles.filter(b => b.afterPosition == null);
-    label.textContent = `Confirmed move #${move.operationId} · CH ${move.channelIndex} · ${move.plan.shiftCount} fresh in End ${move.plan.incomingEnd}, ${discharged.length} out End ${move.plan.outgoingEnd} · score follows channel ripple as time advances.`;
+    const movedChannel = snapshot.core.channels.find(value => value.channelIndex === move.channelIndex);
+    label.textContent = `Confirmed move #${move.operationId} · ${movedChannel ? gridCoordinateLabel(movedChannel) : "Channel unavailable"} · ${move.plan.shiftCount} fresh in End ${move.plan.incomingEnd}, ${discharged.length} out End ${move.plan.outgoingEnd} · score follows channel ripple as time advances.`;
     const details = document.createElement("details"); const title = document.createElement("summary"); title.textContent = "Bundle identities and movement";
     details.append(title);
     move.bundles.forEach(bundle => {

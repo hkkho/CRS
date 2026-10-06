@@ -40,7 +40,8 @@ local work on unrelated infrastructure or historical provenance.
 
 Studio provides channel kW, reference-ripple %, peak-bundle kW and burnup maps.
 Absolute map red points are 7,300 kW/channel and 935 kW/bundle; ripple is centered
-on 100% of the channel reference, reaching red at that channel's absolute cap.
+on 100% of the channel reference, with blue at 85% and red at 115%, clipping
+values outside that color range. Actual power-limit checks remain independent.
 The shared time inspector follows live data and lets the player select complete
 historical observations across map, inspector and metrics, then Return to live.
 Operating controls are unavailable while inspecting history. See

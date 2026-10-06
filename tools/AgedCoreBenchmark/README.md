@@ -1,5 +1,12 @@
 # Aged-core burn benchmark
 
+The current [reactivity-scale calibration](../../docs/physics/reactivity-scale-v3.md)
+measures about 0.5 mk/FPD burnup loss and 7 mk total zone worth. Use
+`--reactivity-scale OUTPUT.json` for an isolated current-pack measurement;
+`--fit-reactivity-scale ARCHIVED_SOURCE.json OUTPUT_DIRECTORY` reproduces the
+reviewed v3 fit from the archived powerlimits-v2 source. Historical benchmark
+numbers below describe their original packs and cadence.
+
 Isolate fuel-only worth of the oldest channel in each feed direction at hour 14:
 
 ```powershell

@@ -1,0 +1,31 @@
+{
+  "sourcePack": "candu6-two-group-diffusion-v1-cycle190-650mwe-powerlimits-v2",
+  "targetBurnupLossMkPerFpd": 0.5,
+  "targetTotalZoneWorthMk": 7,
+  "group1AbsorptionPerMPerFillFraction": 0.0017230342616652234,
+  "group2AbsorptionPerMPerFillFraction": 0.0006892137046660893,
+  "method": "Seed-1001 aged inventory; static tight solves, no evolving poison or refuelling. Fixed half-fill initial shape deposits one full-power day of thermal fission energy. Uniform production normalization makes half fill critical. Geometry, burnup knots, masses and group ordering preserved.",
+  "trials": [
+    {
+      "pass": 0,
+      "contrast": 1,
+      "zoneScale": 1,
+      "normalizedZoneWorthMk": 6.511844285076573,
+      "normalizedBurnupLossMkPerFpd": 0.26476153874877006
+    },
+    {
+      "pass": 1,
+      "contrast": 1.888491819328961,
+      "zoneScale": 1.07496427948103,
+      "normalizedZoneWorthMk": 6.971782969124533,
+      "normalizedBurnupLossMkPerFpd": 0.5162918342918044
+    },
+    {
+      "pass": 2,
+      "contrast": 1.8288995621240054,
+      "zoneScale": 1.079315003018821,
+      "normalizedZoneWorthMk": 7.0018758600787585,
+      "normalizedBurnupLossMkPerFpd": 0.49866563292355615
+    }
+  ]
+}

@@ -63,7 +63,6 @@ export class StudioView {
           <div class="studio-report-actions"><button data-action="retry" class="studio-primary">Retry same seed</button><button data-action="new-seed">Try new seed</button></div>
         </section>
         <section class="studio-metrics" aria-label="Live reactor status">
-          <article><span class="studio-eyebrow">REGULATED POWER</span><strong data-field="power"></strong><small>Target <span data-field="power-target"></span></small><small data-field="power-rating"></small></article>
           <article><span class="studio-eyebrow">LZC AVERAGE LEVEL</span><strong data-field="reserve"></strong><small>Keep between 10% and 90%</small><small data-field="status"></small></article>
           <article><span class="studio-eyebrow">RIPPLE SCORE</span><strong data-field="score"></strong><small data-field="ripple-score"></small><small><span data-field="operations"></span> fuel moves completed</small></article>
           <article><span class="studio-eyebrow">FRESH BUNDLES</span><strong data-field="stock"></strong><small>8 bundles per move · with flow</small></article>
@@ -90,7 +89,7 @@ export class StudioView {
             <div data-field="bundles" class="studio-axial-profile" aria-label="Selected channel axial power, burnup, iodine and xenon profiles"></div><div class="studio-rack-ends"><span>END A / 01</span><span>AXIAL BUNDLE POSITION</span><span>12 / END B</span></div>
             <div class="studio-order"><p class="studio-order-size"><span>Fuel with flow</span><strong data-field="direction"></strong></p>
             <button data-action="refuel" data-field="refuel" class="studio-primary">Refuel channel →</button><p class="studio-order-note" data-field="order-note"></p><div data-field="movement-plan" class="studio-movement"></div></div>
-            <details class="studio-controls"><summary>Power &amp; time controls</summary><label>Power target <output data-field="target-output"></output><input data-field="target-input" type="range" min="80" max="120" step="1" aria-label="Power target percent" /></label><div><button data-action="target">Apply target</button><button data-action="step">Advance 1 hour</button></div><small>Resume to apply a power target. Pause to step time.</small></details>
+            <details class="studio-controls"><summary>Power &amp; time controls</summary><small>Applied target <span data-field="power-target"></span> · <span data-field="power-rating"></span></small><label>Power target <output data-field="target-output"></output><input data-field="target-input" type="range" min="80" max="120" step="1" aria-label="Power target percent" /></label><div><button data-action="target">Apply target</button><button data-action="step">Advance 1 hour</button></div><small>Resume to apply a power target. Pause to step time.</small></details>
           </section>
         </main>
         <section class="studio-bottom">
@@ -213,7 +212,6 @@ export class StudioView {
       this.historyView.render();
       this.renderShift();
       const channel = snapshot.core.channels.find(channel => channel.channelIndex === this.selected);
-      this.text("power", getPowerLabel(snapshot.physics.actualPowerFraction));
       this.text("power-target", getPowerLabel(snapshot.targetPowerFraction));
       this.text("power-rating", snapshot.physics.electricalPowerWatts === undefined ? "" :
         `${(snapshot.physics.electricalPowerWatts / 1e6).toFixed(0)} MW electric · ${(snapshot.physics.totalPowerWatts / 1e6).toFixed(0)} MW thermal`);
@@ -229,8 +227,8 @@ export class StudioView {
 
       this.text("pause", snapshot.isPaused ? "▶" : "Ⅱ");
       this.field("pause").setAttribute("aria-label", snapshot.isPaused ? "Resume simulation" : "Pause simulation");
-      this.text("channel", channel ? `Channel ${String(channel.channelIndex).padStart(3, "0")}` : "No channel");
-      this.text("coordinate", channel ? gridCoordinateLabel(channel) : "—");
+      this.text("channel", channel ? gridCoordinateLabel(channel) : "No channel");
+      this.text("coordinate", channel ? "CORE CHANNEL" : "—");
       this.text("local-power", channel ? `${(channelWatts(snapshot, channel) / 1000).toFixed(0)} / ${(channelLimit(snapshot) / 1000).toFixed(0)}` : "—");
       const ripple = channel ? snapshot.ripple?.channelRippleFractions[channel.channelIndex] : undefined;
       this.text("local-ripple", ripple === undefined ? "—" : `${(ripple * 100).toFixed(2)}%`);
@@ -244,7 +242,7 @@ export class StudioView {
       this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM"
         : this.mapMode === "power" ? `Blue 0 → red ${(channelLimit(snapshot) / 1000).toFixed(0)} kW / channel`
         : this.mapMode === "bundle-power" ? `Blue 0 → red ${(bundleLimit(snapshot) / 1000).toFixed(0)} kW / hottest bundle`
-        : `Blue below target · pale = 100% reference · red = channel's ${(channelLimit(snapshot) / 1000).toFixed(0)} kW cap`);
+        : "Blue ≤85% · pale = 100% reference · red ≥115%");
       this.mapView.update(snapshot, this.selected, this.mapMode);
       this.renderWatchlist();
       this.orderView.update(snapshot, this.draft, channel);
@@ -321,8 +319,8 @@ export class StudioView {
       const button = list.children[index] as HTMLButtonElement;
       button.dataset.action = "channel"; button.dataset.channel = String(channel.channelIndex);
       button.setAttribute("aria-pressed", String(channel.channelIndex === this.selected));
-      button.children[0].textContent = `0${index + 1} / ${gridCoordinateLabel(channel)}`;
-      button.children[1].textContent = `CH ${String(channel.channelIndex).padStart(3, "0")}`;
+      button.children[0].textContent = `0${index + 1} / FUEL CHANNEL`;
+      button.children[1].textContent = gridCoordinateLabel(channel);
       button.children[2].textContent = `${channel.averageBurnupMwdPerKg.toFixed(1)} MWd/kg · ${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW`;
       button.title = channelHeadroom(this.snapshot, channel) || "Zone headroom unavailable";
     });

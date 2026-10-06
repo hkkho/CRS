@@ -18,6 +18,8 @@ two-seed characterization corpus (24 responses) to an output path. The original
 pre-refactor hashes in `benchmarks/phase4-contract-baseline.json` remain the
 acceptance baseline for Phase 4.
 
+The v3 reactivity pack, three-minute LZC cadence identity and named refuelling
+messages are reflected in the exact serialized responses.
 The current wire fixtures include the with-flow aged-core orientation, two
 eight-bundle plans, automatic channel-flow orders, and LZC average-level
 diagnostics. They were deliberately regenerated for these gameplay changes.

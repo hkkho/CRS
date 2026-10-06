@@ -45,8 +45,8 @@ public sealed partial class PlaytestBridgeTests
         AssertAccepted(Parse(runtime.Dispatch(CompactCommand(2, "resume"))));
         var tick = Parse(runtime.Dispatch(CompactCommand(3, "advance", "\"wallMilliseconds\":100")));
         AssertAccepted(tick);
-        Assert.False(tick.TryGetProperty("coreReplacement", out _));
-        var latest = ReadBundlePoison(core, tick.GetProperty("snapshotPatch").GetProperty("xenon"));
+        Assert.True(tick.TryGetProperty("coreReplacement", out var refreshedCore));
+        var latest = ReadBundlePoison(refreshedCore, tick.GetProperty("snapshotPatch").GetProperty("xenon"));
         Assert.All(inserted, id => { Assert.True(latest[id].I > 0); Assert.True(latest[id].X > 0); });
         var exact = Parse(runtime.GetSnapshotJson());
         Assert.Equal(exact.GetProperty("xenon").GetRawText(), tick.GetProperty("snapshotPatch").GetProperty("xenon").GetRawText());

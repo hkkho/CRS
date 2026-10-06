@@ -12,10 +12,10 @@ export function powerColor(fractionOfLimit: number): string {
   const fraction = Math.min(1, Math.max(0, fractionOfLimit));
   return `hsl(${220 * (1 - fraction)} 78% 55%)`;
 }
-export function rippleColor(ratio: number, limitRatio: number): string {
-  // Neutral at the fixed reference. Red reaches this channel's absolute cap.
+export function rippleColor(ratio: number): string {
+  // Fixed 85%-115% scale, neutral at 100%; outliers clip to endpoint colors.
   if (ratio === 1) return "hsl(0 0% 90%)";
-  if (ratio < 1) return `hsl(210 ${75 * (1 - Math.max(0, ratio))}% ${35 + 55 * Math.max(0, ratio)}%)`;
-  const fraction = Math.min(1, (ratio - 1) / Math.max(.001, limitRatio - 1));
+  const fraction = Math.min(1, Math.abs(ratio - 1) / (ratio < 1 ? 1 - .85 : 1.15 - 1));
+  if (ratio < 1) return `hsl(210 ${75 * fraction}% ${90 - 55 * fraction}%)`;
   return `hsl(0 ${80 * fraction}% ${90 - 40 * fraction}%)`;
 }

@@ -9,6 +9,36 @@ namespace ReactorSim.Game.Tests;
 public sealed class AgedPracticeSessionTests
 {
     [Fact]
+    public void ReferenceAgedCoreHasHalfMkPerFullPowerDayBurnupLossAndSevenMkZoneWorth()
+    {
+        var initial = SyntheticGameCoreStateV1.CreateAgedPractice(1001);
+        var pack = FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6();
+        Assert.True(pack.IsValid);
+        var model = FullCoreDiffusionModelV1.TryCreateCandu6(pack.Value);
+        Assert.True(model.IsValid);
+        var created = EquilibriumCoreSolverV1.TryCreate(model.Value, initial.EnumerateBundles(),
+            PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts);
+        Assert.True(created.IsValid);
+        var mapping = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6().Value;
+        EquilibriumCoreProjectionV1 Solve(SyntheticGameCoreStateV1 state, double fill)
+        {
+            var overlay = mapping.TryBuildOverlay(Enumerable.Repeat(fill, 14).ToArray());
+            Assert.True(overlay.IsValid);
+            var solved = created.Value.TrySolveCandidate(state.EnumerateBundles(), overlay.Value);
+            Assert.True(solved.IsValid, solved.IsValid ? null : solved.FirstDiagnostic.ToString());
+            return solved.Value;
+        }
+        var half = Solve(initial, .5);
+        var empty = Solve(initial, 0);
+        var full = Solve(initial, 1);
+        var burned = initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray());
+        Assert.True(burned.IsValid);
+        var after = Solve(burned.Value, .5);
+        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .48, .52);
+        Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.97, 7.03);
+    }
+
+    [Fact]
     public void RefuellingRaisesZonesAndBurnupDrainsThemAsItExitsTheAcceptanceBand()
     {
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001);
