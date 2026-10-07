@@ -9,6 +9,20 @@ import matplotlib.pyplot as plt
 
 source = Path(sys.argv[1])
 report = json.loads(source.read_text(encoding="utf-8-sig"))
+if "final" in report and "extrema" in report:
+    # Existing LongRunPlaytest saves half-hour accepted snapshots in a JSONL
+    # sidecar. Internal Game integration and limit checks still occur at 3 min.
+    rows = [json.loads(line) for line in source.with_suffix(".jsonl").read_text(encoding="utf-8-sig").splitlines() if line.strip()]
+    report = {
+        "seed": report["seed"], "policy": report["policy"],
+        "completed": report["final"]["day"] == report["days"] and report["final"]["RunStatus"] == "running",
+        "terminal": report["final"]["RunStatus"] == "ended", "reason": report["final"]["GameOverReason"],
+        "completedDays": report["final"]["day"], "operations": report["final"]["RefuellingOperationCount"],
+        "samples": [{"days": r["day"], "meanFillPercent": r["lzc"] * 100,
+                     "zoneFillsPercent": [f * 100 for f in r["zoneFills"]],
+                     "channelKw": r["maxChannelKw"], "bundleKw": r["maxBundleKw"],
+                     "tiltPercent": r["tilt"] * 100, "FuelConsumed": r["RefuellingOperationCount"] * 8} for r in rows]
+    }
 samples = report["samples"]
 days = [s["days"] for s in samples]
 fig, axes = plt.subplots(4, 1, figsize=(11, 11), sharex=True, layout="constrained")
@@ -34,7 +48,7 @@ for axis in axes:
     axis.grid(alpha=.2)
     axis.set_xlim(0, max(days))
 outcome = "Completed" if report["completed"] else f"Stopped: {report['reason']}" if report["terminal"] else "In progress"
-policy_name = "Regional fuelling" if "paired regional" in report["policy"] else "Oldest-channel fuelling"
+policy_name = "Power-headroom fuelling" if report["policy"] == "reserve" else "Regional fuelling" if "paired regional" in report["policy"] else "Oldest-channel fuelling"
 fig.suptitle(f"100-day fuelling capability attempt — seed {report['seed']}\n"
              f"{outcome} at day {report['completedDays']:.3f} · {report['operations']} eight-bundle moves\n"
              f"Shared browser rules · 3-minute LZC steps · {policy_name} below 45% mean fill")

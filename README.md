@@ -82,6 +82,8 @@ Formal source validation is not required to develop or play the game.
 The [current reactivity calibration](docs/physics/reactivity-scale-v3.md) measures
 about 0.5 mk/FPD burnup-only loss and 7 mk total liquid-zone worth. LZC solves
 at every three-minute browser simulation step, including at accelerated speeds.
+The [100-day fuelling capability attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
+record two tested policies ending early on channel-power limits.
 
 Reference output is 650 MW electrical at 2,064 MW thermal. Burnup and
 channel/bundle power use thermal fission energy; Reactor Studio shows both

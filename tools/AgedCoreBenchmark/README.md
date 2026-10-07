@@ -206,3 +206,15 @@ oldest eligible channel in the lowest-fill region; otherwise it chooses the olde
 globally. It checks power/fuel accounting at every step, records hourly and move
 samples, and checkpoints `report.json` hourly. A terminal state ends the
 attempt and is reported as failure to reach 100 days, never bypassed.
+
+Compare the existing power-headroom player policy with the same seed:
+
+```powershell
+dotnet run --project tools/LongRunPlaytest -c Release -- --endless=true --days=100 --seed=1759455334 --threshold=.45 --policy=reserve --output=artifacts/fuelling-100-days-reserve
+```
+
+That tool requests 10x playback; Game still solves every internal three-minute
+step and enforces all normal limits. Its JSONL observations are half-hour
+snapshots and instantaneous accepted fuel moves. To plot either report, run
+`python tools/AgedCoreBenchmark/plot-fuelling-capability.py REPORT.json`;
+LongRunPlaytest reports require their matching `.jsonl` sidecar.
