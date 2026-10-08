@@ -109,9 +109,9 @@ public sealed partial class PlaytestBridgeTests
             var full = Parse(PlaytestBridgeV2.GetSnapshotJson());
             Assert.Equal(target, patch.GetProperty("targetPowerFraction").GetDouble(), 10);
             Assert.Equal(target, full.GetProperty("targetPowerFraction").GetDouble(), 10);
-            Assert.Equal(target == 1.2 ? "ended" : "running", patch.GetProperty("runStatus").GetString());
+            Assert.Equal("running", patch.GetProperty("runStatus").GetString());
             Assert.Equal(full.GetProperty("runStatus").GetString(), patch.GetProperty("runStatus").GetString());
-            Assert.Equal(target == 1.2 ? "Channel power exceeds 7,300 kW" : string.Empty, patch.GetProperty("runEndReason").GetString());
+            Assert.Equal(string.Empty, patch.GetProperty("runEndReason").GetString());
             Assert.Equal(target, full.GetProperty("physics").GetProperty("targetPowerWatts").GetDouble() /
                 full.GetProperty("physics").GetProperty("referencePowerWatts").GetDouble(), 10);
         }

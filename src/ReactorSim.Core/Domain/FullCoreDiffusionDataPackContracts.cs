@@ -63,8 +63,14 @@ namespace ReactorSim.Core
             TwoGroupConductanceV1 vacuumBoundaryConductance,
             SpatialLinearSolvePolicy linearSolvePolicy,
             SpatialConvergencePolicy convergencePolicy,
-            IEnumerable<BurnupCoefficientTableV1> coefficientTables)
+            IEnumerable<BurnupCoefficientTableV1> coefficientTables,
+            StaticAbsorptionOverlayV1? adjusters,
+            PracticeXenonReferenceV1? xenonReference,
+            XenonBasisV1 declaredXenonBasis)
         {
+            DeclaredXenonBasis = declaredXenonBasis;
+            XenonReference = xenonReference;
+            Adjusters = adjusters;
             Descriptor = descriptor;
             ModelId = modelId;
             SolverId = solverId;
@@ -101,6 +107,12 @@ namespace ReactorSim.Core
         public string SourceToolchain { get; }
 
         public string TransformId { get; }
+
+        /// <summary>Fixed nominal adjuster absorption, absent in archived packs.</summary>
+        public StaticAbsorptionOverlayV1? Adjusters { get; }
+
+        public PracticeXenonReferenceV1? XenonReference { get; }
+        public XenonBasisV1 DeclaredXenonBasis { get; }
 
         public double NodeVolumeM3 { get; }
 
@@ -348,6 +360,63 @@ namespace ReactorSim.Core
                     "At least one burnup coefficient table is required.");
             }
 
+            StaticAbsorptionOverlayV1? adjusters = null;
+            if (root["adjusters"] != null)
+            {
+                if (!TryReadObject(root, "adjusters", "adjusters", out JObject device, out failure) ||
+                    !TryReadString(device, "layout_id", "adjusters.layout_id", out string layout, out failure) ||
+                    !TryReadDouble(device, "inner_absorption_group1_per_m", "adjusters.inner_absorption_group1_per_m", out double a1, out failure) ||
+                    !TryReadDouble(device, "inner_absorption_group2_per_m", "adjusters.inner_absorption_group2_per_m", out double a2, out failure))
+                    return Invalid(failure);
+                if (layout != PracticeAdjustersV1.LayoutId || a1 < 0 || a2 < 0 ||
+                    (a1 == 0 && BitConverter.DoubleToInt64Bits(a1) < 0) ||
+                    (a2 == 0 && BitConverter.DoubleToInt64Bits(a2) < 0))
+                    return Invalid("FullCoreDiffusionDataPack.Adjusters.Invalid", "adjusters",
+                        "Adjusters require the supported layout and nonnegative SI absorption strengths.");
+                adjusters = PracticeAdjustersV1.CreateOverlay(a1, a2);
+            }
+
+            PracticeXenonReferenceV1? xenonReference = null;
+            XenonBasisV1 declaredXenonBasis = XenonBasisV1.Unspecified;
+            if (root["xenon_basis"]?.Type == JTokenType.String && root["xenon_basis"]!.Value<string>() == "excluded" && root["xenon_reference"] == null)
+                declaredXenonBasis = XenonBasisV1.Excluded;
+            else if (root["xenon_reference"] != null || root["xenon_basis"] != null)
+            {
+                if (!TryReadString(root, "xenon_basis", "xenon_basis", out string basis, out failure) ||
+                    !TryReadObject(root, "xenon_reference", "xenon_reference", out JObject reference, out failure) ||
+                    !TryReadString(reference, "model_id", "xenon_reference.model_id", out string referenceId, out failure) ||
+                    !TryReadString(reference, "poison_data_identity", "xenon_reference.poison_data_identity", out string poisonId, out failure) ||
+                    !TryReadDouble(reference, "reference_specific_power_w_per_kg_hm", "xenon_reference.reference_specific_power_w_per_kg_hm", out double referencePower, out failure) ||
+                    !TryReadArray(reference, "rows", "xenon_reference.rows", out JArray referenceRows, out failure))
+                    return Invalid(failure);
+                if (basis != PracticeXenonReferenceV1.BasisId || referenceId != PracticeXenonReferenceV1.Identity ||
+                    poisonId != PracticeXenonDataV1.Identity || referencePower <= 0 || tables.Count != 1 ||
+                    referenceRows.Count != tables[0].Rows.Count)
+                    return Invalid("FullCoreDiffusionDataPack.XenonReference.Invalid", "xenon_reference",
+                        "The included Xe reference requires a supported identity and exactly the fuel table burnup knots.");
+                var referenceBurnup = new double[referenceRows.Count];
+                var referenceXe = new double[referenceRows.Count];
+                for (int n = 0; n < referenceRows.Count; n++)
+                {
+                    if (!(referenceRows[n] is JObject row) ||
+                        !TryReadDouble(row, "burnup_j_per_kg_hm", "xenon_reference.rows.burnup_j_per_kg_hm", out referenceBurnup[n], out failure) ||
+                        !TryReadDouble(row, "xe135_number_density_m3", "xenon_reference.rows.xe135_number_density_m3", out referenceXe[n], out failure))
+                        return Invalid("FullCoreDiffusionDataPack.XenonReference.Row.Invalid", "xenon_reference.rows",
+                            "Every Xe reference row must contain finite numeric burnup and number density.");
+                    if (referenceBurnup[n] != tables[0].Rows[n].BurnupJPerKgHm || referenceXe[n] < 0 ||
+                        (referenceXe[n] == 0 && BitConverter.DoubleToInt64Bits(referenceXe[n]) < 0) ||
+                        tables[0].Rows[n].Coefficients.AbsorptionGroup2PerM - PracticeXenonDataV1.SigmaGroup2M2 * referenceXe[n] <
+                        tables[0].Rows[n].Coefficients.FissionGroup2PerM)
+                        return Invalid("FullCoreDiffusionDataPack.XenonReference.Row.Invalid", "xenon_reference.rows",
+                            "Reference knots must match fuel knots and permit nonnegative Xe-free absorption support.");
+                }
+                if (referenceBurnup[0] != 0 || referenceXe[0] != 0)
+                    return Invalid("FullCoreDiffusionDataPack.XenonReference.Fresh.Invalid", "xenon_reference.rows",
+                        "Fresh fuel must carry zero included reference xenon.");
+                xenonReference = new PracticeXenonReferenceV1(referencePower, referenceBurnup, referenceXe);
+                declaredXenonBasis = XenonBasisV1.Included;
+            }
+
             byte[] topologyDigest = Sha256(Candu6CoreTopologyFactoryV1.GetTopologyIdentity());
             byte[] contentDigest = Sha256(json);
             ContractValidationResult<DataPackDescriptor> descriptorResult =
@@ -382,7 +451,10 @@ namespace ReactorSim.Core
                     vacuum,
                     linearPolicyResult.Value,
                     convergencePolicyResult.Value,
-                    tables));
+                    tables,
+                    adjusters,
+                    xenonReference,
+                    declaredXenonBasis));
         }
 
         private static ContractValidationResult<BurnupCoefficientTableV1> TryReadTable(

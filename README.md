@@ -25,7 +25,7 @@ Score measures RMS deviation from the fixed channel targets, earning up to one
 point per simulated hour. Refuelling affects later score through its power response.
 The [scoring policy](docs/gameplay/score-balance.md) and
 [reference derivation](docs/physics/channel-power-reference.md) explain the 2,064 MW
-thermal profile without adjusters. `Space` pauses/resumes; **New shift** resets the run.
+thermal profile with 21 nominal adjusters. `Space` pauses/resumes; **New shift** resets the run.
 
 The launcher has native **Begin shift**, seed and objective controls. Use Tab and
 Enter/Space throughout play. The native interface supports a 320px-wide layout;
@@ -79,11 +79,16 @@ these values; advancing simulation time builds poison in fresh fuel.
 
 The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
-The [current reactivity calibration](docs/physics/reactivity-scale-v3.md) measures
-about 0.5 mk/FPD burnup-only loss and 7 mk total liquid-zone worth. LZC solves
+The [literature-guided fuel calibration](docs/physics/literature-geometry-v4.md) uses
+the published lattice-cell volume and fits the cited static burnup curve. It measures
+about 0.348 mk/FPD fuel-only loss with [burnup-bound xenon replacement](docs/physics/xenon-reference-v6.md)
+and the [21 fixed adjusters](docs/physics/adjusters-v5.md),
+17 mk total adjuster worth and 7 mk total liquid-zone worth. Group constants
+remain a surrogate, with a documented poison-basis limitation. LZC solves
 at every three-minute browser simulation step, including at accelerated speeds.
-The [100-day fuelling capability attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
-record two tested policies ending early on channel-power limits.
+The historical [v3 attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
+ended early on channel-power limits; the [v4 rerun](benchmarks/fuelling-capability-2026-10-07/README.md)
+completed 100 days with both policies. These results predate the adjusters and corrected xenon reference.
 
 Reference output is 650 MW electrical at 2,064 MW thermal. Burnup and
 channel/bundle power use thermal fission energy; Reactor Studio shows both

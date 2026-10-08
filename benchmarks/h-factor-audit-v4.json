@@ -1,0 +1,132 @@
+{
+  "pack": "candu6-two-group-diffusion-v1-literature-geometry-v4",
+  "packSha256": "a1ec2e4c7f5ab92ca227b1e39a0eea79563b993367f7437908b6254b5548eddf",
+  "activePowerRoute": "V * E_f * (Sigma_f1 * phi1_SI + Sigma_f2 * phi2_SI), normalized to requested total power",
+  "hFactorDefinition": "P_bundle_kW = H1 * phi1_cm + H2 * phi2_cm",
+  "conversion": "H_g[kW/(n cm^-2 s^-1)] = 10 * V[m3] * E_f[J] * Sigma_fg[m^-1]",
+  "nodeVolumeM3": 0.04044276185625,
+  "energyPerFissionMev": 200,
+  "interpolation": "Linear between burnup knots; closed domain 0 to 30 MWd/kg HM",
+  "referenceStatus": "Equivalent surrogate factors, not independently validated lattice-code H factors. Stored four-row user reference is a separate unused fixture with irradiation in n/kb, not MWd/kg.",
+  "rows": [
+    {
+      "burnupMwdPerKgHm": 0.0,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 2.0027064007292005e-12
+    },
+    {
+      "burnupMwdPerKgHm": 0.1598565,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9073958506628558e-12
+    },
+    {
+      "burnupMwdPerKgHm": 0.319713,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9073958506628558e-12
+    },
+    {
+      "burnupMwdPerKgHm": 0.639426,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9158590602054532e-12
+    },
+    {
+      "burnupMwdPerKgHm": 0.959139,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9200906649767518e-12
+    },
+    {
+      "burnupMwdPerKgHm": 1.278852,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9200906649767518e-12
+    },
+    {
+      "burnupMwdPerKgHm": 1.598565,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.9158590602054532e-12
+    },
+    {
+      "burnupMwdPerKgHm": 2.237991,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.8989326411202587e-12
+    },
+    {
+      "burnupMwdPerKgHm": 2.877417,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.8820062220350642e-12
+    },
+    {
+      "burnupMwdPerKgHm": 3.516843,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.860848198178571e-12
+    },
+    {
+      "burnupMwdPerKgHm": 4.156269,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.839690174322078e-12
+    },
+    {
+      "burnupMwdPerKgHm": 4.795695,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.8164163480799354e-12
+    },
+    {
+      "burnupMwdPerKgHm": 6.39426,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.7592896836674035e-12
+    },
+    {
+      "burnupMwdPerKgHm": 7.992825,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.7063946240261711e-12
+    },
+    {
+      "burnupMwdPerKgHm": 9.59139,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.6556153667705874e-12
+    },
+    {
+      "burnupMwdPerKgHm": 9.784587378640776,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.648608202649598e-12
+    },
+    {
+      "burnupMwdPerKgHm": 11.74150485436893,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.5789885651029802e-12
+    },
+    {
+      "burnupMwdPerKgHm": 15.0,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.4683692670605189e-12
+    },
+    {
+      "burnupMwdPerKgHm": 20.0,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.3107575251545302e-12
+    },
+    {
+      "burnupMwdPerKgHm": 25.0,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.1667112390617274e-12
+    },
+    {
+      "burnupMwdPerKgHm": 30.0,
+      "h1KwPerFluxCm2Second": 4.535751364235716e-13,
+      "h2KwPerFluxCm2Second": 1.0350628460790137e-12
+    }
+  ],
+  "sources": [
+    {
+      "url": "https://proceedings.cns-snc.ca/index.php/pcns/article/download/6456/6455/6491",
+      "support": "2011 Wolsong CANDU 6 paper, section 3: two-group bundle H formula, cell dimensions, volume-average flux, channel sum and total-power normalization."
+    },
+    {
+      "url": "https://publications.polymtl.ca/5048/11/2019_Naceur_Candu-6_operation_simulations_using_accident.pdf",
+      "support": "2019 Naceur/Marleau section 3.3: recoverable-energy H factors and 2061.4 MWth normalization; section 3.4: fission-power formula with about 200 MeV."
+    },
+    {
+      "url": "https://canteach.candu.org/Content%20Library/20040501.pdf",
+      "support": "Rouben, printed page 33: H factors are lattice properties dependent on irradiation/burnup and operating conditions."
+    }
+  ]
+}

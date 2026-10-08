@@ -2,3 +2,11 @@
 # line endings during checkout: wire fixtures and provenance use these hashes.
 /data/packs/*.json -text
 /src/ReactorSim.Core/EmbeddedData/*.json -text
+/data/calibration/literature-geometry-v4/*.json -text
+/data/calibration/literature-geometry-v4/fit/*.json -text
+
+/data/calibration/adjusters-v5/*.json -text
+/data/calibration/adjusters-v5/fit/*.json -text
+
+/data/calibration/xenon-reference-v6/*.json -text
+/data/calibration/xenon-reference-v6/fit/*.json -text

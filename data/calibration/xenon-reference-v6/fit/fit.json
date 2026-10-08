@@ -1,0 +1,174 @@
+{
+  "sourcePack": "candu6-two-group-diffusion-v1-adjusters-v5",
+  "seed": 1001,
+  "targetAdjusterWorthMk": 17,
+  "measuredAdjusterWorthMk": 17.00071109696244,
+  "measuredZoneWorthMk": 6.9999891454743945,
+  "halfFillK": 0.9999998169293443,
+  "frozenXenonFuelLossMkPerFullPowerDay": 0.3476266064040513,
+  "afterOneFullPowerDayK": 0.9996523112524177,
+  "allOutK": 1.0172945444132726,
+  "strength": 0.052571868896484374,
+  "boundary": 0.0007871529201316833,
+  "zoneScale": 0.9998388779546131,
+  "group1ZoneSlope": 0.0017640042499876617,
+  "group2ZoneSlope": 0.0007056016999950648,
+  "peakChannelKw": 5939.06918600633,
+  "peakBundleKw": 536.2227600456587,
+  "fuelCurveUnchanged": true,
+  "method": "Identical aged fuel, fixed half zones, self-consistent equilibrium Xe at startup. Actual Xe stays frozen in worth and one-day fuel-only probes; included reference follows current burnup. No arbitrary decay-rate fit.",
+  "reference": {
+    "model_id": "burnup-included-xe135-reference-v1",
+    "poison_data_identity": "practice-iodine-xenon-analytic-v1",
+    "reference_specific_power_w_per_kg_hm": 31971.3,
+    "source_provenance": "Authored analytic Xe135 reference proxy at Naceur/Marleau reference specific power; current game mass, energy and softened cross section; not extracted source isotope concentrations",
+    "rows": [
+      {
+        "burnup_j_per_kg_hm": 0,
+        "xe135_number_density_m3": 0
+      },
+      {
+        "burnup_j_per_kg_hm": 13811601600.000002,
+        "xe135_number_density_m3": 1.3511323737343389E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 27623203200.000004,
+        "xe135_number_density_m3": 1.3504845875211304E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 55246406400.00001,
+        "xe135_number_density_m3": 1.3512103753107164E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 82869609600,
+        "xe135_number_density_m3": 1.3516077442936312E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 110492812800.00002,
+        "xe135_number_density_m3": 1.3516258261654236E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 138116016000,
+        "xe135_number_density_m3": 1.3512647369703636E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 193362422400,
+        "xe135_number_density_m3": 1.3497543811801282E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 248608828800,
+        "xe135_number_density_m3": 1.3482063866896363E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 303855235200,
+        "xe135_number_density_m3": 1.3462527874629747E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 359101641600,
+        "xe135_number_density_m3": 1.3442580827160526E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 414348048000,
+        "xe135_number_density_m3": 1.3420310612807967E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 552464064000,
+        "xe135_number_density_m3": 1.3363778478423073E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 690580080000,
+        "xe135_number_density_m3": 1.330907536897658E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 828696096000,
+        "xe135_number_density_m3": 1.325433412027083E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 845388349514.563,
+        "xe135_number_density_m3": 1.324667635180543E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 1014466019417.4756,
+        "xe135_number_density_m3": 1.3167347349202435E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 1296000000000,
+        "xe135_number_density_m3": 1.3031136547970183E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 1728000000000,
+        "xe135_number_density_m3": 1.2812031625188884E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 2160000000000,
+        "xe135_number_density_m3": 1.25805694876162E+21
+      },
+      {
+        "burnup_j_per_kg_hm": 2592000000000,
+        "xe135_number_density_m3": 1.2336703706026968E+21
+      }
+    ]
+  },
+  "trials": [
+    {
+      "pass": 0,
+      "strength": 0.05404129028320312,
+      "boundary": 0.0007767769539451599,
+      "zoneScale": 1,
+      "inK": 0.9999965556254816,
+      "rodWorth": 17.33526850901468,
+      "zoneWorth": 7.001179431831983,
+      "poisonError": 0.01875327005206178
+    },
+    {
+      "pass": 1,
+      "strength": 0.05277328491210938,
+      "boundary": 0.0007857033366203308,
+      "zoneScale": 0.9998315381224739,
+      "inK": 0.9999995643816832,
+      "rodWorth": 17.04664587017657,
+      "zoneWorth": 6.9999539801158805,
+      "poisonError": 0.007777311655955177
+    },
+    {
+      "pass": 2,
+      "strength": 0.052599334716796876,
+      "boundary": 0.0007869240385246275,
+      "zoneScale": 0.9998381113273341,
+      "inK": 1.0000004822872364,
+      "rodWorth": 17.006636431085354,
+      "zoneWorth": 6.999992477006112,
+      "poisonError": 0.0009464198083016885
+    },
+    {
+      "pass": 3,
+      "strength": 0.052576446533203126,
+      "boundary": 0.000787114773197174,
+      "zoneScale": 0.9998391858679175,
+      "inK": 0.9999994919890114,
+      "rodWorth": 17.0015379438343,
+      "zoneWorth": 7.000001799770672,
+      "poisonError": 0.00013309869659341146
+    },
+    {
+      "pass": 4,
+      "strength": 0.052571868896484374,
+      "boundary": 0.0007871529201316833,
+      "zoneScale": 0.9998389287992345,
+      "inK": 0.9999992956713852,
+      "rodWorth": 17.00051747130249,
+      "zoneWorth": 7.000000355969704,
+      "poisonError": 2.780965553073729E-05
+    },
+    {
+      "pass": 5,
+      "strength": 0.052571868896484374,
+      "boundary": 0.0007871529201316833,
+      "zoneScale": 0.9998388779546131,
+      "inK": 0.9999992959452412,
+      "rodWorth": 17.00051776307221,
+      "zoneWorth": 6.999999998855477,
+      "poisonError": 6.046414759570778E-07
+    }
+  ]
+}

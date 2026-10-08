@@ -1,0 +1,71 @@
+{
+  "sourcePackSha256": "fe630a924cb0225341888300321f78af8f245e5aafbca5bec3c2044bcd9128dd",
+  "activePackSha256": "48b8f3b8d5334796917021ff0d349eda554ef0c872a07a260a70e62aa19c3dc9",
+  "fuelCoefficientTablesUnchanged": true,
+  "nodeVolumeAndInteriorConductanceUnchanged": true,
+  "embeddedMirrorMatches": true,
+  "xenonBasis": "included-burnup-reference",
+  "referenceKnotCount": 21,
+  "freshReferenceXenon": 0,
+  "fuelDecayPolicy": "Retain reference-derived curve; freeze actual Xe and zones, update included reference with burnup; no 0.5-mk fit",
+  "frozenActualXeDecayMkPerFpd": 0.3476117751443198,
+  "adjusterWorthMk": 17.00071109696244,
+  "zoneWorthMk": 6.9999891454743945,
+  "halfFillK": 0.9999998169293443,
+  "validation": {
+    "Core": 122,
+    "Game": 74,
+    "Browser": 37,
+    "frontend": 149,
+    "pagesSmoke": "passed",
+    "wasmReproduction": "passed",
+    "normalProductionBuild": "passed",
+    "pagesProductionBuild": "passed"
+  },
+  "deployed": false,
+  "wasmReproduction": {
+    "sampleCount": 2,
+    "rowCount": 6,
+    "matched": true,
+    "matrixSha256": "171b02e6914a4434079d50c75071c606f1329127cfe7366806a50dd710ab7ce5"
+  },
+  "buildMode": {
+    "gitCommitSha": "e69a40af4b4f6708005f3c006ee0bd6d1b6f7043",
+    "configuration": "Release",
+    "targetFramework": "net10.0",
+    "runtimeIdentifier": "browser-wasm",
+    "runAotCompilation": false,
+    "enableRuntimeProfiling": false,
+    "wasmEnableSIMD": "default",
+    "researchExperiments": false,
+    "wasmEnableThreads": false,
+    "cpuOperatorPartitions": 1,
+    "omitPrecompressedAssets": false
+  },
+  "workingTreeValidation": true,
+  "validationStatus": "passed",
+  "smokeSummary": {
+    "studio": {
+      "channels": 380,
+      "zones": 14,
+      "historyTabs": 7,
+      "refuel": "accepted",
+      "sessionPreserved": true,
+      "historyReset": true,
+      "desktopSizes": [
+        "1600x900",
+        "1280x720",
+        "720x720"
+      ],
+      "freshBundlePoison": "zero"
+    },
+    "shift": {
+      "challenge": "completed",
+      "usefulBundles": 8,
+      "badge": "earned",
+      "emptyRetry": "missed",
+      "seededRetries": "ok",
+      "practiceReturn": "ok"
+    }
+  }
+}

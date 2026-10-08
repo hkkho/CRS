@@ -23,17 +23,15 @@ compact diffusion pack. This is a gameplay approximation, not plant nuclear data
 The production/decay/absorption structure follows the DOE reactor theory handbook:
 https://ncsp.llnl.gov/sites/ncsp/files/2024-03/doe_fundamentals_handbook_nuclear_physics_and_reactor_theory_vol_2_of_2.pdf
 
-The existing diffusion coefficients are explicitly xenon-excluded, but already
-calibrated to give a balanced aged-core start. At initialization, the accepted
-regulated flux supplies local equilibrium inventories. A fixed spatial reference
-offset `-sigma * Xe_reference` rebases that authored background. Every subsequent
-trial uses `base - sigma * Xe_reference + sigma * Xe_current + zone_absorption`.
-The initial net poison overlay is exactly zero, preserving the original start
-and zone headroom without an iterative startup solve. The reference never follows
-refuelling bundles and is never reinitialized after a power change or design edit.
-This explicit synthetic calibration is distinct from a material table claiming
-to contain equilibrium xenon. Effective absorption still passes the solver's
-existing finite-value and `absorption >= fission` validation.
+The active [v6 reference replacement](xenon-reference-v6.md) declares an included
+Xe-135 reference at every fuel burnup knot. Each trial uses
+`base + sigma * (Xe_current - Xe_reference(current_burnup)) + zones + adjusters`.
+Startup settles equilibrium poison and RRS with the same accounting. The reference
+is an authored decomposition at the source specific power, not measured isotope
+data. It follows current bundle burnup through movement and energy deposition;
+fresh actual and reference poison are both zero. The original fixed spatial
+startup rebase remains only for archived undeclared packs. Effective absorption
+still passes the finite-value and `absorption >= fission` validation.
 
 ## Analytic integration
 
@@ -71,7 +69,7 @@ with the moved poison field and only commits it with the accepted inventory,
 projection, clock, zone fills and score. Failed commands leave poison unchanged.
 Pausing freezes poison. A new shift recreates the seeded equilibrium state.
 Designer edits retain history; cells without fuel have zero fission source and
-both poison and reference absorption are masked while configured without fuel.
+both actual and included-reference absorption are masked while configured without fuel.
 Their retained inventory still undergoes decay and local flux-dependent removal.
 
 The game remains a slowly evolving regulated equilibrium model. It does not

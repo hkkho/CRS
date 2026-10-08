@@ -1,9 +1,8 @@
 # Active two-group diffusion solver
 
 This document describes the equations used by the active `ReactorSim.Core`
-spatial path. The browser and the retained Unity client consume the result of
-this Core solver; neither client implements a second physics calculation. The
-browser Core Designer and Operations view use one `GameSession` with one live
+spatial path. Browser Reactor Studio consumes the result of
+this Core solver without a second physics calculation. It uses one `GameSession` with one live
 380-channel by 12-position topology.
 
 The active pack is the project-authored compact coefficient table used by the
@@ -13,7 +12,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-cycle190-650mwe`, units profile
+`candu6-two-group-diffusion-v1-xenon-reference-v6`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -27,22 +26,28 @@ group 2 is thermal.
 | `Sigma_a1` | `0.30` | m^-1 | Fast absorption |
 | `Sigma_a2` | `0.16` | m^-1 | Thermal absorption |
 | `Sigma_f1` | `0.035` | m^-1 | Fast fission rate for power |
-| `Sigma_f2` | `0.155` | m^-1 | Thermal fission rate for power |
-| `nuSigma_f1` | `0.07905016808075824` | m^-1 | Fast neutron production |
-| `nuSigma_f2` | `0.35445530723354274` | m^-1 | Thermal neutron production |
+| `Sigma_f2` | `0.1545382857142857` | m^-1 | Thermal fission rate for power |
+| `nuSigma_f1` | `0.08575000000000002` | m^-1 | Fast neutron production |
+| `nuSigma_f2` | `0.37861880000000003` | m^-1 | Thermal neutron production |
 | `Sigma_s12` | `0.200` | m^-1 | Fast-to-thermal downscatter |
 | `chi1` | `1.0` | dimensionless | Fast fission spectrum fraction |
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
 | `E_fission` | `3.204353268e-11` | J/fission | Power conversion |
 
-The pack node volume is `V = 0.05 m^3`. The pack also carries the finite-volume
+The pack node volume is `V = 0.04044276185625 m^3`. The pack also carries the finite-volume
 conductances used by the 380-channel by 12-position model:
 
 | Face relation | Group 1 | Group 2 | Units |
 | --- | ---: | ---: | --- |
-| Axial interior edge | `0.0008` | `0.0004` | m^2 |
-| Transverse interior edge | `0.0012` | `0.0006` | m^2 |
-| Vacuum boundary face | `0.0024` | `0.0012` | m^2 |
+| Axial interior edge | `0.00659423076923077` | `0.003297115384615385` | m^2 |
+| Transverse interior edge | `0.019812` | `0.009906` | m^2 |
+| Effective outer boundary face | `0.0007871529201316833` | `0.00039357646006584165` | m^2 |
+
+See [xenon reference v6](xenon-reference-v6.md) for the included-reference replacement
+and current boundary refit, and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption
+and the boundary refit, and [v4 calibration](literature-geometry-v4.md) for source geometry, authored
+effective diffusion coefficients, fitted boundary leakage and the poison-basis
+limitation of the static burnup curve plus gameplay xenon perturbation.
 
 ## Live 380 × 12 design
 
@@ -51,7 +56,7 @@ The live game maps every `(channel, position)` pair to one diffusion node, for
 that identity, burnup, refuelling, and presentation state stay aligned with
 the spatial solve.
 
-When Core Designer sets `hasFuel = false`, the solver keeps the inventory record
+When developer geometry commands set `hasFuel = false`, the solver keeps the inventory record
 but replaces the fuel coefficient row with the explicit moderator row below.
 The zero fission terms make the configured cell carry no fission source or
 local power; its flux still participates in leakage and downscatter.
@@ -179,9 +184,9 @@ criterion is satisfied and all of residual, source-shape, and power-balance
 criteria are satisfied. A nonconverged result has no usable final state.
 
 The embedded pack stores the normal runtime policy: Jacobi absolute residual
-`1e-10`, relative residual `1e-6`, 64 inner iterations, outer `k` tolerances
-`1e-4` and `1e-3`, residual tolerance `2e-3`, source-shape tolerance `1e-3`,
-power-balance tolerance `1e-12`, and 300 outer iterations. The fixed
+`1e-11`, relative residual `1e-7`, 128 inner iterations, outer `k` tolerances
+`2e-7` and `2e-6`, residual tolerance `2e-5`, source-shape tolerance `1e-5`,
+power-balance tolerance `1e-12`, and 1600 outer iterations. The fixed
 single-cell benchmark uses the same solver implementation with tighter
 acceptance settings: `1e-13` inner absolute and relative residual tolerances,
 `1e-12` for each outer metric, 2048 inner iterations, and 256 outer
@@ -210,45 +215,43 @@ Substitution into the fast equation gives the infinite-medium eigenvalue
 ```text
 k_inf = (nuSigma_f1 + nuSigma_f2 * (phi_2 / phi_1)) /
         (Sigma_a1 + Sigma_s12)
-      = (0.07905016808075824 + 0.35445530723354274 * 1.25) / 0.50
-      = 1.0442386042453733
+      = (0.08575 + 0.3786188 * 1.25) / 0.50
+      = 1.118047
 ```
 
 The one-watt normalization is computed from the actual `Sigma_f`, energy, and
 volume values:
 
 ```text
-1 W = 0.05 m^3 * 3.204353268e-11 J/fission
-     * (0.035 * phi_1 + 0.155 * phi_2)
+1 W = 0.04044276185625 m^3 * 3.204353268e-11 J/fission
+     * (0.035 * phi_1 + 0.1545382857142857 * phi_2)
 ```
 
 The resulting fluxes are
-`phi_1 = 2.72852855714132e12 n/m^2/s` and
-`phi_2 = 3.41066069642665e12 n/m^2/s`. These values are an analytic check on
-the assembled one-cell equations. The benchmark result below comes from the
-actual Core `SpatialEigenIteration` and `SpatialEigenSolve`, not from this
-analytic expression.
+`phi_1 = 3.38185376172163e12 n/m^2/s` and
+`phi_2 = 4.22731720215204e12 n/m^2/s`. These values are an analytic check on
+the assembled one-cell equations. Core regression tests independently run
+`SpatialEigenIteration` and `SpatialEigenSolve` and compare their result.
 
 ## Actual Core result
 
-`SingleCellReflectiveDiffusionFixtureV1.TrySolve()` returns:
+The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 
 | Result | Value |
 | --- | ---: |
 | Status | `Converged` |
-| Effective `k` | `1.0442386042453733` |
-| Fast flux | `2.72852855714132e12 n/m^2/s` |
-| Thermal flux | `3.41066069642665e12 n/m^2/s` |
+| Effective `k` | `1.118047` (10 decimal places) |
+| Fast flux | Within `1e-11` relative of the analytic value |
+| Thermal flux | Within `1e-11` relative of the analytic value |
 | Total power | `1 W` |
-| Outer iterations | `2` |
-| Relative residual infinity | `8.94770275946045e-17` |
-| Relative power balance | `1.11022302462516e-16` |
+| Relative residual infinity | At most `1e-12` |
+| Relative power balance | At most `1e-12` |
 
 `SingleCellReflectiveDiffusionFixtureV1` is a Core regression benchmark for
 the six-face reflective boundary assembly. It runs the same
 `SpatialEigenIteration` and `SpatialEigenSolve` implementation used by the
 live full-core session. The browser does not create a second one-cell solver;
-Core Designer displays the live 380 × 12 solve and its per-cell fields.
+Reactor Studio displays the live 380 × 12 solve and its per-cell fields.
 
 ## Interpretation boundary
 

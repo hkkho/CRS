@@ -49,32 +49,37 @@ namespace ReactorSim.Core
         private static bool Valid(double value) => ContractValidation.IsFinite(value) && value >= 0;
     }
 
-    /// <summary>Immutable compact bundle-bound poison state. The fixed reference offset
-    /// rebases the authored background once, preserving the original aged-core calibration.
-    /// Dynamic Xe absorption is then added exactly once to each equilibrium trial.</summary>
+    /// <summary>Immutable bundle-bound poison. Active packs replace an explicit
+    /// included reference at each bundle's current burnup with live Xe exactly once.
+    /// Archived undeclared packs retain their historical fixed-rebase behavior.</summary>
     public sealed class PracticeXenonStateV1
     {
         private readonly StableId[] _bundles;
         private readonly double[] _iodine, _xenon, _reference;
+        private readonly PracticeXenonReferenceV1? _background;
         private readonly Lazy<Digest32> _stateDigest;
         private readonly Lazy<StaticAbsorptionOverlayV1> _overlay;
         public IReadOnlyList<double> Iodine { get; }
         public IReadOnlyList<double> Xenon { get; }
+        public IReadOnlyList<double> IncludedReferenceXenon { get; }
         public double SimulationTimeSeconds { get; }
         public ulong StateVersion { get; }
         public Digest32 StateDigest => _stateDigest.Value;
         public StaticAbsorptionOverlayV1 Overlay => _overlay.Value;
 
         private PracticeXenonStateV1(StableId[] bundles, double[] iodine, double[] xenon,
-            double[] reference, double time, ulong version)
+            double[] reference, double time, ulong version, PracticeXenonReferenceV1? background = null)
         {
+            _background = background;
             _bundles = bundles; _iodine = iodine; _xenon = xenon; _reference = reference;
+            IncludedReferenceXenon = new ReadOnlyCollection<double>(reference);
             Iodine = new ReadOnlyCollection<double>(iodine);
             Xenon = new ReadOnlyCollection<double>(xenon);
             SimulationTimeSeconds = time; StateVersion = version;
             _stateDigest = new Lazy<Digest32>(() => new Digest32(Phase5CanonicalBytesV1.HashBody(PracticeXenonDataV1.Identity, writer =>
             {
                 Phase5CanonicalBytesV1.WriteDigest(writer, PracticeXenonDataV1.DataDigest);
+                if (background != null) Phase5CanonicalBytesV1.WriteDigest(writer, background.ReferenceDigest);
                 writer.Write(time); writer.Write(version);
                 for (int n = 0; n < bundles.Length; n++)
                 {
@@ -101,8 +106,11 @@ namespace ReactorSim.Core
                 xenon[n] = (PracticeXenonDataV1.GammaXe + PracticeXenonDataV1.GammaI) * f /
                     (PracticeXenonDataV1.LambdaXe + PracticeXenonDataV1.SigmaGroup2M2 * projection.ShapeGroup2[n]);
             }
+            var background = projection.DataPack.XenonReference;
+            double[] reference = background == null ? (double[])xenon.Clone() :
+                bundles.Select(b => background.At(b.CurrentBurnupJPerKgHm)).ToArray();
             return new PracticeXenonStateV1(bundles.Select(b => b.BundleId).ToArray(), iodine, xenon,
-                (double[])xenon.Clone(), time, 0);
+                reference, time, 0, background);
         }
 
         public PracticeXenonStateV1 Advance(EquilibriumCoreProjectionV1 projection, double amplitude, double seconds)
@@ -124,7 +132,7 @@ namespace ReactorSim.Core
                     projection.ShapeGroup1[n] * amplitude, projection.ShapeGroup2[n] * amplitude, seconds);
             }
             return new PracticeXenonStateV1(_bundles, iodine, xenon, _reference,
-                SimulationTimeSeconds + seconds, checked(StateVersion + 1));
+                SimulationTimeSeconds + seconds, checked(StateVersion + 1), _background);
         }
 
         public PracticeXenonStateV1 Rebind(SyntheticGameCoreStateV1 core)
@@ -136,9 +144,22 @@ namespace ReactorSim.Core
             for (int n = 0; n < bundles.Length; n++)
                 if (indices.TryGetValue(bundles[n].BundleId, out int old))
                 { iodine[n] = _iodine[old]; xenon[n] = _xenon[old]; }
-            // Calibration belongs to the spatial background, not the moving bundle.
+            // Included reference poison belongs to the current fuel burnup, not its old spatial slot.
+            double[] reference = _background == null ? _reference :
+                bundles.Select(b => _background.At(b.CurrentBurnupJPerKgHm)).ToArray();
             return new PracticeXenonStateV1(bundles.Select(b => b.BundleId).ToArray(), iodine, xenon,
-                _reference, SimulationTimeSeconds, checked(StateVersion + 1));
+                reference, SimulationTimeSeconds, checked(StateVersion + 1), _background);
+        }
+
+        public PracticeXenonStateV1 BindBurnupReference(SyntheticGameCoreStateV1 core)
+        {
+            if (_background == null) return this;
+            BundleState[] bundles = core.EnumerateBundles().ToArray();
+            if (bundles.Length != _bundles.Length || bundles.Where((b, n) => b.BundleId != _bundles[n]).Any())
+                throw new ArgumentException("Burnup binding must retain the exact poison bundle identities.", nameof(core));
+            return new PracticeXenonStateV1(_bundles, _iodine, _xenon,
+                bundles.Select(b => _background.At(b.CurrentBurnupJPerKgHm)).ToArray(),
+                SimulationTimeSeconds, StateVersion, _background);
         }
 
         private static double FissionRate(EquilibriumCoreProjectionV1 projection, int n)
@@ -167,7 +188,7 @@ namespace ReactorSim.Core
                     PracticeXenonDataV1.SigmaGroup2M2 * (_xenon[n] - _reference[n]);
                 entries[n] = new StaticAbsorptionOverlayEntryV1(node, 0, delta == 0 ? 0 : delta);
             }
-            var result = StaticAbsorptionOverlayV1.TryCreate(PracticeXenonDataV1.Identity + "/fixed-reference-calibration", entries);
+            var result = StaticAbsorptionOverlayV1.TryCreate(PracticeXenonDataV1.Identity + (_background == null ? "/fixed-reference-calibration" : "/burnup-reference-replacement"), entries);
             if (!result.IsValid) throw new InvalidOperationException(result.FirstDiagnostic.ToString());
             return result.Value;
         }

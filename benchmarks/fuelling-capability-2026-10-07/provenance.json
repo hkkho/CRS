@@ -1,0 +1,43 @@
+{
+  "capturedAtUtc": "2026-10-07T23:48:58.6662433Z",
+  "sourceCommit": "e69a40af4b4f6708005f3c006ee0bd6d1b6f7043",
+  "workingTreeStatus": [
+    " M .gitattributes",
+    " M README.md",
+    " M data/packs/candu6-two-group-diffusion-pack-v1.json",
+    " M docs/IMPLEMENTATION_GUIDE.md",
+    " M docs/physics/active-two-group-solver.md",
+    " M docs/physics/iodine-xenon-gameplay.md",
+    " M docs/physics/reactivity-scale-v3.md",
+    " M src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs",
+    " M src/ReactorSim.Core/EmbeddedData/candu6-two-group-diffusion-pack-v1.json",
+    " M src/ReactorSim.Game/PracticeGameSessionFactory.cs",
+    " M tests/Fixtures/README.md",
+    " M tests/Fixtures/playtest-v2.json.gz",
+    " M tests/ReactorSim.Core.Tests/AgedCoreSnapshotTests.cs",
+    " M tests/ReactorSim.Core.Tests/DiffusionDataPackAuditTests.cs",
+    " M tests/ReactorSim.Core.Tests/SingleCellReflectiveDiffusionFixtureTests.cs",
+    " M tests/ReactorSim.Game.Tests/AgedPracticeSessionTests.cs",
+    " M tools/AgedCoreBenchmark/Program.cs",
+    "?? .codex-remote-attachments/",
+    "?? benchmarks/literature-geometry-v4-browser.json",
+    "?? benchmarks/literature-geometry-v4-comparison.json",
+    "?? benchmarks/literature-geometry-v4-reactivity.json",
+    "?? benchmarks/literature-geometry-v4-smoke.json",
+    "?? data/calibration/literature-geometry-v4/",
+    "?? docs/physics/literature-geometry-v4.md",
+    "?? tools/AgedCoreBenchmark/LiteratureGeometryCalibration.cs",
+    "?? tools/build_candu6_summary_pdf.py",
+    "?? tools/tune_literature_pack.py"
+  ],
+  "seed": 1759455334,
+  "pack": "candu6-two-group-diffusion-v1-literature-geometry-v4",
+  "embeddedPackSha256": "a1ec2e4c7f5ab92ca227b1e39a0eea79563b993367f7437908b6254b5548eddf",
+  "canonicalPackSha256": "a1ec2e4c7f5ab92ca227b1e39a0eea79563b993367f7437908b6254b5548eddf",
+  "dotnetSdk": "10.0.303",
+  "commands": [
+    "dotnet run --project tools/AgedCoreBenchmark -c Release -- --fuelling-100-days artifacts/fuelling-100-days-regional-2026-10-07 1759455334",
+    "dotnet run --project tools/LongRunPlaytest -c Release -- --endless=true --days=100 --seed=1759455334 --threshold=.45 --policy=reserve --output=artifacts/fuelling-100-days-reserve-2026-10-07"
+  ],
+  "sequential": true
+}

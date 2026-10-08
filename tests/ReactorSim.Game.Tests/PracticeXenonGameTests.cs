@@ -17,7 +17,9 @@ public sealed class PracticeXenonGameTests
         Assert.True(before.Xenon.MeanI135NumberDensityM3 > 0);
         Assert.True(before.Xenon.MeanXe135NumberDensityM3 > 0);
         Assert.All(before.Rrs.Zones, z => Assert.True(z.MeanXe135NumberDensityM3 > 0));
-        Assert.True(session.CurrentXenonState.Overlay.IsZero);
+        Assert.False(session.CurrentXenonState.Overlay.IsZero);
+        Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0,
+            PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
         Assert.True(session.Pause().Accepted);
         Assert.True(session.AdvanceWallMilliseconds(1000).Accepted);
         Assert.Equal(before.Xenon.StateDigestHex, session.Snapshot.Xenon.StateDigestHex);

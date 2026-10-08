@@ -43,7 +43,8 @@ namespace ReactorSim.Game
             SyntheticGameCoreStateV1 coreState,
             EquilibriumCoreSolverV1 equilibriumSolver,
             PracticeLiquidZoneRrsV1 practiceRrs,
-            bool challenge = false)
+            bool challenge = false,
+            PracticeXenonStateV1? initialXenon = null)
         {
             _challenge = challenge;
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
@@ -52,7 +53,7 @@ namespace ReactorSim.Game
             _coreState = coreState ?? throw new ArgumentNullException(nameof(coreState));
             _equilibriumSolver = equilibriumSolver ?? throw new ArgumentNullException(nameof(equilibriumSolver));
             _practiceRrs = practiceRrs ?? throw new ArgumentNullException(nameof(practiceRrs));
-            _xenon = PracticeXenonStateV1.CreateEquilibrium(coreState, equilibriumSolver.CurrentProjection,
+            _xenon = initialXenon ?? PracticeXenonStateV1.CreateEquilibrium(coreState, equilibriumSolver.CurrentProjection,
                 _runtime.SimulationTimeSeconds);
             _coupledXenon = _xenon;
             _lastFullCoreSolveSimulationTime = _runtime.SimulationTimeSeconds;
@@ -956,6 +957,7 @@ namespace ReactorSim.Game
                     }
 
                     transaction.CoreState = integrated.Value;
+                    transaction.Xenon = transaction.Xenon.BindBurnupReference(transaction.CoreState);
                     transaction.ThermalEnergyJoules += deltaEnergy.Sum();
                     ContractValidationResult<PracticeLiquidZoneRrsV1> advancedRrs =
                         transaction.Rrs.TryWithSimulationTime(stepEnd);

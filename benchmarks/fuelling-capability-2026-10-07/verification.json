@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "regionalSteps": 48000,
+  "regionalSamples": 2601,
+  "reserveSamples": 4994,
+  "regionalMoves": 199,
+  "reserveMoves": 193,
+  "accounting": "8 bundles per accepted move; reserve energy equals 100 days at 2064 MWth / 650 MWe",
+  "lifecycle": "Both reports reached day 100 while still running, with normal limits active.",
+  "sourcePackUnchangedDuringRuns": true,
+  "reportSha256": {
+    "regional-report.json": "c496d33dd03f3ddf5716fa1051487c672a7c9f0dd153c25e5598467e74107088",
+    "reserve-report.json": "df825a26ec5393a88cdebf614435b41ec8bb52a9925b0565a7a662f211180d23",
+    "reserve-report.jsonl": "a604e410f9a8f8df98b5b209a1e54f8778c497b2df5d6ff02c23531760db1a05"
+  }
+}

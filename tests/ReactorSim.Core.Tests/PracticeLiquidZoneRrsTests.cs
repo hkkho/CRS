@@ -223,6 +223,11 @@ public sealed class PracticeLiquidZoneRrsTests
         double RhoAt(double fill)
         {
             var overlay = Require(mapping.TryBuildOverlay(Enumerable.Repeat(fill, 14).ToArray()));
+            var coupled = Require(PracticeXenonEquilibriumV1.TryCreate(solver, inventory, Enumerable.Repeat(.5, 14).ToArray()));
+            var xe = coupled.Poison.Overlay;
+            overlay = Require(StaticAbsorptionOverlayV1.TryCreate("fixed-xe-zone-worth-test",
+                overlay.Entries.Select(e => new StaticAbsorptionOverlayEntryV1(e.Node, e.DeltaAbsorptionGroup1PerM,
+                    e.DeltaAbsorptionGroup2PerM + xe.GetDeltaAbsorptionGroup2PerM(e.Node)))));
             return Require(solver.TrySolveCandidate(inventory.EnumerateBundles(), overlay)).RelativeReactivity;
         }
 
@@ -302,17 +307,21 @@ public sealed class PracticeLiquidZoneRrsTests
     public void ExcessFuelReactivityIsRegulatedBeforeSpatialShapeOptimisation()
     {
         CreateRunFixture(out var inventory, out var solver, out var initial);
+        var coupled = Require(PracticeXenonEquilibriumV1.TryCreate(solver, inventory, Enumerable.Repeat(.5, 14).ToArray()));
+        var poison = coupled.Poison;
+        initial = Require(PracticeLiquidZoneRrsV1.TryCreate(Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6()), coupled.Projection));
         var settled = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
-            solver, inventory.EnumerateBundles(), initial, 0.0));
+            solver, inventory.EnumerateBundles(), initial, 0.0, backgroundOverlay: poison.Overlay));
         Require(solver.TryCommitCandidate(settled.Projection));
         var fuelled = Require(inventory.TryRefuel(
             75, GameRefuellingDirectionV1.TowardEndB, 8, "NAT-U-SYNTHETIC", 0.0)).ResultingState;
-        var uncompensated = Require(solver.TrySolveCandidate(fuelled.EnumerateBundles()));
+        var fuelPoison = poison.Rebind(fuelled);
+        var uncompensated = Require(solver.TrySolveCandidate(fuelled.EnumerateBundles(), fuelPoison.Overlay));
         var retained = Require(solver.TrySolveCandidate(
-            Require(solver.TryPrepareCandidates(fuelled.EnumerateBundles())), uncompensated.SpatialSolve,
+            Require(solver.TryPrepareCandidates(fuelled.EnumerateBundles(), fuelPoison.Overlay)), uncompensated.SpatialSolve,
             Require(settled.State.TryBuildOverlay())));
         var regulated = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
-            solver, fuelled.EnumerateBundles(), settled.State, 0.0));
+            solver, fuelled.EnumerateBundles(), settled.State, 0.0, backgroundOverlay: fuelPoison.Overlay));
 
         Assert.True(Math.Abs(regulated.Projection.RelativeReactivity) < Math.Abs(retained.RelativeReactivity));
         Assert.InRange(Math.Abs(regulated.Projection.RelativeReactivity), 0, 2.0e-5);
@@ -333,7 +342,7 @@ public sealed class PracticeLiquidZoneRrsTests
         FullCoreDiffusionModelV1 model = Require(
             FullCoreDiffusionModelV1.TryCreateCandu6(pack));
         solver = Require(
-            EquilibriumCoreSolverV1.TryCreate(model, inventory.EnumerateBundles(), 1.0e9));
+            EquilibriumCoreSolverV1.TryCreate(model, inventory.EnumerateBundles(), 2_064_000_000));
         PracticeLiquidZoneRrsMappingV1 mapping = Require(
             PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
         initial = Require(

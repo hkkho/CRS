@@ -22,8 +22,8 @@ namespace ReactorSim.Core
         public const double InitialFillFraction = 0.5;
         public const double AbsorptionReferenceFillFraction = 0.0;
         public const double CalibratedTotalZoneWorthMk = 7.0;
-        public const double Group1AbsorptionPerMPerFillFraction = 0.0017230342616652234;
-        public const double Group2AbsorptionPerMPerFillFraction = 0.0006892137046660893;
+        public const double Group1AbsorptionPerMPerFillFraction = 0.0017640042499876617;
+        public const double Group2AbsorptionPerMPerFillFraction = 0.0007056016999950648;
         public const int ResponseVariableCount = (int)LogicalZoneCount;
         public const int ResponseOutputCount = ResponseVariableCount + 1;
         public const double ResponseGroup1AbsorptionWeight = 0.65;

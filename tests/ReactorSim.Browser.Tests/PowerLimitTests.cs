@@ -1,3 +1,7 @@
+using System.Reflection;
+using System.Linq;
+using ReactorSim.Core;
+using ReactorSim.Game;
 using Xunit;
 using ReactorSim.Browser;
 
@@ -12,6 +16,7 @@ public sealed partial class PlaytestBridgeTests
         var initial = Parse(runtime.Initialize(PlayRequest)).GetProperty("snapshot");
         Assert.Equal("running", initial.GetProperty("runStatus").GetString());
         Assert.False(initial.GetProperty("rrs").GetProperty("isGameOver").GetBoolean());
+        PrepareOverpowerFixture(runtime);
         Assert.True(Parse(runtime.Dispatch(CompactCommand(0, "queue-power-target", "\"targetFraction\":1.2"))).GetProperty("accepted").GetBoolean());
         var ending = Parse(runtime.Dispatch(CompactCommand(1, "advance", "\"wallMilliseconds\":100"))).GetProperty("snapshotPatch");
         Assert.Equal("Channel power exceeds 7,300 kW", ending.GetProperty("runEndReason").GetString());
@@ -24,4 +29,24 @@ public sealed partial class PlaytestBridgeTests
         Assert.Equal(ending.GetProperty("scoreTotal").GetDouble(), patch.GetProperty("scoreTotal").GetDouble());
         Assert.Equal(ending.GetProperty("freshBundlesAvailable").GetUInt32(), patch.GetProperty("freshBundlesAvailable").GetUInt32());
     }
+    private static void PrepareOverpowerFixture(PlaytestRuntime runtime)
+    {
+        // Isolate terminal serialization from the nominal pack's flatter peaks.
+        var bridge = typeof(PlaytestRuntime).GetField("_runtimeInstance", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(runtime)!;
+        var session = (GameSession)bridge.GetType().GetProperty("PlaySession")!.GetValue(bridge)!;
+        double scale = 1.01 * 7_300_000 / (1.2 * session.CurrentEquilibriumProjection.ShapeChannelPowerWatts.Max());
+        var model = FullCoreDiffusionModelV1.TryCreateCandu6(
+            FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6().Value).Value;
+        var solver = EquilibriumCoreSolverV1.TryCreate(model, session.CoreState.EnumerateBundles(),
+            PracticeGameSessionFactory.PracticeReferencePowerWatts * scale).Value;
+        var overlay = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6().Value
+            .TryBuildOverlay(session.CurrentLiquidZoneRrs.ZoneFills).Value;
+        var candidate = solver.TrySolveCandidate(session.CoreState.EnumerateBundles(), overlay);
+        Assert.True(candidate.IsValid);
+        Assert.True(solver.TryCommitCandidate(candidate.Value).IsValid);
+        typeof(GameSession).GetField("_equilibriumSolver", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(session, solver);
+    }
+
 }

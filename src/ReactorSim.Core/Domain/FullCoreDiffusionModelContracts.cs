@@ -1537,6 +1537,20 @@ namespace ReactorSim.Core
                     values.EnergyPerFissionJ));
             }
 
+            if (_dataPack.Adjusters != null && !_dataPack.Adjusters.IsZero)
+            {
+                for (int i = 0; i < nodeCoefficients.Count; i++)
+                {
+                    SpatialNodeCoefficients node = nodeCoefficients[i];
+                    nodeCoefficients[i] = new SpatialNodeCoefficients(node.Node, node.VolumeM3,
+                        node.AbsorptionGroup1PerM + _dataPack.Adjusters.GetDeltaAbsorptionGroup1PerM(node.Node),
+                        node.AbsorptionGroup2PerM + _dataPack.Adjusters.GetDeltaAbsorptionGroup2PerM(node.Node),
+                        node.DownscatterGroup1To2PerM, node.FissionGroup1PerM, node.FissionGroup2PerM,
+                        node.NuFissionGroup1PerM, node.NuFissionGroup2PerM, node.ChiGroup1, node.ChiGroup2,
+                        node.EnergyPerFissionJ, node.PowerResponse);
+                }
+            }
+
             SpatialCoefficientSet? template =
                 System.Threading.Volatile.Read(ref _validatedTopologyConductanceTemplate);
             if (template != null)
@@ -1550,7 +1564,7 @@ namespace ReactorSim.Core
                     nodeCoefficients,
                     _edgeConductances,
                     _boundaryConductances,
-                    XenonBasisV1.Excluded,
+                    _dataPack.XenonReference == null ? XenonBasisV1.Excluded : XenonBasisV1.Included,
                     0.0);
             if (created.IsValid)
             {

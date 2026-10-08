@@ -6,10 +6,22 @@ namespace ReactorSim.Core.Tests;
 
 public sealed class DiffusionDataPackAuditTests
 {
+    [Fact]
+    public void LiteratureGeometryUsesMetricCellVolumeAndConsistentInteriorDiffusion()
+    {
+        var pack = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+        const double pitch = .28575, length = .4953;
+        Assert.Equal(pitch * pitch * length, pack.NodeVolumeM3, 14);
+        Assert.Equal(.04, pack.AxialConductance.Group1M2 * length / (pitch * pitch), 12);
+        Assert.Equal(.04, pack.TransverseConductance.Group1M2 / length, 12);
+        Assert.Equal(.02, pack.AxialConductance.Group2M2 * length / (pitch * pitch), 12);
+        Assert.Equal(.02, pack.TransverseConductance.Group2M2 / length, 12);
+    }
+
     private static readonly double[] ExpectedBurnupKnotsMwDayPerKgHm =
-        { 0.0, 0.5870752427184465, 1.5655339805825241, 2.7396844660194173,
-          2.9353762135922326, 3.91383495145631, 5.870752427184465, 7.82766990291262,
-          9.784587378640776, 11.74150485436893, 15.0, 20.0, 25.0, 30.0 };
+        { 0, .1598565, .319713, .639426, .959139, 1.278852, 1.598565,
+          2.237991, 2.877417, 3.516843, 4.156269, 4.795695, 6.39426,
+          7.992825, 9.59139, 9.784587378640776, 11.74150485436893, 15, 20, 25, 30 };
 
     [Fact]
     public void EmbeddedPackAuditClassifiesCurrentSyntheticRepresentation()
@@ -20,7 +32,7 @@ public sealed class DiffusionDataPackAuditTests
             DiffusionDataPackAuditV1.TryAudit(pack));
         DiffusionCoefficientTableAuditV1 table = Assert.Single(audit.Tables);
 
-        Assert.Equal(14, table.BurnupKnotsMwDayPerKgHm.Count);
+        Assert.Equal(ExpectedBurnupKnotsMwDayPerKgHm.Length, table.BurnupKnotsMwDayPerKgHm.Count);
         for (int index = 0; index < ExpectedBurnupKnotsMwDayPerKgHm.Length; index++)
             Assert.Equal(ExpectedBurnupKnotsMwDayPerKgHm[index], table.BurnupKnotsMwDayPerKgHm[index], 12);
         Assert.Equal(
@@ -70,9 +82,9 @@ public sealed class DiffusionDataPackAuditTests
 
         DiffusionPackAuditFindingV1 xenonBasis = audit.GetFinding(
             DiffusionAuditFieldV1.XenonBasis);
-        Assert.Equal(CoefficientAuditClassificationV1.Missing, xenonBasis.Classification);
+        Assert.Equal(CoefficientAuditClassificationV1.ExplicitBurnupDependent, xenonBasis.Classification);
         Assert.True(xenonBasis.IsPackLevel);
-        Assert.Contains("no xenon basis", xenonBasis.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("burnup-bound Xe-135 reference", xenonBasis.Message, StringComparison.OrdinalIgnoreCase);
 
         Assert.Equal("synthetic-calibrated", pack.EvidenceClass);
         Assert.True(audit.IsSyntheticOrProvisional);

@@ -1,5 +1,9 @@
 # Shared browser v2 wire fixtures
 
+The current fixtures were regenerated for the xenon-reference-v6 physics
+pack. The wire schema is unchanged; physical values, pack identity and digests
+intentionally change with the calibration.
+
 `playtest-v2.json.gz` contains exact UTF-8 JSON responses authored by the C#
 runtime, compressed only to avoid repeating thousands of channel/bundle fields.
 Each record includes request, operation, response bytes and SHA-256, plus a full

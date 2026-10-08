@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
 
@@ -31,6 +32,11 @@ public sealed class PowerLimitGameSessionTests
     public void AppliedPowerTargetTripsOnTheFirstTickWithoutWaitingForASpatialSolve()
     {
         var session = PracticeGameSessionFactory.Create();
+        // The nominal adjuster core no longer exceeds the cap at 120%.
+        // Give this isolated first-tick fixture a reference power whose shape
+        // crosses the channel cap at the same valid queued amplitude.
+        SetTestReferencePower(session, 1.01 * 7_300_000 /
+            (1.2 * session.CurrentEquilibriumProjection.ShapeChannelPowerWatts.Max()));
         SetTestPowerAmplitude(session, 0.4);
         Assert.False(session.Snapshot.IsGameOver);
         var projection = session.CurrentEquilibriumProjection;
@@ -73,6 +79,21 @@ public sealed class PowerLimitGameSessionTests
         Assert.Equal(before.Shift.ThermalEnergyMwh, result.Snapshot.Shift.ThermalEnergyMwh);
         Assert.Equal(before.FreshBundlesAvailable - 8, result.Snapshot.FreshBundlesAvailable);
         Assert.Equal(safeAmplitude, result.Snapshot.Physics.PowerAmplitude);
+    }
+
+    private static void SetTestReferencePower(GameSession session, double scale)
+    {
+        var model = FullCoreDiffusionModelV1.TryCreateCandu6(
+            FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6().Value).Value;
+        var solver = EquilibriumCoreSolverV1.TryCreate(model, session.CoreState.EnumerateBundles(),
+            PracticeGameSessionFactory.PracticeReferencePowerWatts * scale).Value;
+        var overlay = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6().Value
+            .TryBuildOverlay(session.CurrentLiquidZoneRrs.ZoneFills).Value;
+        var projection = solver.TrySolveCandidate(session.CoreState.EnumerateBundles(), overlay);
+        Assert.True(projection.IsValid);
+        Assert.True(solver.TryCommitCandidate(projection.Value).IsValid);
+        typeof(GameSession).GetField("_equilibriumSolver", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(session, solver);
     }
 
     private static void SetTestPowerAmplitude(GameSession session, double amplitude)

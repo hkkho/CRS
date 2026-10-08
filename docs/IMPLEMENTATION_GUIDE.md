@@ -198,7 +198,11 @@ transaction, replay, fallback and rollout gates.
 ## Current physics and provenance
 
 The practice session uses the project-authored
-`candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3` path. It is a
+`candu6-two-group-diffusion-v1-xenon-reference-v6` path with
+[explicit xenon reference replacement](physics/xenon-reference-v6.md) and 21 fully inserted
+[fixed adjusters](physics/adjusters-v5.md). See the
+[literature-guided calibration](physics/literature-geometry-v4.md) for the metric
+geometry, fitted static curve, finite-core measurements and poison-basis limitation. It is a
 regulated steady-state practice model rather than a sub-second transient claim.
 
 The shared full-core adapter publishes explicit SI watts, normalized power,

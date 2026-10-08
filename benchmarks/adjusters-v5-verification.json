@@ -1,0 +1,39 @@
+{
+  "sourcePackSha256": "a1ec2e4c7f5ab92ca227b1e39a0eea79563b993367f7437908b6254b5548eddf",
+  "activePackSha256": "fe630a924cb0225341888300321f78af8f245e5aafbca5bec3c2044bcd9128dd",
+  "fuelCoefficientTablesUnchanged": true,
+  "nodeVolumeAndInteriorConductanceUnchanged": true,
+  "embeddedMirrorMatches": true,
+  "targetWorthMk": 17,
+  "measuredWorthMk": 16.998833241044675,
+  "rodCount": 21,
+  "mappedCellContributions": 672,
+  "referenceMinimumChannelMw": 5.032315927636146,
+  "referenceMaximumChannelMw": 5.736737762388131,
+  "referenceThermalMw": 2063.9999999999977,
+  "runtime": "shared Core/Game; fixed all-in nominal adjusters",
+  "validationStatus": "passed",
+  "dotnetTests": {
+    "Core": 119,
+    "Game": 74,
+    "Browser": 37
+  },
+  "frontendTests": 149,
+  "builds": [
+    "Release non-AOT browser-wasm",
+    "production frontend",
+    "Pages /CRS/ frontend"
+  ],
+  "pagesSmoke": "passed",
+  "wasmReproduction": {
+    "sampleCount": 2,
+    "rowCount": 6,
+    "matched": true,
+    "matrixSha256": "5b9331b004bee7fd683e2b6d53f9ec7d95e88cc773a42623df0b56c02d9bf5cf"
+  },
+  "browserConsoleErrors": [],
+  "browserPageErrors": [],
+  "sourceCommitBase": "e69a40af4b4f6708005f3c006ee0bd6d1b6f7043",
+  "validatedWorkingTree": true,
+  "deployed": false
+}

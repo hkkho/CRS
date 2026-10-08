@@ -1,4 +1,4 @@
-# Channel power reference without adjusters
+# Channel power reference with nominal adjusters
 
 The fixed nominal reference is 2,064 MW thermal across 380 fuel channels:
 5.431578947 MW/channel on average. This mean is not a uniform channel target.
@@ -11,12 +11,12 @@ distribution provides the channel targets for fuel management. Instantaneous
 channel refuelling produces ripple around the reference.
 [Reactor Statics and Fuel Management, section 4.3.3.1](https://www.nuceng.ca/canteach-rev2/library/20042113.pdf)
 explains that central adjusters and regional burnup differences flatten power.
-A published standard CANDU-6 profile with those devices is therefore unsuitable
-for directly copying into this game's core without adjusters.
+The game now includes 21 fixed nominal adjusters. It solves its own channel
+targets from the shared model rather than copying a published plant profile.
 
 ## Implemented approximation
 
-`cycle190-time-average-no-adjusters-half-zones-v1` uses the existing authored
+`cycle190-time-average-21-adjusters-xenon-reference-half-zones-v3` uses the existing authored
 190-full-power-day channel cycle, eight-bundle shift, opposite neighbouring
 flow directions, and uniform 6.262135922 MWd/kg target discharge burnup.
 For each position from inlet, compute the existing generator's beginning and
@@ -29,11 +29,13 @@ This avoids the incorrect shortcut `C(mean burnup)` on a nonlinear fuel curve.
 
 Bind the averaged coefficients at each physical axial position using its actual
 channel flow. Solve the same two-group eigenproblem with the existing geometry,
-leakage and boundary conditions, no adjuster overlay, and all 14 liquid zones
+leakage and boundary conditions, the same pack-bound fixed adjuster absorption
+as the live core, and all 14 liquid zones
 fixed at 50% fill. Normalize fission heating to 2,064 MW thermal and sum the
-12 bundle powers into each channel reference. The existing fuel pack already
-contains its static poison baseline; no second dynamic equilibrium xenon
-absorption is added to it. Live iodine/xenon departures still affect actual power.
+12 bundle powers into each channel reference. The fuel curve includes its declared poison reference. V6 averages that reference
+over the same dwell ranges and replaces it with self-consistent equilibrium Xe
+at the averaged power shape. Live actual inventories replace their own current
+burnup references. See [the v6 accounting](xenon-reference-v6.md).
 
 This is a time-average **approximation to the current game surrogate**. It uses
 prescribed exposure ranges, not an iterated self-consistent RFSP solution of
@@ -47,10 +49,14 @@ power targets and developer geometry edits never rebase it.
 
 ## Measured reference
 
-The `powerlimits-v2` embedded pack gives **4.567697–6.325798 MW/channel**, with a mean
+The `xenon-reference-v6` embedded pack gives **4.977607–5.743994 MW/channel**, with a mean
 of **5.431579 MW**. Initial RMS deviations for seeds 1001, 1002 and 1013 are
-3.6344%, 3.0856% and 3.9361% respectively. These are measurements from the
-authored surrogate, not plant data.
+1.5769%, 1.5366% and 1.5823% respectively. These are authored-model measurements.
+The shared [adjuster mapping and worth](adjusters-v5.md) applies both to this
+reference solve and to live burnup, xenon, refuelling and RRS trial solves.
+
+The saved [reference JSON](../../benchmarks/xenon-reference-v6-reference/reference.json)
+and [CSV](../../benchmarks/xenon-reference-v6-reference/reference.csv) contain all 380 targets.
 
 Reproduce the reference CSV, complete JSON profile and seed measurements:
 

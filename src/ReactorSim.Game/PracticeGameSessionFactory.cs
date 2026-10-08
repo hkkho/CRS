@@ -17,7 +17,7 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3";
+            "candu6-two-group-diffusion-v1-xenon-reference-v6";
         // One full-power browser control step. Faster playback subdivides at
         // this same simulated interval so burnup, xenon and LZC remain aligned.
         public const double FullCoreDiffusionRecomputeIntervalSeconds =
@@ -134,13 +134,39 @@ namespace ReactorSim.Game
                     equilibriumSolver, coreState.EnumerateBundles(), acceptedRrs.State, runtime.SimulationTimeSeconds));
                 Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
             }
+            PracticeXenonStateV1? settledXenon = null;
+            if (dataPack.XenonReference != null)
+            {
+                bool settled = false;
+                double lastPoisonError = double.PositiveInfinity;
+                double poisonTolerance = Math.Max(1e-7, 4 * dataPack.ConvergencePolicy.SourceShapeTolerance);
+                for (int pass = 0; pass < 16; pass++)
+                {
+                    settledXenon = PracticeXenonStateV1.CreateEquilibrium(coreState,
+                        equilibriumSolver.CurrentProjection, runtime.SimulationTimeSeconds);
+                    acceptedRrs = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
+                        equilibriumSolver, coreState.EnumerateBundles(), acceptedRrs.State,
+                        runtime.SimulationTimeSeconds, backgroundOverlay: settledXenon.Overlay));
+                    Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
+                    var next = PracticeXenonStateV1.CreateEquilibrium(coreState,
+                        acceptedRrs.Projection, runtime.SimulationTimeSeconds);
+                    double error = next.Xenon.Select((x, n) => Math.Abs(x - settledXenon.Xenon[n]) /
+                        Math.Max(1, next.Xenon[n])).Max();
+                    lastPoisonError = error;
+                    if (error <= poisonTolerance && Math.Abs(acceptedRrs.State.CompensatedNetReactivity) <=
+                        PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance)
+                    { settled = true; break; }
+                }
+                if (!settled) throw new InvalidOperationException("Startup xenon/RRS equilibrium did not settle: relative Xe error=" +
+                    lastPoisonError + ", net reactivity=" + acceptedRrs.State.CompensatedNetReactivity + ".");
+            }
             var session = new GameSession(
                 runtime,
                 playbackModes,
                 WallControlTickMilliseconds,
                 coreState,
                 equilibriumSolver,
-                acceptedRrs.State, challenge);
+                acceptedRrs.State, challenge, settledXenon);
             // Let the player read the objective and inspect fuel before the challenge clock starts.
             if (challenge) session.Pause();
             return session;

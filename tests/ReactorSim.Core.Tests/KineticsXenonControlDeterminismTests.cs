@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using Newtonsoft.Json.Linq;
 using ReactorSim.Core;
 using ReactorSim.Game;
 using Xunit;
@@ -592,10 +596,29 @@ public sealed class KineticsXenonControlDeterminismTests
 
     private static FullCoreFixture CreateFullCoreFixture()
     {
-        FullCoreDiffusionDataPackV1 pack = Require(
-            FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
-        FullCoreDiffusionModelV1 model = Require(
-            FullCoreDiffusionModelV1.TryCreateCandu6(pack));
+        FullCoreDiffusionDataPackV1 included = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+        // The Phase-7 primitive requires truly Xe-free coefficients. Remove the
+        // declared component before changing the marker; never merely relabel it.
+        using var stream = typeof(FullCoreDiffusionDataPackV1).Assembly.GetManifestResourceStream(
+            FullCoreDiffusionDataPackV1.EmbeddedResourceName)!;
+        using var reader = new StreamReader(stream);
+        var json = JObject.Parse(reader.ReadToEnd());
+        if (included.XenonReference != null)
+        {
+            foreach (JObject table in (JArray)json["coefficient_tables"]!)
+            {
+                foreach (JObject row in (JArray)table["rows"]!)
+                    row["absorption_group2_per_m"] = row["absorption_group2_per_m"]!.Value<double>() -
+                        PracticeXenonDataV1.SigmaGroup2M2 * included.XenonReference.At(row["burnup_j_per_kg_hm"]!.Value<double>());
+                table.Remove("checksum");
+                table["checksum"] = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(table.ToString()))).ToLowerInvariant();
+            }
+            json.Remove("xenon_reference");
+            json["xenon_basis"] = "excluded";
+            json["data_pack_version"] = "core-test-explicit-xe-free-v1";
+        }
+        FullCoreDiffusionDataPackV1 pack = Require(FullCoreDiffusionDataPackV1.TryLoadJson(json.ToString()));
+        FullCoreDiffusionModelV1 model = Require(FullCoreDiffusionModelV1.TryCreateCandu6(pack));
         SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreatePractice();
         FullCoreDiffusionSolveResultV1 baseSolve = Require(
             model.TrySolve(coreState.EnumerateBundles(), FullCoreTargetPowerWatts));

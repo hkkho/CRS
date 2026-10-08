@@ -9,7 +9,7 @@ namespace ReactorSim.Game.Tests;
 public sealed class AgedPracticeSessionTests
 {
     [Fact]
-    public void ReferenceAgedCoreHasHalfMkPerFullPowerDayBurnupLossAndSevenMkZoneWorth()
+    public void LiteratureAgedCoreHasMeasuredBurnupLossAndSevenMkZoneWorth()
     {
         var initial = SyntheticGameCoreStateV1.CreateAgedPractice(1001);
         var pack = FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6();
@@ -20,11 +20,19 @@ public sealed class AgedPracticeSessionTests
             PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts);
         Assert.True(created.IsValid);
         var mapping = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6().Value;
+        var settled = PracticeXenonEquilibriumV1.TryCreate(created.Value, initial, Enumerable.Repeat(.5, 14).ToArray());
+        Assert.True(settled.IsValid);
+        var frozenPoison = settled.Value.Poison;
         EquilibriumCoreProjectionV1 Solve(SyntheticGameCoreStateV1 state, double fill)
         {
             var overlay = mapping.TryBuildOverlay(Enumerable.Repeat(fill, 14).ToArray());
             Assert.True(overlay.IsValid);
-            var solved = created.Value.TrySolveCandidate(state.EnumerateBundles(), overlay.Value);
+            var xe = frozenPoison.BindBurnupReference(state).Overlay;
+            var combined = StaticAbsorptionOverlayV1.TryCreate("frozen-xe-fuel-loss-test",
+                overlay.Value.Entries.Select(e => new StaticAbsorptionOverlayEntryV1(e.Node,
+                    e.DeltaAbsorptionGroup1PerM, e.DeltaAbsorptionGroup2PerM + xe.GetDeltaAbsorptionGroup2PerM(e.Node))));
+            Assert.True(combined.IsValid);
+            var solved = created.Value.TrySolveCandidate(state.EnumerateBundles(), combined.Value);
             Assert.True(solved.IsValid, solved.IsValid ? null : solved.FirstDiagnostic.ToString());
             return solved.Value;
         }
@@ -34,7 +42,9 @@ public sealed class AgedPracticeSessionTests
         var burned = initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray());
         Assert.True(burned.IsValid);
         var after = Solve(burned.Value, .5);
-        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .48, .52);
+        // Independent tight v6 audit, actual Xe frozen: 0.347612 mk/FPD.
+        // Production tolerances allow a small source-iteration difference.
+        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .34, .355);
         Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.97, 7.03);
     }
 

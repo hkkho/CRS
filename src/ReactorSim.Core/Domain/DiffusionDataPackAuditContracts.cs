@@ -259,7 +259,9 @@ namespace ReactorSim.Core
                        _tables.All(table => table.Passed) &&
                        _findings.All(finding =>
                            finding.Field != DiffusionAuditFieldV1.XenonBasis ||
-                           finding.Classification == CoefficientAuditClassificationV1.Missing);
+                           (finding.Classification == CoefficientAuditClassificationV1.Missing ||
+                            finding.Classification == CoefficientAuditClassificationV1.ExplicitBurnupDependent ||
+                            finding.Classification == CoefficientAuditClassificationV1.ExplicitConstant));
             }
         }
 
@@ -331,15 +333,17 @@ namespace ReactorSim.Core
                 checks.AddRange(tableAudit.Checks);
             }
 
-            // The v1 full-core pack schema carries no declared xenon basis.
-            // Do not infer Excluded, Included, or Equilibrium from the solver
-            // or from the table provenance.
+            // A supported explicit reference declares the included Xe component.
+            // Archived packs without metadata retain a missing-basis finding.
             findings.Add(new DiffusionPackAuditFindingV1(
                 DiffusionAuditFieldV1.XenonBasis,
-                CoefficientAuditClassificationV1.Missing,
+                dataPack.DeclaredXenonBasis == XenonBasisV1.Excluded ? CoefficientAuditClassificationV1.ExplicitConstant :
+                dataPack.XenonReference == null ? CoefficientAuditClassificationV1.Missing : CoefficientAuditClassificationV1.ExplicitBurnupDependent,
                 StableId.Empty,
                 string.Empty,
-                "The full-core diffusion pack schema declares no xenon basis; no basis was inferred."));
+                dataPack.DeclaredXenonBasis == XenonBasisV1.Excluded ? "The pack explicitly declares a Xe-free coefficient basis." :
+                dataPack.XenonReference == null ? "The full-core diffusion pack schema declares no xenon basis; no basis was inferred." :
+                    "The pack explicitly includes a burnup-bound Xe-135 reference; live xenon replaces that component."));
 
             bool syntheticOrProvisional =
                 ContainsProvisionalMarker(dataPack.EvidenceClass) ||

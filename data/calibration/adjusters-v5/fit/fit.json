@@ -1,0 +1,4875 @@
+{
+  "seed": 1001,
+  "targetWorthMk": 17,
+  "measuredWorthMk": 16.998833241044675,
+  "measuredZoneWorthMk": 6.999988516688926,
+  "halfFillK": 1.0000002222473687,
+  "allOutK": 1.0172930205034638,
+  "strength": 0.05396804809570312,
+  "boundary": 0.0007172295891761779,
+  "zoneScale": 1.0003933637594018,
+  "group1ZoneSlope": 0.0017642885157619739,
+  "group2ZoneSlope": 0.0007057154063047896,
+  "peakChannelKw": 5929.533122824238,
+  "peakBundleKw": 534.2694920878998,
+  "rods": [
+    {
+      "Id": 1,
+      "HorizontalCentreM": -1.7145000000000001,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 2,
+      "HorizontalCentreM": -1.143,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 3,
+      "HorizontalCentreM": -0.5715,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 4,
+      "HorizontalCentreM": 0,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 5,
+      "HorizontalCentreM": 0.5715,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 6,
+      "HorizontalCentreM": 1.143,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 7,
+      "HorizontalCentreM": 1.7145000000000001,
+      "AxialCentreM": 2.22885
+    },
+    {
+      "Id": 8,
+      "HorizontalCentreM": -1.7145000000000001,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 9,
+      "HorizontalCentreM": -1.143,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 10,
+      "HorizontalCentreM": -0.5715,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 11,
+      "HorizontalCentreM": 0,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 12,
+      "HorizontalCentreM": 0.5715,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 13,
+      "HorizontalCentreM": 1.143,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 14,
+      "HorizontalCentreM": 1.7145000000000001,
+      "AxialCentreM": 2.9718
+    },
+    {
+      "Id": 15,
+      "HorizontalCentreM": -1.7145000000000001,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 16,
+      "HorizontalCentreM": -1.143,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 17,
+      "HorizontalCentreM": -0.5715,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 18,
+      "HorizontalCentreM": 0,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 19,
+      "HorizontalCentreM": 0.5715,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 20,
+      "HorizontalCentreM": 1.143,
+      "AxialCentreM": 3.71475
+    },
+    {
+      "Id": 21,
+      "HorizontalCentreM": 1.7145000000000001,
+      "AxialCentreM": 3.71475
+    }
+  ],
+  "cells": [
+    {
+      "RodId": 1,
+      "channel": 68,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 1,
+      "channel": 69,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 1,
+      "channel": 87,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 1,
+      "channel": 88,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 1,
+      "channel": 107,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000013,
+      "AbsorptionWeight": 0.43091235683510487
+    },
+    {
+      "RodId": 1,
+      "channel": 108,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 1,
+      "channel": 128,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 1,
+      "channel": 129,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 1,
+      "channel": 150,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 1,
+      "channel": 151,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 1,
+      "channel": 172,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.5000000000000012
+    },
+    {
+      "RodId": 1,
+      "channel": 173,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 1,
+      "channel": 194,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.5000000000000012
+    },
+    {
+      "RodId": 1,
+      "channel": 195,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 1,
+      "channel": 216,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 1,
+      "channel": 217,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 1,
+      "channel": 238,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 1,
+      "channel": 239,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 1,
+      "channel": 259,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000013,
+      "AbsorptionWeight": 0.43091235683510487
+    },
+    {
+      "RodId": 1,
+      "channel": 260,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 1,
+      "channel": 279,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 1,
+      "channel": 280,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 1,
+      "channel": 298,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 1,
+      "channel": 299,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 70,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 71,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 89,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 90,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 109,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 2,
+      "channel": 110,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 2,
+      "channel": 130,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 131,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 152,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 153,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 174,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 2,
+      "channel": 175,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 2,
+      "channel": 196,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 2,
+      "channel": 197,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 2,
+      "channel": 218,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 219,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 240,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 241,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 2,
+      "channel": 261,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 2,
+      "channel": 262,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 2,
+      "channel": 281,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 282,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 300,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 2,
+      "channel": 301,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 3,
+      "channel": 72,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 73,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 91,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 92,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 111,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 3,
+      "channel": 112,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 3,
+      "channel": 132,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 133,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 154,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 155,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 176,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 3,
+      "channel": 177,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 3,
+      "channel": 198,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 3,
+      "channel": 199,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 3,
+      "channel": 220,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 221,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 242,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 243,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 3,
+      "channel": 263,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 3,
+      "channel": 264,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 3,
+      "channel": 283,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 284,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 302,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 3,
+      "channel": 303,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 4,
+      "channel": 74,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 75,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 93,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 94,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 113,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 4,
+      "channel": 114,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 4,
+      "channel": 134,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 135,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 156,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 157,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 178,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 4,
+      "channel": 179,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 4,
+      "channel": 200,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 4,
+      "channel": 201,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 4,
+      "channel": 222,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 223,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 244,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 245,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 4,
+      "channel": 265,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 4,
+      "channel": 266,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 4,
+      "channel": 285,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 286,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 304,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 4,
+      "channel": 305,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 5,
+      "channel": 76,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 77,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 95,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 96,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 115,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 5,
+      "channel": 116,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 5,
+      "channel": 136,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 137,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 158,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 159,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 180,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 5,
+      "channel": 181,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 5,
+      "channel": 202,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 5,
+      "channel": 203,
+      "axial": 4,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 5,
+      "channel": 224,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 225,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 246,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 247,
+      "axial": 4,
+      "VolumeFraction": 0.4999999999999999,
+      "AbsorptionWeight": 0.4999999999999999
+    },
+    {
+      "RodId": 5,
+      "channel": 267,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 5,
+      "channel": 268,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 5,
+      "channel": 287,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 288,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 306,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 5,
+      "channel": 307,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.430912356835104
+    },
+    {
+      "RodId": 6,
+      "channel": 78,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 79,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 97,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 98,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 117,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 6,
+      "channel": 118,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 6,
+      "channel": 138,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 139,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 160,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 161,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 182,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 6,
+      "channel": 183,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 6,
+      "channel": 204,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 6,
+      "channel": 205,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 6,
+      "channel": 226,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 227,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 248,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 249,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 6,
+      "channel": 269,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 6,
+      "channel": 270,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 6,
+      "channel": 289,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 290,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 308,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 6,
+      "channel": 309,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 7,
+      "channel": 80,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 7,
+      "channel": 81,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 7,
+      "channel": 99,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 7,
+      "channel": 100,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 7,
+      "channel": 119,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 7,
+      "channel": 120,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000013,
+      "AbsorptionWeight": 0.43091235683510487
+    },
+    {
+      "RodId": 7,
+      "channel": 140,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 7,
+      "channel": 141,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 7,
+      "channel": 162,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 7,
+      "channel": 163,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 7,
+      "channel": 184,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 7,
+      "channel": 185,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.5000000000000012
+    },
+    {
+      "RodId": 7,
+      "channel": 206,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.5000000000000004
+    },
+    {
+      "RodId": 7,
+      "channel": 207,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.5000000000000012
+    },
+    {
+      "RodId": 7,
+      "channel": 228,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 7,
+      "channel": 229,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 7,
+      "channel": 250,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000003,
+      "AbsorptionWeight": 0.5000000000000003
+    },
+    {
+      "RodId": 7,
+      "channel": 251,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000011,
+      "AbsorptionWeight": 0.5000000000000011
+    },
+    {
+      "RodId": 7,
+      "channel": 271,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000006,
+      "AbsorptionWeight": 0.4309123568351042
+    },
+    {
+      "RodId": 7,
+      "channel": 272,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000013,
+      "AbsorptionWeight": 0.43091235683510487
+    },
+    {
+      "RodId": 7,
+      "channel": 291,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 7,
+      "channel": 292,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 7,
+      "channel": 310,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.43091235683510437
+    },
+    {
+      "RodId": 7,
+      "channel": 311,
+      "axial": 4,
+      "VolumeFraction": 0.5000000000000016,
+      "AbsorptionWeight": 0.43091235683510504
+    },
+    {
+      "RodId": 8,
+      "channel": 68,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 68,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 69,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 69,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 87,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 87,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 88,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 88,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 107,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 8,
+      "channel": 107,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 8,
+      "channel": 108,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 8,
+      "channel": 108,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 8,
+      "channel": 128,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 128,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 129,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 129,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 150,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 150,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 151,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 151,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 172,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 8,
+      "channel": 172,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 8,
+      "channel": 173,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 8,
+      "channel": 173,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 8,
+      "channel": 194,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 8,
+      "channel": 194,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 8,
+      "channel": 195,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 8,
+      "channel": 195,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 8,
+      "channel": 216,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 216,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 217,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 217,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 238,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 238,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 8,
+      "channel": 239,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 239,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 8,
+      "channel": 259,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 8,
+      "channel": 259,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 8,
+      "channel": 260,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 8,
+      "channel": 260,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 8,
+      "channel": 279,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 279,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 280,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 280,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 298,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 298,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 8,
+      "channel": 299,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 8,
+      "channel": 299,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 70,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 70,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 71,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 71,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 89,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 89,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 90,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 90,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 109,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 109,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 110,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 110,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 130,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 130,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 131,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 131,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 152,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 152,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 153,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 153,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 174,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 174,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 175,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 175,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 196,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 196,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 197,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 197,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 9,
+      "channel": 218,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 218,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 219,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 219,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 240,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 240,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 241,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 241,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 9,
+      "channel": 261,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 261,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 262,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 262,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 9,
+      "channel": 281,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 281,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 282,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 282,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 300,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 300,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 301,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 9,
+      "channel": 301,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 10,
+      "channel": 72,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 72,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 73,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 73,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 91,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 91,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 92,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 92,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 111,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 111,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 112,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 112,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 132,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 132,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 133,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 133,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 154,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 154,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 155,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 155,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 176,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 176,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 177,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 177,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 198,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 198,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 199,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 199,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 10,
+      "channel": 220,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 220,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 221,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 221,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 242,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 242,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 243,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 243,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 10,
+      "channel": 263,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 263,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 264,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 264,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 10,
+      "channel": 283,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 283,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 284,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 284,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 302,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 302,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 303,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 10,
+      "channel": 303,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 11,
+      "channel": 74,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 74,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 75,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 75,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 93,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 93,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 94,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 94,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 113,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 113,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 114,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 114,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 134,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 134,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 135,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 135,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 156,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 156,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 157,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 157,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 178,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 178,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 179,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 179,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 200,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 200,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 201,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 201,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.25000000000000017
+    },
+    {
+      "RodId": 11,
+      "channel": 222,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 222,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 223,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 223,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 244,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 244,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 245,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 245,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 11,
+      "channel": 265,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 265,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 266,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 266,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000002,
+      "AbsorptionWeight": 0.21545617841755205
+    },
+    {
+      "RodId": 11,
+      "channel": 285,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 285,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 286,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 286,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 304,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 304,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 305,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 11,
+      "channel": 305,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.21545617841755213
+    },
+    {
+      "RodId": 12,
+      "channel": 76,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 76,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 77,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 77,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 95,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 95,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 96,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 96,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 115,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 115,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 116,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 116,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 136,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 136,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 137,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 137,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 158,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 158,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 159,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 159,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 180,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 180,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 181,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 181,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 202,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 202,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 203,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 203,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000001,
+      "AbsorptionWeight": 0.2500000000000001
+    },
+    {
+      "RodId": 12,
+      "channel": 224,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 224,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 225,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 225,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 246,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 246,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 247,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 247,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000006,
+      "AbsorptionWeight": 0.25000000000000006
+    },
+    {
+      "RodId": 12,
+      "channel": 267,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 267,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 268,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 268,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000017,
+      "AbsorptionWeight": 0.215456178417552
+    },
+    {
+      "RodId": 12,
+      "channel": 287,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 287,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 288,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 288,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 306,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 306,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 307,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 12,
+      "channel": 307,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.21545617841755207
+    },
+    {
+      "RodId": 13,
+      "channel": 78,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 78,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 79,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 79,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 97,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 97,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 98,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 98,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 117,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 117,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 118,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 118,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 138,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 138,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 139,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 139,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 160,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 160,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 161,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 161,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 182,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 182,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 183,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 183,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 204,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 204,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 205,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 205,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 13,
+      "channel": 226,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 226,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 227,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 227,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 248,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 248,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 249,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 249,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 13,
+      "channel": 269,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 269,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 270,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 270,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 13,
+      "channel": 289,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 289,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 290,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 290,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 308,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 308,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 309,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 13,
+      "channel": 309,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 80,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 80,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 81,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 81,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 99,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 99,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 100,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 100,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 119,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 14,
+      "channel": 119,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 14,
+      "channel": 120,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 14,
+      "channel": 120,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 14,
+      "channel": 140,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 140,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 141,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 141,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 162,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 162,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 163,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 163,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 184,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 14,
+      "channel": 184,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 14,
+      "channel": 185,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 14,
+      "channel": 185,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 14,
+      "channel": 206,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 14,
+      "channel": 206,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000033,
+      "AbsorptionWeight": 0.25000000000000033
+    },
+    {
+      "RodId": 14,
+      "channel": 207,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 14,
+      "channel": 207,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000007,
+      "AbsorptionWeight": 0.2500000000000007
+    },
+    {
+      "RodId": 14,
+      "channel": 228,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 228,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 229,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 229,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 250,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 250,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000003,
+      "AbsorptionWeight": 0.2500000000000003
+    },
+    {
+      "RodId": 14,
+      "channel": 251,
+      "axial": 5,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 251,
+      "axial": 6,
+      "VolumeFraction": 0.25000000000000067,
+      "AbsorptionWeight": 0.25000000000000067
+    },
+    {
+      "RodId": 14,
+      "channel": 271,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 14,
+      "channel": 271,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000004,
+      "AbsorptionWeight": 0.21545617841755219
+    },
+    {
+      "RodId": 14,
+      "channel": 272,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 14,
+      "channel": 272,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000008,
+      "AbsorptionWeight": 0.21545617841755252
+    },
+    {
+      "RodId": 14,
+      "channel": 291,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 291,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 292,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 292,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 310,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 310,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000005,
+      "AbsorptionWeight": 0.21545617841755227
+    },
+    {
+      "RodId": 14,
+      "channel": 311,
+      "axial": 5,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 14,
+      "channel": 311,
+      "axial": 6,
+      "VolumeFraction": 0.2500000000000009,
+      "AbsorptionWeight": 0.2154561784175526
+    },
+    {
+      "RodId": 15,
+      "channel": 68,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 15,
+      "channel": 69,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 15,
+      "channel": 87,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 15,
+      "channel": 88,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 15,
+      "channel": 107,
+      "axial": 7,
+      "VolumeFraction": 0.500000000000001,
+      "AbsorptionWeight": 0.4309123568351046
+    },
+    {
+      "RodId": 15,
+      "channel": 108,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 15,
+      "channel": 128,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 15,
+      "channel": 129,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 15,
+      "channel": 150,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 15,
+      "channel": 151,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 15,
+      "channel": 172,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000009,
+      "AbsorptionWeight": 0.5000000000000009
+    },
+    {
+      "RodId": 15,
+      "channel": 173,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 15,
+      "channel": 194,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000009,
+      "AbsorptionWeight": 0.5000000000000009
+    },
+    {
+      "RodId": 15,
+      "channel": 195,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 15,
+      "channel": 216,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 15,
+      "channel": 217,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 15,
+      "channel": 238,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 15,
+      "channel": 239,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 15,
+      "channel": 259,
+      "axial": 7,
+      "VolumeFraction": 0.500000000000001,
+      "AbsorptionWeight": 0.4309123568351046
+    },
+    {
+      "RodId": 15,
+      "channel": 260,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 15,
+      "channel": 279,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 15,
+      "channel": 280,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 15,
+      "channel": 298,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 15,
+      "channel": 299,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 70,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 71,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 89,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 90,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 109,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 16,
+      "channel": 110,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 16,
+      "channel": 130,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 131,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 152,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 153,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 174,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 16,
+      "channel": 175,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 16,
+      "channel": 196,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 16,
+      "channel": 197,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 16,
+      "channel": 218,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 219,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 240,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 241,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 16,
+      "channel": 261,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 16,
+      "channel": 262,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 16,
+      "channel": 281,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 282,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 300,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 16,
+      "channel": 301,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 17,
+      "channel": 72,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 73,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 91,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 92,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 111,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 17,
+      "channel": 112,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 17,
+      "channel": 132,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 133,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 154,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 155,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 176,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 17,
+      "channel": 177,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 17,
+      "channel": 198,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 17,
+      "channel": 199,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 17,
+      "channel": 220,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 221,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 242,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 243,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 17,
+      "channel": 263,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 17,
+      "channel": 264,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 17,
+      "channel": 283,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 284,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 302,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 17,
+      "channel": 303,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 18,
+      "channel": 74,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 75,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 93,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 94,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 113,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999994,
+      "AbsorptionWeight": 0.43091235683510365
+    },
+    {
+      "RodId": 18,
+      "channel": 114,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999994,
+      "AbsorptionWeight": 0.43091235683510365
+    },
+    {
+      "RodId": 18,
+      "channel": 134,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 135,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 156,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 157,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 178,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.49999999999999983
+    },
+    {
+      "RodId": 18,
+      "channel": 179,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.49999999999999983
+    },
+    {
+      "RodId": 18,
+      "channel": 200,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.49999999999999983
+    },
+    {
+      "RodId": 18,
+      "channel": 201,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.49999999999999983
+    },
+    {
+      "RodId": 18,
+      "channel": 222,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 223,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 244,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 245,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 18,
+      "channel": 265,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999994,
+      "AbsorptionWeight": 0.43091235683510365
+    },
+    {
+      "RodId": 18,
+      "channel": 266,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999994,
+      "AbsorptionWeight": 0.43091235683510365
+    },
+    {
+      "RodId": 18,
+      "channel": 285,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 286,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 304,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 18,
+      "channel": 305,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.4309123568351038
+    },
+    {
+      "RodId": 19,
+      "channel": 76,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 77,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 95,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 96,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 115,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 19,
+      "channel": 116,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 19,
+      "channel": 136,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 137,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 158,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 159,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 180,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 19,
+      "channel": 181,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 19,
+      "channel": 202,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 19,
+      "channel": 203,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999997,
+      "AbsorptionWeight": 0.4999999999999997
+    },
+    {
+      "RodId": 19,
+      "channel": 224,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 225,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 246,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 247,
+      "axial": 7,
+      "VolumeFraction": 0.4999999999999996,
+      "AbsorptionWeight": 0.4999999999999996
+    },
+    {
+      "RodId": 19,
+      "channel": 267,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 19,
+      "channel": 268,
+      "axial": 7,
+      "VolumeFraction": 0.49999999999999983,
+      "AbsorptionWeight": 0.43091235683510354
+    },
+    {
+      "RodId": 19,
+      "channel": 287,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 288,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 306,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 19,
+      "channel": 307,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.4309123568351037
+    },
+    {
+      "RodId": 20,
+      "channel": 78,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 79,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 97,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 98,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 117,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 20,
+      "channel": 118,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 20,
+      "channel": 138,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 139,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 160,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 161,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 182,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 20,
+      "channel": 183,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 20,
+      "channel": 204,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 20,
+      "channel": 205,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 20,
+      "channel": 226,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 227,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 248,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 249,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 20,
+      "channel": 269,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 20,
+      "channel": 270,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 20,
+      "channel": 289,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 290,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 308,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 20,
+      "channel": 309,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 21,
+      "channel": 80,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 21,
+      "channel": 81,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 21,
+      "channel": 99,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 21,
+      "channel": 100,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 21,
+      "channel": 119,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 21,
+      "channel": 120,
+      "axial": 7,
+      "VolumeFraction": 0.500000000000001,
+      "AbsorptionWeight": 0.4309123568351046
+    },
+    {
+      "RodId": 21,
+      "channel": 140,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 21,
+      "channel": 141,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 21,
+      "channel": 162,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 21,
+      "channel": 163,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 21,
+      "channel": 184,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 21,
+      "channel": 185,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000009,
+      "AbsorptionWeight": 0.5000000000000009
+    },
+    {
+      "RodId": 21,
+      "channel": 206,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000001,
+      "AbsorptionWeight": 0.5000000000000001
+    },
+    {
+      "RodId": 21,
+      "channel": 207,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000009,
+      "AbsorptionWeight": 0.5000000000000009
+    },
+    {
+      "RodId": 21,
+      "channel": 228,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 21,
+      "channel": 229,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 21,
+      "channel": 250,
+      "axial": 7,
+      "VolumeFraction": 0.5,
+      "AbsorptionWeight": 0.5
+    },
+    {
+      "RodId": 21,
+      "channel": 251,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000008,
+      "AbsorptionWeight": 0.5000000000000008
+    },
+    {
+      "RodId": 21,
+      "channel": 271,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000002,
+      "AbsorptionWeight": 0.4309123568351039
+    },
+    {
+      "RodId": 21,
+      "channel": 272,
+      "axial": 7,
+      "VolumeFraction": 0.500000000000001,
+      "AbsorptionWeight": 0.4309123568351046
+    },
+    {
+      "RodId": 21,
+      "channel": 291,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 21,
+      "channel": 292,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    },
+    {
+      "RodId": 21,
+      "channel": 310,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000004,
+      "AbsorptionWeight": 0.4309123568351041
+    },
+    {
+      "RodId": 21,
+      "channel": 311,
+      "axial": 7,
+      "VolumeFraction": 0.5000000000000012,
+      "AbsorptionWeight": 0.43091235683510476
+    }
+  ],
+  "trials": [
+    {
+      "pass": 0,
+      "strength": 0.04381942749023438,
+      "boundary": 0.0007915779645347597,
+      "zoneScale": 1,
+      "k": 0.9999997770973171,
+      "rodWorth": 14.638480977429037,
+      "zoneWorth": 6.996963017505298
+    },
+    {
+      "pass": 1,
+      "strength": 0.05237503051757812,
+      "boundary": 0.0007281777593803405,
+      "zoneScale": 1.0004340429536507,
+      "k": 1.0000003487492066,
+      "rodWorth": 16.646307850869512,
+      "zoneWorth": 7.000202661272215
+    },
+    {
+      "pass": 2,
+      "strength": 0.05373001098632812,
+      "boundary": 0.0007188317604255676,
+      "zoneScale": 1.0004050796156272,
+      "k": 1.000000492468917,
+      "rodWorth": 16.946394442601708,
+      "zoneWorth": 7.000072071660646
+    },
+    {
+      "pass": 3,
+      "strength": 0.053936004638671875,
+      "boundary": 0.0007174584707832336,
+      "zoneScale": 1.0003947795994748,
+      "k": 0.9999993125387674,
+      "rodWorth": 16.99185152976912,
+      "zoneWorth": 7.000009906983462
+    },
+    {
+      "pass": 4,
+      "strength": 0.05396804809570312,
+      "boundary": 0.0007172295891761779,
+      "zoneScale": 1.0003933637594018,
+      "k": 0.9999997203647816,
+      "rodWorth": 16.998814882651093,
+      "zoneWorth": 7.000000060450207
+    }
+  ]
+}

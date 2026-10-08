@@ -1,0 +1,43 @@
+{
+  "geometry_source": "https://www.nuceng.ca/canteach-rev2/library/20031101.pdf",
+  "curve_source": "https://publications.polymtl.ca/5047/11/2018_Naceur_Neutronic_analysis_accident_tolerant_cladding.pdf",
+  "pitch_m": 0.28575,
+  "bundle_length_m": 0.4953,
+  "days": [
+    0,
+    5,
+    10,
+    20,
+    30,
+    40,
+    50,
+    70,
+    90,
+    110,
+    130,
+    150,
+    200,
+    250,
+    300
+  ],
+  "k": [
+    1.118047,
+    1.073,
+    1.073,
+    1.077,
+    1.079,
+    1.079,
+    1.077,
+    1.069,
+    1.061,
+    1.051,
+    1.041,
+    1.03,
+    1.003,
+    0.978,
+    0.954
+  ],
+  "specific_power_MW_per_kg": 0.0319713,
+  "reading_allowance_k": 0.003,
+  "basis": "Table 5 fresh value exact; Fig 3 UO2-Zr points graph-read, reused from supplied PDF and visually checked. Fit targets, not validation data."
+}

@@ -1,6 +1,8 @@
 # Burnup, zone worth and per-step regulation
 
-The active authored pack is `candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3`.
+This records the historical `candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3` pack.
+The [literature-guided v4 revision](literature-geometry-v4.md) supersedes its active
+geometry, coefficient curve, zone slopes and burnup-loss measurement.
 At the seed-1001 reference aged inventory and 2,064 MW thermal, independent
 tight diffusion solves measure:
 

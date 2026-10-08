@@ -7,6 +7,25 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--fit-xenon-reference")
+{
+    if (args.Length != 3) throw new ArgumentException("Usage: --fit-xenon-reference SOURCE_PACK OUTPUT_DIRECTORY");
+    XenonReferenceCalibration.Run(args[1], args[2]);
+    return;
+}
+if (args.Length > 0 && args[0] == "--fit-adjusters")
+{
+    if (args.Length != 3) throw new ArgumentException("Usage: --fit-adjusters SOURCE_PACK OUTPUT_DIRECTORY");
+    AdjusterCalibration.Run(args[1], args[2]);
+    return;
+}
+if (args.Length > 0 && args[0] == "--fit-literature")
+{
+    if (args.Length != 3)
+        throw new ArgumentException("Usage: --fit-literature CANDIDATE_PACK OUTPUT_DIRECTORY");
+    LiteratureGeometryCalibration.Run(args[1], args[2]);
+    return;
+}
 if (args.Length > 0 && args[0] == "--fuelling-100-days")
 {
     FuellingCapabilityBenchmark.Run(args.Length > 1 ? args[1] : "artifacts/fuelling-100-days",
@@ -160,12 +179,24 @@ static void AuditReactivityScale(string outputPath)
         PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts));
     var mapping = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
     var fills = new double[14];
+    PracticeXenonStateV1? frozenPoison = null;
     EquilibriumCoreProjectionV1 Solve(SyntheticGameCoreStateV1 state, double fill)
     {
         Array.Fill(fills, fill);
-        return Require(solver.TrySolveCandidate(state.EnumerateBundles(), Require(mapping.TryBuildOverlay(fills))));
+        var zone = Require(mapping.TryBuildOverlay(fills));
+        var xe = frozenPoison?.BindBurnupReference(state).Overlay;
+        var overlay = xe == null ? zone : Require(StaticAbsorptionOverlayV1.TryCreate("frozen-actual-xenon-audit",
+            zone.Entries.Select(e => new StaticAbsorptionOverlayEntryV1(e.Node, e.DeltaAbsorptionGroup1PerM,
+                e.DeltaAbsorptionGroup2PerM + xe.GetDeltaAbsorptionGroup2PerM(e.Node)))));
+        return Require(solver.TrySolveCandidate(state.EnumerateBundles(), overlay));
     }
     var half = Solve(initial, .5);
+    if (half.DataPack.XenonReference != null)
+    {
+        var settled = Require(PracticeXenonEquilibriumV1.TryCreate(solver, initial, Enumerable.Repeat(.5, 14).ToArray()));
+        half = settled.Projection;
+        frozenPoison = settled.Poison;
+    }
     var empty = Solve(initial, 0);
     var full = Solve(initial, 1);
     var burned = Require(initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray()));
@@ -175,7 +206,7 @@ static void AuditReactivityScale(string outputPath)
         dataPack = PracticeGameSessionFactory.DiffusionDataPackVersion,
         seed = 1001,
         referenceThermalPowerWatts = PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts,
-        method = "Tight independent static solves; rho=(k-1)/k and mk=1000*rho. Burnup adds one full-power day of thermal energy using the initial half-fill shape, with zones fixed at 50% and no evolving xenon or refuelling. Zone worth is rho(empty)-rho(full) on the identical initial inventory. These are local authored-model measurements, not universal plant constants.",
+        method = "Tight independent static solves; rho=(k-1)/k and mk=1000*rho. Burnup adds one full-power day of thermal energy using the initial half-fill shape, with zones fixed at 50%, actual Xe frozen, and the included Xe reference bound to current burnup when declared. No refuelling. Zone worth is rho(empty)-rho(full) on the identical initial inventory. These are local authored-model measurements, not universal plant constants.",
         burnupLossMkPerFullPowerDay = 1000 * (half.RelativeReactivity - after.RelativeReactivity),
         totalFourteenZoneWorthMk = 1000 * (empty.RelativeReactivity - full.RelativeReactivity),
         halfFillK = half.SpatialSolve.EffectiveK,
