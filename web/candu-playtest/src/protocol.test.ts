@@ -14,6 +14,22 @@ import {
 } from "./protocol";
 
 describe("candu-playtest-v2 protocol validation", () => {
+  it("validates authoritative device coordinates and overlap indices while accepting older hosts", () => {
+    const snapshot = createSnapshot();
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.core.adjusters = [{ id: 1, gridColumn: 10.5, gridRowStart: 4.5, gridRowEnd: 16.5,
+      axialPosition: 5.5, affectedChannels: [210, 211], bundlePositions: [5, 6] }];
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    snapshot.core.liquidZoneTubes = [{ ...snapshot.core.adjusters[0], zoneId: 3 }];
+    expect(isProtocolSnapshot(snapshot)).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, core: { ...snapshot.core,
+      liquidZoneTubes: [{ ...snapshot.core.liquidZoneTubes[0], zoneId: 14 }] } })).toBe(false);
+    for (const bad of [{ gridColumn: NaN }, { gridRowEnd: 4 }, { axialPosition: 12 },
+      { affectedChannels: [380] }, { bundlePositions: [12] }, { bundlePositions: [5, 5] }]) {
+      expect(isProtocolSnapshot({ ...snapshot, core: { ...snapshot.core,
+        adjusters: [{ ...snapshot.core.adjusters[0], ...bad }] } })).toBe(false);
+    }
+  });
   it("accepts explicit endless fuel flags and rejects inconsistent sentinel values", () => {
     const snapshot = createSnapshot();
     snapshot.shift = { ...createShift(), isEndless: true, unlimitedFreshFuel: true,

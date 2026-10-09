@@ -6,7 +6,9 @@ GitHub Pages uses the existing public repository and GitHub account. It needs
 no additional service account or deployment secret. Pages is configured with
 `build_type: workflow`. The single-threaded WASM build remains the default.
 
-The deployment workflow validates Core, Game, the browser contract and frontend.
+The deployment workflow validates Core, Game and the browser contract in Release
+configuration, followed by frontend tests/builds. The test runners retain their
+Debug default for local use and accept `-Configuration Release` for optimized checks.
 The Pages build consumes the validated WASM artifact, builds with `/CRS/` as its
 base URL, and runs the production browser smoke test and deterministic reproduction
 matrix before publishing. Only pushes to `main` and manual runs on `main` publish;

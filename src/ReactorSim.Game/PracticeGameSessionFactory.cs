@@ -17,7 +17,7 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-xenon-reference-v6";
+            "candu6-two-group-diffusion-v1-lzc-tubes-v7";
         // One full-power browser control step. Faster playback subdivides at
         // this same simulated interval so burnup, xenon and LZC remain aligned.
         public const double FullCoreDiffusionRecomputeIntervalSeconds =

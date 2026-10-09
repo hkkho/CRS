@@ -559,9 +559,16 @@ namespace ReactorSim.Browser
                         !PlaytestInput.TryGetProperty(node, out JsonElement thermal, "group2AbsorptionPerMPerFillFraction") ||
                         thermal.ValueKind != JsonValueKind.Number || !thermal.TryGetDouble(out double a2) || double.IsNaN(a2) || double.IsInfinity(a2) || a2 < 0 || a2 > 1)
                         return InvalidCommand("Browser.ZoneLayout.Binding.Invalid", "nodes", "Invalid node, zone or absorption slope (allowed range 0–1 m^-1 per unit fill).");
+                    // Older engineering commands have no water-column fields. Keep
+                    // unchanged tube cells intact so a round-trip remains a no-op.
+                    var original = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
+                        .GetNodeBinding(checked((int)(channel * 12 + position)));
+                    var waterColumn = original.LogicalZoneId == zone && original.AbsorberZoneId == absorberZone &&
+                        original.Group1AbsorptionPerMPerFillFraction == a1 && original.Group2AbsorptionPerMPerFillFraction == a2
+                        ? original.WaterColumn : null;
                     bindings.Add(new PracticeLiquidZoneRrsNodeBindingV1(
                         new NodeKey(new ChannelId(channel), new BundlePosition(position)), zone,
-                        a1 == 0 ? 0 : a1, a2 == 0 ? 0 : a2, absorberZone));
+                        a1 == 0 ? 0 : a1, a2 == 0 ? 0 : a2, absorberZone, waterColumn));
                 }
                 return ToExecution(runtime.PlaySession.ConfigureZoneLayout(bindings));
             }

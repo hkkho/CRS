@@ -44,8 +44,8 @@ jobs:
       - name: Test authoritative Core and Game
         shell: pwsh
         run: |
-          ./tools/Test-DotNet.ps1 -Suite Core
-          ./tools/Test-DotNet.ps1 -Suite Game
+          ./tools/Test-DotNet.ps1 -Suite Core -Configuration Release
+          ./tools/Test-DotNet.ps1 -Suite Game -Configuration Release
 
       - name: Publish authoritative browser bridge
         shell: pwsh
@@ -82,7 +82,7 @@ jobs:
 
       - name: Test browser contract and frontend, then build
         shell: pwsh
-        run: ./tools/Test-Browser.ps1
+        run: ./tools/Test-Browser.ps1 -Configuration Release
 
       - name: Save validated authoritative bridge
         uses: actions/upload-artifact@v4

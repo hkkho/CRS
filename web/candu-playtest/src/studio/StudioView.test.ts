@@ -50,6 +50,43 @@ function harness() {
 }
 
 describe("Reactor Studio live interface", () => {
+  it("shows authoritative adjuster planes, channel overlaps and the LZC spatial limitation", () => {
+    const { view, session, emit, button } = harness();
+    session.snapshot.core.adjusters = [4, 5.5, 7].map((axialPosition, i) => ({ id: i + 1,
+      gridColumn: 10.5, gridRowStart: 4.5, gridRowEnd: 16.5, axialPosition,
+      affectedChannels: [210], bundlePositions: i === 1 ? [5, 6] : [i === 0 ? 4 : 7] }));
+    session.snapshot.core.channels[0].bundles.forEach(b => { b.absorberZoneId = b.position < 6 ? 3 : 10; });
+    emit();
+    expect(view.element.querySelectorAll('[data-adjuster-column]')).toHaveLength(1);
+    expect(view.element.querySelectorAll('[data-plan-adjuster]')).toHaveLength(3);
+    expect(view.element.querySelectorAll('[data-axial-adjuster]')).toHaveLength(3);
+    expect(view.element.querySelectorAll('[data-adjuster-bundle]')).toHaveLength(4);
+    expect(view.element.querySelector('.studio-device-explanation')!.textContent).toContain("positions 5, 6, 7, 8");
+    expect(view.element.textContent).toContain("Z4 58.0% filled / Z11 58.0% filled");
+    expect(view.element.textContent).toContain("individual tube locations");
+    button("devices").click();
+    expect(button("devices").getAttribute("aria-pressed")).toBe("false");
+    expect((view.element.querySelector('.studio-adjuster-face') as SVGElement).style.display).toBe("none");
+    view.element.querySelector<HTMLElement>('[data-channel="211"]')!.click();
+    expect(view.element.querySelectorAll('[data-axial-adjuster]')).toHaveLength(0);
+    expect(view.element.textContent).toContain("no direct adjuster-cell overlap");
+  });
+
+  it("shows localized LZC footprints and switches face planes without changing the session", () => {
+    const { view, session, emit } = harness();
+    session.snapshot.core.liquidZoneTubes = [3, 10].map((zoneId, i) => ({ zoneId, gridColumn: 10.5,
+      gridRowStart: 6.5, gridRowEnd: 14.5, axialPosition: i ? 8.5 : 2.5,
+      affectedChannels: [210], bundlePositions: i ? [8, 9] : [2, 3] }));
+    emit();
+    expect(view.element.querySelectorAll('[data-plan-lzc]')).toHaveLength(2);
+    expect(view.element.querySelectorAll('[data-axial-lzc]')).toHaveLength(2);
+    expect(view.element.querySelector('[data-face-lzc]')!.getAttribute('data-face-lzc')).toBe("3");
+    expect(view.element.textContent).toContain("tube footprints overlap positions 3, 4, 9, 10");
+    view.element.querySelector<HTMLElement>('[data-action="lzc-plane"][data-plane="1"]')!.click();
+    expect(view.element.querySelector('[data-face-lzc]')!.getAttribute('data-face-lzc')).toBe("10");
+    expect(session.dispatch).not.toHaveBeenCalled();
+  });
+
   it("presents unlimited fuel and endless time while permitting refuelling with the zero stock sentinel", () => {
     const { view, session, emit, button } = harness();
     session.snapshot = { ...session.snapshot, freshBundlesAvailable: 0,

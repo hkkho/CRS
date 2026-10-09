@@ -57,6 +57,7 @@ export interface ZoneNodeBinding {
   position: number;
   logicalZoneId: number;
   absorberZoneId: number;
+  /** Full-water footprint strengths; localized tubes also have a moving water surface in Core. */
   group1AbsorptionPerMPerFillFraction: number;
   group2AbsorptionPerMPerFillFraction: number;
 }
@@ -277,12 +278,30 @@ export interface CanduEvent {
   tone: EventTone;
 }
 
+/** Fixed inserted devices and their homogenized fuel-cell overlaps, supplied by Game/Core. */
+export interface CanduAdjusterSnapshot {
+  id: number;
+  gridColumn: number;
+  gridRowStart: number;
+  gridRowEnd: number;
+  axialPosition: number;
+  affectedChannels: number[];
+  bundlePositions: number[];
+}
+
 export interface CanduCoreSnapshot {
+  liquidZoneTubes?: CanduLiquidZoneTubeSnapshot[];
+  /** Absent in older bridges; an empty list explicitly means no inserted adjusters. */
+  adjusters?: CanduAdjusterSnapshot[];
   channelCount: typeof CORE_CHANNEL_COUNT;
   bundlePositionCount: typeof CORE_BUNDLE_POSITION_COUNT;
   gridWidth: typeof CORE_GRID_WIDTH;
   gridHeight: typeof CORE_GRID_HEIGHT;
   channels: CanduChannelSnapshot[];
+}
+
+export interface CanduLiquidZoneTubeSnapshot extends Omit<CanduAdjusterSnapshot, "id"> {
+  zoneId: number;
 }
 
 export type ShiftId = "free-practice" | "useful-fuel-day-v1";
@@ -823,8 +842,28 @@ function isCanduCoreSnapshot(value: unknown): value is CanduCoreSnapshot {
     return false;
   }
 
-  return value.channels.every((channel, channelIndex) =>
+  return (value.liquidZoneTubes === undefined || Array.isArray(value.liquidZoneTubes) &&
+    value.liquidZoneTubes.every(t => isRecord(t) && isNonNegativeInteger(t.zoneId) && t.zoneId < 14 &&
+      isCanduAdjusterSnapshot({ ...t, id: t.zoneId + 1 })) &&
+    new Set(value.liquidZoneTubes.map(t => t.zoneId)).size === value.liquidZoneTubes.length) &&
+    (value.adjusters === undefined || Array.isArray(value.adjusters) &&
+    value.adjusters.every(isCanduAdjusterSnapshot) &&
+    new Set(value.adjusters.map(rod => rod.id)).size === value.adjusters.length) &&
+    value.channels.every((channel, channelIndex) =>
     isCanduChannelSnapshot(channel, channelIndex));
+}
+
+function isCanduAdjusterSnapshot(value: unknown): value is CanduAdjusterSnapshot {
+  return isRecord(value) && isNonNegativeInteger(value.id) && value.id > 0 &&
+    isFiniteNumber(value.gridColumn) && value.gridColumn >= -0.5 && value.gridColumn <= 21.5 &&
+    isFiniteNumber(value.gridRowStart) && isFiniteNumber(value.gridRowEnd) &&
+    value.gridRowStart >= -0.5 && value.gridRowEnd <= 21.5 && value.gridRowStart < value.gridRowEnd &&
+    isFiniteNumber(value.axialPosition) && value.axialPosition >= -0.5 && value.axialPosition <= 11.5 &&
+    Array.isArray(value.affectedChannels) && value.affectedChannels.length > 0 && value.affectedChannels.every(isChannelIndex) &&
+    new Set(value.affectedChannels).size === value.affectedChannels.length &&
+    Array.isArray(value.bundlePositions) && value.bundlePositions.length > 0 &&
+    value.bundlePositions.every(p => isNonNegativeInteger(p) && p < 12) &&
+    new Set(value.bundlePositions).size === value.bundlePositions.length;
 }
 
 function isCanduPhysicsSnapshot(value: unknown): value is CanduPhysicsSnapshot {

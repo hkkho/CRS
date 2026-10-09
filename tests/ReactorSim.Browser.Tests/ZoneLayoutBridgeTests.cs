@@ -23,8 +23,13 @@ public sealed partial class PlaytestBridgeTests
                     ["group1AbsorptionPerMPerFillFraction"] = bundle["group1AbsorptionPerMPerFillFraction"]!.DeepClone(),
                     ["group2AbsorptionPerMPerFillFraction"] = bundle["group2AbsorptionPerMPerFillFraction"]!.DeepClone()
                 });
-        nodes[0]!["logicalZoneId"] = (nodes[0]!["logicalZoneId"]!.GetValue<int>() + 1) % 14;
         var command = new JsonObject { ["protocol"] = "candu-playtest-v2", ["type"] = "configure-zone-layout", ["nodes"] = nodes };
+        var noop = JsonNode.Parse(PlaytestBridgeV2.Dispatch(command.ToJsonString()))!;
+        Assert.True(noop["accepted"]!.GetValue<bool>());
+        Assert.Equal(initial["snapshot"]!["rrs"]!["mappingDigestHex"]!.GetValue<string>(),
+            noop["snapshot"]!["rrs"]!["mappingDigestHex"]!.GetValue<string>());
+        Assert.False(noop["snapshot"]!["provenance"]!["isModified"]!.GetValue<bool>());
+        nodes[0]!["logicalZoneId"] = (nodes[0]!["logicalZoneId"]!.GetValue<int>() + 1) % 14;
         var response = JsonNode.Parse(PlaytestBridgeV2.Dispatch(command.ToJsonString()))!;
         Assert.True(response["accepted"]!.GetValue<bool>(), response["message"]!.GetValue<string>());
         Assert.Equal(nodes[0]!["logicalZoneId"]!.GetValue<int>(), response["snapshot"]!["core"]!["channels"]![0]!["bundles"]![0]!["logicalZoneId"]!.GetValue<int>());

@@ -194,4 +194,18 @@
 .studio-zone[data-limiting="true"] { outline:1px solid #efb65f; outline-offset:4px; }
 
 .studio-provenance { font-size:12px; line-height:1.5; }
+.studio-devices { margin-top: 12px; }
+.studio-devices p, .studio-device-explanation { font-size: 11px; line-height: 1.5; color: #d1d9c7; }
+.studio-devices button { font-size: 11px; padding: 6px 10px; }
+.studio-adjuster-centre { fill: none; stroke: #ffd595; stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; }
+.studio-axial-profile .studio-adjuster-band { fill: #efb65f; opacity: .16; pointer-events: none; }
+.studio-adjuster-plan { display: block; width: 100%; max-height: 180px; }
+.studio-adjuster-plan circle { fill: #ffd595; }
+.studio-adjuster-plan text { fill: #c5d4bd; font: 8px monospace; }
+.studio-lzc-outline { fill: #132e30; stroke: #81e6e8; stroke-width: 1; pointer-events: none; }
+.studio-lzc-water { fill: #81e6e8; pointer-events: none; }
+.studio-axial-profile .studio-lzc-band { fill: #81e6e8; opacity: .16; pointer-events: none; }
+.studio-lzc-label { fill: #b2f4f5; stroke: #071b16; stroke-width: 2; paint-order: stroke; font: 10px monospace; pointer-events: none; }
+.studio-lzc-planes { display: inline-flex; gap: 4px; margin-left: 6px; flex-wrap: wrap; }
+.studio-lzc-planes [aria-pressed="true"] { border-color: #81e6e8; color: #b2f4f5; }
 [data-run-kind="modified-sandbox"] .studio-provenance { color:#ffd595; }

@@ -1,0 +1,25 @@
+{
+  "date": "2026-10-08",
+  "model": "candu6-two-group-diffusion-v1-lzc-tubes-v7",
+  "workingTreeValidation": true,
+  "baseCommitSha": "dd5e47589213bce21b64252c5f79d0ec1f9fd75d",
+  "calibration": "data/calibration/lzc-tubes-v7/fit/fit.json",
+  "coreTests": { "configuration": "Debug", "passed": 122 },
+  "gameTests": { "configuration": "Release", "passed": 74 },
+  "browserTests": { "configuration": "Release", "passed": 38 },
+  "frontendTests": { "passed": 152 },
+  "focusedFinalChecks": { "tubeCanonicalizationAndVolumeTests": 2, "browserLayoutRoundTripTest": 1, "configuration": "Release", "passed": true },
+  "productionBuild": "passed",
+  "pagesBuild": "passed",
+  "wasm": { "configuration": "Release", "aot": true, "threads": false, "cpuOperatorPartitions": 1 },
+  "pagesSmoke": { "url": "http://127.0.0.1:4175/CRS/", "passed": true, "challenge": "completed", "usefulBundles": 8, "badge": "earned", "recovery": "passed" },
+  "deviceInterface": { "adjusters": 21, "assemblies": 6, "compartmentsPerFace": 7, "tubeAxialOverlapsInSelectedChannel": 2, "viewport320Overflow": false, "consoleErrors": [], "pageErrors": [] },
+  "localPowerComparison": { "adjusterPlaneDepressionPercent": [16.67550, 17.93628, 17.10172], "zone": "Z4", "initialFill": 0.5, "finalFill": 1.0, "newlyWettedCells": 16, "newlyWettedCellPowerDepressionPercent": 4.80722, "frozenFuelAndXenon": true, "fixedThermalPowerWatts": 2064000000 },
+  "reproduction": { "artifact": "benchmarks/lzc-tubes-v7-browser.json", "samples": 2, "rowsPerSample": 6, "matched": true, "matrixSha256": "fff708bffd1364b9b66bd977f61c211d7e5c1774d03a73edb027c66f3cd03437", "consoleErrors": [], "pageErrors": [] },
+  "notes": [
+    "The build-info commit identifies the base HEAD; these are working-tree results, not evidence of a published revision.",
+    "The first non-AOT smoke attempt timed out during initialization without browser errors; the production AOT configuration passed the complete smoke path.",
+    "Slow Game/Browser Debug test runs were deliberately terminated; both complete Release suites subsequently passed. CI now explicitly uses Release for these checks, with unchanged assertions.",
+    "Geometry is diagram-derived with authored rounded vertical endpoints; strengths are surrogate calibration values, not plant-generated incremental cross sections."
+  ]
+}

@@ -17,6 +17,7 @@ import { StudioOrderView } from "./StudioOrderView";
 import { StudioStatusView } from "./StudioStatusView";
 import { SessionPresentation } from "../SessionPresentation";
 import { channelWatts, channelLimit, bundleLimit, type MapMode } from "./powerReadings";
+import { adjusterSummary } from "./devicePresentation";
 
 /** A presentation of the existing bridge session, with no reactor state or rules. */
 export class StudioView {
@@ -82,6 +83,7 @@ export class StudioView {
             <div class="studio-card-heading"><div><p class="studio-eyebrow">380 CHANNELS / CORE</p><h2>The reactor face</h2></div><div class="studio-segments studio-map-modes"><button data-action="map" data-map="burnup">Burnup</button><button data-action="map" data-map="power">Channel kW</button><button data-action="map" data-map="ripple">Ripple %</button><button data-action="map" data-map="bundle-power">Bundle kW</button></div></div>
             <div class="studio-map-wrap"><svg data-field="map" viewBox="0 0 560 560" aria-label="Core channel map" role="group"><defs><radialGradient id="studio-vessel"><stop stop-color="#2d4945"/><stop offset="1" stop-color="#142421"/></radialGradient></defs><circle cx="280" cy="280" r="256" fill="url(#studio-vessel)"/><circle cx="280" cy="280" r="249" fill="none" stroke="#58716a" stroke-width="1"/><circle cx="280" cy="280" r="238" fill="none" stroke="#58716a" stroke-dasharray="2 8"/><path d="M280 10v32 M280 518v32 M10 280h32 M518 280h32" stroke="#a9c4b2" stroke-width="1"/><g data-field="map-labels" fill="#becbc1" font-size="10" font-family="monospace"></g><g data-field="channels"></g></svg><span class="studio-map-tag" data-field="map-tag"></span></div>
             <div class="studio-map-legend"><span class="studio-legend-gradient"></span><span data-field="legend">Fresh → higher burnup · MWd/kg HM</span><span>Arrows select</span></div>
+            <div class="studio-devices"><button data-action="devices" aria-pressed="true">Show adjusters</button><span class="studio-lzc-planes" aria-label="Liquid-zone face plane"><button data-action="lzc-plane" data-plane="0" aria-pressed="true">End A LZC</button><button data-action="lzc-plane" data-plane="1" aria-pressed="false">End B LZC</button></span><p data-field="device-note"></p><p data-field="lzc-device-note">Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time.</p><div data-field="device-plan"></div></div>
           </section>
           <section class="studio-card studio-inspector">
             <p class="studio-eyebrow">02 / MAKE A MOVE</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
@@ -235,7 +237,11 @@ export class StudioView {
       this.text("local-ripple", ripple === undefined ? "—" : `${(ripple * 100).toFixed(2)}%`);
       this.text("bundle-peak", channel ? `${(Math.max(0, ...channel.bundles.filter(b => b.hasFuel).map(b => b.powerWatts)) / 1000).toFixed(0)} / ${(bundleLimit(snapshot) / 1000).toFixed(0)}` : "—");
       this.text("local-tilt", channel ? getTiltLabel(channel.localTiltFraction) : "—");
-      this.text("channel-reference", channel && snapshot.ripple ? `Channel power ${(snapshot.ripple.referenceChannelPowerWatts[channel.channelIndex] * snapshot.ripple.channelRippleFractions[channel.channelIndex] / 1e6).toFixed(3)} MW / reference ${(snapshot.ripple.referenceChannelPowerWatts[channel.channelIndex] / 1e6).toFixed(3)} MW · ripple ${(snapshot.ripple.channelRippleFractions[channel.channelIndex] * 100).toFixed(2)}% (target 100%). Fixed reference: 2,064 MW thermal, no adjusters.` : "Channel reference unavailable");
+      this.text("channel-reference", channel && snapshot.ripple ? `Channel power ${(snapshot.ripple.referenceChannelPowerWatts[channel.channelIndex] * snapshot.ripple.channelRippleFractions[channel.channelIndex] / 1e6).toFixed(3)} MW / reference ${(snapshot.ripple.referenceChannelPowerWatts[channel.channelIndex] / 1e6).toFixed(3)} MW · ripple ${(snapshot.ripple.channelRippleFractions[channel.channelIndex] * 100).toFixed(2)}% (target 100%). Fixed reference: ${(snapshot.ripple.referenceThermalPowerWatts / 1e6).toLocaleString("en-US")} MW thermal${snapshot.core.adjusters ? `, ${snapshot.core.adjusters.length} inserted adjusters` : ""}.` : "Channel reference unavailable");
+      this.text("device-note", adjusterSummary(snapshot));
+      this.text("lzc-device-note", snapshot.core.liquidZoneTubes === undefined ? "LZC tube locations unavailable from this host."
+        : snapshot.core.liquidZoneTubes.length ? "Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time."
+        : "This host has no localized LZC tube geometry.");
       this.text("burnup", channel ? `${channel.averageBurnupMwdPerKg.toFixed(1)} avg` : "—");
       this.text("direction", this.draft ? formatRefuelDirection(this.draft.directionId) : "Select a channel");
       this.text("map-tag", `${this.inspectionSnapshot ? `HISTORY ${formatSimulationTime(snapshot.simulationTimeSeconds)}` : "LIVE"} / ${this.mapMode.toUpperCase()}`);
@@ -343,6 +349,17 @@ export class StudioView {
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
     if (target.dataset.channel) { this.select(Number(target.dataset.channel)); this.render(); return; }
     switch (target.dataset.action) {
+      case "lzc-plane":
+        this.element.querySelectorAll<HTMLElement>('[data-action="lzc-plane"]').forEach(b => b.setAttribute("aria-pressed", String(b === target)));
+        this.mapView.setLiquidZonePlane(Number(target.dataset.plane));
+        this.render();
+        break;
+      case "devices": {
+        const visible = target.getAttribute("aria-pressed") !== "true";
+        target.setAttribute("aria-pressed", String(visible));
+        this.mapView.showAdjusters(visible);
+        break;
+      }
       case "map": this.mapMode = target.dataset.map as MapMode; this.render(); break;
       case "oldest": this.select(highestBurnupChannel(this.snapshot.core.channels) ?? this.selected); this.render(); break;
       case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;

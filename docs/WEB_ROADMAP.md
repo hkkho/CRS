@@ -59,7 +59,7 @@ headroom come from the shared snapshot rather than a fill-delta guess.
 
 
 Scoring policy `practice-channel-ripple-v3` measures channel powers against a
-fixed time-average reference for the current core without adjusters. The 380 targets
+fixed time-average reference for the current core with 21 inserted adjusters and the xenon reference. The 380 targets
 sum to 2,064 MW thermal. Equal-channel RMS relative deviation determines the rate:
 `points/hour = 1 / (1 + (RMS / 0.10)^2)`. Refuelling earns no direct bonus or cost;
 its effects on ripple change future points. Old policy totals are not comparable.

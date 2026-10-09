@@ -871,7 +871,9 @@ namespace ReactorSim.Game
             GamePhysicsPresentationSnapshot physics,
             GameXenonPresentationSnapshot xenon,
             GameRrsPresentationSnapshot rrs,
-            double axialTiltFraction)
+            double axialTiltFraction,
+            IReadOnlyList<GameAdjusterPresentationSnapshot> adjusters,
+            IReadOnlyList<GameLiquidZoneTubePresentationSnapshot> liquidZoneTubes)
         {
             if (channels == null)
             {
@@ -888,6 +890,8 @@ namespace ReactorSim.Game
             }
 
             AxialTiltFraction = axialTiltFraction;
+            Adjusters = adjusters ?? throw new ArgumentNullException(nameof(adjusters));
+            LiquidZoneTubes = liquidZoneTubes ?? throw new ArgumentNullException(nameof(liquidZoneTubes));
 
             GameChannelPresentationSnapshot[] copy = channels.ToArray();
             if (copy.Length != GameCorePresentationConstants.ChannelCount)
@@ -908,6 +912,8 @@ namespace ReactorSim.Game
         }
 
         public IReadOnlyList<GameChannelPresentationSnapshot> Channels { get; }
+        public IReadOnlyList<GameAdjusterPresentationSnapshot> Adjusters { get; }
+        public IReadOnlyList<GameLiquidZoneTubePresentationSnapshot> LiquidZoneTubes { get; }
 
         public GamePhysicsPresentationSnapshot Physics { get; }
 

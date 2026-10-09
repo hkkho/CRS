@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -9,6 +10,8 @@ namespace ReactorSim.Core.Tests;
 
 public sealed class PracticeAdjusterTests
 {
+    private readonly ITestOutputHelper output;
+    public PracticeAdjusterTests(ITestOutputHelper output) { this.output = output; }
     [Fact]
     public void TwentyOneInterstitialRodsPreserveVolumeAndSplitTheMiddleAxialPlane()
     {
@@ -82,6 +85,37 @@ public sealed class PracticeAdjusterTests
         Assert.Equal(2_064_000_000, allOut.TotalPowerWatts, 3);
         Assert.NotEqual(allIn.CoefficientBindingDigest, allOut.CoefficientBindingDigest);
         Assert.Empty(Require(FullCoreDiffusionModelV1.TryCreateCandu6(inserted)).NonfuelNodes);
+
+        // Identical fuel, frozen Xe and fixed zone fills: isolate the spatial rod effect.
+        // Equal total power redistributes power elsewhere; compare the same cells, not
+        // different fuel histories or an unconstrained controller response.
+        foreach (var plane in PracticeAdjustersV1.Rods.GroupBy(r => r.AxialCentreM))
+        {
+            var ids = plane.Select(r => r.Id).ToArray();
+            var indices = PracticeAdjustersV1.Cells.Where(c => ids.Contains(c.RodId))
+                .Select(c => checked((int)(c.Node.ChannelId.Value * 12 + c.Node.Position.Value))).Distinct().ToArray();
+            double ratio = indices.Sum(n => allIn.NodePowerWatts[n]) / indices.Sum(n => allOut.NodePowerWatts[n]);
+            output.WriteLine($"Adjuster plane {plane.Key:F5} m: adjacent-cell power ratio in/out={ratio:F8}, depression={100 * (1 - ratio):F5}%");
+            Assert.True(ratio < 1, "Inserted rods must depress mean power in their overlapping cells at fixed total power.");
+        }
+
+        var mapping = Require(PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+        var fuller = Enumerable.Repeat(.5, 14).ToArray();
+        fuller[3] = 1.0; // Z4, central region in End A; no controller compensation.
+        var fullerZones = Require(mapping.TryBuildOverlay(fuller));
+        var fullerOverlay = Require(StaticAbsorptionOverlayV1.TryCreate("fixed-xe-zone-shape-test",
+            fullerZones.Entries.Select(e => new StaticAbsorptionOverlayEntryV1(e.Node, e.DeltaAbsorptionGroup1PerM,
+                e.DeltaAbsorptionGroup2PerM + xe.GetDeltaAbsorptionGroup2PerM(e.Node)))));
+        var moreWater = Require(model.TrySolve(state.EnumerateBundles(), fullerOverlay, 2_064_000_000));
+        var zoneIndices = mapping.Nodes.Where(n => n.WaterColumn != null && n.AbsorberZoneId == 3 &&
+                fullerOverlay.GetDeltaAbsorptionGroup2PerM(n.Node) > overlay.GetDeltaAbsorptionGroup2PerM(n.Node))
+            .Select(n => checked((int)(n.Node.ChannelId.Value * 12 + n.Node.Position.Value))).ToArray();
+        double zoneRatio = zoneIndices.Sum(n => moreWater.NodePowerWatts[n]) / zoneIndices.Sum(n => allIn.NodePowerWatts[n]);
+        output.WriteLine($"Z4 50% -> 100%: newly wetted tube-cell power ratio={zoneRatio:F8}, depression={100 * (1 - zoneRatio):F5}%; absorption changes only {zoneIndices.Length} tube cells.");
+        Assert.True(zoneRatio < 1, "Additional tube water must depress adjacent newly wetted fuel-cell power at fixed total power.");
+        var exampleChannel = PracticeAdjustersV1.Cells.First(c => c.RodId == 11).Node.ChannelId.Value;
+        output.WriteLine($"Example channel {exampleChannel} axial kW inserted: " + string.Join(", ", allIn.NodePowerWatts.Skip((int)exampleChannel * 12).Take(12).Select(p => (p / 1000).ToString("F3", CultureInfo.InvariantCulture))));
+        output.WriteLine($"Example channel {exampleChannel} axial kW removed: " + string.Join(", ", allOut.NodePowerWatts.Skip((int)exampleChannel * 12).Take(12).Select(p => (p / 1000).ToString("F3", CultureInfo.InvariantCulture))));
     }
 
     [Fact]

@@ -81,10 +81,12 @@ The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
 The [literature-guided fuel calibration](docs/physics/literature-geometry-v4.md) uses
 the published lattice-cell volume and fits the cited static burnup curve. It measures
-about 0.348 mk/FPD fuel-only loss with [burnup-bound xenon replacement](docs/physics/xenon-reference-v6.md)
+about 0.348 mk/FPD fuel-only loss in v6 with [burnup-bound xenon replacement](docs/physics/xenon-reference-v6.md)
 and the [21 fixed adjusters](docs/physics/adjusters-v5.md),
-17 mk total adjuster worth and 7 mk total liquid-zone worth. Group constants
-remain a surrogate, with a documented poison-basis limitation. LZC solves
+17 mk total adjuster worth and 7 mk total liquid-zone worth.
+The [v7 tube model](docs/physics/lzc-tubes-v7.md) localizes LZC absorption and
+tracks bottom-up water filling, retaining those device worths after retuning.
+Group constants remain a surrogate, with a documented poison-basis limitation. LZC solves
 at every three-minute browser simulation step, including at accelerated speeds.
 The historical [v3 attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
 ended early on channel-power limits; the [v4 rerun](benchmarks/fuelling-capability-2026-10-07/README.md)
@@ -100,6 +102,12 @@ randomness, as does initial loading. Explicit seed entry and **Retry same seed**
 recreate a deterministic core.
 The [aged-core model notes](docs/physics/aged-core-starts.md) describe the
 RFSP-inspired channel ages, eight-bundle history and burnup coverage.
+
+Studio marks the fixed adjusters in amber on the face, separates all 21 rods
+in an axial plan, and shades their overlapping bundle positions on the selected
+channel's power graph. Geometry comes from the authoritative shared device map.
+The [local absorber audit](docs/physics/local-absorber-power.md) measures their
+power depression and the regional LZC limitation addressed by the v7 tube model.
 
 ## Product architecture
 
@@ -188,6 +196,10 @@ Run the browser-focused .NET, Vitest, and production-build checks:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/Test-Browser.ps1
 ```
+
+For faster shared-simulation checks in the same optimized configuration as CI,
+pass `-Configuration Release` to either test script. Assertions and coverage are
+unchanged.
 
 The browser package also exposes:
 

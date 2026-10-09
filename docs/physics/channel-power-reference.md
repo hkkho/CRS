@@ -16,7 +16,7 @@ targets from the shared model rather than copying a published plant profile.
 
 ## Implemented approximation
 
-`cycle190-time-average-21-adjusters-xenon-reference-half-zones-v3` uses the existing authored
+`cycle190-time-average-21-adjusters-lzc-tubes-half-zones-v4` uses the existing authored
 190-full-power-day channel cycle, eight-bundle shift, opposite neighbouring
 flow directions, and uniform 6.262135922 MWd/kg target discharge burnup.
 For each position from inlet, compute the existing generator's beginning and
@@ -30,7 +30,7 @@ This avoids the incorrect shortcut `C(mean burnup)` on a nonlinear fuel curve.
 Bind the averaged coefficients at each physical axial position using its actual
 channel flow. Solve the same two-group eigenproblem with the existing geometry,
 leakage and boundary conditions, the same pack-bound fixed adjuster absorption
-as the live core, and all 14 liquid zones
+as the live core, and all 14 [localized LZC tube compartments](lzc-tubes-v7.md)
 fixed at 50% fill. Normalize fission heating to 2,064 MW thermal and sum the
 12 bundle powers into each channel reference. The fuel curve includes its declared poison reference. V6 averages that reference
 over the same dwell ranges and replaces it with self-consistent equilibrium Xe
@@ -49,14 +49,14 @@ power targets and developer geometry edits never rebase it.
 
 ## Measured reference
 
-The `xenon-reference-v6` embedded pack gives **4.977607–5.743994 MW/channel**, with a mean
+The `lzc-tubes-v7` embedded pack gives **4.931437–5.784966 MW/channel**, with a mean
 of **5.431579 MW**. Initial RMS deviations for seeds 1001, 1002 and 1013 are
-1.5769%, 1.5366% and 1.5823% respectively. These are authored-model measurements.
+1.5708%, 1.5372% and 1.5725% respectively. These are authored-model measurements.
 The shared [adjuster mapping and worth](adjusters-v5.md) applies both to this
 reference solve and to live burnup, xenon, refuelling and RRS trial solves.
 
-The saved [reference JSON](../../benchmarks/xenon-reference-v6-reference/reference.json)
-and [CSV](../../benchmarks/xenon-reference-v6-reference/reference.csv) contain all 380 targets.
+The saved [reference JSON](../../benchmarks/lzc-tubes-v7-reference/reference.json)
+and [CSV](../../benchmarks/lzc-tubes-v7-reference/reference.csv) contain all 380 targets.
 
 Reproduce the reference CSV, complete JSON profile and seed measurements:
 

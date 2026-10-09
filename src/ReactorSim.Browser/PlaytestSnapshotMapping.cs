@@ -99,6 +99,26 @@ namespace ReactorSim.Browser
                 BundlePositionCount = GameCorePresentationConstants.BundlePositionCount,
                 GridWidth = GameCorePresentationConstants.GridWidth,
                 GridHeight = GameCorePresentationConstants.GridHeight,
+                LiquidZoneTubes = core.LiquidZoneTubes.Select(tube => new PlaytestLiquidZoneTubeDto
+                {
+                    ZoneId = tube.ZoneId,
+                    GridColumn = tube.GridColumn,
+                    GridRowStart = tube.GridRowStart,
+                    GridRowEnd = tube.GridRowEnd,
+                    AxialPosition = tube.AxialPosition,
+                    AffectedChannels = tube.AffectedChannels,
+                    BundlePositions = tube.BundlePositions
+                }).ToList(),
+                Adjusters = core.Adjusters.Select(rod => new PlaytestAdjusterDto
+                {
+                    Id = rod.Id,
+                    GridColumn = rod.GridColumn,
+                    GridRowStart = rod.GridRowStart,
+                    GridRowEnd = rod.GridRowEnd,
+                    AxialPosition = rod.AxialPosition,
+                    AffectedChannels = rod.AffectedChannels,
+                    BundlePositions = rod.BundlePositions
+                }).ToList(),
                 Channels = core.Channels
                     .Select(channel => new PlaytestChannelDto
                     {

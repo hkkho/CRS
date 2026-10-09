@@ -1,6 +1,11 @@
 # Shared browser v2 wire fixtures
 
-The current fixtures were regenerated for the xenon-reference-v6 physics
+The current core snapshots carry inserted-adjuster and LZC tube geometry and cell-overlap
+indices projected by Game from Core. The presentation fields alone do not
+alter simulation or replay digests. Older hosts can omit the geometry; the client
+then reports locations unavailable rather than drawing an assumed layout.
+
+The current fixtures were regenerated for the lzc-tubes-v7 physics
 pack. The wire schema is unchanged; physical values, pack identity and digests
 intentionally change with the calibration.
 

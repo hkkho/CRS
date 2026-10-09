@@ -3,6 +3,7 @@ import type { RefuelDraft } from "../commandState";
 import { patchMarkup } from "./domPatch";
 import { bundleLimit } from "./powerReadings";
 import { gridCoordinateLabel } from "../projection";
+import { adjusterPowerMarkers, liquidZonePowerMarkers, channelDeviceNote } from "./devicePresentation";
 
 export class StudioOrderView {
   private bundlesKey = "";
@@ -16,11 +17,12 @@ export class StudioOrderView {
     const offset = (channel?.channelIndex ?? 0) * 12;
     const iodine = snapshot.xenon?.nodeI135NumberDensityM3?.slice(offset, offset + 12);
     const xenon = snapshot.xenon?.nodeXe135NumberDensityM3?.slice(offset, offset + 12);
-    const key = JSON.stringify([channel?.bundles, iodine, xenon, bundleLimit(snapshot)]);
+    const key = JSON.stringify([channel?.channelIndex, channel?.bundles, iodine, xenon, bundleLimit(snapshot), snapshot.core.adjusters, snapshot.core.liquidZoneTubes, snapshot.rrs.zones.map(z => z.fillFraction)]);
     if (key === this.bundlesKey) return;
     this.bundlesKey = key;
     patchMarkup(this.field("bundles"), [
-      axialLineGraph(channel, "power", "POWER / kW THERMAL", bundle => bundle.powerWatts / 1000, bundleLimit(snapshot) / 1000),
+      axialLineGraph(channel, "power", "POWER / kW THERMAL", bundle => bundle.powerWatts / 1000, bundleLimit(snapshot) / 1000, liquidZonePowerMarkers(snapshot, channel) + adjusterPowerMarkers(snapshot, channel)),
+      `<p class="studio-device-explanation">${channelDeviceNote(snapshot, channel)}</p>`,
       axialLineGraph(channel, "burnup", "BURNUP / MWd/kg HM", bundle => bundle.currentBurnupMwdPerKg),
       axialLineGraph(channel, "iodine", "IODINE-135 / 10²⁰ atoms/m³", bundle => iodine?.[bundle.position] === undefined ? null : iodine[bundle.position] / 1e20),
       axialLineGraph(channel, "xenon", "XENON-135 / 10²⁰ atoms/m³", bundle => xenon?.[bundle.position] === undefined ? null : xenon[bundle.position] / 1e20),
@@ -82,7 +84,7 @@ export class StudioOrderView {
 
 /** Plot published bundle measurements in physical End A to End B order. */
 function axialLineGraph(channel: CanduChannelSnapshot | undefined, metric: string, label: string,
-  read: (bundle: CanduChannelSnapshot["bundles"][number]) => number | null, limit?: number): string {
+  read: (bundle: CanduChannelSnapshot["bundles"][number]) => number | null, limit?: number, markers = ""): string {
   const values = Array.from({ length: 12 }, (_, position) => {
     const bundle = channel?.bundles.find(bundle => bundle.position === position);
     return bundle?.hasFuel ? read(bundle) : null;
@@ -101,5 +103,5 @@ function axialLineGraph(channel: CanduChannelSnapshot | undefined, metric: strin
   const positions = values.map((_, position) => `<text x="${x(position)}" y="93" text-anchor="middle">${String(position + 1).padStart(2, "0")}</text>`).join("");
   const readings = values.map((value, position) => `${position + 1}: ${value === null ? "empty/unavailable" : value.toFixed(2)}`).join("; ");
   const threshold = limit === undefined ? "" : `<path data-power-limit="${limit}" d="M42 ${y(limit)}H306" stroke="#f76c6c" stroke-dasharray="4 3"/><text x="306" y="${y(limit) - 3}" text-anchor="end" fill="#ff9999">${limit} kW limit</text>`;
-  return `<svg data-axial="${metric}" viewBox="0 0 324 100" role="img" aria-label="Axial ${label}; End A to End B"><title>${label}</title><desc>${readings}</desc><text class="axial-label" x="42" y="15">${label}</text>${grid}${threshold}<path class="axial-line" d="${path}"/>${points}${positions}</svg>`;
+  return `<svg data-axial="${metric}" viewBox="0 0 324 100" role="img" aria-label="Axial ${label}; End A to End B"><title>${label}</title><desc>${readings}</desc><text class="axial-label" x="42" y="15">${label}</text>${markers}${grid}${threshold}<path class="axial-line" d="${path}"/>${points}${positions}</svg>`;
 }

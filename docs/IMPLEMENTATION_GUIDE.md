@@ -198,9 +198,10 @@ transaction, replay, fallback and rollout gates.
 ## Current physics and provenance
 
 The practice session uses the project-authored
-`candu6-two-group-diffusion-v1-xenon-reference-v6` path with
+`candu6-two-group-diffusion-v1-lzc-tubes-v7` path with
 [explicit xenon reference replacement](physics/xenon-reference-v6.md) and 21 fully inserted
-[fixed adjusters](physics/adjusters-v5.md). See the
+[fixed adjusters](physics/adjusters-v5.md) and localized
+[LZC tubes and water surfaces](physics/lzc-tubes-v7.md). See the
 [literature-guided calibration](physics/literature-geometry-v4.md) for the metric
 geometry, fitted static curve, finite-core measurements and poison-basis limitation. It is a
 regulated steady-state practice model rather than a sub-second transient claim.

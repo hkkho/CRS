@@ -7,6 +7,12 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--fit-lzc-tubes")
+{
+    if (args.Length != 3) throw new ArgumentException("Usage: --fit-lzc-tubes SOURCE_PACK OUTPUT_DIRECTORY");
+    LiquidZoneTubeCalibration.Run(args[1], args[2]);
+    return;
+}
 if (args.Length > 0 && args[0] == "--fit-xenon-reference")
 {
     if (args.Length != 3) throw new ArgumentException("Usage: --fit-xenon-reference SOURCE_PACK OUTPUT_DIRECTORY");

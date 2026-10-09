@@ -5,6 +5,13 @@ export async function verifyStudio(page) {
   await studio.waitFor({ state: 'visible' });
   check(await studio.locator('[data-action="classic"]').count() === 0, 'Retired Tactical view is still offered.');
   check(await studio.locator('rect[data-channel]').count() === 380, 'Studio did not render 380 authoritative channels.');
+  check(await studio.locator('[data-plan-adjuster]').count() === 21, 'Studio did not render the 21 authoritative inserted adjusters.');
+  check(await studio.locator('[data-adjuster-column]').count() === 7, 'Face projection did not retain seven adjuster columns.');
+  check(await studio.locator('[data-plan-lzc]').count() === 6, 'Plan did not separate the six localized LZC assemblies.');
+  check(await studio.locator('[data-face-lzc]').count() === 7, 'End A face did not render seven LZC compartments.');
+  await studio.locator('[data-action="lzc-plane"][data-plane="1"]').click();
+  check((await studio.locator('[data-face-lzc]').evaluateAll(nodes => nodes.map(n => Number(n.dataset.faceLzc)))).every(id => id >= 7), 'End B plane did not switch to authoritative far-half compartments.');
+  await studio.locator('[data-action="lzc-plane"][data-plane="0"]').click();
   check(await studio.locator('.studio-zone').count() === 14, 'Studio did not render 14 zone fills.');
   check(await studio.locator('.studio-metrics article').count() === 4, 'Studio still includes the redundant regulated-power box.');
   check(await studio.locator('[data-field="power"]').count() === 0, 'Redundant regulated-power field remains.');
@@ -29,6 +36,7 @@ export async function verifyStudio(page) {
   check((await studio.locator('[data-field="impact"]').textContent()).includes('RMS ripple'), 'Authoritative ripple response is missing.');
   check((await studio.locator('[data-field="ripple-score"]').textContent()).includes('points/h'), 'Live ripple score rate is missing.');
   check((await studio.locator('[data-field="channel-reference"]').textContent()).includes('MW / reference'), 'Selected channel reference is missing.');
+  check((await studio.locator('[data-field="channel-reference"]').textContent()).includes('21 inserted adjusters'), 'The channel reference still misrepresents the current adjuster model.');
   check((await studio.locator('[data-field="movement-result"]').textContent()).includes('Confirmed move #1'), 'Confirmed identity summary is missing.');
   check(await studio.locator('[data-axial]').count() === 4, 'Axial power/burnup/iodine/xenon graphs are missing.');
   const cleanPositions = await studio.locator('[data-confirmed="inserted"]').allTextContents();

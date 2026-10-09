@@ -1,5 +1,8 @@
 [CmdletBinding()]
-param()
+param(
+    [ValidateSet('Debug', 'Release')]
+    [string]$Configuration = 'Debug'
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -9,7 +12,7 @@ $dotnetRunner = Join-Path $PSScriptRoot 'Test-DotNet.ps1'
 $webRoot = Join-Path (Split-Path -Parent $PSScriptRoot) 'web\candu-playtest'
 
 try {
-    & $dotnetRunner -Suite Browser
+    & $dotnetRunner -Suite Browser -Configuration $Configuration
     if ($LASTEXITCODE -ne 0) {
         throw "Browser .NET tests failed (exit code $LASTEXITCODE)."
     }

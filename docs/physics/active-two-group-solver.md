@@ -12,7 +12,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-xenon-reference-v6`, units profile
+`candu6-two-group-diffusion-v1-lzc-tubes-v7`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -41,11 +41,12 @@ conductances used by the 380-channel by 12-position model:
 | --- | ---: | ---: | --- |
 | Axial interior edge | `0.00659423076923077` | `0.003297115384615385` | m^2 |
 | Transverse interior edge | `0.019812` | `0.009906` | m^2 |
-| Effective outer boundary face | `0.0007871529201316833` | `0.00039357646006584165` | m^2 |
+| Effective outer boundary face | `0.0007875467350470583` | `0.00039377336752352915` | m^2 |
 
 See [xenon reference v6](xenon-reference-v6.md) for the included-reference replacement
-and current boundary refit, and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption
-and the boundary refit, and [v4 calibration](literature-geometry-v4.md) for source geometry, authored
+and [localized LZC tubes](lzc-tubes-v7.md) for the current device strengths and boundary refit,
+and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption,
+and [v4 calibration](literature-geometry-v4.md) for source geometry, authored
 effective diffusion coefficients, fitted boundary leakage and the poison-basis
 limitation of the static burnup curve plus gameplay xenon perturbation.
 

@@ -236,6 +236,8 @@ namespace ReactorSim.Browser
 
     internal sealed class PlaytestCoreDto
     {
+        public List<PlaytestAdjusterDto> Adjusters { get; set; } = new List<PlaytestAdjusterDto>();
+        public List<PlaytestLiquidZoneTubeDto> LiquidZoneTubes { get; set; } = new List<PlaytestLiquidZoneTubeDto>();
         public uint ChannelCount { get; set; }
 
         public uint BundlePositionCount { get; set; }
@@ -245,6 +247,28 @@ namespace ReactorSim.Browser
         public int GridHeight { get; set; }
 
         public List<PlaytestChannelDto> Channels { get; set; } = new List<PlaytestChannelDto>();
+    }
+
+    internal sealed class PlaytestAdjusterDto
+    {
+        public int Id { get; set; }
+        public double GridColumn { get; set; }
+        public double GridRowStart { get; set; }
+        public double GridRowEnd { get; set; }
+        public double AxialPosition { get; set; }
+        public IReadOnlyList<uint> AffectedChannels { get; set; } = Array.Empty<uint>();
+        public IReadOnlyList<uint> BundlePositions { get; set; } = Array.Empty<uint>();
+    }
+
+    internal sealed class PlaytestLiquidZoneTubeDto
+    {
+        public uint ZoneId { get; set; }
+        public double GridColumn { get; set; }
+        public double GridRowStart { get; set; }
+        public double GridRowEnd { get; set; }
+        public double AxialPosition { get; set; }
+        public IReadOnlyList<uint> AffectedChannels { get; set; } = Array.Empty<uint>();
+        public IReadOnlyList<uint> BundlePositions { get; set; } = Array.Empty<uint>();
     }
 
     internal sealed class PlaytestChannelDto

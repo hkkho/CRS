@@ -27,13 +27,14 @@ Bundle positions 0–5 belong to End A and 6–11 to End B. The source drawing's
 boundaries are discretized onto the game's 22-column lattice: columns 0–6 are
 left, 7–14 centre, and 15–21 right. Display rows increase downwards. Outer
 regions split at row 11; central regions split at rows 8 and 14. Every one of
-the 4,560 nodes belongs to exactly one zone. This is a discretized regional
-absorption model, rather than an explicit model of individual absorber tubes.
+the 4,560 nodes belongs to exactly one power-measurement zone. Absorption is
+localized separately to the [v7 tube compartments](lzc-tubes-v7.md), including
+bottom-up water surfaces and overlap with nearby fuel cells.
 
 Region membership and absorber compartment ownership are independent Core
 fields. The browser displays the default regions in Studio's liquid-zone view.
-The default applies effective absorption at every node. The
-[current calibration](reactivity-scale-v3.md) sets empty-to-full worth to about 7 mk, with
+The default applies effective absorption only where tube water intersects cells.
+The [current calibration](lzc-tubes-v7.md) sets empty-to-full worth to about 7 mk, with
 nonnegative absorption referenced to empty zones. The earlier
 [geometry audit](zone-geometry-audit.md) records the superseded excessive worth.
 

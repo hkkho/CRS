@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "data_pack_id": "00000000-0000-0000-0000-000000000601",
-  "data_pack_version": "candu6-two-group-diffusion-v1-xenon-reference-v6",
+  "data_pack_version": "candu6-two-group-diffusion-v1-lzc-tubes-v7",
   "topology_schema_id": "candu6-380x12-grid-v1",
   "channel_count": 380,
   "bundle_position_count": 12,
@@ -13,8 +13,8 @@
   "model_id": "candu6-two-group-full-core-diffusion-v1",
   "solver_id": "spatial-eigen-jacobi-v1",
   "evidence_class": "synthetic-calibrated",
-  "source_provenance": "synthetic-calibrated; literature-guided surrogate v4; geometry from Rouben 2003 section 1.1: pitch 0.28575 m, bundle length 0.4953 m; volume=pitch^2*length; isotropic interior C=D*A/d; Naceur and Marleau 2018 DOI https://doi.org/10.1016/j.anucene.2017.11.016 Table 5 and Fig 3 UO2-Zr reflective lattice k fit, 31.9713 kW/kg; post-fresh points graph-read \u002B/-0.003; not measured or condition-matched group constants; effective nu=2.45 authored; absorption and downscatter retained; poison-inclusive depletion reference, runtime xenon remains a rebased gameplay perturbation, not matched depletion; positive authored tail to 30 MWd/kg; offline seed-1001 half-fill leakage fit: interior coupling multiplier 1, boundary fast 0.0013016903858184816 m2, thermal half fast; no lattice production renormalization; fixed 21 fully inserted adjusters: IAEA-TECDOC-1994 p20 geometry; one-pitch by one-bundle homogenized columns, overlap-weighted; two steel-area segments; authored absorption fast/thermal ratio 0.1; user-requested 17 mk worth fit, not source-validated device strength; seed1001 half-fill leakage refit retaining lattice curve and interior coupling; explicit included Xe135 surrogate reference history at 31.9713 kW/kg HM; reference starts at zero, analytic model densities assigned over unchanged fuel knots; dynamic Xe replaces reference at current bundle burnup, no fixed startup rebase; not a measured poison-separated nuclear dataset; fuel curve unchanged; seed1001 frozen-Xe 17mk adjuster/7mk zone/half-fill criticality calibration through device strength and leakage only; fuel decay measured, not fitted to an arbitrary rate",
-  "source_toolchain": "tools/tune_literature_pack.py; tools/AgedCoreBenchmark --fit-literature; tools/AgedCoreBenchmark --fit-adjusters; tools/AgedCoreBenchmark --fit-xenon-reference",
+  "source_provenance": "synthetic-calibrated; literature-guided surrogate v4; geometry from Rouben 2003 section 1.1: pitch 0.28575 m, bundle length 0.4953 m; volume=pitch^2*length; isotropic interior C=D*A/d; Naceur and Marleau 2018 DOI https://doi.org/10.1016/j.anucene.2017.11.016 Table 5 and Fig 3 UO2-Zr reflective lattice k fit, 31.9713 kW/kg; post-fresh points graph-read \u002B/-0.003; not measured or condition-matched group constants; effective nu=2.45 authored; absorption and downscatter retained; poison-inclusive depletion reference, runtime xenon remains a rebased gameplay perturbation, not matched depletion; positive authored tail to 30 MWd/kg; offline seed-1001 half-fill leakage fit: interior coupling multiplier 1, boundary fast 0.0013016903858184816 m2, thermal half fast; no lattice production renormalization; fixed 21 fully inserted adjusters: IAEA-TECDOC-1994 p20 geometry; one-pitch by one-bundle homogenized columns, overlap-weighted; two steel-area segments; authored absorption fast/thermal ratio 0.1; user-requested 17 mk worth fit, not source-validated device strength; seed1001 half-fill leakage refit retaining lattice curve and interior coupling; explicit included Xe135 surrogate reference history at 31.9713 kW/kg HM; reference starts at zero, analytic model densities assigned over unchanged fuel knots; dynamic Xe replaces reference at current bundle burnup, no fixed startup rebase; not a measured poison-separated nuclear dataset; fuel curve unchanged; seed1001 frozen-Xe 17mk adjuster/7mk zone/half-fill criticality calibration through device strength and leakage only; fuel decay measured, not fitted to an arbitrary rate; localized LZC tubes v7: St-Aubin/Marleau 2018 Figs1-2 layout; one-pitch by one-bundle homogenization; authored vertical endpoints rounded to lattice boundaries; bottom-up water cell overlap; authored fast/thermal absorption ratio 0.1; 7mk total water and 17mk rods re-fit at frozen equilibrium Xe with seed1001 half-fill critical; fuel knots, interior coupling and Xe reference preserved",
+  "source_toolchain": "tools/tune_literature_pack.py; tools/AgedCoreBenchmark --fit-literature; tools/AgedCoreBenchmark --fit-adjusters; tools/AgedCoreBenchmark --fit-xenon-reference; tools/AgedCoreBenchmark --fit-lzc-tubes",
   "transform_id": "two-group-m1-scalar-node-centred-v1",
   "geometry": {
     "node_volume_m3": 0.04044276185625,
@@ -27,8 +27,8 @@
       "group2_m2": 0.009906
     },
     "vacuum_boundary_conductance_m2": {
-      "group1_m2": 0.0007871529201316833,
-      "group2_m2": 0.0003935764600658416
+      "group1_m2": 0.0007875467350470583,
+      "group2_m2": 0.0003937733675235292
     }
   },
   "solver": {
@@ -311,8 +311,8 @@
   ],
   "adjusters": {
     "layout_id": "candu6-21-adjusters-iaea1994-overlap-v1",
-    "inner_absorption_group1_per_m": 0.005257186889648438,
-    "inner_absorption_group2_per_m": 0.052571868896484374
+    "inner_absorption_group1_per_m": 0.00523135140200243,
+    "inner_absorption_group2_per_m": 0.05231351402002429
   },
   "xenon_basis": "included-burnup-reference",
   "xenon_reference": {

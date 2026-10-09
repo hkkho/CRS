@@ -155,7 +155,10 @@ namespace ReactorSim.Game
                 physics,
                 xenon,
                 new GameRrsPresentationSnapshot(rrs, poison),
-                ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux));
+                ComputeSignedAxialTiltFraction(projection.SpatialSolve.Group2Flux),
+                projection.SpatialSolve.DataPack.Adjusters != null && !projection.SpatialSolve.DataPack.Adjusters.IsZero
+                    ? GameAdjusterPresentationSnapshot.Nominal : Array.Empty<GameAdjusterPresentationSnapshot>(),
+                GameLiquidZoneTubePresentationSnapshot.For(rrs.Mapping));
         }
         internal static GameXenonPresentationSnapshot Poison(
             int selectedChannelIndex,

@@ -1,0 +1,196 @@
+{
+  "seed": 1001,
+  "sourceVersion": "candu6-two-group-diffusion-v1-xenon-reference-v6",
+  "layout": "candu6-six-tubes-fourteen-compartments-moving-water-v1",
+  "halfFillK": 1.000000519236375,
+  "measuredAdjusterWorthMk": 16.999994711126675,
+  "measuredZoneWorthMk": 6.999934467758373,
+  "group1ZoneStrength": 0.005554638539404282,
+  "group2ZoneStrength": 0.055546385394042816,
+  "rod": 0.05231351402002429,
+  "boundary": 0.0007875467350470583,
+  "peakChannelKw": 5886.106223308421,
+  "peakBundleKw": 547.6436459479047,
+  "compartments": [
+    {
+      "ZoneId": 0,
+      "HorizontalCentreM": -1.7145000000000001,
+      "VerticalMinimumM": -2.00025,
+      "VerticalMaximumM": 0.28575,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 1,
+      "HorizontalCentreM": -1.7145000000000001,
+      "VerticalMinimumM": 0.28575,
+      "VerticalMaximumM": 2.57175,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 2,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": -2.8575,
+      "VerticalMaximumM": -1.143,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 3,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": -1.143,
+      "VerticalMaximumM": 1.143,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 4,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": 1.143,
+      "VerticalMaximumM": 3.14325,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 5,
+      "HorizontalCentreM": 1.7145000000000001,
+      "VerticalMinimumM": -2.00025,
+      "VerticalMaximumM": 0.28575,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 6,
+      "HorizontalCentreM": 1.7145000000000001,
+      "VerticalMinimumM": 0.28575,
+      "VerticalMaximumM": 2.57175,
+      "AxialCentreM": 1.4859
+    },
+    {
+      "ZoneId": 7,
+      "HorizontalCentreM": -1.7145000000000001,
+      "VerticalMinimumM": -2.00025,
+      "VerticalMaximumM": 0.28575,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 8,
+      "HorizontalCentreM": -1.7145000000000001,
+      "VerticalMinimumM": 0.28575,
+      "VerticalMaximumM": 2.57175,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 9,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": -2.8575,
+      "VerticalMaximumM": -1.143,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 10,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": -1.143,
+      "VerticalMaximumM": 1.143,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 11,
+      "HorizontalCentreM": 0,
+      "VerticalMinimumM": 1.143,
+      "VerticalMaximumM": 3.14325,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 12,
+      "HorizontalCentreM": 1.7145000000000001,
+      "VerticalMinimumM": -2.00025,
+      "VerticalMaximumM": 0.28575,
+      "AxialCentreM": 4.4577
+    },
+    {
+      "ZoneId": 13,
+      "HorizontalCentreM": 1.7145000000000001,
+      "VerticalMinimumM": 0.28575,
+      "VerticalMaximumM": 2.57175,
+      "AxialCentreM": 4.4577
+    }
+  ],
+  "trials": [
+    {
+      "pass": 0,
+      "rod": 0.05217207018008475,
+      "water": 0.057475143175055046,
+      "boundary": 0.0007853153793242997,
+      "k": 1.0000029083099182,
+      "rodWorth": 16.952332374191357,
+      "zoneWorth": 7.2303749820211705,
+      "poisonError": 0.03513279860992241
+    },
+    {
+      "pass": 1,
+      "rod": 0.05231877086197987,
+      "water": 0.0556409101686803,
+      "boundary": 0.0007873639492040036,
+      "k": 0.999999683846592,
+      "rodWorth": 17.000549234836846,
+      "zoneWorth": 7.011272796934032,
+      "poisonError": 0.0019013792870864392
+    },
+    {
+      "pass": 2,
+      "rod": 0.05231708060531925,
+      "water": 0.05555148417325514,
+      "boundary": 0.0007875152510291298,
+      "k": 0.9999999930911446,
+      "rodWorth": 17.000795138292112,
+      "zoneWorth": 7.000602466818662,
+      "poisonError": 0.0001799525597780704
+    },
+    {
+      "pass": 3,
+      "rod": 0.052314633701290206,
+      "water": 0.05554675273283427,
+      "boundary": 0.0007875404259053543,
+      "k": 0.9999999949734318,
+      "rodWorth": 17.00026797663856,
+      "zoneWorth": 7.0000425466617555,
+      "poisonError": 2.274081798094051E-05
+    },
+    {
+      "pass": 4,
+      "rod": 0.05231380906136652,
+      "water": 0.055546431725523225,
+      "boundary": 0.0007875467350470583,
+      "k": 0.9999999990260452,
+      "rodWorth": 17.00008002921505,
+      "zoneWorth": 7.0000063344786145,
+      "poisonError": 5.1578081857204595E-06
+    },
+    {
+      "pass": 5,
+      "rod": 0.05231356278999202,
+      "water": 0.05554638642041123,
+      "boundary": 0.0007875467350470583,
+      "k": 1.000000067661363,
+      "rodWorth": 17.000013545561686,
+      "zoneWorth": 7.00000024507863,
+      "poisonError": 1.0691757493168086E-06
+    },
+    {
+      "pass": 6,
+      "rod": 0.052313521106696306,
+      "water": 0.05554638531518335,
+      "boundary": 0.0007875467350470583,
+      "k": 1.000000078875871,
+      "rodWorth": 17.000002302912097,
+      "zoneWorth": 7.000000008047569,
+      "poisonError": 1.7888664756045666E-07
+    },
+    {
+      "pass": 7,
+      "rod": 0.05231351402002429,
+      "water": 0.055546385394042816,
+      "boundary": 0.0007875467350470583,
+      "k": 1.0000000807658087,
+      "rodWorth": 17.000000391959258,
+      "zoneWorth": 6.99999999971479,
+      "poisonError": 3.0331537166864986E-08
+    }
+  ]
+}

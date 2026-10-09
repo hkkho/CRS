@@ -142,7 +142,8 @@ public sealed class PracticeLiquidZoneRrsTests
         StaticAbsorptionOverlayV1 lowOverlay = Require(mapping.TryBuildOverlay(low));
         StaticAbsorptionOverlayV1 highOverlay = Require(mapping.TryBuildOverlay(high));
         PracticeLiquidZoneRrsNodeBindingV1 controlled = mapping.Nodes
-            .First(node => node.LogicalZoneId == 3U);
+            .First(node => node.AbsorberZoneId == 3U &&
+                highOverlay.GetDeltaAbsorptionGroup2PerM(node.Node) > lowOverlay.GetDeltaAbsorptionGroup2PerM(node.Node));
         PracticeLiquidZoneRrsNodeBindingV1 untouched = mapping.Nodes
             .First(node => node.LogicalZoneId != 3U);
 

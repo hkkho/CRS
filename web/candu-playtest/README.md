@@ -64,7 +64,7 @@ recovery, and the production worker under the GitHub Pages `/CRS/` base path.
 
 Studio shows each channel's actual/reference thermal power, ripple ratio, core RMS
 deviation and current points/hour. Game owns the fixed 2,064 MW reference profile
-without adjusters and integrates ripple points; refuelling has no instant bonus.
+with 21 inserted adjusters and the xenon reference, and integrates ripple points; refuelling has no instant bonus.
 See [derivation](../../docs/physics/channel-power-reference.md) and
 [policy](../../docs/gameplay/score-balance.md).
 

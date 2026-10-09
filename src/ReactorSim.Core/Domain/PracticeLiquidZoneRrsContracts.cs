@@ -22,8 +22,8 @@ namespace ReactorSim.Core
         public const double InitialFillFraction = 0.5;
         public const double AbsorptionReferenceFillFraction = 0.0;
         public const double CalibratedTotalZoneWorthMk = 7.0;
-        public const double Group1AbsorptionPerMPerFillFraction = 0.0017640042499876617;
-        public const double Group2AbsorptionPerMPerFillFraction = 0.0007056016999950648;
+        public const double Group1AbsorptionPerMPerFillFraction = 0.005554638539404282;
+        public const double Group2AbsorptionPerMPerFillFraction = 0.055546385394042816;
         public const int ResponseVariableCount = (int)LogicalZoneCount;
         public const int ResponseOutputCount = ResponseVariableCount + 1;
         public const double ResponseGroup1AbsorptionWeight = 0.65;
@@ -49,17 +49,17 @@ namespace ReactorSim.Core
         public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v4";
         public const string ResponseModelIdentity =
             "synthetic-practice-liquid-zone-response-common-shape-v3";
-        public const string MappingIdentity = "candu6-regions-independent-absorber-masks-380x12-v3";
-        public const string OverlayIdentity = "synthetic-practice-liquid-zone-positive-absorption-v2";
+        public const string MappingIdentity = "candu6-regions-localized-tubes-moving-water-380x12-v4";
+        public const string OverlayIdentity = "synthetic-practice-liquid-zone-tube-water-absorption-v3";
         public const string CadenceIdentity = "equilibrium-three-minute-step-and-event-rrs-v3";
         public const string Provenance =
-            "project-authored-synthetic; independent regional measurement and homogenized absorber masks; positive absorption calibrated to 7 mk with seed-1001 reference critical at half fill";
+            "project-authored-synthetic; St-Aubin/Marleau 2018 Figs1-2 six tube layout; one-pitch by one-bundle homogenization; vertical endpoints rounded to lattice boundaries; bottom-up water overlap; independent regional measurement; authored absorption calibrated to 7 mk with seed-1001 reference critical at half fill";
     }
 
     /// <summary>
     /// One complete-map binding from a diffusion node to one of fourteen
-    /// practice liquid zones. Weights are static absorption deltas in m^-1
-    /// per unit fill fraction.
+    /// practice liquid zones. Weights are full-water absorption deltas in m^-1.
+    /// Static masks scale linearly with fill; tube cells use WaterColumn overlap.
     /// </summary>
     public sealed class PracticeLiquidZoneRrsNodeBindingV1
     {
@@ -68,7 +68,8 @@ namespace ReactorSim.Core
             uint logicalZoneId,
             double group1AbsorptionPerMPerFillFraction,
             double group2AbsorptionPerMPerFillFraction,
-            uint? absorberZoneId = null)
+            uint? absorberZoneId = null,
+            PracticeLiquidZoneWaterColumnV1? waterColumn = null)
         {
             if (logicalZoneId >= PracticeLiquidZoneRrsIdentityV1.LogicalZoneCount)
             {
@@ -90,9 +91,11 @@ namespace ReactorSim.Core
                 throw new ArgumentOutOfRangeException(nameof(absorberZoneId));
             Group1AbsorptionPerMPerFillFraction = group1AbsorptionPerMPerFillFraction;
             Group2AbsorptionPerMPerFillFraction = group2AbsorptionPerMPerFillFraction;
+            WaterColumn = waterColumn;
         }
 
         public NodeKey Node { get; }
+        public PracticeLiquidZoneWaterColumnV1? WaterColumn { get; }
 
         public uint LogicalZoneId { get; }
         /// <summary>Fill compartment driving absorption at this node; independent of its measured power region.</summary>
@@ -168,8 +171,15 @@ namespace ReactorSim.Core
             get { return _nodeIndicesByZone; }
         }
 
-        public static ContractValidationResult<PracticeLiquidZoneRrsMappingV1> TryCreateCandu6()
+        public static ContractValidationResult<PracticeLiquidZoneRrsMappingV1> TryCreateCandu6(
+            double group1Strength = PracticeLiquidZoneRrsIdentityV1.Group1AbsorptionPerMPerFillFraction,
+            double group2Strength = PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction)
         {
+            if (!ContractValidation.IsFinite(group1Strength) || !ContractValidation.IsFinite(group2Strength) ||
+                group1Strength < 0 || group2Strength < 0)
+                return Invalid("PracticeLiquidZoneRrs.Absorption.Invalid", "strength", "Tube absorption strengths must be finite and nonnegative.");
+            if (group1Strength == 0) group1Strength = 0;
+            if (group2Strength == 0) group2Strength = 0;
             var nodes = new List<PracticeLiquidZoneRrsNodeBindingV1>(
                 checked((int)PracticeLiquidZoneRrsIdentityV1.NodeCount));
             for (uint channel = 0; channel < PracticeLiquidZoneRrsIdentityV1.ChannelCount; channel++)
@@ -193,13 +203,15 @@ namespace ReactorSim.Core
                         ? 0U
                         : 1U;
                     uint zone = checked(axialHalf * 7U + faceZone);
+                    var node = new NodeKey(new ChannelId(channel), new BundlePosition(bundlePosition));
+                    var tube = PracticeLiquidZoneTubesV1.Binding(node);
                     nodes.Add(new PracticeLiquidZoneRrsNodeBindingV1(
-                        new NodeKey(
-                            new ChannelId(channel),
-                            new BundlePosition(bundlePosition)),
+                        node,
                         zone,
-                        PracticeLiquidZoneRrsIdentityV1.Group1AbsorptionPerMPerFillFraction,
-                        PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction));
+                        group1Strength * tube.Fraction,
+                        group2Strength * tube.Fraction,
+                        tube.Tube?.ZoneId ?? zone,
+                        tube.Water));
                 }
             }
 
@@ -317,6 +329,14 @@ namespace ReactorSim.Core
                         Phase5CanonicalBytesV1.WriteDouble(
                             writer,
                             node.Group2AbsorptionPerMPerFillFraction);
+                        Phase5CanonicalBytesV1.WriteUInt32(writer, node.WaterColumn == null ? 0U : 1U);
+                        if (node.WaterColumn != null)
+                        {
+                            Phase5CanonicalBytesV1.WriteDouble(writer, node.WaterColumn.BottomM);
+                            Phase5CanonicalBytesV1.WriteDouble(writer, node.WaterColumn.TopM);
+                            Phase5CanonicalBytesV1.WriteDouble(writer, node.WaterColumn.CellBottomM);
+                            Phase5CanonicalBytesV1.WriteDouble(writer, node.WaterColumn.CellTopM);
+                        }
                     }
                 }));
 
@@ -373,6 +393,7 @@ namespace ReactorSim.Core
                 }
 
                 double deltaFill = fill - PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction;
+                if (binding.WaterColumn != null) deltaFill = binding.WaterColumn.FilledOverlapFraction(fill);
                 double group1 = deltaFill * binding.Group1AbsorptionPerMPerFillFraction;
                 double group2 = deltaFill * binding.Group2AbsorptionPerMPerFillFraction;
                 // An inactive footprint remains canonical zero even when the compartment drains.
@@ -689,10 +710,12 @@ namespace ReactorSim.Core
                 normalizedFractions[zone] = baselineZonalPowerFractions[zone] / totalFraction;
             }
 
+            // Initial regional-response heuristic is independent of localized device
+            // strength; measured secant responses replace it during controller trials.
             double effectiveAbsorption =
-                PracticeLiquidZoneRrsIdentityV1.Group1AbsorptionPerMPerFillFraction *
+                0.0017640042499876617 *
                 PracticeLiquidZoneRrsIdentityV1.ResponseGroup1AbsorptionWeight +
-                PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction *
+                0.0007056016999950648 *
                 PracticeLiquidZoneRrsIdentityV1.ResponseGroup2AbsorptionWeight;
             if (!IsCanonicalPositive(effectiveAbsorption))
             {
