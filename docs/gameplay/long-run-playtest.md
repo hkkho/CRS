@@ -128,14 +128,11 @@ dotnet run --project tools/LongRunPlaytest -c Release -- --policy=reserve --days
 
 Other policies: `none`, `oldest`, `daily` (two orders/day). Options include `--seed`, `--threshold`, `--power`, `--days`, `--fuel`, `--pair`, and `--output`. Using `--days=30` consumes the normal browser factory with no horizon override. JSON summaries and move files are written beside half-hour JSONL telemetry. A significant speed difference makes the tool fail after saving the report.
 
-From `web/candu-playtest`, with its Playwright dependency installed:
-
-```powershell
-node scripts/long-run-playtest.mjs https://hkkho.github.io/CRS/ ../../tmp/longrun-reserve-pair.json ../../tmp/longrun-browser
-node scripts/benchmark-wasm.mjs https://hkkho.github.io/CRS/ --bridge=direct --label=longrun-hosted --warm-samples=0
-```
-
-Browser replay uses normal deployed commands and the 30-day shipped horizon. It batches advances to day/order boundaries to reduce transport overhead; Game still evaluates every underlying control tick and scheduled solve. It refuses native reports with added fuel. Its report contains full final power/burnup vectors and maximum differences over matching checkpoints. These tests replay actual WASM through the browser bridge; the native run supplies the order schedule.
+The earlier two-speed browser replay harness has been retired. Its source remains
+in Git history. Current browser releases use daily-turn acceptance and deterministic
+WASM reproduction; current 100-day campaigns use `tools/LongRunPlaytest` with
+`--pacing=daily-turn`. See [daily turns](daily-turn-mode.md) and the
+[v8 campaign](../../benchmarks/axial-marshak-v8-2026-10-10/README.md).
 
 ## Validation and limits
 

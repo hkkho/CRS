@@ -131,12 +131,10 @@ case, and `--fuel=2048` for the historical extended-stock comparison. Output
 stems match the campaign IDs in the measurement JSON. Matplotlib and NumPy
 are offline reporting dependencies only.
 
-To replay the normal main-game campaign through rebuilt WASM on a Pages preview:
-
-```powershell
-cd web/candu-playtest
-node scripts/long-run-playtest.mjs http://127.0.0.1:4176/CRS/ ../../tmp/longrun-maps/endless.json ../../tmp/endless-browser
-```
+The historical two-speed browser replay script has been retired; its source remains
+in Git history. Current web checks use `npm run smoke`, `npm run smoke:scales`
+and the deterministic WASM benchmark. Current daily campaigns are documented in
+[the v8 acceptance archive](../../benchmarks/axial-marshak-v8-2026-10-10/README.md).
 
 Measured on 2026-10-04 using the authored cycle190 power-limit pack. Native
 telemetry remains in generated `tmp/longrun-maps/*.jsonl` files; standalone

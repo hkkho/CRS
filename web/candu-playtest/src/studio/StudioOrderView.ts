@@ -2,7 +2,7 @@ import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
 import type { RefuelDraft } from "../commandState";
 import { patchMarkup } from "./domPatch";
 import { bundleLimit } from "./powerReadings";
-import { gridCoordinateLabel } from "../projection";
+import { gridCoordinateLabel } from "../channelCoordinates";
 import { adjusterPowerMarkers, liquidZonePowerMarkers, channelDeviceNote } from "./devicePresentation";
 import { readingRange, AXIAL_POWER_RANGE } from "./displayScales";
 

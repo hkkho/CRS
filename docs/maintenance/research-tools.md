@@ -10,7 +10,7 @@ comparison, fixtures and replay. They are not alternate game products.
 | `LongRunPlaytest` | Authoritative bridge campaigns, including 100 daily turns and LZC-guided fuelling. |
 | `CpuSpatialBenchmark` | Exact serial/parallel numerical row comparisons and native timings. Threaded browser hosting is not supported. |
 | `ReplayBookkeepingBenchmark` | Replay/session bookkeeping measurements. |
-| `Phase4ContractCorpus` | Regenerate/check the serialized browser response fixture; phase-era naming does not change its current protocol role. |
+| `BrowserWireFixtures` | Regenerate the intentional compatibility wire fixture; Browser/frontend tests check its bytes. |
 
 Run native tools with `dotnet run --project tools/<directory> -c Release -- <arguments>`.
 Use a report's recorded command; old-pack results are historical comparisons.
@@ -24,6 +24,7 @@ cd web/candu-playtest
 npm run build:pages
 npm run smoke -- http://127.0.0.1:4173/CRS/
 npm run smoke:scales -- http://127.0.0.1:4173/CRS/
+npm run smoke:accessibility -- http://127.0.0.1:4173/CRS/
 npm run smoke:saves -- http://127.0.0.1:4173/CRS/
 npm run benchmark -- --bridge=direct --label=local --warm-samples=1
 ```

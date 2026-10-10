@@ -1,6 +1,6 @@
 import type { CanduCommand, CanduCommandResponse, CanduSnapshot, DayProgress } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
-import { gridCoordinateLabel } from "../projection";
+import { gridCoordinateLabel } from "../channelCoordinates";
 
 /** Animation follows actual work and authoritative outcomes; it never drives the clock. */
 export class DayCalculationView {

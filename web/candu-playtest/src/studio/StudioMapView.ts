@@ -1,5 +1,5 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
-import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../projection";
+import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../channelCoordinates";
 import { bundleLimit, channelLimit, channelColorMinimum, bundleColorMinimum, channelWatts, powerColor, rippleColor, type MapMode } from "./powerReadings";
 import { setAttribute } from "./domPatch";
 import { patchMarkup } from "./domPatch";

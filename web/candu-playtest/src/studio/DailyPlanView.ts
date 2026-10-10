@@ -1,5 +1,5 @@
 import { isRunTerminal, type DayProgress, type CanduSnapshot } from "../protocol";
-import { gridCoordinateLabel } from "../projection";
+import { gridCoordinateLabel } from "../channelCoordinates";
 
 /** Draft and report presentation. Orders and reactor decisions remain in Game. */
 export class DailyPlanView {

@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { verifyDailyTurns } from './daily-turn-smoke.mjs';
 import { verifyDailyFailure } from './daily-failure-smoke.mjs';
+import { verifyRecovery } from './recovery-smoke.mjs';
 
 const url = process.argv[2] ?? process.env.PLAYTEST_URL;
 if (!url) throw new Error('Pass the production preview or Pages URL.');
@@ -30,8 +31,9 @@ try {
   await page.getByRole('button', { name: 'Begin shift', exact: true }).click();
   const daily = await verifyDailyTurns(page);
   const loss = await verifyDailyFailure(browser, url);
+  const recovery = await verifyRecovery(browser, url);
   if (errors.length) throw new Error(errors.join(' | '));
-  const result = { status: 'passed', url, bridge: 'authoritative-csharp-wasm', buildInfo, daily, loss, errors };
+  const result = { status: 'passed', url, bridge: 'authoritative-csharp-wasm', buildInfo, daily, loss, recovery, errors };
   if (process.env.PLAYTEST_CAPTURE_DIR) await writeFile(`${process.env.PLAYTEST_CAPTURE_DIR}/daily-acceptance.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } finally { await browser.close(); }

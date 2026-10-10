@@ -87,11 +87,12 @@ the scheduler can dispatch while a request is pending; it never drives physics.
 The scheduler remains one in-flight advance and one pending 100ms quantum, with
 no catch-up and no tolerance changes.
 
-`scripts/benchmark-pace.mjs` runs the **production worker asset** through the real
-parser/materializer, 20 1x ticks (including scheduled spatial solves), six each
+The retired real-time pace harness measured the **production worker asset** through the real
+parser/materializer: 20 1x ticks (including scheduled spatial solves), six each
 at 10x/60x, three refuels and three explicit full shape solves. The final run had
 no concurrent builds, test suites or other browser benchmarks. All commands
-accepted. Milliseconds, local machine only:
+accepted. Its source remains in Git history; current daily latency is measured
+through daily acceptance. Milliseconds, local machine only:
 
 | Operation | Samples | Total median / maximum | WASM median | Parse/materialize median | Queue/transfer/encoding remainder median | Review budget |
 | --- | --- | --- | --- | --- | --- | --- |

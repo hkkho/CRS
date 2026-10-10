@@ -15,6 +15,9 @@ safety claims are outside scope.
 - BrowserHost owns the single-threaded .NET browser-WASM executable.
 - The frontend owns transport, input, history and DOM/SVG presentation.
 
+TypeScript builds reject unused local code, imports and parameters. Keep browser
+helpers limited to the active Studio; compile/test tools are development dependencies.
+
 The client consumes authoritative snapshots and fails closed without WASM. Do not
 duplicate reactor rules in TypeScript. Preserve units, group ordering, channel-major
 indexing, deterministic digests and failure semantics. See [architecture](architecture.md)

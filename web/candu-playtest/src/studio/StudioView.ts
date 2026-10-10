@@ -4,7 +4,7 @@ import type { SessionUpdate } from "../sessionController";
 import type { CanduChannelSnapshot, CanduCommand, CanduSnapshot, PlaybackModeId } from "../protocol";
 import { canIssueRefuel, createRefuelDraft, formatRefuelDirection, toRefuelRequest, type RefuelDraft } from "../commandState";
 import { highestBurnupChannel, isChannelRefuellable, channelHeadroom, operationGuidance } from "../gameplayPresentation";
-import { findAdjacentChannelIndex, gridCoordinateLabel } from "../projection";
+import { findAdjacentChannelIndex, gridCoordinateLabel } from "../channelCoordinates";
 import { formatEffectiveK, formatLiquidZoneRegion, formatSimulationTime, formatClockDuration, getOverallStatus, getPowerLabel, getTiltLabel } from "../visuals";
 import "./studio.css";
 import type { PaceReading } from '../observedPace';

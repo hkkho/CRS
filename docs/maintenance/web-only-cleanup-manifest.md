@@ -32,3 +32,21 @@ Generated build trees and local study uploads remain ignored. Do not introduce
 another game client, runtime solver dependency or phase-era work plan. Keep new
 knowledge near the physics/calibration it explains and new production behavior in
 the existing web/shared layers.
+
+## Follow-up browser/tool cleanup
+
+Removed sixteen unused canvas-rendering/formatting functions, three unused layout
+types and an unused protocol guard. Coordinate labels and keyboard navigation now
+live in `channelCoordinates.ts`; active Studio formatting is retained. TypeScript
+rejects unused locals/imports/parameters, and build/test packages are classified as
+development dependencies without changing versions.
+
+Retired two real-time-only browser benchmark scripts that no longer work with the
+daily default. Their useful measurements remain in the physics/performance notes.
+Renamed the maintained fixture generator to `BrowserWireFixtures` and removed its
+unused historical hash-corpus mode; the six compatibility operations are retained.
+Reviewed working sources are byte-verified in `tmp/web-cleanup-next/working-sources.zip`.
+
+Daily acceptance now includes unavailable-WASM recovery. Keyboard accessibility
+checks use the normal daily loop, including frozen drafts, one day, reduced motion,
+modal focus/return, quiet announcements, narrow layouts and zoom-equivalent width.

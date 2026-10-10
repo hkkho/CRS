@@ -1,126 +1,21 @@
-import type { CanduChannelSnapshot, CanduSnapshot, RefuellingDirection } from "./protocol";
-
-const HEAT_STOPS = [
-  { at: 0, color: [37, 99, 235] },
-  { at: 0.25, color: [34, 211, 238] },
-  { at: 0.5, color: [250, 224, 71] },
-  { at: 0.75, color: [249, 115, 22] },
-  { at: 1, color: [220, 38, 38] },
-] as const;
-
-export function getHeatColor(powerFraction: number): string {
-  // The authored core peaks near 2.5 times its mean; keep that range distinguishable.
-  const normalized = clamp((powerFraction - 0.4) / 2.1, 0, 1);
-  for (let index = 1; index < HEAT_STOPS.length; index += 1) {
-    const stop = HEAT_STOPS[index];
-    if (normalized <= stop.at) {
-      const previous = HEAT_STOPS[index - 1];
-      const amount = (normalized - previous.at) / (stop.at - previous.at);
-      const channels = previous.color.map((value, channelIndex) =>
-        Math.round(value + (stop.color[channelIndex] - value) * amount),
-      );
-      return `rgb(${channels.join(", ")})`;
-    }
-  }
-  const finalColor = HEAT_STOPS[HEAT_STOPS.length - 1].color;
-  return `rgb(${finalColor.join(", ")})`;
-}
+import type { CanduSnapshot } from "./protocol";
 
 export function getPowerLabel(powerFraction: number): string {
   return `${(powerFraction * 100).toFixed(1)}%`;
-}
-
-export function formatPowerWatts(powerWatts: number): string {
-  const magnitude = Math.abs(powerWatts);
-  if (magnitude >= 1e9) {
-    return `${(powerWatts / 1e9).toFixed(3)} GW`;
-  }
-  if (magnitude >= 1e6) {
-    return `${(powerWatts / 1e6).toFixed(1)} MW`;
-  }
-  if (magnitude >= 1e3) {
-    return `${(powerWatts / 1e3).toFixed(1)} kW`;
-  }
-  return `${powerWatts.toFixed(0)} W`;
-}
-
-export function formatBundleBurnup(burnupMwdPerKg: number): string {
-  if (!Number.isFinite(burnupMwdPerKg)) {
-    return "—";
-  }
-  const magnitude = Math.abs(burnupMwdPerKg);
-  if (magnitude >= 1000) {
-    return `${(burnupMwdPerKg / 1000).toFixed(1)}k`;
-  }
-  if (magnitude >= 100) {
-    return burnupMwdPerKg.toFixed(0);
-  }
-  return burnupMwdPerKg.toFixed(1);
-}
-
-export function formatReactivity(reactivity: number): string {
-  if (!Number.isFinite(reactivity)) {
-    return "—";
-  }
-  const milliK = reactivity * 1000;
-  return `${milliK >= 0 ? "+" : ""}${milliK.toFixed(3)} mk`;
 }
 
 export function formatEffectiveK(effectiveK: number): string {
   return Number.isFinite(effectiveK) ? effectiveK.toFixed(6) : "—";
 }
 
-/** Names for the shared simulation's traditional CANDU 6 region order. */
 export function formatLiquidZoneRegion(logicalZoneId: number): string {
   const regions = ["lower left", "upper left", "lower centre", "centre", "upper centre", "lower right", "upper right"];
   return `Z${logicalZoneId + 1} · End ${logicalZoneId < 7 ? "A" : "B"} ${regions[logicalZoneId % 7] ?? "unknown"}`;
 }
 
-export function formatSolveResidual(residual: number): string {
-  if (!Number.isFinite(residual)) {
-    return "—";
-  }
-  if (residual === 0) {
-    return "0";
-  }
-  return residual.toExponential(1).replace("e+", "e");
-}
-
-export function formatSolveHealth(snapshot: Pick<CanduSnapshot, "physics" | "diagnostics">): string {
-  const convergence = snapshot.diagnostics.convergence;
-  const state = convergence.state !== "unavailable"
-    ? convergence.state
-    : snapshot.physics.solveState || "unavailable";
-  const iterations = Number.isFinite(snapshot.physics.solverIterationCount) && snapshot.physics.solverIterationCount > 0
-    ? snapshot.physics.solverIterationCount
-    : convergence.iterations;
-  const residual = Number.isFinite(snapshot.physics.solverResidualRelativeInfinity)
-    ? snapshot.physics.solverResidualRelativeInfinity
-    : convergence.residual;
-  return `${state.toUpperCase()} · ${Math.max(0, Math.round(iterations))} IT · RES ${formatSolveResidual(residual)}`;
-}
-
 export function getTiltLabel(tiltFraction: number): string {
   const roundedPercent = Number((tiltFraction * 100).toFixed(2));
   return `${roundedPercent >= 0 ? "+" : ""}${roundedPercent.toFixed(2)}%`;
-}
-
-export function getFlowArrow(direction: RefuellingDirection): string {
-  return direction === "toward-end-b" ? "→" : "←";
-}
-
-export function getFlowDirectionLabel(direction: RefuellingDirection): string {
-  return direction === "toward-end-b" ? "END A → END B" : "END B → END A";
-}
-
-export function getChannelBand(channel: CanduChannelSnapshot): "low" | "nominal" | "high" {
-  if (channel.localPowerFraction < 0.84) {
-    return "low";
-  }
-  if (channel.localPowerFraction > 1.08) {
-    return "high";
-  }
-  return "nominal";
 }
 
 export function getOverallStatus(snapshot: CanduSnapshot): "stable" | "watch" | "attention" {
@@ -149,12 +44,4 @@ export function formatClockDuration(seconds: number): string {
   const hours = Math.floor(safeSeconds / 3600);
   const minutes = Math.floor((safeSeconds % 3600) / 60);
   return `${String(hours).padStart(2, "0")}h ${String(minutes).padStart(2, "0")}m`;
-}
-
-export function formatSignedNumber(value: number, digits = 2): string {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(digits)}`;
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
 }

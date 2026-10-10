@@ -19,12 +19,11 @@ parser/materializer and asserts replacement/omission/failure/reset semantics.
 Regenerate intentionally after reviewing protocol changes:
 
 ```
-dotnet run --project tools/Phase4ContractCorpus -- --fixtures tests/Fixtures/playtest-v2.json.gz
+dotnet run --project tools/BrowserWireFixtures -- --fixtures tests/Fixtures/playtest-v2.json.gz
 ```
 
-Do not regenerate to conceal drift. `tools/Phase4ContractCorpus` also records the
-two-seed characterization corpus (24 responses) to an output path. The checked wire fixture is the current protocol acceptance baseline. Historical
-pre-refactor hashes are available in Git history.
+Do not regenerate to conceal drift. The checked wire fixture is the current
+protocol acceptance baseline; historical characterization hashes remain in Git history.
 
 The v3 reactivity pack, three-minute LZC cadence identity and named refuelling
 messages are reflected in the exact serialized responses.

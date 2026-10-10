@@ -1,50 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
-  formatBundleBurnup,
   formatEffectiveK,
   formatLiquidZoneRegion,
-  formatPowerWatts,
-  formatReactivity,
-  formatSolveHealth,
-  formatSolveResidual,
   getTiltLabel,
-  getFlowArrow,
-  getFlowDirectionLabel,
-  getHeatColor,
   getOverallStatus,
 } from "./visuals";
 import type { CanduSnapshot } from "./protocol";
 
-describe("tactical playtest display helpers", () => {
-  it("keeps the heat scale ordered from cool blue to hot red", () => {
-    expect(getHeatColor(0.4)).toBe("rgb(37, 99, 235)");
-    expect(getHeatColor(2.5)).toBe("rgb(220, 38, 38)");
-    expect(getHeatColor(0.96)).not.toBe(getHeatColor(1.12));
-  });
-
-  it("labels fuelling direction and physical display units", () => {
-    expect(getFlowArrow("toward-end-b")).toBe("→");
-    expect(getFlowDirectionLabel("toward-end-a")).toBe("END B → END A");
-    expect(formatPowerWatts(2.5e6)).toBe("2.5 MW");
-    expect(formatBundleBurnup(5.99)).toBe("6.0");
-    expect(formatBundleBurnup(1250)).toBe("1.3k");
+describe("Studio display helpers", () => {
+  it("formats physical readings", () => {
     expect(getTiltLabel(-0.000000001)).toBe("+0.00%");
     expect(getTiltLabel(-0.0513)).toBe("-5.13%");
-    expect(formatReactivity(-0.0012)).toBe("-1.200 mk");
     expect(formatEffectiveK(1.0023456)).toBe("1.002346");
     expect(formatLiquidZoneRegion(0)).toBe("Z1 · End A lower left");
     expect(formatLiquidZoneRegion(4)).toBe("Z5 · End A upper centre");
     expect(formatLiquidZoneRegion(13)).toBe("Z14 · End B upper right");
-    expect(formatSolveResidual(0.0000123)).toBe("1.2e-5");
-  });
-
-  it("summarizes solve health without exposing verbose solver identity", () => {
-    const snapshot = {
-      physics: { solverIterationCount: 14, solverResidualRelativeInfinity: 0.00000042, solveState: "converged" },
-      diagnostics: { convergence: { state: "converged", iterations: 12, residual: 0.2 } },
-    } as CanduSnapshot;
-
-    expect(formatSolveHealth(snapshot)).toBe("CONVERGED · 14 IT · RES 4.2e-7");
   });
 
   it("uses the same operating-envelope thresholds as the command deck", () => {

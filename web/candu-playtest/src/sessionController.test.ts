@@ -5,7 +5,6 @@ import {
   type CanduCommand,
   type CanduCommandResponse,
   type CanduDispatchOptions,
-  type CanduPlaytestBridge,
   type CanduSnapshot,
 } from "./protocol";
 import type { CanduPlaytestBridgeLifecycle } from "./bridge";

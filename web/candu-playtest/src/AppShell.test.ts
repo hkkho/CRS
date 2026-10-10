@@ -1,4 +1,3 @@
-import type { CanduCommandResponse } from "./protocol";
 import { afterEach, expect, it, vi } from "vitest";
 import { AppShell } from "./AppShell";
 import { createSnapshot, createShift } from "./testSnapshot";

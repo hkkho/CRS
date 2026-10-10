@@ -12,7 +12,9 @@ Debug default for local use and accept `-Configuration Release` for optimized ch
 The Pages build consumes the validated WASM artifact, builds with `/CRS/` as its
 base URL, and runs the production browser smoke test and deterministic reproduction
 matrix before publishing. Only pushes to `main` and manual runs on `main` publish;
-pull requests validate without deployment. The published game is smoke-tested and
+pull requests validate without deployment. Default daily acceptance includes unavailable-WASM recovery; predeployment checks
+also cover keyboard-only planning/day execution, focus return, reduced motion,
+200% zoom-equivalent and narrow layouts. The published game is smoke-tested and
 benchmarked with the expected Git commit identity.
 
 Vercel deployment steps and secrets are no longer used. The two `vercel.json`
@@ -36,6 +38,7 @@ In another terminal:
 ```powershell
 npm run smoke -- http://127.0.0.1:4175/CRS/
 npm run smoke:scales -- http://127.0.0.1:4175/CRS/
+npm run smoke:accessibility -- http://127.0.0.1:4175/CRS/
 npm run smoke:saves -- http://127.0.0.1:4175/CRS/
 node scripts/benchmark-wasm.mjs http://127.0.0.1:4175/CRS/ --bridge=direct --label=pages-local --warm-samples=1
 ```

@@ -24,6 +24,10 @@ export async function verifyRecovery(browser, url) {
     ]);
     await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"), undefined, { timeout: 120_000 });
     if (await recovery.isVisible()) throw new Error("Recovery remained visible after a successful reload.");
+    const pacing = await page.locator("#status-mirror").getAttribute("data-pacing");
+    const expectedPacing = new URL(url).searchParams.get("pacing") === "real-time" ? "real-time" : "daily-turn";
+    if (pacing !== expectedPacing) throw new Error("Reload changed the selected pacing mode.");
+    return { status: "passed", action: "reload after unavailable WASM", pacing };
   } finally {
     await context.close();
   }

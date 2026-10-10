@@ -580,13 +580,6 @@ function hasFiniteNumberFields(
   return keys.every((key) => hasOwn(value, key) && isFiniteNumber(value[key]));
 }
 
-function hasIntegerFields(
-  value: Record<string, unknown>,
-  keys: readonly string[],
-): boolean {
-  return keys.every((key) => hasOwn(value, key) && isInteger(value[key]));
-}
-
 function hasNonNegativeIntegerFields(
   value: Record<string, unknown>,
   keys: readonly string[],

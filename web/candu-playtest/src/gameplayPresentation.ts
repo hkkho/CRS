@@ -1,7 +1,7 @@
 import { isRunTerminal } from "./protocol";
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 import { getPowerLabel, getTiltLabel } from "./visuals";
-import { gridCoordinateLabel } from "./projection";
+import { gridCoordinateLabel } from "./channelCoordinates";
 
 /** Inspection aid only: average burnup is neither residence age nor a predicted response. */
 export function isChannelRefuellable(channel: CanduChannelSnapshot | undefined): boolean {
