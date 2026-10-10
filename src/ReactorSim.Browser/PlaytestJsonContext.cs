@@ -8,6 +8,7 @@ namespace ReactorSim.Browser
         GenerationMode = JsonSourceGenerationMode.Metadata,
         PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
         WriteIndented = false)]
+    [JsonSerializable(typeof(DailyDispatchProgressDto))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(BridgeCapabilitiesDto))]

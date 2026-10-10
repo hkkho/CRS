@@ -7,7 +7,6 @@
 
   <ItemGroup>
     <None Include="../Fixtures/playtest-v2.json.gz" Link="Fixtures/playtest-v2.json.gz" CopyToOutputDirectory="PreserveNewest" />
-    <Compile Include="../../src/ReactorSim.BrowserHost/SerializedCommandQueue.cs" Link="Host/SerializedCommandQueue.cs" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="xunit.v3" Version="3.2.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">

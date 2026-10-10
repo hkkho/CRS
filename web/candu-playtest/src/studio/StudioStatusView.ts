@@ -11,13 +11,13 @@ export class StudioStatusView {
   update(snapshot: CanduSnapshot, ready: boolean, pending: boolean, detail: string, message: string,
     pace: PaceReading | undefined, draft: RefuelDraft | null, selected: number, mapMode: MapMode, historical = false): void {
     const channel = snapshot.core.channels.find(channel => channel.channelIndex === selected);
-    this.text("feedback", historical ? "Recorded observation · Return to live to issue orders." : !ready ? detail : pending ? "Reactor is solving your order…" : message);
-    this.text('pace', historical ? "Historical observation" : `Requested ${pace?.requested ?? (snapshot.isPaused ? 'Paused' : snapshot.playbackModeId.replace('x', '×'))} · Observed ${pace?.simulatedMinutesPerSecond == null ? '—' : `${pace.simulatedMinutesPerSecond.toFixed(1)} sim min/s`}`);
+    this.text("feedback", historical ? "Recorded observation · Return to live to issue orders." : !ready ? detail : pending ? snapshot.pacingMode === "daily-turn" ? "Advancing day…" : "Reactor is solving your order…" : message);
+    this.text('pace', historical ? "Historical observation" : snapshot.pacingMode === "daily-turn" ? "Daily turns · inspect freely, then advance 1 day" : `Requested ${pace?.requested ?? (snapshot.isPaused ? 'Paused' : snapshot.playbackModeId.replace('x', '×'))} · Observed ${pace?.simulatedMinutesPerSecond == null ? '—' : `${pace.simulatedMinutesPerSecond.toFixed(1)} sim min/s`}`);
     setAttribute(this.element, "aria-busy", String(pending));
     this.element.querySelectorAll<HTMLButtonElement>("button[data-action]").forEach(button => {
       const action = button.dataset.action;
       button.disabled = action !== "map" && (!ready || pending);
-      if (historical && ["refuel", "pause", "speed", "target", "step"].includes(action ?? "")) button.disabled = true;
+      if (historical && ["refuel", "pause", "speed", "target", "step", "commit-day", "clear-plan", "remove-plan"].includes(action ?? "")) button.disabled = true;
       if (action === "refuel") button.disabled ||= isRunTerminal(snapshot) || !channel;
       if (action === "challenge") button.disabled ||= !snapshot.shift;
       if (action === "step") button.disabled ||= !snapshot.isPaused || isRunTerminal(snapshot);

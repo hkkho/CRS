@@ -108,6 +108,10 @@ namespace ReactorSim.Browser
 
         public bool IsPaused { get; set; }
 
+        public string? PacingMode { get; set; }
+        public uint? CompletedDays { get; set; }
+        public DailyTurnResult? LastDayResult { get; set; }
+
         public string RunStatus { get; set; } = "running";
 
         public string RunEndReason { get; set; } = string.Empty;
@@ -197,6 +201,10 @@ namespace ReactorSim.Browser
         public double ScoreDelta { get; set; }
 
         public bool IsPaused { get; set; }
+
+        public string? PacingMode { get; set; }
+        public uint? CompletedDays { get; set; }
+        public DailyTurnResult? LastDayResult { get; set; }
 
         public string RunStatus { get; set; } = "running";
 

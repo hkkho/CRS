@@ -4,7 +4,8 @@ const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = []; page.on('pageerror', error => errors.push(error.message));
-  await page.goto(process.argv[2] ?? 'http://127.0.0.1:4173');
+  const legacyUrl = new URL(process.argv[2] ?? 'http://127.0.0.1:4173'); legacyUrl.searchParams.set('pacing', 'real-time');
+  await page.goto(legacyUrl.toString());
   await page.waitForFunction(() => document.querySelector('[data-action="begin"]')?.getAttribute('aria-disabled') === 'false');
   await page.locator('[data-action="begin"]').click();
   const studio = page.locator('.reactor-studio');

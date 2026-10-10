@@ -45,7 +45,7 @@ try {
     });
     try {
       await ready;
-      const initial = JSON.parse((await request({ type: "initialize", mode: "play" })).resultJson);
+      const initial = JSON.parse((await request({ type: "initialize", mode: "play", pacingMode: "real-time" })).resultJson);
       if (!initial.accepted || !initial.snapshot.xenon.hasCoupling) throw new Error("Live poison coupling is unavailable.");
       let sequence = initial.sequence;
       let finalStateDigest, finalReplayDigest;

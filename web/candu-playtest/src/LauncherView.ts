@@ -18,12 +18,12 @@ export class LauncherView {
     this.element.innerHTML = `<div class="launcher-shell">
       <p class="workspace-kicker">CANDU / ON-POWER REFUELLING</p>
       <h1>Keep the core productive.</h1>
-      <p class="launcher-intro">Read the fuel. Choose a channel. Refuel at power and keep room in the regulating zones.</p>
+      <p class="launcher-intro">Read the fuel. Choose today’s channels. Refuel at power, then advance one day.</p>
       <p>Power limits: each channel at or below 7,300 kW and every bundle at or below 935 kW.</p>
       <div class="launcher-grid"><section><h2>Your next shift</h2>
         <p data-field="objective"></p><p data-field="connection"></p>
         <button data-action="begin" class="workspace-primary">Begin shift</button>
-        <p>No login required. Use <strong>Saves · Stats · Login</strong> for optional GitHub login, saved runs and the endless leaderboard.</p>
+        <p>Daily turns are the default. Time stays frozen while you plan. Each selected channel uses eight fresh bundles.</p><p>No login required. Use <strong>Saves · Stats · Login</strong> for optional GitHub login, saved runs and the endless leaderboard.</p>
         <p>Use Tab to reach controls and Enter or Space to activate. Studio includes a keyboard channel map, fuel watchlist and history charts.</p>
       </section><section><h2>Choose a starting core</h2>
         <form><label>Core seed <input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label>

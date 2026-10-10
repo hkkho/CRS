@@ -1,6 +1,6 @@
 # CANDU Refuelling Game
 
-This repository is the source for the web-first CANDU on-power refuelling game
+This repository is the source for the web CANDU on-power refuelling game
 deployed from `web/candu-playtest` to [GitHub Pages](https://hkkho.github.io/CRS/).
 
 Pushes to `main` deploy the validated shared WASM simulation;
@@ -12,41 +12,49 @@ score by keeping channel powers close to their time-average reference. Reactor S
 one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
-In Reactor Studio, use **Highest burnup** (`N`) to inspect a candidate and the
-map buttons to switch between power and burnup. Refuel (`R`) automatically inserts
-eight bundles with the selected channel’s flow. Adjacent channels have opposite
-flow directions. The power map runs from blue (low) through yellow to red (high).
-A shift ends
-when average LZC level falls below 10% or exceeds 90%, or absolute global tilt
-exceeds 20%, any channel exceeds 7,300 kW thermal, or any bundle exceeds
-935 kW thermal. Exact power-limit equality is allowed. The response card compares local power, tilt,
-average LZC level, fuel stock, and score; the zone strip shows all fourteen RRS fills.
-Score measures RMS deviation from the fixed channel targets, earning up to one
-point per simulated hour. Refuelling affects later score through its power response.
-The [scoring policy](docs/gameplay/score-balance.md) and
-[reference derivation](docs/physics/channel-power-reference.md) explain the 2,064 MW
-thermal profile with 21 nominal adjusters. `Space` pauses/resumes; **New shift** resets the run.
+Reactor Studio defaults to **daily turns**. Time stays frozen while you inspect
+power/burnup maps, bundle profiles, the fuel watchlist and zone levels. Use
+**Highest burnup** (`N`) to inspect a candidate, then **Add to today's fuel plan**
+(`R`) to add or remove that channel. Each chosen channel receives eight fresh
+bundles with its flow. Adjacent channels have opposite flow directions.
 
-The launcher has native **Begin shift**, seed and objective controls. Use Tab and
-Enter/Space throughout play. The native interface supports a 320px-wide layout;
-continuous telemetry stays outside screen-reader announcements.
+Review or clear today's list, then select **Refuel & advance 1 day**. Orders execute
+in displayed channel order before the shared simulation advances 24 hours.
+**Advance 1 day without refuelling** is also valid. An animated waiting screen follows the calculation and then flashes success or
+failure. A surviving day shows earned points and total score. The daily report retains every
+fuel movement, bundle identities, discharge burnup, fuel consumed, energy,
+score and ending reason. Limits are checked after each fuel move and at the day
+boundary. A violating fuel move stops remaining orders; a day-end loss commits
+the completed one-day update. Invalid plans or numerical failures consume no fuel or time.
 
-**Reactor Studio** is the primary game interface with a CRT phosphor terminal
-layout, square channel cells, fuel watchlist, axial power/burnup line graphs, and native
-keyboard-accessible controls. **Begin shift** opens Studio with an automatic eight-bundle order.
-Resume to apply power targets and pause to step time. The native launcher and
-Studio use native DOM/SVG presentation. The clock
-shows requested speed and observed simulation minutes per real second, including
-solver waits. History keeps all observations for inspection while reducing drawn
-paths. [Browser measurements and budgets](docs/performance/browser-phase3.md)
-record the startup/rendering improvements and their limits.
+The default **Free practice** run is endless with unlimited fresh fuel. The
+optional **One-day challenge** uses the same daily controls and existing finite
+fuel budget: discharge at least eight bundles at 6 MWd/kg or above and finish
+the day within the operating limits to earn **Efficient refueller**.
+**New shift** draws a new aged-core seed; retry preserves the seed and objective.
 
-The main **Free practice** game runs endlessly with unlimited fresh fuel. Studio
-tracks elapsed days, bundles consumed, energy and score. Choose
-**One-day challenge** for a paused, 24-hour run: discharge at least eight bundles
-at 6 MWd/kg or above and reach the end with average LZC level between 10% and 90%
-and global tilt within ±20% to earn the **Efficient refueller** badge. **Free practice** returns to the endless main game. No mandatory
-scripted moves are added.
+A run ends below 10% or above 90% average LZC level, beyond ±20% global tilt,
+above 7,300 kW/channel or above 935 kW/bundle. Exact equality is allowed. The
+power map runs from blue through yellow to red. Scoring measures RMS deviation
+from fixed channel references, earning up to one point per simulated hour.
+Refuelling affects later score through its power response. See the
+[scoring policy](docs/gameplay/score-balance.md),
+[reference derivation](docs/physics/channel-power-reference.md) and
+[daily-turn contract](docs/gameplay/daily-turn-mode.md).
+
+The native launcher and Studio support keyboard operation, a 320px layout and
+quiet operation announcements. History records complete day-boundary observations;
+return to live before issuing orders. Version-2 saves include daily pacing and
+the unfinished fuel plan; legacy version-1 saves replay in real-time mode.
+Apply the new [cloud save migration](supabase/migrations/20261009232415_daily_turn_saves.sql)
+to an existing Supabase deployment before uploading version-2 saves.
+
+For developer comparisons, `?pacing=real-time` explicitly starts the retained
+real-time loop with pause/resume, accelerated speeds and power-target controls.
+Normal new test runs use one large 24-hour step: update burnup and poison once
+using the post-refuelling power/flux, then solve equilibrium and LZC once at the
+next day boundary. Limits are checked after fuel moves and at the day end.
+Real-time developer pacing retains its three-minute integration cadence.
 
 The shift report shows the ending reason, thermal energy and estimated electrical
 energy delivered, fresh fuel consumed, useful discharged bundles and cumulative
@@ -65,6 +73,8 @@ The tabs show simulation-time line graphs for channel/bundle power peaks,
 thermal/electrical output, discharged burnup, all fourteen zone levels and their
 core mean, axial tilt, Keff/reactivity, average LZC level, fuel stock and score. Hover a graph
 or use the sample slider to read values, filter its time window, and toggle traces.
+Benchmark-based color floors and zoomed graph bounds make day-to-day changes
+visible. Axes expand for outliers, and off-scale operating limits stay labelled.
 History retains up to 4,096 observations in this browser session and clears on
 **New shift**. Discharge readings come from confirmed shared-simulation fuel moves;
 they remain unavailable until fuel has been discharged.
@@ -74,9 +84,14 @@ regional xenon traces. Poison follows bundle history, changes the solved power
 shape, and affects zone fills. See the [gameplay model](docs/physics/iodine-xenon-gameplay.md)
 for the analytic update and authored calibration. The channel inspector plots
 per-bundle iodine and xenon in End A to End B order. Fresh bundles enter with
-zero of both; retained bundles carry their existing inventories. Pausing freezes
-these values; advancing simulation time builds poison in fresh fuel.
+zero of both; retained bundles carry their existing inventories. Daily planning freezes
+these values; advancing a day builds poison in fresh fuel.
 
+The current [v8 axial boundary](docs/physics/axial-marshak-v8.md) uses zero incoming
+partial current at both reactor ends, with refitted criticality and device worths.
+End-bundle power falls sharply; daily operation still uses one large 24-hour step.
+The [100-day verification](benchmarks/axial-marshak-v8-2026-10-10/README.md) records
+the changed fuelling demand and a successful LZC-guided player policy.
 The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
 The [literature-guided fuel calibration](docs/physics/literature-geometry-v4.md) uses
@@ -86,8 +101,8 @@ and the [21 fixed adjusters](docs/physics/adjusters-v5.md),
 17 mk total adjuster worth and 7 mk total liquid-zone worth.
 The [v7 tube model](docs/physics/lzc-tubes-v7.md) localizes LZC absorption and
 tracks bottom-up water filling, retaining those device worths after retuning.
-Group constants remain a surrogate, with a documented poison-basis limitation. LZC solves
-at every three-minute browser simulation step, including at accelerated speeds.
+Group constants remain a surrogate, with a documented poison-basis limitation. Daily LZC solves occur at the day boundary; the real-time developer mode
+retains its three-minute solve cadence.
 The historical [v3 attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
 ended early on channel-power limits; the [v4 rerun](benchmarks/fuelling-capability-2026-10-07/README.md)
 completed 100 days with both policies. These results predate the adjusters and corrected xenon reference.
@@ -141,8 +156,7 @@ ReactorSim.Core
 
 The exact active two-group equations are documented in
 [`docs/physics/active-two-group-solver.md`](docs/physics/active-two-group-solver.md).
-The current architecture is [docs/architecture.md](docs/architecture.md), and
-task status is [docs/REFACTORING_TASK_GUIDE.md](docs/REFACTORING_TASK_GUIDE.md).
+The current architecture is [docs/architecture.md](docs/architecture.md).
 The current product contract is
 [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md), and the active
 work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).

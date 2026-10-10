@@ -10,12 +10,13 @@
     "preview": "vite preview",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke.mjs",
+    "smoke": "node scripts/daily-acceptance-smoke.mjs",
+    "smoke:legacy": "node scripts/smoke.mjs",
+    "smoke:daily": "node scripts/daily-acceptance-smoke.mjs",
+    "smoke:scales": "node scripts/display-scales-smoke.mjs",
     "smoke:saves": "node scripts/saves-smoke.mjs",
     "benchmark": "node scripts/benchmark-wasm.mjs",
-    "benchmark:xenon": "node scripts/benchmark-xenon.mjs",
-    "benchmark:gpu": "node scripts/benchmark-gpu.mjs",
-    "test:gpu": "node --test scripts/gpu-prototype.test.mjs"
+    "benchmark:xenon": "node scripts/benchmark-xenon.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

@@ -22,13 +22,15 @@ namespace ReactorSim.Browser
         private const string TowardEndA = "toward-end-a";
         private const string TowardEndB = "toward-end-b";
 
+        private readonly string _defaultPacing;
+        public PlaytestRuntime(string defaultPacing = "daily-turn")
+        {
+            if (defaultPacing != "daily-turn" && defaultPacing != "real-time") throw new ArgumentOutOfRangeException(nameof(defaultPacing));
+            _defaultPacing = defaultPacing;
+        }
+
         private readonly object Sync = new object();
         private BridgeRuntime? _runtimeInstance;
-#if RESEARCH_EXPERIMENTS
-        private GpuCoupledSpatialFixtureV1? _coupledExperiment;
-        private BridgeRuntime? _coupledExperimentRuntime;
-        private string _coupledExperimentId = "";
-#endif
         private int _coreSnapshotMaterializationCount;
 
         internal int CoreSnapshotMaterializationCount
@@ -61,7 +63,7 @@ namespace ReactorSim.Browser
                     {
                         try
                         {
-                            _runtimeInstance = CreateRuntime(DefaultMode, "{}");
+                            _runtimeInstance = CreateRuntime(DefaultMode, "{}", pacing: _defaultPacing);
                         }
                         catch (Exception exception)
                         {
@@ -117,6 +119,7 @@ namespace ReactorSim.Browser
         {
             lock (Sync)
             {
+                if (_pendingDay != null) return SerializeError("initialize", PlaytestProtocolV2.Diagnostic("Browser.Day.Pending", "command", "Wait until the day finishes."), _runtime);
                 if (!TryParseObject(requestJson, out JsonDocument? document, out BridgeDiagnosticDto? parseFailure))
                 {
                     return SerializeError("initialize", parseFailure!, _runtime);
@@ -182,9 +185,11 @@ namespace ReactorSim.Browser
                     if (!TryReadShiftId(root, ShiftProgress.PracticeId, out string shiftId))
                         return SerializeError("initialize", PlaytestProtocolV2.Diagnostic(
                             "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
+                    if (!TryReadPacing(root, _defaultPacing, out string pacing))
+                        return SerializeError("initialize", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn or real-time."), _runtime);
                     BridgeRuntime candidate = CreateRuntime(
                         mode,
-                        requestJson ?? "{}", seed, shiftId);
+                        requestJson ?? "{}", seed, shiftId, pacing);
                     _runtime = candidate;
                     GameSessionSnapshot game = _runtime.PlaySession.Snapshot;
                     PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
@@ -234,6 +239,7 @@ namespace ReactorSim.Browser
 #endif
             lock (Sync)
             {
+                if (_pendingDay != null) return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic("Browser.Day.Pending", "command", "Wait until the day finishes."), _runtime);
                 if (!TryParseObject(commandJson, out JsonDocument? document, out BridgeDiagnosticDto? parseFailure))
                 {
                     return SerializeError("dispatch", parseFailure!, _runtime);
@@ -331,17 +337,19 @@ namespace ReactorSim.Browser
                     object? previousDetailedProjection = _runtime.LastDetailedProjection;
                     if (commandType == "reset")
                     {
-                        if (!TryReadSeed(payload, _runtime.PlaySession.Snapshot.Seed, out ulong resetSeed))
+                        if (!TryReadSeed(payload, previousGame.Seed, out ulong resetSeed))
                             return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic(
                                 "Browser.Seed.Invalid", "seed", "seed must be an integer from 0 to 4294967295."), _runtime);
-                        if (!TryReadShiftId(payload, _runtime.PlaySession.Snapshot.Shift.Id, out string shiftId))
+                        if (!TryReadShiftId(payload, previousGame.Shift.Id, out string shiftId))
                             return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic(
                                 "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
+                        if (!TryReadPacing(payload, previousGame.PacingMode, out string pacing))
+                            return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn or real-time."), _runtime);
                         string resetInitialization = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":" +
-                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"}";
+                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"" + (pacing == "daily-turn" ? ",\"pacingMode\":\"daily-turn\"" : "") + "}";
                         BridgeRuntime candidate = CreateRuntime(
                             _runtime.Mode,
-                            resetInitialization, resetSeed, shiftId);
+                            resetInitialization, resetSeed, shiftId, pacing);
                         _runtime = candidate;
                         _runtime.LastEvent = new PlaytestEventDto
                         {
@@ -359,7 +367,7 @@ namespace ReactorSim.Browser
                     }
                     else
                     {
-                        execution = DispatchPlay(_runtime, commandType, payload);
+                        execution = DispatchPlay(_runtime, commandType, payload, _preparedDayResult);
                     }
 
                     _runtime.Sequence = checked(_runtime.Sequence + 1);
@@ -498,6 +506,7 @@ namespace ReactorSim.Browser
                 "resume",
                 "queue-power-target",
                 "commit-refuel",
+                "commit-day",
                 "configure-cell",
                 "configure-zone-layout",
                 "solve",
@@ -511,12 +520,21 @@ namespace ReactorSim.Browser
             string mode,
             string initializationJson,
             ulong seed = PlaytestProtocolV2.PracticeSeed,
-            string shiftId = ShiftProgress.PracticeId)
+            string shiftId = ShiftProgress.PracticeId, string pacing = "daily-turn")
         {
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId == ShiftProgress.ChallengeId));
+                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId == ShiftProgress.ChallengeId, pacing == "daily-turn"));
+        }
+
+        private static bool TryReadPacing(JsonElement payload, string fallback, out string pacing)
+        {
+            pacing = fallback;
+            if (!PlaytestInput.TryGetProperty(payload, out JsonElement value, "pacingMode")) return true;
+            if (value.ValueKind != JsonValueKind.String) return false;
+            pacing = value.GetString()!;
+            return pacing == "daily-turn" || pacing == "real-time";
         }
 
         private static bool TryReadShiftId(JsonElement payload, string fallback, out string shiftId)
@@ -759,9 +777,26 @@ namespace ReactorSim.Browser
         private static BridgeCommandExecution DispatchPlay(
             BridgeRuntime runtime,
             string commandType,
-            JsonElement payload)
+            JsonElement payload, GameSessionCommandResult? preparedDay = null)
         {
             GameSession session = runtime.PlaySession;
+            if (commandType == "commit-day")
+            {
+                if (!TryGetUInt32(payload, out uint day, "expectedCompletedDays") ||
+                    !PlaytestInput.TryGetProperty(payload, out JsonElement channels, "channelIndices") ||
+                    channels.ValueKind != JsonValueKind.Array || channels.GetArrayLength() > 380)
+                    return InvalidCommand("Browser.Day.Invalid", "command", "Supply expectedCompletedDays and at most 380 channel indices.");
+                var indices = new List<uint>();
+                foreach (var entry in channels.EnumerateArray())
+                {
+                    if (entry.ValueKind != JsonValueKind.Number || !entry.TryGetUInt32(out uint channel))
+                        return InvalidCommand("Browser.Day.Channel.Invalid", "channelIndices", "Channel indices must be nonnegative integers.");
+                    indices.Add(channel);
+                }
+                return ToExecution(preparedDay ?? session.CommitDay(day, indices));
+            }
+            if (session.PacingMode == "daily-turn" && new[] { "advance", "step", "resume", "set-playback-mode", "queue-power-target", "commit-refuel" }.Contains(commandType))
+                return InvalidCommand("Browser.Day.Command.Unsupported", "type", "Choose today's channels and advance one day.");
             switch (commandType)
             {
                 case "advance":

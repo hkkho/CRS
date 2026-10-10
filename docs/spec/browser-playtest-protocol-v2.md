@@ -31,7 +31,7 @@ iodine/xenon evolves analytically between solves; prompt kinetics is out of scop
 The v1 `queue-tilt-target` browser command is removed because it only changed a
 legacy scenario scalar, not the spatial flux solve. Other v1 commands, core
 fields, compact patches, and failure semantics remain
-as described in [the v1 specification](browser-playtest-protocol-v1.md).
+as described in the v1 specification (historical v1 specification, retained in Git history).
 
 
 ## Replay recording and identity

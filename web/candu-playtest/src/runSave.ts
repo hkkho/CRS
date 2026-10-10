@@ -1,10 +1,13 @@
-import { isRunTerminal, type CanduCommand, type CanduCommandResponse, type CanduSnapshot } from './protocol';
+import { isRunTerminal, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type PacingMode } from './protocol';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const MAX_SAVE_COMMANDS = 100_000;
 export const MAX_SAVE_BYTES = 12_000_000;
 export interface RunSave {
-  version: 1;
+  version: 1 | 2;
+  pacingMode?: PacingMode;
+  dailyIntegrationId?: string;
+  draftChannels?: number[];
   id: string;
   savedAt: string;
   dataPackId: string;
@@ -29,12 +32,13 @@ export class RunJournal {
   private invalid = false;
   private cloudRevision?: number;
   private cloudOwnerId?: string;
+  get hasCommands(): boolean { return this.commands.length > 0; }
 
   record(command: CanduCommand, response: CanduCommandResponse, responseMode: 'full' | 'compact'): void {
     if (command.type === 'reset' && response.accepted) {
       this.clear();
       // Make an implicit reset seed/objective explicit for a newly initialized worker.
-      command = { type: 'reset', seed: response.snapshot.shift?.seed, shiftId: response.snapshot.shift?.id };
+      command = { type: 'reset', seed: response.snapshot.shift?.seed, shiftId: response.snapshot.shift?.id, ...(response.snapshot.pacingMode === "daily-turn" ? { pacingMode: "daily-turn" as const } : {}) };
     }
     if (command.type === 'configure-cell' || command.type === 'configure-zone-layout') this.invalid = true;
     if (this.commands.length >= MAX_SAVE_COMMANDS) { this.invalid = true; return; }
@@ -48,11 +52,12 @@ export class RunJournal {
     if (this.id === save.id) { this.cloudRevision = save.cloudRevision; this.cloudOwnerId = save.cloudOwnerId; }
   }
 
-  capture(snapshot: CanduSnapshot): RunSave {
+  capture(snapshot: CanduSnapshot, draftChannels: readonly number[] = []): RunSave {
     if (this.invalid || snapshot.provenance?.isModified) throw new Error('This run cannot be saved (modified run or replay limit reached).');
     if (!this.digest || !snapshot.shift || !snapshot.scorePolicyId) throw new Error('Play or pause the run before saving.');
     const save: RunSave = {
-      version: SAVE_VERSION, id: this.id, savedAt: new Date().toISOString(),
+      version: SAVE_VERSION, pacingMode: snapshot.pacingMode ?? "real-time", draftChannels: [...draftChannels], id: this.id, savedAt: new Date().toISOString(),
+      dailyIntegrationId: snapshot.pacingMode === "daily-turn" ? snapshot.physics.cadenceIdentity : undefined,
       dataPackId: snapshot.dataPackId, scorePolicyId: snapshot.scorePolicyId,
       seed: snapshot.shift.seed, shiftId: snapshot.shift.id, score: snapshot.scoreTotal,
       seconds: snapshot.simulationTimeSeconds, fuelConsumed: snapshot.shift.fuelConsumed,
@@ -73,12 +78,13 @@ function validCommand(value: unknown): value is CanduCommand {
   const c = value as Record<string, unknown>;
   const finite = (v: unknown, min: number, max: number) => typeof v === 'number' && Number.isFinite(v) && v >= min && v <= max;
   switch (c.type) {
+    case 'commit-day': return Number.isInteger(c.expectedCompletedDays) && finite(c.expectedCompletedDays, 0, 4294967295) && Array.isArray(c.channelIndices) && c.channelIndices.length <= 380 && c.channelIndices.every(i => Number.isInteger(i) && finite(i, 0, 379));
     case 'pause': case 'resume': case 'solve': return true;
     case 'advance': return finite(c.wallMilliseconds, 0, 60_000);
     case 'step': return finite(c.simulationSeconds, 0, 86_400);
     case 'set-playback-mode': return ['pause', '1x', '10x', '60x'].includes(String(c.modeId));
     case 'queue-power-target': return finite(c.targetFraction, 0, 2);
-    case 'reset': return finite(c.seed, 0, 4294967295) && Number.isInteger(c.seed) && ['free-practice', 'useful-fuel-day-v1'].includes(String(c.shiftId));
+    case 'reset': return finite(c.seed, 0, 4294967295) && Number.isInteger(c.seed) && ['free-practice', 'useful-fuel-day-v1'].includes(String(c.shiftId)) && (c.pacingMode === undefined || ['daily-turn', 'real-time'].includes(String(c.pacingMode)));
     case 'commit-refuel': {
       const r = c.request as Record<string, unknown> | undefined;
       return !!r && Number.isInteger(r.channelIndex) && finite(r.channelIndex, 0, 379) &&
@@ -91,7 +97,9 @@ function validCommand(value: unknown): value is CanduCommand {
 
 export function parseRunSave(input: unknown): RunSave {
   const s = input as RunSave | null;
-  if (!s || s.version !== SAVE_VERSION || typeof s.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(s.id) ||
+  if (!s || ![1, 2].includes(s.version) || typeof s.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(s.id) ||
+    (s.version === 2 && (!['daily-turn', 'real-time'].includes(s.pacingMode ?? '') || !Array.isArray(s.draftChannels) || s.draftChannels.length > 380 || new Set(s.draftChannels).size !== s.draftChannels.length || !s.draftChannels.every(i => Number.isInteger(i) && i >= 0 && i < 380))) ||
+    (s.dailyIntegrationId !== undefined && (typeof s.dailyIntegrationId !== 'string' || !s.dailyIntegrationId)) ||
     typeof s.savedAt !== 'string' || !Number.isFinite(Date.parse(s.savedAt)) ||
     typeof s.dataPackId !== 'string' || typeof s.scorePolicyId !== 'string' ||
     !Number.isInteger(s.seed) || s.seed < 0 || s.seed > 4294967295 ||

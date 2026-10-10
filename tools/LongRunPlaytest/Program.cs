@@ -5,6 +5,12 @@ using System.Text.Json;
 using ReactorSim.Core;
 using ReactorSim.Game;
 
+if (args.Contains("--pacing=daily-turn", StringComparer.Ordinal))
+{
+    DailyTurnsCampaign.Run(args);
+    return;
+}
+
 // Offline analysis of authoritative Game sessions. --endless uses the normal
 // browser factory; bounded historical comparisons override only the horizon
 // and, when explicitly requested, add debug stock. Physics stays Game-owned.
@@ -24,7 +30,7 @@ var timer = Stopwatch.StartNew();
 GameSession Create(string speed)
 {
     GameSession session;
-    if (endless) session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+    if (endless) session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
     else if (days == 30) session = PracticeGameSessionFactory.CreateBoundedBrowserPlaytest(seed);
     else
     {

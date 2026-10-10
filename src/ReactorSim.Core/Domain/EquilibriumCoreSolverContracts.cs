@@ -277,6 +277,11 @@ namespace ReactorSim.Core
             get { return _current; }
         }
 
+        /// <summary>Independent commit owner over the same immutable model and
+        /// accepted solve. Candidate commits on the fork cannot mutate this solver.</summary>
+        public EquilibriumCoreSolverV1 Fork()
+            => new EquilibriumCoreSolverV1(_spatialModel, _targetPowerWatts, _current.SpatialSolve);
+
         public FullCoreDiffusionSolveResultV1 CurrentSpatialSolve
         {
             get { return _current.SpatialSolve; }

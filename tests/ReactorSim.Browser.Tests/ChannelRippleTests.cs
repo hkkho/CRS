@@ -11,7 +11,7 @@ public sealed partial class PlaytestBridgeTests
     [Fact]
     public void FullAndCompactSnapshotsCarryFixedReferenceAndLiveRipple()
     {
-        var runtime = new PlaytestRuntime();
+        var runtime = new PlaytestRuntime("real-time");
         var before = Parse(runtime.Initialize(PlayRequest)).GetProperty("snapshot");
         var reference = before.GetProperty("ripple").GetProperty("referenceChannelPowerWatts");
         Assert.Equal(380, reference.GetArrayLength());

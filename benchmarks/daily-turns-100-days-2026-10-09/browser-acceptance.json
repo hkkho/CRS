@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:4173/CRS/",
+  "bridge": "authoritative-csharp-wasm",
+  "daily": {
+    "default": "daily-turn",
+    "multiChannelDay": "passed",
+    "emptyDay": "passed",
+    "frozenPlanning": "passed",
+    "narrowLayout": "passed",
+    "durationsMs": [
+      4154,
+      1487
+    ]
+  },
+  "loss": {
+    "outcome": "failure",
+    "reason": "LZC average level above 90%",
+    "successScoreHidden": true,
+    "shiftReport": "visible",
+    "errors": []
+  },
+  "errors": [],
+  "saveRestore": {
+    "guest": "passed",
+    "localSave": "passed",
+    "offlineReload": "passed",
+    "wasmReplayRestore": "passed",
+    "paused": true,
+    "score": 23.336667063957762,
+    "seconds": 86400,
+    "fuelConsumed": 8,
+    "narrowLayout": "passed"
+  }
+}

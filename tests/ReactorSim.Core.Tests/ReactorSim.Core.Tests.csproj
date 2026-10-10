@@ -17,7 +17,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ReactorSim.Core\ReactorSim.Core.csproj" />
     <ProjectReference Include="..\..\src\ReactorSim.Game\ReactorSim.Game.csproj" />
-    <ProjectReference Include="..\..\src\ReactorSim.Core.Research\ReactorSim.Core.Research.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,43 +27,7 @@
     <None Include="..\..\data\packs\candu6-two-group-diffusion-pack-v1.json" Link="TestData\data\packs\candu6-two-group-diffusion-pack-v1.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="..\..\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json" Link="TestData\data\packs\p6-t02-synthetic-liquid-zone-map-v1.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t02-synthetic-liquid-zone-map-v1.manifest.json" Link="TestData\data\packs\p6-t02-synthetic-liquid-zone-map-v1.manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.json" Link="TestData\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.manifest.json" Link="TestData\data\packs\p6-t03-synthetic-adjuster-bank-map-v1.manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t04-synthetic-bulk-poison-map-v1.json" Link="TestData\data\packs\p6-t04-synthetic-bulk-poison-map-v1.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t04-synthetic-bulk-poison-map-v1.manifest.json" Link="TestData\data\packs\p6-t04-synthetic-bulk-poison-map-v1.manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t05-synthetic-rrs-controller-map-v1.json" Link="TestData\data\packs\p6-t05-synthetic-rrs-controller-map-v1.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\packs\p6-t05-synthetic-rrs-controller-map-v1.manifest.json" Link="TestData\data\packs\p6-t05-synthetic-rrs-controller-map-v1.manifest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.json" Link="TestData\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </None>
-    <None Include="..\..\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.manifest.json" Link="TestData\data\scenarios\p6-t07-synthetic-rrs-scenarios-v1.manifest.json">
+    <None Include="..\..\data\calibration\axial-marshak-v8\source-pack.json" Link="TestData\data\calibration\axial-marshak-v8\source-pack.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </None>

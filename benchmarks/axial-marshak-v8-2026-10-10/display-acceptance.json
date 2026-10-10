@@ -1,0 +1,82 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:4173/CRS/",
+  "seed": 1001,
+  "daily": {
+    "default": "daily-turn",
+    "multiChannelDay": "passed",
+    "emptyDay": "passed",
+    "frozenPlanning": "passed",
+    "narrowLayout": "passed",
+    "durationsMs": [
+      7960,
+      2342
+    ]
+  },
+  "palettes": {
+    "power": 380,
+    "bundle-power": 380
+  },
+  "ranges": {
+    "power": [
+      {
+        "title": "Maximum channel power",
+        "low": 5.7,
+        "high": 6.2,
+        "limits": [
+          "Channel limit: 7.30 MW thermal \u2191 above view"
+        ]
+      },
+      {
+        "title": "Maximum bundle power",
+        "low": 730,
+        "high": 830,
+        "limits": [
+          "Bundle limit: 935.00 kW thermal \u2191 above view"
+        ]
+      },
+      {
+        "title": "Total reactor output",
+        "low": 0,
+        "high": 2311.6800000000067,
+        "limits": []
+      }
+    ],
+    "zones": [
+      {
+        "title": "Fourteen liquid-zone levels",
+        "low": 39.90457959877237,
+        "high": 55,
+        "limits": [
+          "Lower limit: 10.00 % full \u2193 below view",
+          "Upper limit: 90.00 % full \u2191 above view"
+        ]
+      }
+    ],
+    "reactivity": [
+      {
+        "title": "Effective multiplication factor",
+        "low": 0.99999,
+        "high": 1.0000210822496753,
+        "limits": []
+      },
+      {
+        "title": "Reactivity",
+        "low": -0.4276229151885647,
+        "high": 3.991147208426604,
+        "limits": []
+      },
+      {
+        "title": "LZC average level",
+        "low": 39.90457959877238,
+        "high": 55,
+        "limits": [
+          "Lower limit: 10.00 % full \u2193 below view",
+          "Upper limit: 90.00 % full \u2191 above view"
+        ]
+      }
+    ]
+  },
+  "narrowLayout": "passed",
+  "errors": []
+}

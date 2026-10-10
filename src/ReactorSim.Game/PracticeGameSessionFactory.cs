@@ -17,7 +17,7 @@ namespace ReactorSim.Game
         public const double BrowserBaseSimulationSecondsPerWallSecond = 1_800.0;
         public const double BrowserScenarioHorizonSeconds = 30.0 * 24.0 * 60.0 * 60.0;
         public const string DiffusionDataPackVersion =
-            "candu6-two-group-diffusion-v1-lzc-tubes-v7";
+            "candu6-two-group-diffusion-v1-axial-marshak-v8";
         // One full-power browser control step. Faster playback subdivides at
         // this same simulated interval so burnup, xenon and LZC remain aligned.
         public const double FullCoreDiffusionRecomputeIntervalSeconds =
@@ -43,9 +43,11 @@ namespace ReactorSim.Game
                 PlayPlaybackModeId, seed);
         }
 
-        public static GameSession CreateBrowserPlaytest(ulong seed = 1001, bool challenge = false)
+        public static GameSession CreateBrowserPlaytest(ulong seed = 1001, bool challenge = false, bool dailyTurns = true)
         {
-            return CreateBrowserSession(seed, challenge, !challenge);
+            var session = CreateBrowserSession(seed, challenge, !challenge);
+            if (dailyTurns) session.UseDailyTurns();
+            return session;
         }
 
         /// <summary>Retained bounded configuration for offline comparisons and scenario fixtures.</summary>

@@ -138,10 +138,9 @@ the passing `browser-smoke.log` and preview screenshots. The baseline build
 procedure is preserved in `tmp/Build-ShapeBaseline.ps1`; it restores the source
 in a `finally` block. Build logs are `tmp/shape-{baseline,relaxed}-build.log`.
 
-```powershell
-dotnet run --project tools/SingleSolveBenchmark -c Release -- --campaign artifacts/shape-1pp-campaign-2026-10-01
-python tools/SingleSolveBenchmark/report-campaign.py artifacts/shape-1pp-campaign-2026-10-01
-```
+The historical SingleSolveBenchmark campaign tool has been retired. Its original
+source is available in Git history; current daily integration uses GameSession
+and tools/LongRunPlaytest. The measurements above describe the historical model.
 
 Publish the candidate using `tools/Build-BrowserWasm.ps1 -RunAOTCompilation
 -OmitPrecompressedAssets`, build the frontend normally, and start its production

@@ -11,7 +11,7 @@ public sealed class PracticeXenonGameTests
     [Fact]
     public void EquilibriumStartIsCoupledAndPausePreservesPoison()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         var before = session.Snapshot;
         Assert.True(before.Xenon.HasCoupling);
         Assert.True(before.Xenon.MeanI135NumberDensityM3 > 0);
@@ -30,7 +30,7 @@ public sealed class PracticeXenonGameTests
     [InlineData(211U, "toward-end-b", 8)]
     public void RefuellingCarriesRetainedBundlePoisonAndFreshFuelIsClean(uint channel, string direction, ushort shift)
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.True(session.AdvanceWallMilliseconds(2000).Accepted);
         Assert.True(session.Pause().Accepted);
         var old = session.CoreState.EnumerateBundles().Select((b, n) =>
@@ -84,7 +84,7 @@ public sealed class PracticeXenonGameTests
     [Fact]
     public void AsymmetricXenonChangesLocalPowerAndZoneResponse()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         var initial = session.CurrentEquilibriumProjection;
         var rrs = session.CurrentLiquidZoneRrs;
         var moved = session.CoreState.TryRefuel(210, GameRefuellingDirectionV1.TowardEndB, 4, "NAT-U-SYNTHETIC", 0);
@@ -131,7 +131,7 @@ public sealed class PracticeXenonGameTests
     [Fact]
     public void ThreeMinuteCouplingAgreesWithOneMinuteReferenceAfterRefuelling()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.True(session.RefuelChannel(210, "toward-end-b", 8, "NAT-U-SYNTHETIC").Accepted);
         var model = FullCoreDiffusionModelV1.TryCreateCandu6(session.CurrentEquilibriumProjection.DataPack).Value;
         var solver = EquilibriumCoreSolverV1.TryCreate(model, session.CoreState.EnumerateBundles(),

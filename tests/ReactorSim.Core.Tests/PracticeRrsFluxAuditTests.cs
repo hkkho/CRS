@@ -30,7 +30,7 @@ public sealed class PracticeRrsFluxAuditTests(ITestOutputHelper output)
                     select (seed, hour, channel);
         foreach (var (seed, hour, channel) in cases)
         {
-            var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+            var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
             if (hour > 0)
             {
                 var advance = session.AdvanceWallMilliseconds((ulong)(hour * 2000));

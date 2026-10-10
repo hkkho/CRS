@@ -6,7 +6,7 @@ using ReactorSim.Browser;
 
 if (args[0] == "--fixtures")
 {
-    var runtime = new PlaytestRuntime();
+    var runtime = new PlaytestRuntime("real-time");
     var fixtures = new List<object>();
     string initialize = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":1001}";
     Add("full", "initialize", initialize, runtime.Initialize(initialize));
@@ -39,7 +39,7 @@ if (args[0] == "--fixtures")
 var rows = new List<object>();
 foreach (int seed in new[] { 1001, 1002 })
 {
-    Capture("initialize", PlaytestBridgeV2.Initialize($"{{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":{seed}}}"));
+    Capture("initialize", PlaytestBridgeV2.Initialize($"{{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"pacingMode\":\"real-time\",\"seed\":{seed}}}"));
     foreach (var payload in new[] {
         "{\"type\":\"pause\"}",
         "{\"type\":\"queue-power-target\",\"targetFraction\":0.95}",

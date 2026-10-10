@@ -3,6 +3,8 @@ import { join } from "node:path";
 import { verifyRecovery } from "./recovery-smoke.mjs";
 import { chromium } from "playwright";
 import { verifyShift } from "./shift-smoke.mjs";
+import { verifyDailyTurns } from "./daily-turn-smoke.mjs";
+import { verifyDailyFailure } from "./daily-failure-smoke.mjs";
 import { verifyStudio } from "./studio-smoke.mjs";
 
 const baseUrl = process.argv[2] ?? process.env.PLAYTEST_URL;
@@ -68,14 +70,24 @@ try {
   await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("Browser playtest run reset."), undefined, { timeout: 60_000 });
   if (await seedInput.inputValue() === seedBefore) throw new Error("New aged core did not advance the displayed seed.");
 
+  await seedInput.fill("1001");
+  await page.getByRole("button", { name: "Use seed & objective", exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.reactor-launcher')?.getAttribute('aria-busy') === 'false' && document.querySelector('.reactor-launcher [data-field="seed"]')?.value === '1001');
   await page.getByRole("button", { name: "Begin shift", exact: true }).click();
   await page.locator(".reactor-studio").waitFor({ state: "visible" });
+  const daily = await verifyDailyTurns(page);
+  // Retain legacy pacing smoke as an explicit developer comparison.
+  const legacyUrl = new URL(targetUrl); legacyUrl.searchParams.set("pacing", "real-time");
+  await page.goto(legacyUrl.toString(), { waitUntil: "networkidle" });
+  await page.waitForFunction(() => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"), undefined, { timeout: 60_000 });
+  await page.getByRole("button", { name: "Begin shift", exact: true }).click();
   const studio = await verifyStudio(page);
   const shift = await verifyShift(page);
 
   if (consoleErrors.length > 0 || pageErrors.length > 0) throw new Error(`Browser errors detected: ${[...consoleErrors, ...pageErrors].join(" | ")}`);
   await verifyRecovery(browser, targetUrl.toString());
-  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror, mouseControls: "ok", studio, shift }));
+  const dailyFailure = await verifyDailyFailure(browser, targetUrl.toString());
+  console.log(JSON.stringify({ status: "ok", url: targetUrl.toString(), bridge: "authoritative-csharp-wasm", viewport, mirror, mouseControls: "ok", daily, dailyFailure, studio, shift }));
 } finally {
   if (process.env.PLAYTEST_CAPTURE_DIR) {
     const directory = process.env.PLAYTEST_CAPTURE_DIR;

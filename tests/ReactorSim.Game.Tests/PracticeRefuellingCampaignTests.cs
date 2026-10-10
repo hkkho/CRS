@@ -25,7 +25,7 @@ public sealed class PracticeRefuellingCampaignTests
     [Fact]
     public void LiveShapePublishesSignedAxialTiltAndTwoSidedRrsReserve()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         GameSessionSnapshot initial = session.Snapshot;
 
         Assert.Equal(ComputeSignedTilt(
@@ -167,7 +167,7 @@ public sealed class PracticeRefuellingCampaignTests
     [Fact]
     public void EveryBrowserControlStepRecomputesEquilibriumAndLiquidZones()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         EquilibriumCoreProjectionV1 before = session.CurrentEquilibriumProjection;
 
         GameSessionCommandResult advanced = session.AdvanceWallMilliseconds(100);
@@ -188,8 +188,8 @@ public sealed class PracticeRefuellingCampaignTests
     [Fact]
     public void RefuelledHourProducesTheSameBurnupAndEquilibriumAcrossWallTimePartitions()
     {
-        GameSession oneAdvance = PracticeGameSessionFactory.CreateBrowserPlaytest();
-        GameSession twoAdvances = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession oneAdvance = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
+        GameSession twoAdvances = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
 
         GameSessionCommandResult oneRefuel = oneAdvance.RefuelChannel(
             CampaignChannel,
@@ -241,8 +241,8 @@ public sealed class PracticeRefuellingCampaignTests
     [Fact]
     public void OneAndTenTimesPlaybackUseIdenticalLiquidZoneSubsteps()
     {
-        var normal = PracticeGameSessionFactory.CreateBrowserPlaytest();
-        var fast = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var normal = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
+        var fast = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.True(fast.SetPlaybackMode(PracticeGameSessionFactory.PlayPlaybackModeId).Accepted);
         var normalResult = normal.AdvanceWallMilliseconds(1000);
         var fastResult = fast.AdvanceWallMilliseconds(100);

@@ -27,6 +27,8 @@ namespace ReactorSim.Browser
 #endif
             return value switch
             {
+                DailyDispatchProgressDto progress =>
+                    JsonSerializer.Serialize(progress, PlaytestJsonContext.Default.DailyDispatchProgressDto),
                 BridgeCapabilitiesDto capabilities =>
                     JsonSerializer.Serialize(capabilities, PlaytestJsonContext.Default.BridgeCapabilitiesDto),
                 PlaytestResponseDto response =>

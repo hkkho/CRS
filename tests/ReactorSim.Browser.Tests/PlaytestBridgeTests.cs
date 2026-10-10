@@ -13,7 +13,7 @@ namespace ReactorSim.Browser.Tests
     {
         private const string Protocol = "candu-playtest-v2";
         private const string PlayRequest =
-            "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\"}";
+            "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"pacingMode\":\"real-time\"}";
         private const string LabRequest =
             "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"lab\"}";
         private const string PlayRefuelRequest =
@@ -112,9 +112,9 @@ namespace ReactorSim.Browser.Tests
             JsonElement baseline = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
             string[] invalidInitializations =
             {
-                "{\"mode\":\"play\"}",
-                "{\"protocol\":\"other-v1\",\"mode\":\"play\"}",
-                "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\"}",
+                "{\"mode\":\"play\",\"pacingMode\":\"real-time\"}",
+                "{\"protocol\":\"other-v1\",\"mode\":\"play\",\"pacingMode\":\"real-time\"}",
+                "{\"protocol\":\"candu-playtest-v1\",\"mode\":\"play\",\"pacingMode\":\"real-time\"}",
                 "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"lab\"}",
                 "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"unsupported\"}",
                 "{\"protocol\":\"candu-playtest-v2\",\"mode\":7}",
@@ -342,7 +342,7 @@ namespace ReactorSim.Browser.Tests
         public void BrowserPlayStreamMapsTheSameAuthoritativePracticeGameSessionStream()
         {
             JsonElement initialized = Parse(PlaytestBridgeV2.Initialize(PlayRequest));
-            GameSession direct = PracticeGameSessionFactory.CreateBrowserPlaytest();
+            GameSession direct = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
             AssertGameSnapshotMaps(initialized.GetProperty("snapshot"), direct.Snapshot, 189);
 
             GameSessionCommandResult expectedAdvance = direct.AdvanceWallMilliseconds(2000);

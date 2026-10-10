@@ -42,16 +42,16 @@ public sealed class AgedPracticeSessionTests
         var burned = initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray());
         Assert.True(burned.IsValid);
         var after = Solve(burned.Value, .5);
-        // Independent tight v6 audit, actual Xe frozen: 0.347612 mk/FPD.
+        // Independent tight v8 axial-Marshak audit, actual Xe frozen: 0.439384 mk/FPD.
         // Production tolerances allow a small source-iteration difference.
-        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .34, .355);
+        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .43, .45);
         Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.97, 7.03);
     }
 
     [Fact]
     public void RefuellingRaisesZonesAndBurnupDrainsThemAsItExitsTheAcceptanceBand()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, dailyTurns: false);
         while (session.Snapshot.SimulationTimeSeconds < 14 * 3600)
         {
             var advance = session.AdvanceWallMilliseconds(1000);
@@ -96,7 +96,7 @@ public sealed class AgedPracticeSessionTests
     [Fact]
     public void ReferencePowerSeparatesThermalBurnupFromElectricalOutput()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.Equal(2_064_000_000.0, session.Snapshot.Physics.ReferencePowerWatts);
         Assert.InRange(System.Math.Abs(session.Snapshot.Physics.TotalPowerWatts - 2_064_000_000.0), 0, 0.01);
         Assert.InRange(System.Math.Abs(session.Snapshot.Physics.ElectricalPowerWatts - 650_000_000.0), 0, 0.01);
@@ -109,7 +109,7 @@ public sealed class AgedPracticeSessionTests
     [InlineData(4294967295UL)]
     public void SeededBrowserStartsHaveRegulatingHeadroomAndAcceptRefuelling(ulong seed)
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
         Assert.Equal(seed, session.Snapshot.Seed);
         Assert.True(session.Snapshot.RrsReserveFraction > 0);
         Assert.False(session.Snapshot.IsGameOver);

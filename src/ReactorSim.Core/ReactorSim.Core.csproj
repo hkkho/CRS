@@ -4,15 +4,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(EnableResearchExperiments)' != 'true'">
-    <Compile Remove="Domain\GpuSpatialPrototypeContracts.cs;Domain\GpuCoupledSpatialFixtureContracts.cs" />
-  </ItemGroup>
-
   <ItemGroup>
-    <EmbeddedResource Condition="'$(EnableResearchExperiments)' == 'true'" Include="EmbeddedData\coupled-spatial-v1.wgsl"
-                      LogicalName="ReactorSim.Core.Gpu.coupled-spatial-v1.wgsl" />
-    <EmbeddedResource Condition="'$(EnableResearchExperiments)' == 'true'" Include="EmbeddedData\spatial-prototype-v1.wgsl"
-                      LogicalName="ReactorSim.Core.Gpu.spatial-prototype-v1.wgsl" />
     <PackageReference Include="Newtonsoft.Json" Version="[13.0.2]" />
   </ItemGroup>
 

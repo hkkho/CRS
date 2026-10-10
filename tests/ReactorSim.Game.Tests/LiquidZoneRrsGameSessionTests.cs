@@ -104,7 +104,7 @@ public sealed class LiquidZoneRrsGameSessionTests
     [InlineData(0.91, true, "above 90%")]
     public void AverageLevelLimitsEndTheRunBeforePhysicalExhaustion(double level, bool terminal, string reason)
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true, dailyTurns: false);
         ReplacePracticeRrs(session, CreateUniformFillState(session.CurrentLiquidZoneRrs, level));
         var before = session.Snapshot;
         Assert.False(before.Rrs.IsGameOver);
@@ -136,7 +136,7 @@ public sealed class LiquidZoneRrsGameSessionTests
     [Fact]
     public void EachBrowserStepRunsLiquidZoneRrsAndChangesKeff()
     {
-        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        GameSession session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         var initialProjection = session.CurrentEquilibriumProjection;
         double[] initialFills = session.CurrentLiquidZoneRrs.ZoneFills.ToArray();
 

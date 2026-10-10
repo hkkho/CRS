@@ -15,7 +15,7 @@ public sealed class InstanceRuntimeContractTests
         using var file = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Fixtures", "playtest-v2.json.gz"));
         using var gzip = new GZipStream(file, CompressionMode.Decompress);
         using var fixtures = JsonDocument.Parse(gzip);
-        var runtime = new PlaytestRuntime();
+        var runtime = new PlaytestRuntime("real-time");
         Assert.Equal(6, fixtures.RootElement.GetArrayLength());
         foreach (var row in fixtures.RootElement.EnumerateArray())
         {
@@ -33,8 +33,8 @@ public sealed class InstanceRuntimeContractTests
     [Fact]
     public void IndependentRuntimesKeepSessionReplayCacheAndCountersIsolated()
     {
-        var first = new PlaytestRuntime();
-        var second = new PlaytestRuntime();
+        var first = new PlaytestRuntime("real-time");
+        var second = new PlaytestRuntime("real-time");
         first.Initialize("{\"protocol\":\"candu-playtest-v2\",\"seed\":1001}");
         second.Initialize("{\"protocol\":\"candu-playtest-v2\",\"seed\":1002}");
         string before = second.GetSnapshotJson();

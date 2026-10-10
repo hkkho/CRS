@@ -10,7 +10,7 @@ internal static class FuellingCapabilityBenchmark
     {
         Directory.CreateDirectory(directory);
         var timer = Stopwatch.StartNew();
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
         var samples = new List<object>();
         var moves = new List<object>();
         var regionByChannel = session.CurrentLiquidZoneRrs.Mapping.Nodes

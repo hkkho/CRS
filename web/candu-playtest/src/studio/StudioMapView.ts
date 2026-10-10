@@ -1,6 +1,6 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
 import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../projection";
-import { bundleLimit, channelLimit, channelWatts, powerColor, rippleColor, type MapMode } from "./powerReadings";
+import { bundleLimit, channelLimit, channelColorMinimum, bundleColorMinimum, channelWatts, powerColor, rippleColor, type MapMode } from "./powerReadings";
 import { setAttribute } from "./domPatch";
 import { patchMarkup } from "./domPatch";
 
@@ -15,7 +15,7 @@ export class StudioMapView {
   showAdjusters(visible: boolean): void { this.devices.style.display = visible ? "" : "none"; }
   constructor(private readonly field: (name: string) => HTMLElement, channels: CanduChannelSnapshot[]) { this.build(channels); }
   focus(index: number): void { this.channelCells.get(index)?.focus({ preventScroll: true }); }
-  update(snapshot: CanduSnapshot, selected: number, mode: MapMode): void {
+  update(snapshot: CanduSnapshot, selected: number, mode: MapMode, planned: readonly number[] = []): void {
     this.updateDevices(snapshot);
     for (const current of snapshot.core.channels) {
       const circle = this.channelCells.get(current.channelIndex);
@@ -25,16 +25,17 @@ export class StudioMapView {
       const peak = Math.max(0, ...current.bundles.filter(b => b.hasFuel).map(b => b.powerWatts));
       const amount = current.averageBurnupMwdPerKg / 10;
       const fraction = Math.min(1, Math.max(0, amount));
-      const color = mode === "power" ? powerColor(watts / channelLimit(snapshot))
-        : mode === "bundle-power" ? powerColor(peak / bundleLimit(snapshot))
+      const color = mode === "power" ? powerColor(watts, channelColorMinimum(snapshot), channelLimit(snapshot))
+        : mode === "bundle-power" ? powerColor(peak, bundleColorMinimum(snapshot), bundleLimit(snapshot))
         : mode === "ripple" ? ratio !== undefined ? rippleColor(ratio) : "#53665e"
         : `hsl(${135 - fraction * 90} 72% ${32 + fraction * 30}%)`;
       setAttribute(circle, "fill", color);
-      setAttribute(circle, "stroke", current.channelIndex === selected ? "#e1ffb0" : "#102a1c");
-      setAttribute(circle, "stroke-width", current.channelIndex === selected ? "3" : "0.7");
+      setAttribute(circle, "stroke", current.channelIndex === selected ? "#e1ffb0" : planned.includes(current.channelIndex) ? "#ffce74" : "#102a1c");
+      setAttribute(circle, "stroke-width", current.channelIndex === selected || planned.includes(current.channelIndex) ? "3" : "0.7");
       setAttribute(circle, "tabindex", current.channelIndex === selected ? "0" : "-1");
       setAttribute(circle, "aria-pressed", String(current.channelIndex === selected));
-      const label = `Channel ${gridCoordinateLabel(current)}, burnup ${current.averageBurnupMwdPerKg.toFixed(1)} MWd/kg, power ${(watts / 1000).toFixed(0)} kW, ripple ${ratio === undefined ? "unavailable" : `${(ratio * 100).toFixed(2)}%`}, peak bundle ${(peak / 1000).toFixed(0)} kW`;
+      setAttribute(circle, "data-planned", String(planned.includes(current.channelIndex)));
+      const label = `${planned.includes(current.channelIndex) ? "Planned today. " : ""}Channel ${gridCoordinateLabel(current)}, burnup ${current.averageBurnupMwdPerKg.toFixed(1)} MWd/kg, power ${(watts / 1000).toFixed(0)} kW, ripple ${ratio === undefined ? "unavailable" : `${(ratio * 100).toFixed(2)}%`}, peak bundle ${(peak / 1000).toFixed(0)} kW`;
       setAttribute(circle, "aria-label", label); if (circle.firstElementChild!.textContent !== label) circle.firstElementChild!.textContent = label;
     }
   }

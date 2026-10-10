@@ -9,7 +9,7 @@ public sealed class RefuellingMovementTests
     [Fact]
     public void FourBundleOrdersAreRejectedAtomicallyAndOnlyEightBundlePlansArePublished()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         var before = session.CoreState;
         var rejected = session.RefuelChannel(210, "toward-end-b", 4, "NAT-U-SYNTHETIC");
         Assert.False(rejected.Accepted);
@@ -22,7 +22,7 @@ public sealed class RefuellingMovementTests
     [Fact]
     public void GeometryEligibilityMatchesCommandRejectionAndRestoration()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.True(session.Snapshot.Core.Channels[0].CanRefuel);
         var changed = session.ConfigureCell(0, 0, false, System.Array.Empty<ReactorSim.Core.TopologyFace>());
         Assert.True(changed.Accepted, changed.DiagnosticMessage);
@@ -40,7 +40,7 @@ public sealed class RefuellingMovementTests
     [InlineData(211u, "toward-end-b", 8)]
     public void PublishedPlanMatchesConfirmedIdentitiesAndRejectedCommandsRetainSummary(uint channelIndex, string direction, ushort count)
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         var before = session.Snapshot.Core.Channels[(int)channelIndex];
         var plan = session.Snapshot.RefuellingPlans.Single(p => p.DirectionId == (before.FlowDirection == ReactorSim.Core.FlowDirection.EndAtoEndB ? "toward-end-b" : "toward-end-a") && p.ShiftCount == count);
         var result = session.RefuelChannel(channelIndex, direction, count, "NAT-U-SYNTHETIC");

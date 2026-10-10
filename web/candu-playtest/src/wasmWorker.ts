@@ -2,16 +2,17 @@ import {
   findWasmExports,
   PROTOCOL_VERSION,
   type BridgeModeId,
+  type PacingMode,
   type CanduPlaytestWasmExports,
 } from "./protocol";
 
 type WorkerRequest =
-  | { id: number; type: "initialize"; mode: BridgeModeId; seed: number }
+  | { id: number; type: "initialize"; mode: BridgeModeId; seed: number; pacingMode?: PacingMode }
   | { id: number; type: "get-snapshot" }
-  | { id: number; type: "gpu-fixture"; requestJson: string }
   | { id: number; type: "dispatch"; commandJson: string; profile?: boolean };
 
 type WorkerResponse =
+  | { type: "progress"; id: number; simulationSecondsAdvanced: number; requestedSimulationSeconds: number }
   | { type: "ready" }
   | { type: "load-error"; error: string }
   | {
@@ -84,18 +85,28 @@ async function dispatchRequest(api: CanduPlaytestWasmExports, request: WorkerReq
       if (api.initialize === undefined) {
         return api.getSnapshotJson();
       }
-      return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode, seed: request.seed })));
+      return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode, seed: request.seed, pacingMode: request.pacingMode })));
     case "get-snapshot":
       return normalizeJson(await api.getSnapshotJson());
-    case "gpu-fixture":
-      if (!api.getGpuPrototypeFixtureJson) throw new Error("This WASM build has no GPU fixture export.");
-      return normalizeJson(await api.getGpuPrototypeFixtureJson(request.requestJson));
     case "dispatch":
       if (request.profile) {
         if (!api.dispatchProfileJson) throw new Error("This WASM build has no profiling export.");
         return normalizeJson(await api.dispatchProfileJson(request.commandJson));
       }
-      return normalizeJson(await api.dispatchJson(request.commandJson));
+      {
+        const root = JSON.parse(request.commandJson);
+        if ((root.payload ?? root).type === "commit-day") {
+          if (!api.beginDailyDispatchJson || !api.continueDailyDispatchJson) throw new Error("This WASM host lacks yielding daily execution. Reload the updated game.");
+          let progress = JSON.parse(normalizeJson(await api.beginDailyDispatchJson(request.commandJson)));
+          while (!progress.completed) {
+            scope.postMessage({ type: "progress", id: request.id, simulationSecondsAdvanced: progress.simulationSecondsAdvanced, requestedSimulationSeconds: progress.requestedSimulationSeconds });
+            await new Promise(resolve => setTimeout(resolve, 0));
+            progress = JSON.parse(normalizeJson(await api.continueDailyDispatchJson()));
+          }
+          return normalizeJson(progress.responseJson);
+        }
+        return normalizeJson(await api.dispatchJson(request.commandJson));
+      }
   }
 }
 

@@ -3,8 +3,7 @@ param(
     [ValidateSet('Core', 'Game', 'Browser', 'All')]
     [string]$Suite = 'All',
     [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Debug',
-    [switch]$EnableResearchExperiments
+    [string]$Configuration = 'Debug'
 )
 
 Set-StrictMode -Version Latest
@@ -26,7 +25,7 @@ foreach ($selectedSuite in $selectedSuites) {
     }
 
     $resolvedProjectPath = (Resolve-Path -LiteralPath $projectPath).Path
-    $testArguments = @($resolvedProjectPath, '--configuration', $Configuration, '--nologo', '--verbosity', 'minimal', "-p:EnableResearchExperiments=$($EnableResearchExperiments.IsPresent.ToString().ToLowerInvariant())")
+    $testArguments = @($resolvedProjectPath, '--configuration', $Configuration, '--nologo', '--verbosity', 'minimal')
     & dotnet test @testArguments
     $exitCode = $LASTEXITCODE
     if ($exitCode -ne 0) {

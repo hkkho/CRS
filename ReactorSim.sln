@@ -16,10 +16,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactorSim.Game.Tests", "te
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactorSim.Browser.Tests", "tests\ReactorSim.Browser.Tests\ReactorSim.Browser.Tests.csproj", "{5AF8ED03-822F-40C2-A0E9-F85FCDAB68EC}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactorSim.Benchmarks", "benchmarks\ReactorSim.Benchmarks\ReactorSim.Benchmarks.csproj", "{C38A5577-66D2-4F4C-8D59-5E51F14B4E6C}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ReactorSim.Core.Research", "src\ReactorSim.Core.Research\ReactorSim.Core.Research.csproj", "{C43C0BD4-35D4-49DF-A24C-DD552D9B5ADA}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,14 +50,6 @@ Global
 		{5AF8ED03-822F-40C2-A0E9-F85FCDAB68EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AF8ED03-822F-40C2-A0E9-F85FCDAB68EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5AF8ED03-822F-40C2-A0E9-F85FCDAB68EC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C38A5577-66D2-4F4C-8D59-5E51F14B4E6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C38A5577-66D2-4F4C-8D59-5E51F14B4E6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C38A5577-66D2-4F4C-8D59-5E51F14B4E6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C38A5577-66D2-4F4C-8D59-5E51F14B4E6C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C43C0BD4-35D4-49DF-A24C-DD552D9B5ADA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C43C0BD4-35D4-49DF-A24C-DD552D9B5ADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C43C0BD4-35D4-49DF-A24C-DD552D9B5ADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C43C0BD4-35D4-49DF-A24C-DD552D9B5ADA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

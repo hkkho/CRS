@@ -29,7 +29,9 @@ public sealed class AgedCoreSnapshotTests
         {
             var coefficients = table.TryLookup(burnups[index] * 8.64e10).Value.Coefficients;
             Assert.Equal(fissions[index], coefficients.FissionGroup2PerM, 12);
-            Assert.Equal(2.45, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
+            // Authored v8 production normalization changes nuSigma_f only;
+            // the independently checked Sigma_f tail and heating are retained.
+            Assert.Equal(2.533206980375017, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
             Assert.True(coefficients.FissionGroup2PerM > 0);
             Assert.True(coefficients.AbsorptionGroup2PerM >= coefficients.FissionGroup2PerM);
         }

@@ -1,3 +1,4 @@
+export const DAILY_INTEGRATION_ID = "practice-daily-one-step-v1" as const;
 export const PROTOCOL_VERSION = "candu-playtest-v2" as const;
 
 export const CORE_CHANNEL_COUNT = 380 as const;
@@ -10,6 +11,7 @@ export const BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR = 2 as const;
 export type ProtocolSource = "wasm" | "synthetic-fixture";
 export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
 export type BridgeModeId = "play";
+export type PacingMode = "daily-turn" | "real-time";
 export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
 export type CoreBoundaryFace = "north" | "east" | "south" | "west" | "end-a" | "end-b";
@@ -339,6 +341,14 @@ export interface FuelMovement {
   bundles: { bundleId: string; beforePosition?: number | null; afterPosition?: number | null; burnupMwdPerKg: number }[];
 }
 
+export interface DayProgress { simulationSecondsAdvanced: number; requestedSimulationSeconds: number; }
+export interface DailyTurnResult {
+  startSimulationTimeSeconds: number; endSimulationTimeSeconds: number;
+  requestedChannels: number[]; executedChannels: number[]; unexecutedChannels: number[];
+  movements: FuelMovement[]; fuelUsed: number; usefulBundlesDischarged: number;
+  scoreDelta: number; thermalEnergyMwh: number; electricalEnergyMwhEstimate: number;
+  averageLzcFillFraction: number; axialTiltFraction: number; endReason: string;
+}
 export interface RunProvenance {
   kind: "standard-challenge" | "free-practice" | "modified-sandbox";
   label: string; isModified: boolean; eligibleForStandardChallenge: boolean; reasons: string[];
@@ -368,6 +378,9 @@ export interface CanduSnapshot {
   lastRefuellingScore?: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number } | null;
   scoreTotal: number;
   scoreDelta: number;
+  pacingMode?: PacingMode;
+  completedDays?: number;
+  lastDayResult?: DailyTurnResult | null;
   isPaused: boolean;
   /** Optional only for older v2 hosts. New hosts publish authoritative run state. */
   runStatus?: "running" | "paused" | "completed" | "ended";
@@ -422,6 +435,9 @@ export type CanduSnapshotPatch = Pick<CanduSnapshot,
   | "lastRefuellingScore"
   | "scoreTotal"
   | "scoreDelta"
+  | "pacingMode"
+  | "completedDays"
+  | "lastDayResult"
   | "isPaused"
   | "runStatus"
   | "runEndReason"
@@ -452,6 +468,7 @@ export interface RefuelRequest {
 }
 
 export type CanduCommand =
+  | { type: "commit-day"; expectedCompletedDays: number; channelIndices: number[] }
   | { type: "advance"; wallMilliseconds: number }
   | { type: "step"; simulationSeconds: number }
   | { type: "set-playback-mode"; modeId: PlaybackModeId }
@@ -462,7 +479,7 @@ export type CanduCommand =
   | { type: "configure-cell"; channelIndex: number; position: number; hasFuel: boolean; reflectiveFaces: CoreBoundaryFace[] }
   | { type: "configure-zone-layout"; nodes: ZoneNodeBinding[] }
   | { type: "solve" }
-  | { type: "reset"; seed?: number; shiftId?: ShiftId };
+  | { type: "reset"; seed?: number; shiftId?: ShiftId; pacingMode?: PacingMode };
 
 export interface CanduCommandResponse {
   protocol: typeof PROTOCOL_VERSION;
@@ -491,8 +508,9 @@ export interface CanduPlaytestWasmExports {
   initialize?: (requestJson: string) => string | Promise<string>;
   getSnapshotJson: () => string;
   dispatchJson: (commandJson: string) => string | Promise<string>;
+  beginDailyDispatchJson?: (commandJson: string) => string | Promise<string>;
+  continueDailyDispatchJson?: () => string | Promise<string>;
   dispatchProfileJson?: (commandJson: string) => string | Promise<string>;
-  getGpuPrototypeFixtureJson?: (requestJson: string) => string | Promise<string>;
 }
 
 export type BridgeResult<T> = T | Promise<T>;
@@ -1242,6 +1260,21 @@ function isFuelMovement(value: unknown): boolean {
       ["beforePosition", "afterPosition"].every(k => b[k] == null || isNonNegativeInteger(b[k]) && (b[k] as number) < 12));
 }
 
+function isDailyTurnResult(value: unknown): boolean {
+  const indices = (v: unknown) => Array.isArray(v) && v.length <= CORE_CHANNEL_COUNT && v.every(isChannelIndex) && new Set(v).size === v.length;
+  if (!isRecord(value) || !["requestedChannels", "executedChannels", "unexecutedChannels"].every(k => indices(value[k])) ||
+      !Array.isArray(value.movements) || !value.movements.every(isFuelMovement) || !isString(value.endReason) ||
+      !hasFiniteNumberFields(value, ["startSimulationTimeSeconds", "endSimulationTimeSeconds", "scoreDelta", "thermalEnergyMwh", "electricalEnergyMwhEstimate", "averageLzcFillFraction", "axialTiltFraction"]) ||
+      !isNonNegativeInteger(value.fuelUsed) || !isNonNegativeInteger(value.usefulBundlesDischarged)) return false;
+  const requested = value.requestedChannels as number[], executed = value.executedChannels as number[], skipped = value.unexecutedChannels as number[];
+  return (value.startSimulationTimeSeconds as number) >= 0 && (value.endSimulationTimeSeconds as number) >= (value.startSimulationTimeSeconds as number) &&
+    (value.endSimulationTimeSeconds as number) - (value.startSimulationTimeSeconds as number) <= 86400 &&
+    ["scoreDelta", "thermalEnergyMwh", "electricalEnergyMwhEstimate"].every(k => (value[k] as number) >= 0) &&
+    (value.averageLzcFillFraction as number) >= 0 && (value.averageLzcFillFraction as number) <= 1 &&
+    executed.length + skipped.length === requested.length && executed.every(c => requested.includes(c) && !skipped.includes(c)) && skipped.every(c => requested.includes(c)) &&
+    value.fuelUsed === executed.length * 8 && value.movements.length === executed.length && value.movements.every((m, i) => (m as FuelMovement).channelIndex === executed[i]);
+}
+
 function isRunProvenance(value: unknown): boolean {
   return isRecord(value) && ["standard-challenge", "free-practice", "modified-sandbox"].includes(value.kind as string) &&
     isString(value.label) && isBoolean(value.isModified) && isBoolean(value.eligibleForStandardChallenge) &&
@@ -1267,6 +1300,10 @@ function isShiftProgress(value: unknown): value is ShiftProgress {
 
 function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
   return hasOwnProperties(value, SNAPSHOT_STATE_FIELDS) &&
+    (value.pacingMode === undefined || ["daily-turn", "real-time"].includes(value.pacingMode as string)) &&
+    (value.completedDays === undefined || isNonNegativeInteger(value.completedDays)) &&
+    (value.lastDayResult == null || isDailyTurnResult(value.lastDayResult)) &&
+    (value.pacingMode !== "daily-turn" || value.isPaused === true && isNonNegativeInteger(value.completedDays)) &&
     hasStringFields(value, ["scenarioId", "dataPackId"]) &&
     hasFiniteNumberFields(value, [
       "simulationTimeSeconds",
@@ -1320,6 +1357,8 @@ function isCanduCommand(value: unknown): value is CanduCommand {
   }
 
   switch (value.type) {
+    case "commit-day":
+      return isNonNegativeInteger(value.expectedCompletedDays) && Array.isArray(value.channelIndices) && value.channelIndices.length <= CORE_CHANNEL_COUNT && value.channelIndices.every(isChannelIndex);
     case "advance":
       return hasOwn(value, "wallMilliseconds") && isFiniteNumber(value.wallMilliseconds);
     case "step":
@@ -1331,7 +1370,8 @@ function isCanduCommand(value: unknown): value is CanduCommand {
       return true;
     case "reset":
       return (value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295)) &&
-        (value.shiftId === undefined || ["free-practice", "useful-fuel-day-v1"].includes(value.shiftId as string));
+        (value.shiftId === undefined || ["free-practice", "useful-fuel-day-v1"].includes(value.shiftId as string)) &&
+        (value.pacingMode === undefined || ["daily-turn", "real-time"].includes(value.pacingMode as string));
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":
@@ -1599,10 +1639,11 @@ export function findWasmExports(): CanduPlaytestWasmExports | null {
       return {
         ...(typeof getCapabilities === "function" ? { getCapabilities: getCapabilities as CanduPlaytestWasmExports["getCapabilities"] } : {}),
         ...(typeof initialize === "function" ? { initialize: initialize as CanduPlaytestWasmExports["initialize"] } : {}),
+        ...(typeof candidate.beginDailyDispatchJson === "function" ? { beginDailyDispatchJson: candidate.beginDailyDispatchJson as CanduPlaytestWasmExports["beginDailyDispatchJson"] } : {}),
+        ...(typeof candidate.continueDailyDispatchJson === "function" ? { continueDailyDispatchJson: candidate.continueDailyDispatchJson as CanduPlaytestWasmExports["continueDailyDispatchJson"] } : {}),
         getSnapshotJson: getSnapshotJson as CanduPlaytestWasmExports["getSnapshotJson"],
         dispatchJson: dispatchJson as CanduPlaytestWasmExports["dispatchJson"],
         ...(typeof candidate.dispatchProfileJson === "function" ? { dispatchProfileJson: candidate.dispatchProfileJson as CanduPlaytestWasmExports["dispatchProfileJson"] } : {}),
-        ...(typeof candidate.getGpuPrototypeFixtureJson === "function" ? { getGpuPrototypeFixtureJson: candidate.getGpuPrototypeFixtureJson as CanduPlaytestWasmExports["getGpuPrototypeFixtureJson"] } : {}),
       };
     }
   }

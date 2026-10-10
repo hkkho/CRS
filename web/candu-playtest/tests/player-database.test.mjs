@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { PGlite } from '@electric-sql/pglite';
 import { beforeAll, afterAll, expect, it } from 'vitest';
 
@@ -19,7 +19,9 @@ beforeAll(async () => {
     insert into auth.users values ('${alice}'), ('${bob}');
     insert into auth.identities values ('${alice}', 'github', '{"user_name":"alice"}'), ('${bob}', 'github', '{"user_name":"bob"}');
   `);
-  await db.exec(await readFile(new URL('../../../supabase/migrations/202610040001_player_runs.sql', import.meta.url), 'utf8'));
+  const migrations = new URL('../../../supabase/migrations/', import.meta.url);
+  for (const name of (await readdir(migrations)).filter(n => n.endsWith('.sql')).sort())
+    await db.exec(await readFile(new URL(name, migrations), 'utf8'));
 }, 30_000);
 afterAll(async () => { await db.close(); });
 
@@ -73,4 +75,15 @@ it('rejects malformed and nonfinite stat payloads', async () => {
   for (const change of [{ commands: {} }, { commands: [] }, { score: 'NaN' }, { score: 'Infinity' }, { seconds: -1 }, { ended: null }]) {
     await expect(save(payload(change), 0)).rejects.toThrow();
   }
+});
+
+it('accepts daily v2 saves, rejects invalid pacing and keeps pacing immutable', async () => {
+  await asUser(alice);
+  const daily = payload({ id: '44444444-4444-4444-8444-444444444444', version: 2, pacingMode: 'daily-turn', draftChannels: [210, 211],
+    commands: [{ command: { type: 'commit-day', expectedCompletedDays: 0, channelIndices: [] }, accepted: true, responseMode: 'compact' }] });
+  await expect(save({ ...daily, pacingMode: 'unknown' }, 0)).rejects.toThrow('daily save');
+  await expect(save({ ...daily, draftChannels: null }, 0)).rejects.toThrow('daily save');
+  expect((await save(daily, 0)).rows[0].revision).toBe(1);
+  await expect(save({ ...daily, pacingMode: 'real-time' }, 1)).rejects.toThrow('cannot change');
+  expect((await save({ ...daily, seconds: 86400, draftChannels: [] }, 1)).rows[0].revision).toBe(2);
 });

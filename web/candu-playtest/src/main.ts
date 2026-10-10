@@ -4,7 +4,11 @@ import { BridgeSessionController } from "./sessionController";
 import { BridgeRecoveryView } from "./BridgeRecoveryView";
 import { PlayerPanel } from './PlayerPanel';
 
-const session = new BridgeSessionController();
+import { createCanduPlaytestBridge } from "./bridge";
+
+const session = new BridgeSessionController(createCanduPlaytestBridge({
+  initialPacingMode: new URLSearchParams(location.search).get("pacing") === "real-time" ? "real-time" : "daily-turn",
+}));
 
 const statusMirror = document.getElementById("status-mirror");
 const recovery = new BridgeRecoveryView(document.body);
@@ -16,6 +20,10 @@ session.subscribe(update => {
   // Non-announcing diagnostic mirror for smoke/reproduction tooling.
   if (statusMirror) {
     const snapshot = update.snapshot;
+    statusMirror.dataset.pacing = snapshot.pacingMode ?? "real-time";
+    statusMirror.dataset.timeSeconds = String(snapshot.simulationTimeSeconds);
+    statusMirror.dataset.completedDays = String(snapshot.completedDays ?? 0);
+    statusMirror.dataset.fuelConsumed = String(snapshot.shift?.fuelConsumed ?? 0);
     statusMirror.textContent = update.status.isWasmAvailable
       ? `CANDU live reactor online. ${snapshot.core.channelCount} channels available. ${snapshot.isPaused ? "Paused" : "Running"}. ${snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${snapshot.freshBundlesAvailable} fresh bundles`}. ${snapshot.refuellingOperationCount} refuelling operations. Score ${snapshot.scoreTotal.toFixed(1)}. ${update.response?.command.type === "advance" ? "" : update.response?.message ?? "Ready for channel selection."}`
       : `${update.status.title}. ${update.status.detail}`;

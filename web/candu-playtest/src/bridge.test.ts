@@ -9,6 +9,27 @@ import {
 afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
 describe("WorkerProtocolBridge lifecycle", () => {
+  it("extends daily watchdogs only for forward progress and keeps the committed snapshot frozen", async () => {
+    vi.useFakeTimers();
+    const harness = createWorkerHarness(); const progress = vi.fn();
+    const bridge = new WorkerProtocolBridge({ createWorker: () => harness.worker, commandTimeoutMs: 100, onProgress: progress });
+    harness.emitReady();
+    const command = { type: "commit-day" as const, expectedCompletedDays: 0, channelIndices: [] };
+    const pending = bridge.dispatch(command); await flushMicrotasks();
+    const settled = Promise.allSettled([pending]);
+    const request = harness.postedMessages[0] as { id: number };
+    await vi.advanceTimersByTimeAsync(90);
+    harness.worker.onmessage?.({ data: { type: "progress", id: request.id, simulationSecondsAdvanced: 1440, requestedSimulationSeconds: 86400 } } as MessageEvent);
+    await vi.advanceTimersByTimeAsync(90);
+    expect(harness.terminateCalls).toBe(0);
+    expect(bridge.dayProgress?.simulationSecondsAdvanced).toBe(1440);
+    expect(progress).toHaveBeenCalledOnce();
+    // A repeated progress packet cannot keep stalled work alive.
+    harness.worker.onmessage?.({ data: { type: "progress", id: request.id, simulationSecondsAdvanced: 1440, requestedSimulationSeconds: 86400 } } as MessageEvent);
+    await vi.advanceTimersByTimeAsync(10);
+    expect((await settled)[0].status).toBe("rejected");
+    expect(harness.terminateCalls).toBe(1); bridge.dispose();
+  });
   it("sends a cryptographic seed for new worker cores and preserves explicit replay seeds", async () => {
     vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(array => { (array as Uint32Array)[0] = 3456789012; return array; });
     const harness = createWorkerHarness();

@@ -13,16 +13,27 @@ import { HistoryView } from "./HistoryView";
 import type { StudioNavigation, StudioSession } from "./StudioNavigation";
 export type { StudioNavigation } from "./StudioNavigation";
 import { StudioMapView } from "./StudioMapView";
+import { DayCalculationView } from "./DayCalculationView";
+import { DailyPlanView } from "./DailyPlanView";
 import { StudioOrderView } from "./StudioOrderView";
 import { StudioStatusView } from "./StudioStatusView";
 import { SessionPresentation } from "../SessionPresentation";
-import { channelWatts, channelLimit, bundleLimit, type MapMode } from "./powerReadings";
+import { channelWatts, channelLimit, bundleLimit, channelColorMinimum, bundleColorMinimum, type MapMode } from "./powerReadings";
 import { adjusterSummary } from "./devicePresentation";
 
 /** A presentation of the existing bridge session, with no reactor state or rules. */
 export class StudioView {
   public readonly element = document.createElement("section");
   private snapshot: CanduSnapshot;
+  private readonly dailyView = new DailyPlanView();
+  private readonly calculationView: DayCalculationView;
+  private localDailyPlan: number[] = [];
+  private get dailyPlan(): readonly number[] { return this.session.dailyPlan ?? this.localDailyPlan; }
+  private setDailyPlan(channels: readonly number[]): void {
+    if (this.session.isPending || this.inspectionSnapshot || isRunTerminal(this.snapshot)) return;
+    this.localDailyPlan = [...new Set(channels)].sort((a, b) => a - b);
+    this.session.setDailyPlan?.(this.localDailyPlan); this.render();
+  }
   private draft: RefuelDraft | null = null;
   private selected = -1;
   private mapMode: MapMode = "burnup";
@@ -38,6 +49,7 @@ export class StudioView {
   private readonly unsubscribe: () => void;
   private readonly historyView: HistoryView;
   private pace: PaceReading | undefined;
+  private dayProgress: SessionUpdate["dayProgress"];
 
   public constructor(
     private readonly session: StudioSession,
@@ -104,6 +116,15 @@ export class StudioView {
       </div>`;
     this.element.querySelectorAll<HTMLElement>("[data-field]").forEach(field => this.fields.set(field.dataset.field!, field));
     parent.append(this.element);
+    this.calculationView = new DayCalculationView(() => {
+      if (this.session.isPending) { this.element.focus({ preventScroll: true }); return; }
+      this.inspectionSnapshot = null;
+      this.snapshot = this.session.snapshot;
+      this.historyView.followLive();
+      this.select(this.selected); this.render();
+      (isRunTerminal(this.snapshot) ? this.field("ending-title") : this.element.querySelector<HTMLButtonElement>('[data-action="commit-day"]'))?.focus({ preventScroll: true });
+    });
+    this.element.append(this.calculationView.element);
     this.historyView = new HistoryView(session.history, tab => {
       this.field("reactor-panel").hidden = tab !== "reactor";
     }, snapshot => {
@@ -113,6 +134,7 @@ export class StudioView {
       this.render();
     });
     this.field("history").append(this.historyView.element);
+    this.element.querySelector(".studio-metrics")!.after(this.dailyView.element);
     this.historyView.setTab(initial.selectedTab ?? "reactor");
     this.mapMode = initial.mapMode ?? "burnup";
     this.mapView = new StudioMapView(name => this.field(name), this.snapshot.core.channels);
@@ -134,6 +156,7 @@ export class StudioView {
   public destroy(): void {
     this.unsubscribe();
     this.historyView.destroy();
+    this.calculationView.destroy();
     this.element.removeEventListener("click", this.onClick);
     this.element.removeEventListener("keydown", this.onKeyDown);
     this.field("target-input").removeEventListener("input", this.onTargetInput);
@@ -165,18 +188,21 @@ export class StudioView {
     const response = update.response;
     if (response) {
       this.presentation.accept(response, this.snapshot);
+      if (response.accepted && ["commit-day", "reset"].includes(response.command.type)) this.localDailyPlan = [];
       this.lastHandledResponse = response;
     }
     if (update.error) this.presentation.fail(update.error);
     if (this.presentation.result) this.element.dataset.result = this.presentation.result;
     else delete this.element.dataset.result;
     this.pace = update.pace;
+    this.dayProgress = update.dayProgress;
     if (this.inspectionSnapshot && !this.session.history.inspectableSamples.some(point => this.session.history.snapshotAt(point) === this.inspectionSnapshot)) {
       this.inspectionSnapshot = null;
       this.historyView.followLive();
     }
     this.snapshot = this.inspectionSnapshot ?? update.snapshot;
     this.render(update.changeKind === "status");
+    this.calculationView.update(update, this.dailyPlan);
     if (response?.accepted && response.command.type === "commit-refuel" && response === this.lastHandledResponse &&
         response.snapshot.lastFuelMovement?.operationId !== this.animatedOperation) {
       this.animatedOperation = response.snapshot.lastFuelMovement?.operationId;
@@ -223,7 +249,10 @@ export class StudioView {
       this.text("operations", String(snapshot.refuellingOperationCount));
       this.text("ripple-score", snapshot.ripple ? `RMS ripple ${(snapshot.ripple.rmsDeviationFraction * 100).toFixed(2)}% · ${snapshot.ripple.pointsPerHour.toFixed(3)} points/h` : "Reference unavailable from this host");
       this.text("stock", snapshot.shift?.unlimitedFreshFuel ? "∞" : String(snapshot.freshBundlesAvailable));
-      this.text("time", formatSimulationTime(snapshot.simulationTimeSeconds));
+      this.text("time", snapshot.pacingMode === "daily-turn" ? `Day ${(snapshot.completedDays ?? 0) + 1}` : formatSimulationTime(snapshot.simulationTimeSeconds));
+      (this.element.querySelector('.studio-clock .studio-segments') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
+      (this.element.querySelector('.studio-controls') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
+      this.element.querySelector(".studio-footer > span:last-child")!.textContent = snapshot.pacingMode === "daily-turn" ? "R add / remove channel · N highest burnup" : "SPACE pause / resume · R refuel";
       this.text("status", isRunTerminal(snapshot) ? "Shift complete" : getOverallStatus(snapshot));
       this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)} · Global tilt ${getTiltLabel(snapshot.axialTiltFraction)} · Limit ±20% · End B positive`);
       this.text("guidance", operationGuidance(snapshot));
@@ -247,10 +276,10 @@ export class StudioView {
       this.text("map-tag", `${this.inspectionSnapshot ? `HISTORY ${formatSimulationTime(snapshot.simulationTimeSeconds)}` : "LIVE"} / ${this.mapMode.toUpperCase()}`);
       this.element.dataset.mapMode = this.mapMode;
       this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM"
-        : this.mapMode === "power" ? `Blue 0 → red ${(channelLimit(snapshot) / 1000).toFixed(0)} kW / channel`
-        : this.mapMode === "bundle-power" ? `Blue 0 → red ${(bundleLimit(snapshot) / 1000).toFixed(0)} kW / hottest bundle`
+        : this.mapMode === "power" ? `Blue ≤${(channelColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(channelLimit(snapshot) / 1000).toFixed(0)} kW / channel · red = limit`
+        : this.mapMode === "bundle-power" ? `Blue ≤${(bundleColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(bundleLimit(snapshot) / 1000).toFixed(0)} kW / hottest bundle · red = limit`
         : "Blue ≤85% · pale = 100% reference · red ≥115%");
-      this.mapView.update(snapshot, this.selected, this.mapMode);
+      this.mapView.update(snapshot, this.selected, this.mapMode, this.dailyPlan);
       this.renderWatchlist();
       this.orderView.update(snapshot, this.draft, channel);
       snapshot.rrs.zones.forEach((zone, index) => {
@@ -270,6 +299,13 @@ export class StudioView {
     }
     this.statusView.update(snapshot, ready, pending, this.session.status.detail,
       this.presentation.message, this.pace, this.draft, this.selected, this.mapMode, this.inspectionSnapshot !== null);
+    if (snapshot.pacingMode === "daily-turn") {
+      const included = this.dailyPlan.includes(this.selected);
+      this.text("refuel", this.inspectionSnapshot ? "Return to live to plan" : included ? "Remove from today's fuel plan" : "Add to today's fuel plan");
+      const button = this.field<HTMLButtonElement>("refuel");
+      button.disabled = !ready || pending || !!this.inspectionSnapshot || isRunTerminal(snapshot) || (!included && !isChannelRefuellable(snapshot.core.channels.find(c => c.channelIndex === this.selected)));
+    }
+    this.dailyView.update(snapshot, this.dailyPlan, pending, this.inspectionSnapshot !== null, this.dayProgress, ready);
   }
 
   private renderShift(): void {
@@ -336,8 +372,9 @@ export class StudioView {
   private async send(command: CanduCommand): Promise<void> {
     if (this.session.isPending || !this.session.status.isWasmAvailable) return;
     if (this.inspectionSnapshot && command.type !== "reset") return;
-    try { await this.session.dispatch(command); }
-    catch (error) { this.presentation.fail(error instanceof Error ? error.message : String(error)); this.render(); }
+    if (command.type === "commit-day") this.calculationView.begin(this.snapshot, this.dailyPlan, command);
+    try { const response = await this.session.dispatch(command); if (command.type === "commit-day") this.calculationView.finish(response); }
+    catch (error) { const message = error instanceof Error ? error.message : String(error); this.presentation.fail(message); this.calculationView.interrupted(message); this.render(); }
   }
 
   private readonly onTargetInput = (): void => {
@@ -347,6 +384,7 @@ export class StudioView {
   private readonly onClick = (event: MouseEvent): void => {
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action], [data-channel]") : null;
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
+    if (target.dataset.action === "remove-plan") { this.setDailyPlan(this.dailyPlan.filter(c => c !== Number(target.dataset.planChannel))); return; }
     if (target.dataset.channel) { this.select(Number(target.dataset.channel)); this.render(); return; }
     switch (target.dataset.action) {
       case "lzc-plane":
@@ -362,7 +400,12 @@ export class StudioView {
       }
       case "map": this.mapMode = target.dataset.map as MapMode; this.render(); break;
       case "oldest": this.select(highestBurnupChannel(this.snapshot.core.channels) ?? this.selected); this.render(); break;
-      case "refuel": if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
+      case "commit-day": void this.send({ type: "commit-day", expectedCompletedDays: this.snapshot.completedDays ?? 0, channelIndices: [...this.dailyPlan] }); break;
+      case "clear-plan": this.setDailyPlan([]); break;
+      case "refuel": if (this.snapshot.pacingMode === "daily-turn") {
+        this.setDailyPlan(this.dailyPlan.includes(this.selected) ? this.dailyPlan.filter(c => c !== this.selected) : [...this.dailyPlan, this.selected]); break;
+      }
+      if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
       case "pause": void this.send({ type: this.snapshot.isPaused ? "resume" : "pause" }); break;
       case "speed": void this.send({ type: "set-playback-mode", modeId: target.dataset.speed as PlaybackModeId }); break;
       case "retry": void this.send({ type: "reset" }); break;
@@ -377,6 +420,7 @@ export class StudioView {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
     const target = event.target as Element;
+    if (target.closest(".studio-day-dialog")) return;
     if (target.closest(".studio-history")) return;
     if (target.matches("input, select, textarea")) return;
     const key = event.key.toLowerCase();
@@ -388,7 +432,7 @@ export class StudioView {
     // Let native buttons retain Space/Enter activation and focus behavior.
     if ((key === " " || key === "enter") && target.closest("button, summary")) return;
     if ((key === "enter" || key === " ") && target.hasAttribute("data-channel")) { event.preventDefault(); return; }
-    const action = ({ " ": "pause", r: "refuel", n: "oldest" } as Record<string, string>)[key];
+    const action = ({ " ": this.snapshot.pacingMode === "daily-turn" ? "" : "pause", r: "refuel", n: "oldest" } as Record<string, string>)[key];
     if (action) { event.preventDefault(); this.element.querySelector<HTMLButtonElement>(`button[data-action="${action}"]`)?.click(); }
   };
 }

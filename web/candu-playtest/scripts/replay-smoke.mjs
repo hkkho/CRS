@@ -20,7 +20,7 @@ try {
       "SHA-256", new TextEncoder().encode(text))), value => value.toString(16).padStart(2, "0")).join("");
     const sorted = value => Array.isArray(value) ? value.map(sorted) : value && typeof value === "object"
       ? Object.fromEntries(Object.keys(value).sort().map(key => [key, sorted(value[key])])) : value;
-    const initialization = '{"protocol":"candu-playtest-v2","mode":"play","seed":42}';
+    const initialization = '{"protocol":"candu-playtest-v2","mode":"play","pacingMode":"real-time","seed":42}';
     const initialized = JSON.parse(await bridge.initialize(initialization));
     const policy = initialized.snapshot.scorePolicyId;
     let digest = await hash(algorithm + "|" + policy + "|play|" + initialization);

@@ -12,7 +12,7 @@ public sealed partial class PlaytestBridgeTests
     [Fact]
     public void PowerLimitEndingAndFrozenStateReachFullAndCompactBrowserSnapshots()
     {
-        var runtime = new PlaytestRuntime();
+        var runtime = new PlaytestRuntime("real-time");
         var initial = Parse(runtime.Initialize(PlayRequest)).GetProperty("snapshot");
         Assert.Equal("running", initial.GetProperty("runStatus").GetString());
         Assert.False(initial.GetProperty("rrs").GetProperty("isGameOver").GetBoolean());

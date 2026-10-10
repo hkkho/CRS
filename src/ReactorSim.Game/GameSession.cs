@@ -10,7 +10,11 @@ namespace ReactorSim.Game
 {
     public sealed class GameSession
     {
-        private readonly PracticeRunClock _runtime;
+        private PracticeRunClock _runtime;
+        private bool _dailyTurns;
+        private bool _executingDay;
+        private uint _completedDays;
+        private DailyTurnResult? _lastDayResult;
         private readonly IReadOnlyDictionary<string, Phase8PlaybackModeV1> _playbackModes;
         private readonly uint _wallControlTickMilliseconds;
         private EquilibriumCoreSolverV1 _equilibriumSolver;
@@ -89,6 +93,126 @@ namespace ReactorSim.Game
         }
 
         public PracticeXenonStateV1 CurrentXenonState => _xenon;
+        public string PacingMode => _dailyTurns ? "daily-turn" : "real-time";
+        public const string DailyIntegrationId = "practice-daily-one-step-v1";
+
+        internal void UseDailyTurns() { _dailyTurns = true; _runtime.TryPause(); }
+
+        private GameSessionCommandResult RejectDailyBypass() => Rejected(
+            "GameSession.Day.Command.Unsupported", "Choose today's channels and advance one day.");
+
+        public GameSessionCommandResult CommitDay(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)
+        {
+            var operation = BeginDay(expectedCompletedDays, channelIndices);
+            operation.CalculateDay();
+            return operation.Result!;
+        }
+
+        private GameSessionCommandResult? ValidateDailyPlan(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)
+        {
+            if (IsRunTerminal) return RejectGameOver();
+            if (!_dailyTurns) return Rejected("GameSession.Day.Mode.Invalid", "Daily turns require daily pacing.");
+            if (expectedCompletedDays != _completedDays) return Rejected("GameSession.Day.Stale", "This day has already changed. Review the current core.");
+            if (channelIndices == null || channelIndices.Count > SyntheticGameCoreStateV1.ChannelCount ||
+                channelIndices.Any(c => c >= SyntheticGameCoreStateV1.ChannelCount) || channelIndices.Distinct().Count() != channelIndices.Count)
+                return Rejected("GameSession.Day.Channels.Invalid", "Supply unique channel indices from 0 through 379.");
+            uint[] ordered = channelIndices.OrderBy(c => c).ToArray();
+            foreach (uint channel in ordered)
+                if (RefuellingIneligibilityReason(channel).Length > 0)
+                    return Rejected("GameSession.Day.Channel.Nonfuel", RefuellingIneligibilityReason(channel));
+            if (!_coreState.UnlimitedFreshFuel && ordered.Length * 8 > _coreState.FreshBundlesAvailable)
+                return Rejected("GameSession.Day.Stock.Insufficient", "Not enough fresh bundles for today's entire plan.");
+            if (_completedDays == uint.MaxValue) return Rejected("GameSession.Day.Count.Overflow", "The day count cannot advance.");
+
+            return null;
+        }
+
+        /// <summary>Detached one-day calculation. Only the final result adopts the day.</summary>
+        public DailyTurnOperation BeginDay(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)
+        {
+            var rejected = ValidateDailyPlan(expectedCompletedDays, channelIndices);
+            if (rejected != null) return new DailyTurnOperation(rejected);
+            uint[] ordered = channelIndices.OrderBy(c => c).ToArray();
+            var candidate = (GameSession)MemberwiseClone();
+            candidate._runtime = _runtime.Fork();
+            candidate._equilibriumSolver = _equilibriumSolver.Fork();
+            candidate._executingDay = true;
+            var movements = new List<RefuellingMovement>();
+            foreach (uint channel in ordered)
+            {
+                if (candidate.IsRunTerminal) break;
+                var result = candidate.RefuelChannel(channel, "toward-end-a", 8, "NAT-U-SYNTHETIC");
+                if (!result.Accepted) return new DailyTurnOperation(Rejected(result.DiagnosticCode, result.DiagnosticMessage));
+                movements.Add(candidate._lastFuelMovement!);
+            }
+            candidate._executingDay = false;
+            return new DailyTurnOperation(this, candidate, ordered, movements);
+        }
+
+        public sealed class DailyTurnOperation
+        {
+            private readonly GameSession? owner, candidate;
+            private readonly uint[] channels = Array.Empty<uint>();
+            private readonly List<RefuellingMovement> movements = new List<RefuellingMovement>();
+            private readonly double start, end;
+            private readonly PracticeRunClock? originalClock;
+            private readonly ulong originalGeneration;
+            private readonly SyntheticGameCoreStateV1? originalCore;
+            private readonly EquilibriumCoreProjectionV1? originalProjection;
+            public GameSessionCommandResult? Result { get; private set; }
+            public double SimulationSecondsAdvanced => candidate == null ? 0 : candidate._runtime.SimulationTimeSeconds - start;
+            public double RequestedSimulationSeconds { get; }
+            internal DailyTurnOperation(GameSessionCommandResult rejected) { Result = rejected; }
+            internal DailyTurnOperation(GameSession owner, GameSession candidate, uint[] channels, List<RefuellingMovement> movements)
+            {
+                this.owner = owner; this.candidate = candidate; this.channels = channels; this.movements = movements;
+                start = owner._runtime.SimulationTimeSeconds; end = start + 86_400;
+                RequestedSimulationSeconds = owner._runtime.ScenarioHorizonSeconds > 0 ? Math.Min(86_400, owner._runtime.ScenarioHorizonSeconds - start) : 86_400;
+                originalGeneration = owner._runtime.Generation; originalClock = owner._runtime; originalCore = owner._coreState; originalProjection = owner.CurrentSpatialCandidate;
+            }
+            public void CalculateDay()
+            {
+                if (Result != null) return;
+                var next = candidate!; var live = owner!;
+                if (!ReferenceEquals(live._runtime, originalClock) || live._runtime.Generation != originalGeneration || !ReferenceEquals(live._coreState, originalCore) ||
+                    !ReferenceEquals(live.CurrentSpatialCandidate, originalProjection))
+                { Result = live.Rejected("GameSession.Day.StaleCandidate", "The reactor changed while calculating the day."); return; }
+                if (!next.IsRunTerminal && next._runtime.SimulationTimeSeconds < end)
+                {
+                    var planned = next._runtime.TryPlanSimulationStep(end - next._runtime.SimulationTimeSeconds);
+                    if (!planned.IsValid) { Result = live.Rejected(planned.FirstDiagnostic.Code, planned.FirstDiagnostic.Message); return; }
+                    var transaction = next.TryBuildDailyAdvance(planned.Value);
+                    if (!transaction.IsValid) { Result = live.Rejected(transaction.FirstDiagnostic.Code, transaction.FirstDiagnostic.Message); return; }
+                    var projected = next._equilibriumSolver.TryCommitCandidate(transaction.Value.SpatialCandidate);
+                    if (!projected.IsValid) { Result = live.Rejected(projected.FirstDiagnostic.Code, projected.FirstDiagnostic.Message); return; }
+                    var committed = next._runtime.TryCommitAdvance(planned.Value);
+                    if (!committed.IsValid) { Result = live.Rejected(committed.FirstDiagnostic.Code, committed.FirstDiagnostic.Message); return; }
+                    next.ApplyPracticeCandidate(transaction.Value);
+                }
+                if (next._runtime.SimulationTimeSeconds == end) next._completedDays++;
+                next._lastDayResult = new DailyTurnResult(start, next.Snapshot, channels, movements,
+                    live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0);
+                live.AdoptDailyCandidate(next);
+                Result = live.AcceptedMessage(live.IsRunTerminal ? "Day ended: " + live.RunEndReason :
+                    "Day " + live._completedDays + " complete. " + movements.Count + " channels refuelled; choose the next day's plan.");
+            }
+        }
+
+        private void AdoptDailyCandidate(GameSession candidate)
+        {
+            _runtime = candidate._runtime; _equilibriumSolver = candidate._equilibriumSolver;
+            _practiceRrs = candidate._practiceRrs; _coreState = candidate._coreState;
+            _lastFullCoreSolveSimulationTime = candidate._lastFullCoreSolveSimulationTime;
+            _syntheticScore = candidate._syntheticScore; _thermalEnergyJoules = candidate._thermalEnergyJoules;
+            _fuelConsumed = candidate._fuelConsumed; _usefulBundlesDischarged = candidate._usefulBundlesDischarged;
+            _dischargeReward = candidate._dischargeReward; _freshFuelCost = candidate._freshFuelCost;
+            _lastRefuellingScore = candidate._lastRefuellingScore; _lastFuelMovement = candidate._lastFuelMovement;
+            _lastDischargedMaximumBurnupMwDayPerKg = candidate._lastDischargedMaximumBurnupMwDayPerKg;
+            _maximumDischargedBurnupMwDayPerKg = candidate._maximumDischargedBurnupMwDayPerKg;
+            _powerProjectionVersion = candidate._powerProjectionVersion;
+            _xenon = candidate._xenon; _coupledXenon = candidate._coupledXenon;
+            _completedDays = candidate._completedDays; _lastDayResult = candidate._lastDayResult;
+        }
 
         public bool IsFuelCell(uint channelIndex, uint position)
         {
@@ -212,6 +336,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult AdvanceWallMilliseconds(ulong wallMilliseconds)
         {
+            if (_dailyTurns) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -307,6 +432,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult QueuePowerTarget(double targetFraction)
         {
+            if (_dailyTurns) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -317,6 +443,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult SetPlaybackMode(string playbackModeId)
         {
+            if (_dailyTurns) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -355,6 +482,7 @@ namespace ReactorSim.Game
 
         public GameSessionCommandResult Resume()
         {
+            if (_dailyTurns) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -406,6 +534,7 @@ namespace ReactorSim.Game
             ushort shiftCount,
             string fuelTypeId)
         {
+            if (_dailyTurns && !_executingDay) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -586,7 +715,8 @@ namespace ReactorSim.Game
                     _coreState.UnlimitedFreshFuel),
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
                 new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
-                    CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude));
+                    CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude),
+                _dailyTurns ? "daily-turn" : "real-time", _completedDays, _lastDayResult);
         }
 
         private bool IsRunTerminal => HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,
@@ -815,6 +945,45 @@ namespace ReactorSim.Game
                 simulationTimeSeconds,
                 warmStart,
                 (xenon ?? _xenon).BuildOverlay(_nonfuelNodes));
+        }
+
+        /// <summary>One frozen-power/flux exposure interval and one end-of-day
+        /// equilibrium/RRS solve. Daily mode intentionally does not inspect
+        /// intermediate states or use the real-time recomputation scheduler.</summary>
+        private ContractValidationResult<PracticeCandidate> TryBuildDailyAdvance(PracticeRunAdvance advance)
+        {
+            var bound = ValidateCommittedTime(_runtime.SimulationTimeSeconds);
+            if (!bound.IsValid) return InvalidTransaction(bound.FirstDiagnostic.Code, bound.FirstDiagnostic.Path, bound.FirstDiagnostic.Message);
+            if (advance.StateSegments.Count != 1)
+                return InvalidTransaction("GameSession.Day.Segment.Invalid", "advance", "A day requires exactly one simulation-time segment.");
+            var segment = advance.StateSegments[0];
+            double seconds = segment.SimulationTimeEndSeconds - segment.SimulationTimeStartSeconds;
+            if (!IsFinite(seconds) || seconds <= 0 || seconds > 86_400 || !AreSameSimulationTime(segment.SimulationTimeStartSeconds, _runtime.SimulationTimeSeconds))
+                return InvalidTransaction("GameSession.Day.Duration.Invalid", "advance", "A day requires one positive interval of at most 86400 seconds.");
+            double amplitude = Clamp(segment.NormalizedPowerFraction, 0, 1.5);
+            var transaction = new PracticeAdvanceBuilder(_coreState, CurrentSpatialCandidate, _practiceRrs,
+                _lastFullCoreSolveSimulationTime, _syntheticScore, _powerProjectionVersion, _xenon, _coupledXenon, _thermalEnergyJoules);
+            try { transaction.Xenon = transaction.Xenon.Advance(transaction.SpatialCandidate, amplitude, seconds); }
+            catch (Exception error) when (error is ArgumentException || error is InvalidOperationException || error is OverflowException)
+            { return InvalidTransaction("GameSession.Xenon.Advance.Invalid", "xenon", error.Message); }
+            var energy = transaction.SpatialCandidate.ShapeNodePowerWatts.Select(watts => watts * amplitude * seconds).ToArray();
+            var exposed = transaction.CoreState.TryAddFissionEnergy(energy);
+            if (!exposed.IsValid) return InvalidTransaction(exposed.FirstDiagnostic.Code, exposed.FirstDiagnostic.Path, exposed.FirstDiagnostic.Message);
+            transaction.CoreState = exposed.Value;
+            transaction.Xenon = transaction.Xenon.BindBurnupReference(transaction.CoreState);
+            transaction.ThermalEnergyJoules += energy.Sum();
+            transaction.SyntheticScore += PracticeScoring.OperatingPoints(seconds,
+                PracticeScoring.RmsRipple(transaction.SpatialCandidate.ShapeChannelPowerWatts,
+                    PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, amplitude));
+            var timedRrs = transaction.Rrs.TryWithSimulationTime(segment.SimulationTimeEndSeconds);
+            if (!timedRrs.IsValid) return InvalidTransaction(timedRrs.FirstDiagnostic.Code, timedRrs.FirstDiagnostic.Path, timedRrs.FirstDiagnostic.Message);
+            transaction.Rrs = timedRrs.Value;
+            var version = TryNextPowerProjectionVersion(transaction.PowerProjectionVersion);
+            if (!version.IsValid) return InvalidTransaction(version.FirstDiagnostic.Code, version.FirstDiagnostic.Path, version.FirstDiagnostic.Message);
+            transaction.PowerProjectionVersion = version.Value;
+            var solved = TryBuildScheduledShape(transaction, segment.SimulationTimeEndSeconds);
+            if (!solved.IsValid) return InvalidTransaction(solved.FirstDiagnostic.Code, solved.FirstDiagnostic.Path, solved.FirstDiagnostic.Message);
+            return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, amplitude));
         }
 
         private ContractValidationResult<PracticeCandidate> TryBuildPracticeAdvance(
@@ -1132,7 +1301,7 @@ namespace ReactorSim.Game
             => GamePresentationProjector.Build(state, powerAmplitude, projection, rrs,
                 CreateXenonPresentationSnapshot(state.RefuellingOperationCount == 0 ? -1 : state.LastRefuelledChannel,
                     _runtime.SimulationTimeSeconds), _runtime.NormalizedPowerFraction,
-                _powerProjectionVersion, _xenon, RefuellingIneligibilityReason);
+                _powerProjectionVersion, _xenon, RefuellingIneligibilityReason, _dailyTurns ? DailyIntegrationId : null);
         private GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(int selectedChannelIndex, double simulationTimeSeconds)
             => GamePresentationProjector.Poison(selectedChannelIndex, simulationTimeSeconds, _xenon, _coupledXenon,
                 _equilibriumSolver, _nonfuelNodes);

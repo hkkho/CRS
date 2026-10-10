@@ -11,7 +11,7 @@ public sealed class DischargeBurnupHistoryTests
     [Fact]
     public void DischargePeaksUseActualRemovedFuelAndSurviveRejectedCommands()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.Null(session.Snapshot.LastRefuellingScore);
         Assert.Equal(PracticeScoring.PolicyId, session.Snapshot.ScorePolicyId);
         Assert.Null(session.Snapshot.LastDischargedMaximumBurnupMwDayPerKg);
@@ -41,9 +41,9 @@ public sealed class DischargeBurnupHistoryTests
         Assert.True(second.Accepted, second.DiagnosticMessage);
         Assert.Equal(0.0, second.Snapshot.LastRefuellingScore!.NetPoints);
         Assert.Equal(0.0, second.Snapshot.LastRefuellingScore.FreshFuelCost);
-        Assert.Null(PracticeGameSessionFactory.CreateBrowserPlaytest().Snapshot.LastRefuellingScore);
+        Assert.Null(PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false).Snapshot.LastRefuellingScore);
         Assert.Equal(Math.Max(peak, second.Snapshot.LastDischargedMaximumBurnupMwDayPerKg!.Value),
             second.Snapshot.MaximumDischargedBurnupMwDayPerKg);
-        Assert.Null(PracticeGameSessionFactory.CreateBrowserPlaytest().Snapshot.MaximumDischargedBurnupMwDayPerKg);
+        Assert.Null(PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false).Snapshot.MaximumDischargedBurnupMwDayPerKg);
     }
 }

@@ -10,7 +10,7 @@ public sealed partial class PlaytestBridgeTests
     [Fact]
     public void FullAndReplacementSnapshotsCarryCoreAuthoredAdjusterGeometry()
     {
-        var runtime = new PlaytestRuntime();
+        var runtime = new PlaytestRuntime("real-time");
         var core = Parse(runtime.Initialize(PlayRequest)).GetProperty("snapshot").GetProperty("core");
         var rods = core.GetProperty("adjusters").EnumerateArray().ToArray();
         Assert.Equal(21, rods.Length);

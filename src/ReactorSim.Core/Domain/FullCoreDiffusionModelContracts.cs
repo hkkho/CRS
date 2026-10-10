@@ -1695,7 +1695,8 @@ namespace ReactorSim.Core
                         continue;
                     }
 
-                    TwoGroupConductanceV1 conductance = dataPack.VacuumBoundaryConductance;
+                    TwoGroupConductanceV1 conductance = boundary.Face == TopologyFace.EndA || boundary.Face == TopologyFace.EndB
+                        ? dataPack.AxialVacuumBoundaryConductance : dataPack.VacuumBoundaryConductance;
                     boundaries.Add(new SpatialBoundaryConductance(
                         node.Node,
                         boundary.Face,

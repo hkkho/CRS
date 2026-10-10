@@ -10,7 +10,7 @@ public sealed class ShiftProgressTests
     [Fact]
     public void MainBrowserRunIsStandardEndlessAndTracksUnlimitedFuelConsumption()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest();
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false);
         Assert.True(session.Snapshot.Shift.IsEndless);
         Assert.True(session.Snapshot.Shift.UnlimitedFreshFuel);
         Assert.Equal(0, session.Snapshot.Shift.HorizonSeconds);
@@ -22,7 +22,7 @@ public sealed class ShiftProgressTests
         Assert.True(session.AdvanceWallMilliseconds(1000).Accepted);
         Assert.True(session.CoreState.UnlimitedFreshFuel);
         Assert.False(session.Snapshot.IsGameOver);
-        var challenge = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true).Snapshot;
+        var challenge = PracticeGameSessionFactory.CreateBrowserPlaytest(challenge: true, dailyTurns: false).Snapshot;
         Assert.False(challenge.Shift.IsEndless);
         Assert.False(challenge.Shift.UnlimitedFreshFuel);
         Assert.Equal(128u, challenge.FreshBundlesAvailable);
@@ -49,7 +49,7 @@ public sealed class ShiftProgressTests
     [Fact]
     public void AcceptedFuelMovesAccumulateActualDischargeAndRejectedMovesRetainResults()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true, dailyTurns: false);
         Assert.Equal(86400, session.Snapshot.Shift.HorizonSeconds);
         Assert.Equal(ShiftProgress.ChallengeId, session.Snapshot.Shift.Id);
         var channel = session.Snapshot.Core.Channels.OrderByDescending(c => c.AverageBurnupMwDayPerKg).First();

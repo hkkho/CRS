@@ -122,6 +122,7 @@ jobs:
         working-directory: web/candu-playtest
         env:
           PLAYTEST_URL: http://127.0.0.1:4173/CRS/
+          PLAYTEST_EXPECTED_COMMIT_SHA: ${{ github.sha }}
           PLAYTEST_CAPTURE_DIR: ${{ github.workspace }}/artifacts/pages-predeploy
         shell: bash
         run: |
@@ -139,6 +140,7 @@ jobs:
           test -n "$wasm_asset"
           export PLAYTEST_WASM_PATH="/${wasm_asset#dist-pages/}"
           npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
+          npm run smoke:scales 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/scales-smoke.log"
           npm run smoke:saves 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/saves-smoke.log"
           npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 --expected-commit-sha=${{ github.sha }} 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
       - name: Upload Pages site

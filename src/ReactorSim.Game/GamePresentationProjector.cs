@@ -15,7 +15,7 @@ namespace ReactorSim.Game
             double powerAmplitude,
             EquilibriumCoreProjectionV1 projection,
             PracticeLiquidZoneRrsV1 rrs, GameXenonPresentationSnapshot xenon,
-            double targetFraction, ulong version, PracticeXenonStateV1 poison, Func<uint, string> ineligibility)
+            double targetFraction, ulong version, PracticeXenonStateV1 poison, Func<uint, string> ineligibility, string? cadenceIdentity = null)
         {
             var channelStates = new IReadOnlyList<BundleState>[
                 (int)GameCorePresentationConstants.ChannelCount];
@@ -145,7 +145,7 @@ namespace ReactorSim.Game
                 1.0,
                 rrs.LowExhaustion || rrs.HighExhaustion,
                 0.0,
-                rrs.CadenceIdentity,
+                cadenceIdentity ?? rrs.CadenceIdentity,
                 "equilibrium-static-only-v1",
                 projection.ReactivityBindingDigestHex,
                 0,

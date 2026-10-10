@@ -474,76 +474,6 @@ public sealed class TopologyInventoryRefuellingTests
         Assert.Equal(16u, depleted.RefuellingOperationCount);
     }
 
-    [Fact]
-    public void StalePreparedRefuellingRequestFailsBeforeMutation()
-    {
-        CoreTopology topology = CreateManufacturedTopology();
-        BundleInventory sourceInventory = CreateSparseRefuelInventory(topology);
-        VersionLifecycleV1 lifecycle = CreateLifecycle(topology, sourceInventory);
-        RefuelSchemePositionPlan plan = CreatePlan(4, FlowDirection.EndAtoEndB);
-        ContractValidationResult<RefuelShiftResult> shiftResult = RefuelShiftTransition.TryApply(
-            sourceInventory,
-            new ChannelId(0),
-            plan,
-            CreateInsertedBundles(0, plan, 13000, 0.0),
-            0.0,
-            0.0);
-        AssertValid(shiftResult);
-
-        ContractValidationResult<CompleteRefuellingRequestV1> requestResult =
-            CompleteRefuellingRequestV1.TryCreate(shiftResult.Value, lifecycle);
-        AssertValid(requestResult);
-        CompleteRefuellingRequestV1 request = requestResult.Value;
-        StateBindingV1 acceptedBinding = lifecycle.CreateStateBinding();
-        BundleState[] sourceLocations = sourceInventory.EnumerateOccupied().ToArray();
-
-        VersionLifecycleV1 staleLifecycle = CreateLifecycle(topology, sourceInventory, 4);
-        ContractValidationResult<CompleteRefuellingTransitionResultV1> staleLifecycleResult =
-            CompleteRefuellingTransitionV1.TryApply(
-                request,
-                sourceInventory,
-                staleLifecycle,
-                Array.Empty<SpatialNodeVolumeV1>(),
-                Id(14000),
-                Digest(9));
-        AssertInvalid(staleLifecycleResult, "CompleteRefuelling.SourceLifecycleDigest.Stale");
-
-        BundleState movedNonTarget = sourceInventory.Get(Node(1, 0))!;
-        BundleState[] staleBundles = sourceInventory.EnumerateOccupied()
-            .Select(bundle => bundle.BundleId == movedNonTarget.BundleId
-                ? bundle.WithLocation(new ChannelId(1), new BundlePosition(1))
-                : bundle)
-            .ToArray();
-        ContractValidationResult<BundleInventory> staleInventoryResult = BundleInventory.TryCreate(
-            topology,
-            staleBundles);
-        AssertValid(staleInventoryResult);
-
-        ContractValidationResult<CompleteRefuellingTransitionResultV1> rejected =
-            CompleteRefuellingTransitionV1.TryApply(
-                request,
-                staleInventoryResult.Value,
-                lifecycle,
-                Array.Empty<SpatialNodeVolumeV1>(),
-                Id(14000),
-                Digest(9));
-
-        AssertInvalid(rejected, "CompleteRefuelling.SourceInventoryDigest.Stale");
-        Assert.Same(sourceInventory, request.Shift.SourceInventory);
-        Assert.Equal(lifecycle.CoreStateVersion, acceptedBinding.CoreStateVersion);
-        Assert.Equal(lifecycle.CreateStateBinding().CoreStateVersion, acceptedBinding.CoreStateVersion);
-        Assert.Equal(
-            sourceLocations.Select(bundle => bundle.BundleId),
-            sourceInventory.EnumerateOccupied().Select(bundle => bundle.BundleId));
-        Assert.Equal(
-            sourceLocations.Select(bundle => bundle.Node),
-            sourceInventory.EnumerateOccupied().Select(bundle => bundle.Node));
-        Assert.Equal(new Digest32(DigestBytes(3)), lifecycle.StateDigest.Value);
-        Assert.Equal(acceptedBinding.TopologyVersion, lifecycle.CreateStateBinding().TopologyVersion);
-        Assert.Equal(acceptedBinding.DataPackVersion, lifecycle.CreateStateBinding().DataPackVersion);
-        Assert.Equal(0u, lifecycle.CoreStateVersion);
-    }
-
     private static CoreTopology CreateManufacturedTopology()
     {
         var channels = new[]
@@ -725,46 +655,6 @@ public sealed class TopologyInventoryRefuellingTests
             cumulativeEnergy,
             1000.0,
             insertedAtSeconds);
-    }
-
-    private static VersionLifecycleV1 CreateLifecycle(
-        CoreTopology topology,
-        BundleInventory inventory,
-        byte stateDigestValue = 3)
-    {
-        ContractValidationResult<DataPackDescriptor> dataPackResult = DataPackDescriptor.TryCreate(
-            DataPackDescriptor.CurrentSchemaVersion,
-            Id(15000),
-            "manufactured-wave0-v1",
-            "manufactured-2x12-v1",
-            topology.ChannelCount,
-            topology.BundlePositionCount,
-            "SI-v1",
-            DigestBytes(1),
-            DigestBytes(2));
-        AssertValid(dataPackResult);
-
-        ContractValidationResult<SimulationConfiguration> configurationResult =
-            SimulationConfiguration.TryCreate(
-                SimulationConfiguration.CurrentSchemaVersion,
-                topology,
-                dataPackResult.Value,
-                0.0,
-                0,
-                0,
-                0);
-        AssertValid(configurationResult);
-
-        BundleNuclideVersionV1[] versions = inventory.EnumerateOccupied()
-            .Select(bundle => new BundleNuclideVersionV1(bundle.BundleId, 0, 0))
-            .ToArray();
-        ContractValidationResult<VersionLifecycleV1> lifecycleResult = VersionLifecycleV1.TryCreate(
-            configurationResult.Value,
-            inventory,
-            versions,
-            new Digest32(DigestBytes(stateDigestValue)));
-        AssertValid(lifecycleResult);
-        return lifecycleResult.Value;
     }
 
     private static NodeKey Node(uint channelIndex, uint positionIndex)

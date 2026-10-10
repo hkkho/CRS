@@ -61,6 +61,9 @@ namespace ReactorSim.Core
             TwoGroupConductanceV1 axialConductance,
             TwoGroupConductanceV1 transverseConductance,
             TwoGroupConductanceV1 vacuumBoundaryConductance,
+            TwoGroupConductanceV1 axialVacuumBoundaryConductance,
+            string axialBoundaryConditionId,
+            double axialCellLengthM,
             SpatialLinearSolvePolicy linearSolvePolicy,
             SpatialConvergencePolicy convergencePolicy,
             IEnumerable<BurnupCoefficientTableV1> coefficientTables,
@@ -83,6 +86,9 @@ namespace ReactorSim.Core
             AxialConductance = axialConductance;
             TransverseConductance = transverseConductance;
             VacuumBoundaryConductance = vacuumBoundaryConductance;
+            AxialVacuumBoundaryConductance = axialVacuumBoundaryConductance;
+            AxialBoundaryConditionId = axialBoundaryConditionId;
+            AxialCellLengthM = axialCellLengthM;
             LinearSolvePolicy = linearSolvePolicy;
             ConvergencePolicy = convergencePolicy;
             _coefficientTables = new ReadOnlyCollection<BurnupCoefficientTableV1>(
@@ -121,6 +127,11 @@ namespace ReactorSim.Core
         public TwoGroupConductanceV1 TransverseConductance { get; }
 
         public TwoGroupConductanceV1 VacuumBoundaryConductance { get; }
+
+        /// <summary>End-face leakage; radial faces retain the effective reflector conductance.</summary>
+        public TwoGroupConductanceV1 AxialVacuumBoundaryConductance { get; }
+        public string AxialBoundaryConditionId { get; }
+        public double AxialCellLengthM { get; }
 
         public SpatialLinearSolvePolicy LinearSolvePolicy { get; }
 
@@ -261,6 +272,30 @@ namespace ReactorSim.Core
                 !TryReadConductance(geometry, "vacuum_boundary_conductance_m2", "geometry.vacuum_boundary_conductance_m2", out TwoGroupConductanceV1 vacuum, out failure))
             {
                 return Invalid(failure);
+            }
+
+            var axialVacuum = vacuum;
+            string axialBoundaryId = "legacy-fitted-conductance-v1";
+            double axialCellLength = 0;
+            if (geometry.TryGetValue("axial_boundary", StringComparison.Ordinal, out JToken? boundaryToken))
+            {
+                if (!(boundaryToken is JObject axialBoundary) ||
+                    !TryReadString(axialBoundary, "condition_id", "geometry.axial_boundary.condition_id", out axialBoundaryId, out failure) ||
+                    !TryReadDouble(axialBoundary, "cell_length_m", "geometry.axial_boundary.cell_length_m", out axialCellLength, out failure))
+                    return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Supply a valid axial boundary condition and cell length.");
+                if (axialBoundaryId != "zero-incoming-current-v1" || axialCellLength <= 0 || nodeVolumeM3 <= 0)
+                    return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Only zero-incoming-current-v1 with positive SI geometry is supported.");
+                // Marshak: phi + 2D*d(phi)/dn = 0. Node-centred C = DA/(h/2+2D).
+                // D = C_interior*h^2/V, A = V/h. No material absorption is added.
+                double Boundary(double interior)
+                {
+                    double diffusion = interior * axialCellLength * axialCellLength / nodeVolumeM3;
+                    return interior * axialCellLength / (axialCellLength / 2 + 2 * diffusion);
+                }
+                double fast = Boundary(axial.Group1M2), thermal = Boundary(axial.Group2M2);
+                if (!ContractValidation.IsFinite(fast) || !ContractValidation.IsFinite(thermal) || fast <= 0 || thermal <= 0)
+                    return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Derived axial boundary conductance must be finite and positive.");
+                axialVacuum = new TwoGroupConductanceV1(fast, thermal);
             }
 
             if (!TryReadObject(root, "solver", "solver", out JObject solver, out failure) ||
@@ -449,6 +484,9 @@ namespace ReactorSim.Core
                     axial,
                     transverse,
                     vacuum,
+                    axialVacuum,
+                    axialBoundaryId,
+                    axialCellLength,
                     linearPolicyResult.Value,
                     convergencePolicyResult.Value,
                     tables,

@@ -4,6 +4,7 @@ import { patchMarkup } from "./domPatch";
 import { bundleLimit } from "./powerReadings";
 import { gridCoordinateLabel } from "../projection";
 import { adjusterPowerMarkers, liquidZonePowerMarkers, channelDeviceNote } from "./devicePresentation";
+import { readingRange, AXIAL_POWER_RANGE } from "./displayScales";
 
 export class StudioOrderView {
   private bundlesKey = "";
@@ -89,19 +90,24 @@ function axialLineGraph(channel: CanduChannelSnapshot | undefined, metric: strin
     const bundle = channel?.bundles.find(bundle => bundle.position === position);
     return bundle?.hasFuel ? read(bundle) : null;
   });
-  const top = limit === undefined ? Math.max(1, ...values.filter((value): value is number => value !== null)) * 1.12
-    : Math.max(limit * 1.12, ...values.filter((value): value is number => value !== null));
+  const finite = values.filter((value): value is number => value !== null && Number.isFinite(value));
+  const [bottom, top] = metric === "power" ? readingRange(finite, AXIAL_POWER_RANGE)
+    : [0, Math.max(1, ...finite) * 1.12];
   const x = (position: number) => 42 + position * 24;
-  const y = (value: number) => 75 - value / top * 46;
+  const y = (value: number) => 75 - (value - bottom) / (top - bottom) * 46;
   let path = "", connected = false;
   const points = values.map((value, position) => {
     if (value === null) { connected = false; return ""; }
     path += `${connected ? "L" : "M"}${x(position)} ${y(value)}`; connected = true;
     return `<rect data-axial-position="${position}" x="${x(position) - 2}" y="${y(value) - 2}" width="4" height="4"><title>Position ${position + 1}: ${value.toFixed(2)} ${label.split(" / ")[1]}</title></rect>`;
   }).join("");
-  const grid = [0, .5, 1].map(fraction => `<path class="axial-grid" d="M42 ${y(top * fraction)}H306"/><text x="35" y="${y(top * fraction) + 3}" text-anchor="end">${(top * fraction).toFixed(top >= 100 ? 0 : 1)}</text>`).join("");
+  const grid = [0, .5, 1].map(fraction => {
+    const value = bottom + (top - bottom) * fraction;
+    return `<path class="axial-grid" d="M42 ${y(value)}H306"/><text x="35" y="${y(value) + 3}" text-anchor="end">${value.toFixed(top >= 100 ? 0 : 1)}</text>`;
+  }).join("");
   const positions = values.map((_, position) => `<text x="${x(position)}" y="93" text-anchor="middle">${String(position + 1).padStart(2, "0")}</text>`).join("");
   const readings = values.map((value, position) => `${position + 1}: ${value === null ? "empty/unavailable" : value.toFixed(2)}`).join("; ");
-  const threshold = limit === undefined ? "" : `<path data-power-limit="${limit}" d="M42 ${y(limit)}H306" stroke="#f76c6c" stroke-dasharray="4 3"/><text x="306" y="${y(limit) - 3}" text-anchor="end" fill="#ff9999">${limit} kW limit</text>`;
-  return `<svg data-axial="${metric}" viewBox="0 0 324 100" role="img" aria-label="Axial ${label}; End A to End B"><title>${label}</title><desc>${readings}</desc><text class="axial-label" x="42" y="15">${label}</text>${markers}${grid}${threshold}<path class="axial-line" d="${path}"/>${points}${positions}</svg>`;
+  const inside = limit !== undefined && limit >= bottom && limit <= top;
+  const threshold = limit === undefined ? "" : `<g data-power-limit="${limit}">${inside ? `<path d="M42 ${y(limit)}H306" stroke="#f76c6c" stroke-dasharray="4 3"/>` : ""}<text x="306" y="${inside ? y(limit) - 3 : 25}" text-anchor="end" fill="#ff9999">${limit} kW limit${inside ? "" : limit > top ? " ↑ above view" : " ↓ below view"}</text></g>`;
+  return `<svg data-axial="${metric}" data-y-min="${bottom}" data-y-max="${top}" viewBox="0 0 324 100" role="img" aria-label="Axial ${label}; End A to End B; vertical range ${bottom.toFixed(2)} to ${top.toFixed(2)}"><title>${label}</title><desc>${readings}</desc><text class="axial-label" x="42" y="15">${label}</text>${markers}${grid}${threshold}<path class="axial-line" d="${path}"/>${points}${positions}</svg>`;
 }

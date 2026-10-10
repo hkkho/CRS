@@ -1,0 +1,1210 @@
+{
+  "format": "daily-turns-campaign-v1",
+  "execution": "native .NET versioned Browser bridge; shared Core/Game physics; not a 100-day browser UI/performance test",
+  "startedUtc": "2026-10-09T22:24:24.3859683-04:00",
+  "assemblyHashes": {
+    "ReactorSim.Browser": "ef09143c1d7feea898adc074fa155adbf5bd15f1e139e93e73d51bf66dd84fcd",
+    "ReactorSim.Game": "171227d68fe653616dd5049c4679f9c4a82bda3982dcf3a78733f666cfd1c27e",
+    "ReactorSim.Core": "4cca6248b734378f81e05c47cbdf552f6cf8cde8725e904ef32270849259ade2"
+  },
+  "seed": 1001,
+  "requestedDays": 100,
+  "channelsPerDay": 2,
+  "policy": "oldest",
+  "pacingMode": "daily-turn",
+  "status": "superseded-by-single-day-integration",
+  "reason": "Stopped after user clarified that each turn must use one 86400-second integration interval, not 480 three-minute steps.",
+  "attemptedDay": 2,
+  "completed": false,
+  "completedDays": 2,
+  "elapsedSimulationDays": 2,
+  "pack": "candu6-two-group-diffusion-v1-lzc-tubes-v7",
+  "scorePolicy": "practice-channel-ripple-v3",
+  "physicsOverridden": false,
+  "scoringOverridden": false,
+  "inventoryOverridden": false,
+  "initial": {
+    "simulationDays": 0,
+    "completedDays": 0,
+    "runStatus": "paused",
+    "endReason": "",
+    "selected": [],
+    "score": 0,
+    "fuelConsumed": 0,
+    "operations": 0,
+    "thermalEnergyMwh": 0,
+    "electricalEnergyMwh": 0,
+    "averageLzcFraction": 0.49946195013916955,
+    "axialTiltFraction": -0.010282611490748264,
+    "maximumChannelKw": 5883.306723788484,
+    "maximumBundleKw": 547.3231087719861,
+    "zoneFills": [
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696,
+      0.4994619501391696
+    ],
+    "dailyResult": null,
+    "stateDigest": "sha256:72f016209869e425f4f0594b3b0ca7dcca802d1c8a047700cc356f23351ab454",
+    "replayDigest": "sha256:8172cb7484169a281c93e0be4b363cb1f25cf614748d9cfa46a0597ad060c3b2",
+    "dayWallSeconds": 0,
+    "totalWallSeconds": 26.0793101
+  },
+  "final": {
+    "simulationDays": 2,
+    "completedDays": 2,
+    "runStatus": "paused",
+    "endReason": "",
+    "selected": [],
+    "score": 46.630960334599145,
+    "fuelConsumed": 32,
+    "operations": 4,
+    "thermalEnergyMwh": 99072,
+    "electricalEnergyMwh": 31200,
+    "averageLzcFraction": 0.505915290707211,
+    "axialTiltFraction": -0.01021154637976713,
+    "maximumChannelKw": 5911.331163931488,
+    "maximumBundleKw": 547.5696908428961,
+    "zoneFills": [
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211,
+      0.505915290707211
+    ],
+    "dailyResult": {
+      "startSimulationTimeSeconds": 86400,
+      "endSimulationTimeSeconds": 172800,
+      "requestedChannels": [
+        118,
+        327
+      ],
+      "executedChannels": [
+        118,
+        327
+      ],
+      "unexecutedChannels": [],
+      "movements": [
+        {
+          "operationId": 3,
+          "channelIndex": 118,
+          "plan": {
+            "directionId": "toward-end-b",
+            "shiftCount": 8,
+            "incomingEnd": "A",
+            "outgoingEnd": "B",
+            "insertedPositions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "dischargedPositions": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ],
+            "retainedFromPositions": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "retainedToPositions": [
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          "score": {
+            "policyId": "practice-channel-ripple-v3",
+            "dischargeReward": 0,
+            "freshFuelCost": 0,
+            "netPoints": 0
+          },
+          "bundles": [
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001417",
+              "beforePosition": 0,
+              "afterPosition": 8,
+              "burnupMwdPerKg": 3.027709011424397
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001418",
+              "beforePosition": 1,
+              "afterPosition": 9,
+              "burnupMwdPerKg": 3.589503221590647
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001419",
+              "beforePosition": 2,
+              "afterPosition": 10,
+              "burnupMwdPerKg": 4.092314580862821
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001420",
+              "beforePosition": 3,
+              "afterPosition": 11,
+              "burnupMwdPerKg": 4.502253325256899
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001421",
+              "beforePosition": 4,
+              "burnupMwdPerKg": 4.790894548318409
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001422",
+              "beforePosition": 5,
+              "burnupMwdPerKg": 4.941350292229505
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001423",
+              "beforePosition": 6,
+              "burnupMwdPerKg": 4.94113781271007
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001424",
+              "beforePosition": 7,
+              "burnupMwdPerKg": 4.790247950163896
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001425",
+              "beforePosition": 8,
+              "burnupMwdPerKg": 7.535145793524856
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001426",
+              "beforePosition": 9,
+              "burnupMwdPerKg": 7.6904228047469045
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001427",
+              "beforePosition": 10,
+              "burnupMwdPerKg": 7.694547444802462
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000001428",
+              "beforePosition": 11,
+              "burnupMwdPerKg": 7.54690315761231
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100016",
+              "afterPosition": 0,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100017",
+              "afterPosition": 1,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100018",
+              "afterPosition": 2,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100019",
+              "afterPosition": 3,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100020",
+              "afterPosition": 4,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100021",
+              "afterPosition": 5,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100022",
+              "afterPosition": 6,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100023",
+              "afterPosition": 7,
+              "burnupMwdPerKg": 0
+            }
+          ]
+        },
+        {
+          "operationId": 4,
+          "channelIndex": 327,
+          "plan": {
+            "directionId": "toward-end-b",
+            "shiftCount": 8,
+            "incomingEnd": "A",
+            "outgoingEnd": "B",
+            "insertedPositions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "dischargedPositions": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11
+            ],
+            "retainedFromPositions": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "retainedToPositions": [
+              8,
+              9,
+              10,
+              11
+            ]
+          },
+          "score": {
+            "policyId": "practice-channel-ripple-v3",
+            "dischargeReward": 0,
+            "freshFuelCost": 0,
+            "netPoints": 0
+          },
+          "bundles": [
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003925",
+              "beforePosition": 0,
+              "afterPosition": 8,
+              "burnupMwdPerKg": 3.0260865183337704
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003926",
+              "beforePosition": 1,
+              "afterPosition": 9,
+              "burnupMwdPerKg": 3.5879225158526364
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003927",
+              "beforePosition": 2,
+              "afterPosition": 10,
+              "burnupMwdPerKg": 4.091085144261126
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003928",
+              "beforePosition": 3,
+              "afterPosition": 11,
+              "burnupMwdPerKg": 4.501758073703445
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003929",
+              "beforePosition": 4,
+              "burnupMwdPerKg": 4.7920516463068035
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003930",
+              "beforePosition": 5,
+              "burnupMwdPerKg": 4.942495340177331
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003931",
+              "beforePosition": 6,
+              "burnupMwdPerKg": 4.942370181217509
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003932",
+              "beforePosition": 7,
+              "burnupMwdPerKg": 4.791675161952042
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003933",
+              "beforePosition": 8,
+              "burnupMwdPerKg": 7.535184221647531
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003934",
+              "beforePosition": 9,
+              "burnupMwdPerKg": 7.689929916014225
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003935",
+              "beforePosition": 10,
+              "burnupMwdPerKg": 7.693811295224642
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000003936",
+              "beforePosition": 11,
+              "burnupMwdPerKg": 7.546129870044605
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100024",
+              "afterPosition": 0,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100025",
+              "afterPosition": 1,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100026",
+              "afterPosition": 2,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100027",
+              "afterPosition": 3,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100028",
+              "afterPosition": 4,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100029",
+              "afterPosition": 5,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100030",
+              "afterPosition": 6,
+              "burnupMwdPerKg": 0
+            },
+            {
+              "bundleId": "00000000-0000-0000-0000-000000100031",
+              "afterPosition": 7,
+              "burnupMwdPerKg": 0
+            }
+          ]
+        }
+      ],
+      "fuelUsed": 16,
+      "usefulBundlesDischarged": 8,
+      "scoreDelta": 23.245789089375428,
+      "thermalEnergyMwh": 49536,
+      "electricalEnergyMwhEstimate": 15600,
+      "averageLzcFillFraction": 0.505915290707211,
+      "axialTiltFraction": -0.01021154637976713,
+      "endReason": ""
+    },
+    "stateDigest": "sha256:0de85c4282ae27e134c20aa142e37456c1f13fa9a13617385e0f4f9a2bfe56c8",
+    "replayDigest": "sha256:edf4fcd02a0dc389b6b4bf5ef33b5cb3ff1cdcb28d9c234965fac672336326ba",
+    "dayWallSeconds": 0,
+    "totalWallSeconds": 778.067914
+  },
+  "dailyObservations": [
+    {
+      "simulationDays": 0,
+      "completedDays": 0,
+      "runStatus": "paused",
+      "endReason": "",
+      "selected": [],
+      "score": 0,
+      "fuelConsumed": 0,
+      "operations": 0,
+      "thermalEnergyMwh": 0,
+      "electricalEnergyMwh": 0,
+      "averageLzcFraction": 0.49946195013916955,
+      "axialTiltFraction": -0.010282611490748264,
+      "maximumChannelKw": 5883.306723788484,
+      "maximumBundleKw": 547.3231087719861,
+      "zoneFills": [
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696,
+        0.4994619501391696
+      ],
+      "dailyResult": null,
+      "stateDigest": "sha256:72f016209869e425f4f0594b3b0ca7dcca802d1c8a047700cc356f23351ab454",
+      "replayDigest": "sha256:8172cb7484169a281c93e0be4b363cb1f25cf614748d9cfa46a0597ad060c3b2",
+      "dayWallSeconds": 0,
+      "totalWallSeconds": 26.0793101
+    },
+    {
+      "simulationDays": 1,
+      "completedDays": 1,
+      "runStatus": "paused",
+      "endReason": "",
+      "selected": [
+        75,
+        324
+      ],
+      "score": 23.385171245223717,
+      "fuelConsumed": 16,
+      "operations": 2,
+      "thermalEnergyMwh": 49536,
+      "electricalEnergyMwh": 15600,
+      "averageLzcFraction": 0.5060643329041642,
+      "axialTiltFraction": -0.01027662341661213,
+      "maximumChannelKw": 5948.558616445589,
+      "maximumBundleKw": 548.9111293985812,
+      "zoneFills": [
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642,
+        0.5060643329041642
+      ],
+      "dailyResult": {
+        "startSimulationTimeSeconds": 0,
+        "endSimulationTimeSeconds": 86400,
+        "requestedChannels": [
+          75,
+          324
+        ],
+        "executedChannels": [
+          75,
+          324
+        ],
+        "unexecutedChannels": [],
+        "movements": [
+          {
+            "operationId": 1,
+            "channelIndex": 75,
+            "plan": {
+              "directionId": "toward-end-b",
+              "shiftCount": 8,
+              "incomingEnd": "A",
+              "outgoingEnd": "B",
+              "insertedPositions": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ],
+              "dischargedPositions": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ],
+              "retainedFromPositions": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "retainedToPositions": [
+                8,
+                9,
+                10,
+                11
+              ]
+            },
+            "score": {
+              "policyId": "practice-channel-ripple-v3",
+              "dischargeReward": 0,
+              "freshFuelCost": 0,
+              "netPoints": 0
+            },
+            "bundles": [
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000901",
+                "beforePosition": 0,
+                "afterPosition": 8,
+                "burnupMwdPerKg": 3.010674532102132
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000902",
+                "beforePosition": 1,
+                "afterPosition": 9,
+                "burnupMwdPerKg": 3.571875249755772
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000903",
+                "beforePosition": 2,
+                "afterPosition": 10,
+                "burnupMwdPerKg": 4.075034048167134
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000904",
+                "beforePosition": 3,
+                "afterPosition": 11,
+                "burnupMwdPerKg": 4.4858614867337145
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000905",
+                "beforePosition": 4,
+                "burnupMwdPerKg": 4.7763603544416435
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000906",
+                "beforePosition": 5,
+                "burnupMwdPerKg": 4.926733633528704
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000907",
+                "beforePosition": 6,
+                "burnupMwdPerKg": 4.926733633528704
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000908",
+                "beforePosition": 7,
+                "burnupMwdPerKg": 4.776360354441644
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000909",
+                "beforePosition": 8,
+                "burnupMwdPerKg": 7.521013047552124
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000910",
+                "beforePosition": 9,
+                "burnupMwdPerKg": 7.675948934099782
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000911",
+                "beforePosition": 10,
+                "burnupMwdPerKg": 7.680039656038087
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000000912",
+                "beforePosition": 11,
+                "burnupMwdPerKg": 7.5330064374271775
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100000",
+                "afterPosition": 0,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100001",
+                "afterPosition": 1,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100002",
+                "afterPosition": 2,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100003",
+                "afterPosition": 3,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100004",
+                "afterPosition": 4,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100005",
+                "afterPosition": 5,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100006",
+                "afterPosition": 6,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100007",
+                "afterPosition": 7,
+                "burnupMwdPerKg": 0
+              }
+            ]
+          },
+          {
+            "operationId": 2,
+            "channelIndex": 324,
+            "plan": {
+              "directionId": "toward-end-a",
+              "shiftCount": 8,
+              "incomingEnd": "B",
+              "outgoingEnd": "A",
+              "insertedPositions": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ],
+              "dischargedPositions": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ],
+              "retainedFromPositions": [
+                8,
+                9,
+                10,
+                11
+              ],
+              "retainedToPositions": [
+                0,
+                1,
+                2,
+                3
+              ]
+            },
+            "score": {
+              "policyId": "practice-channel-ripple-v3",
+              "dischargeReward": 0,
+              "freshFuelCost": 0,
+              "netPoints": 0
+            },
+            "bundles": [
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003889",
+                "beforePosition": 0,
+                "burnupMwdPerKg": 7.5330064374271775
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003890",
+                "beforePosition": 1,
+                "burnupMwdPerKg": 7.680039656038087
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003891",
+                "beforePosition": 2,
+                "burnupMwdPerKg": 7.675948934099782
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003892",
+                "beforePosition": 3,
+                "burnupMwdPerKg": 7.521013047552124
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003893",
+                "beforePosition": 4,
+                "burnupMwdPerKg": 4.776360354441644
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003894",
+                "beforePosition": 5,
+                "burnupMwdPerKg": 4.926733633528704
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003895",
+                "beforePosition": 6,
+                "burnupMwdPerKg": 4.926733633528704
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003896",
+                "beforePosition": 7,
+                "burnupMwdPerKg": 4.7763603544416435
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003897",
+                "beforePosition": 8,
+                "afterPosition": 0,
+                "burnupMwdPerKg": 4.4858614867337145
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003898",
+                "beforePosition": 9,
+                "afterPosition": 1,
+                "burnupMwdPerKg": 4.075034048167134
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003899",
+                "beforePosition": 10,
+                "afterPosition": 2,
+                "burnupMwdPerKg": 3.571875249755772
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003900",
+                "beforePosition": 11,
+                "afterPosition": 3,
+                "burnupMwdPerKg": 3.010674532102132
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100008",
+                "afterPosition": 4,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100009",
+                "afterPosition": 5,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100010",
+                "afterPosition": 6,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100011",
+                "afterPosition": 7,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100012",
+                "afterPosition": 8,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100013",
+                "afterPosition": 9,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100014",
+                "afterPosition": 10,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100015",
+                "afterPosition": 11,
+                "burnupMwdPerKg": 0
+              }
+            ]
+          }
+        ],
+        "fuelUsed": 16,
+        "usefulBundlesDischarged": 8,
+        "scoreDelta": 23.385171245223717,
+        "thermalEnergyMwh": 49536,
+        "electricalEnergyMwhEstimate": 15600,
+        "averageLzcFillFraction": 0.5060643329041642,
+        "axialTiltFraction": -0.01027662341661213,
+        "endReason": ""
+      },
+      "stateDigest": "sha256:4992c2e60cf201a0bb7c92fc187701880cec981ae7636183eac3325ba6547c9d",
+      "replayDigest": "sha256:3860f67440659f0eb33cdf196a9b7a280cbfaee3f743207d8d8b8dc99f3a6858",
+      "dayWallSeconds": 398.0393132,
+      "totalWallSeconds": 424.1805734
+    },
+    {
+      "simulationDays": 2,
+      "completedDays": 2,
+      "runStatus": "paused",
+      "endReason": "",
+      "selected": [
+        118,
+        327
+      ],
+      "score": 46.630960334599145,
+      "fuelConsumed": 32,
+      "operations": 4,
+      "thermalEnergyMwh": 99072,
+      "electricalEnergyMwh": 31200,
+      "averageLzcFraction": 0.505915290707211,
+      "axialTiltFraction": -0.01021154637976713,
+      "maximumChannelKw": 5911.331163931488,
+      "maximumBundleKw": 547.5696908428961,
+      "zoneFills": [
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211,
+        0.505915290707211
+      ],
+      "dailyResult": {
+        "startSimulationTimeSeconds": 86400,
+        "endSimulationTimeSeconds": 172800,
+        "requestedChannels": [
+          118,
+          327
+        ],
+        "executedChannels": [
+          118,
+          327
+        ],
+        "unexecutedChannels": [],
+        "movements": [
+          {
+            "operationId": 3,
+            "channelIndex": 118,
+            "plan": {
+              "directionId": "toward-end-b",
+              "shiftCount": 8,
+              "incomingEnd": "A",
+              "outgoingEnd": "B",
+              "insertedPositions": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ],
+              "dischargedPositions": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ],
+              "retainedFromPositions": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "retainedToPositions": [
+                8,
+                9,
+                10,
+                11
+              ]
+            },
+            "score": {
+              "policyId": "practice-channel-ripple-v3",
+              "dischargeReward": 0,
+              "freshFuelCost": 0,
+              "netPoints": 0
+            },
+            "bundles": [
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001417",
+                "beforePosition": 0,
+                "afterPosition": 8,
+                "burnupMwdPerKg": 3.027709011424397
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001418",
+                "beforePosition": 1,
+                "afterPosition": 9,
+                "burnupMwdPerKg": 3.589503221590647
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001419",
+                "beforePosition": 2,
+                "afterPosition": 10,
+                "burnupMwdPerKg": 4.092314580862821
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001420",
+                "beforePosition": 3,
+                "afterPosition": 11,
+                "burnupMwdPerKg": 4.502253325256899
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001421",
+                "beforePosition": 4,
+                "burnupMwdPerKg": 4.790894548318409
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001422",
+                "beforePosition": 5,
+                "burnupMwdPerKg": 4.941350292229505
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001423",
+                "beforePosition": 6,
+                "burnupMwdPerKg": 4.94113781271007
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001424",
+                "beforePosition": 7,
+                "burnupMwdPerKg": 4.790247950163896
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001425",
+                "beforePosition": 8,
+                "burnupMwdPerKg": 7.535145793524856
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001426",
+                "beforePosition": 9,
+                "burnupMwdPerKg": 7.6904228047469045
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001427",
+                "beforePosition": 10,
+                "burnupMwdPerKg": 7.694547444802462
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000001428",
+                "beforePosition": 11,
+                "burnupMwdPerKg": 7.54690315761231
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100016",
+                "afterPosition": 0,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100017",
+                "afterPosition": 1,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100018",
+                "afterPosition": 2,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100019",
+                "afterPosition": 3,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100020",
+                "afterPosition": 4,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100021",
+                "afterPosition": 5,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100022",
+                "afterPosition": 6,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100023",
+                "afterPosition": 7,
+                "burnupMwdPerKg": 0
+              }
+            ]
+          },
+          {
+            "operationId": 4,
+            "channelIndex": 327,
+            "plan": {
+              "directionId": "toward-end-b",
+              "shiftCount": 8,
+              "incomingEnd": "A",
+              "outgoingEnd": "B",
+              "insertedPositions": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7
+              ],
+              "dischargedPositions": [
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11
+              ],
+              "retainedFromPositions": [
+                0,
+                1,
+                2,
+                3
+              ],
+              "retainedToPositions": [
+                8,
+                9,
+                10,
+                11
+              ]
+            },
+            "score": {
+              "policyId": "practice-channel-ripple-v3",
+              "dischargeReward": 0,
+              "freshFuelCost": 0,
+              "netPoints": 0
+            },
+            "bundles": [
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003925",
+                "beforePosition": 0,
+                "afterPosition": 8,
+                "burnupMwdPerKg": 3.0260865183337704
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003926",
+                "beforePosition": 1,
+                "afterPosition": 9,
+                "burnupMwdPerKg": 3.5879225158526364
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003927",
+                "beforePosition": 2,
+                "afterPosition": 10,
+                "burnupMwdPerKg": 4.091085144261126
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003928",
+                "beforePosition": 3,
+                "afterPosition": 11,
+                "burnupMwdPerKg": 4.501758073703445
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003929",
+                "beforePosition": 4,
+                "burnupMwdPerKg": 4.7920516463068035
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003930",
+                "beforePosition": 5,
+                "burnupMwdPerKg": 4.942495340177331
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003931",
+                "beforePosition": 6,
+                "burnupMwdPerKg": 4.942370181217509
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003932",
+                "beforePosition": 7,
+                "burnupMwdPerKg": 4.791675161952042
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003933",
+                "beforePosition": 8,
+                "burnupMwdPerKg": 7.535184221647531
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003934",
+                "beforePosition": 9,
+                "burnupMwdPerKg": 7.689929916014225
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003935",
+                "beforePosition": 10,
+                "burnupMwdPerKg": 7.693811295224642
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000003936",
+                "beforePosition": 11,
+                "burnupMwdPerKg": 7.546129870044605
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100024",
+                "afterPosition": 0,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100025",
+                "afterPosition": 1,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100026",
+                "afterPosition": 2,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100027",
+                "afterPosition": 3,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100028",
+                "afterPosition": 4,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100029",
+                "afterPosition": 5,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100030",
+                "afterPosition": 6,
+                "burnupMwdPerKg": 0
+              },
+              {
+                "bundleId": "00000000-0000-0000-0000-000000100031",
+                "afterPosition": 7,
+                "burnupMwdPerKg": 0
+              }
+            ]
+          }
+        ],
+        "fuelUsed": 16,
+        "usefulBundlesDischarged": 8,
+        "scoreDelta": 23.245789089375428,
+        "thermalEnergyMwh": 49536,
+        "electricalEnergyMwhEstimate": 15600,
+        "averageLzcFillFraction": 0.505915290707211,
+        "axialTiltFraction": -0.01021154637976713,
+        "endReason": ""
+      },
+      "stateDigest": "sha256:0de85c4282ae27e134c20aa142e37456c1f13fa9a13617385e0f4f9a2bfe56c8",
+      "replayDigest": "sha256:edf4fcd02a0dc389b6b4bf5ef33b5cb3ff1cdcb28d9c234965fac672336326ba",
+      "dayWallSeconds": 353.8814027,
+      "totalWallSeconds": 778.06684
+    }
+  ],
+  "wallSeconds": 778.0679143
+}

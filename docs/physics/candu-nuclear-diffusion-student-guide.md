@@ -1,5 +1,12 @@
 # Nuclear Diffusion Theory in a CANDU Reactor
 
+This guide preserves diffusion, fuel and poison explanations from earlier research.
+Its phase/gate status and point-kinetics design are historical. The current web game
+uses [these active equations](active-two-group-solver.md), [daily equilibrium turns](../gameplay/daily-turn-mode.md)
+and [v8 axial boundaries](axial-marshak-v8.md). Retired research implementations
+and their specifications are available in Git history.
+
+
 **Guide version:** 2.8
 **Last checked:** 2026-08-24
 **Status:** Living documentation; update when the physics specifications,
@@ -16,148 +23,6 @@ refuelling game in plain language. It deliberately separates four things:
 The distinction matters. A detailed equation in a specification is not yet a
 working simulator, and a number reported by a paper is not automatically a
 project constant.
-
-## The short project answer
-
-### What physics is implemented now?
-
-**A bounded static-solver foundation is implemented in Core.** It is not a
-feature-complete or validated reactor simulator. The completed Phase 3 work
-provides deterministic topology, inventory, snapshots, clock/queue, archive,
-replay, atomic application, and invalid-data contracts. G3 is a technical PASS.
-
-The completed Phase 4 slices provide:
-
-- P4-T01: deterministic topology-driven node, neighbour, and boundary-stencil
-  assembly;
-- P4-T02: coefficient/conductance binding and a matrix-free
-  removal-plus-leakage operator; and
-- P4-T03: one immutable two-group source/eigen iteration with deterministic
-  scalar Jacobi inner solves, eigenvalue update, and power normalization; and
-- P4-T04: caller-supplied outer convergence, zero-safe residual diagnostics,
-  deterministic failure reasons, and fail-closed invalid-state results.
-- P4-T05: synthetic one-node algebraic/no-leakage, symmetric, homogeneous,
-  deliberate-nonconvergence, and canonical-order determinism coverage.
-- P4-T08: a package-free synthetic Core benchmark that reports machine-specific
-  timing and allocation observations without establishing a performance target.
-- P4-T06-R3: a frozen boundary for an offline reduced/synthetic producer and
-  interpolation data, with the existing coefficient-table contract as the only
-  runtime-facing material-data surface.
-- P5-T01: declarative 4-bundle/8-bundle scheme metadata, canonical insertion
-  and discharge position plans, explicit flow-direction binding, and fail-closed
-  catalog validation.
-- P5-T02: an immutable, all-or-nothing location-layer shift that preserves
-  retained bundle identities and represented basic state, creates fresh
-  zero-energy entries, and returns deterministic ordered discharge states.
-- P5-T03: named immutable refuelling mapping and atomicity event bodies,
-  canonical position bindings, paired event-log append, and basic discharge
-  audit records over the current Core bundle fields.
-- P5-T04: immutable accepted-power projections, explicit positive-time
-  left-endpoint energy integration, derived burnup, monotonicity/overflow
-  checks, and proposed core-state-version advancement over the current Core
-  bundle fields.
-- P5-T05: immutable burnup-indexed coefficient values, strict ordered table
-  metadata, coefficient-domain validation, exact-knot and linear-interpolation
-  lookup, derived `chi_2`, and fail-closed out-of-range behavior.
-- P5-T06: explicit epoch/period/index spatial cadence, burnup-table-to-node
-  coefficient rebinding, preserved validated conductances, deterministic
-  spatial solving, and atomic lifecycle spatial/power binding acceptance.
-- P5-T07: explicit Phase 5 invariant reports for bundle count, identity,
-  location, nonnegative derived burnup, exact energy accounting, interval
-  power-times-time accounting, monotonicity, and refuelling preservation,
-  insertion, and discharge partition checks.
-- P5-T08: test-only deterministic multistep S4/S8 history evidence with
-  explicit interval/refuelling ordering, shuffled-input replay equality,
-  per-bundle burnup records, ordered discharge traces, and identity non-reuse.
-- P5-T09: complete I/Xe-bearing lifecycle, discharge, power-history, digest,
-  and transaction contracts over the frozen Phase 2 state boundaries.
-- P5-T10: structural sequence mapping for the G4-R6-approved ReducedModel
-  authority, including exact final-node burnup mapping and the approved golden
-  consumer.
-- P5-T11 through P5-T16: complete-state burnup and lookup binding, source and
-  history digest authentication, lifecycle-bound snapshot state, persistence-
-  safe archive round-trip, restore-time reconciliation, and restart-self-
-  contained snapshot reconstruction.
-- P6-T01 through P6-T07: a limited, engine-neutral regulating-system contract
-  for 14 logical liquid zones, adjusters, bulk poison, controller projections,
-  queue transitions, and five deterministic synthetic scenarios. This is
-  synthetic/test-only evidence, not an external reactor-control model.
-
-These slices now establish a bounded, project-authored ReducedModel validation
-baseline for the engine-neutral Core. G4-R6 is `PASS` for the selected
-ReducedModel scope, and G5 is `PASS` for Phase 5 within that same boundary.
-The result includes approved golden-consumer evidence and the complete-state
-correction chain through P5-T16. It does not establish direct production or
-full-core CANDU/DONJON5/DRAGON5 authority, production thresholds, or a
-playable CLI game loop. R4/R5 and the earlier G4-R3/G4-R5 dispositions remain
-preserved as historical candidate/no-admission evidence; RRS and poison
-runtime behavior remain later-phase work.
-P5-T02 is bounded to the fields represented by the current immutable
-`BundleInventory`; fresh-template resolution, complete discharge/event
-envelopes, full power-history/digest lifecycle binding, coefficient lookup,
-and later physics integration were completed only by later bounded tasks.
-P5-T03 adds the approved
-mapping/atomicity body shapes and basic discharge evidence, but does not yet
-claim the complete I/Xe-bearing `DischargeRecordV1` or `RefuelTransactionV1`
-projection. P5-T04 integrates only the current energy/mass fields. P5-T05 adds
-the bounded coefficient-table domain and lookup contract, but does not claim
-canonical data-pack byte serialization/checksum verification, solver-side
-coefficient recomputation, the complete P2-T03 `PowerSnapshot`, or a
-single-owner lifecycle commit. P5-T06 adds a bounded coefficient-to-spatial-
-state recomputation boundary and exact periodic cadence/lifecycle binding, but
-does not claim the full scheduler, kinetics/I-Xe transitions, canonical
-data-pack checksum serialization, complete power-history binding, or reference
-and golden evidence. P5-T07 adds the exact bounded invariant checks over the
-current Core inventory, burnup interval, and refuelling result contracts. P5-T08
-adds deterministic synthetic multistep history evidence by composing those
-contracts, but does not claim a production history schema, complete
-I/Xe/lifecycle/discharge envelope, reference comparison, or golden evidence.
-P5-T09 now supplies the complete bounded lifecycle/I-Xe/power-history and
-transaction contracts. P5-T10 is complete for the G4-R6-approved ReducedModel
-path and supplies structural sequence evidence; P5-T11 through P5-T16 complete
-the authenticated transition, persistence, and restart boundary. Phase 5/G5
-is closed `PASS` for the approved ReducedModel/Core scope. Phase 6/G6 is a
-`CONDITIONAL PASS` for the bounded synthetic/test-only Core/ReducedModel scope:
-the implementation is complete for that evidence boundary, but an applicable
-RRS comparison package is still required before an unconditional or external
-claim is possible.
-
-The 2026-08-24 recovery handoff also completed `TEST-INFRA-01`,
-`P6-INTEGRATION-01`, `P6-INTERNALS-01`, and `CORE-NAMING-01`. Those tasks
-refreshed test artifact portability, the RRS queue-admission seam, internal
-canonical-byte ownership, and the task-ID compatibility inventory. They did
-not change the physics model, public schema, golden authority, or G6 scope.
-`STATUS-VISIBILITY-01` is complete as the derived-documentation handoff; no
-named next task is selected until the owner decides whether to start planned
-Phase 7 or re-sequence the explicitly non-physics Phase 8 CLI slice. The
-project scope register and linked reports remain authoritative.
-
-The implemented Phase 1 work is an **offline reference pipeline**:
-
-- pinned DRAGON5 and DONJON5 smoke-case provenance and runners;
-- strict parsers/exporters for selected reference output;
-- compact parser-only fixtures, manifests, hashes, and repeatability checks.
-
-Those tools establish how future evidence may be collected. They do not run at
-game time and their `KINF` or `K-effective` observations are not runtime
-constants, solver targets, or golden data.
-
-### What exists as a physics design?
-
-The retained engine-neutral specifications define implementation inputs for:
-
-- explicit CANDU-style topology and boundary metadata;
-- a static two-group diffusion eigenproblem;
-- power normalization and deterministic source iteration;
-- refuelling, bundle identity, burnup, and coefficient interpolation;
-- point kinetics, I-135/Xe-135, regulating control, and optional feedback;
-- observables, deterministic serialization, and validation evidence.
-
-The specifications remain the blueprint for implementation. The current game
-uses bounded project-authored ReducedModel profiles and synthetic regulating
-system fixtures. Direct production/full-core external authority and production
-thresholds remain deferred. Kinetics and xenon are supported by the Core;
-temperature and purity feedback remain optional future work.
 
 ## 1. Why a reactor can become a game
 
@@ -298,130 +163,6 @@ Diffusion is an approximation. It becomes less reliable near sharp voids,
 strongly directional streaming, or detailed boundaries. Those limitations are
 part of why DRAGON5/DONJON5 remain offline reference tools rather than runtime
 dependencies.
-
-#### 4.2.1 The reduced offline data boundary
-
-The game-facing model is intentionally smaller than a transport calculation.
-P4-T06-R2D retired direct Candu6.x2m admission into the P2-T02 runtime
-contracts, and P4-T06-R3 freezes the replacement boundary. An offline
-synthetic or separately admitted reduced producer may create material values
-for burnup-indexed interpolation, but the runtime consumes only the existing
-validated `BurnupCoefficientTableV1` projection.
-
-The table owns material coefficients, burnup knots, material identity, units,
-provenance, version, and checksum identity. It does not own topology, flow
-direction, node volume, edge or boundary conductance, flux, power,
-normalization, or convergence policy. Those values remain explicit inputs to
-the existing topology-bound `SpatialRecomputeRequestV1` and P2-T02 solver.
-Runtime lookup is exact-knot or linear interpolation within the table domain;
-out-of-range, invalid, stale, or ambiguously mapped data fails closed. The
-reduced producer, reference tools, exact reference data, and raw artifacts
-remain offline. See the [R3 boundary specification](../spec/reduced-model-interpolation-boundary-v1.md).
-
-### 4.2.2 Models used by tests and gates
-
-The project uses several related models for different kinds of evidence. They
-must not be read as one interchangeable reactor model. A test can pass because
-it proves a contract, a gate can pass for a bounded ReducedModel domain, and
-the direct production or full-core authority can still remain deferred.
-
-```text
-                         offline only
-                 +-------------------------+
-                 | DRAGON5 / DONJON5 cases  |
-                 | reference provenance    |
-                 +------------+------------+
-                              |
-                              v  data and case boundary, never a runtime call
-                 +-------------------------+
-                 | P2-T02 two-group         |
-                 | finite-volume contract   |
-                 +------------+------------+
-                              |
-             +----------------+----------------+
-             |                                 |
-             v                                 v
-  +------------------------+       +----------------------------+
-  | Synthetic solver cases |       | Representative ReducedModel|
-  | 1, 2, and 3-node tests |       | 4 channels x 12 positions   |
-  | P4-T05 and G4I / R4    |       | G4J candidate -> R5 blocked |
-  +------------+-----------+       | G4K oracle -> R6 approved   |
-               |                   +-------------+--------------+
-               +-------------------------+-------+
-                                         v
-                         +-------------------------+
-                         | Engine-neutral Core    |
-                         | spatial and state code |
-                         +------------+------------+
-                                      |
-                                      v
-                         +-------------------------+
-                         | Phase 5 state/history  |
-                         | ledger and persistence |
-                         +------------+------------+
-                                      |
-                                      v
-                         +-------------------------+
-                         | G5 PASS for the       |
-                         | ReducedModel/Core     |
-                         | boundary only         |
-                         +-------------------------+
-```
-
-The model cards below explain what each layer means.
-
-- **Offline reference model.** DRAGON5 and DONJON5 are used to establish
-  reference-case provenance and, when separately admitted, compact offline
-  data. They are never called by the runtime. No current G4 or G5 result
-  claims direct DRAGON5, DONJON5, or named-station authority.
-- **Frozen two-group diffusion contract.** P2-T02 defines the finite-volume
-  two-group eigenproblem, conductance-based leakage, source ordering, signs,
-  normalization, and convergence diagnostics. P4-T01 through P4-T05 exercise
-  this contract in engine-neutral Core code. It is the approved equation and
-  data boundary, not by itself a full-core validation result.
-- **Synthetic solver model.** P4-T05 uses the one-node/no-leakage algebraic
-  example, a two-node reciprocal symmetric case, and a homogeneous three-node
-  chain, plus deliberate nonconvergence and input-order permutations. P4-T06-G4I
-  adds a heterogeneous four-node manufactured solution. These models test
-  arithmetic, signs, normalization, failure reporting, and determinism. They
-  are synthetic mathematical checks and cannot become direct CANDU authority.
-- **Representative ReducedModel authority.** The G4K package retains the
-  explicit 4-channel by 12-position topology: 48 nodes, 92 reciprocal edges,
-  104 boundaries, alternating flow, burnup projection, two S4 shift
-  directions, and overlay cases. The five scenarios are `fresh_start`,
-  `equilibrium_like`, `refuelled_4_bundle_shift`, `rrs_tilt_perturbation`,
-  and `bulk_poison_perturbation`. G4J was a deterministic project-authored
-  candidate, but G4-R5 correctly left it `Candidate` / `Deferred` / `NoGolden`.
-  G4K generated expected values through a separate Python/NumPy dense
-  generalized-eigen path. G4-R6 then approved an `ApprovedGolden` payload and
-  six quantity-specific profiles for the bounded `ReducedModel` domain only.
-- **Phase 5 state/history model.** P5-T01 through P5-T16 add the ledger around
-  the spatial model: explicit S4/S8 movement, bundle identity and location,
-  accepted power, energy and burnup, coefficient lookup, spatial recompute
-  cadence, I/Xe-bearing lifecycle state, event history, digest binding, and
-  save/load restoration. P5-T10 and G5 use the approved ReducedModel projection
-  to check structural sequence mapping and exact accounting/authentication
-  contracts. They do not claim an independent external numerical-drift result.
-- **RRS and feedback extension.** The RRS tilt and bulk-poison cases above are
-  controlled overlays in the bounded ReducedModel evidence. P6-T01 through
-  P6-T07 now implement the limited 14-zone, adjuster, poison, controller,
-  queue, and scenario contracts as synthetic/test-only Core evidence. G6 is a
-  `CONDITIONAL PASS`, because no applicable external or production RRS
-  comparison package is admitted.
-
-| Evidence | Model used | What a passing result means | Boundary that remains |
-| --- | --- | --- | --- |
-| P4-T05 synthetic tests | Algebraic one-node and toy two/three-node diffusion cases | Frozen operator, normalization, diagnostics, nonconvergence, and deterministic ordering behave as specified | No external or production numerical authority |
-| P4-T06-G4I / G4-R4 | Four-node heterogeneous manufactured solution | Synthetic spatial behavior can be reproduced and, for the bounded synthetic domain, conditionally admitted | Not a CANDU, transport, burnup, or full-core result |
-| P4-T06-G4J / G4-R5 | Project-authored 48-node ReducedModel candidate with five scenarios | Candidate generation and Core comparison are deterministic | Candidate remained unapproved; G4-R5 remained blocked |
-| P4-T06-G4K / G4-R6 | Same bounded ReducedModel domain with independent dense generalized-eigen expected values | Five scenarios and six quantity profiles support `ApprovedGolden` use for `ReducedModel` | No direct DRAGON5/DONJON5, production, release, safety, or 380-channel claim |
-| P5-T10 / G5 | ReducedModel sequence plus the Phase 5 bundle/lifecycle ledger | Refuelling movement, identity, energy/burnup mapping, digests, persistence, and restart contracts pass exactly within the admitted scope | Not an independent external burnup or full-core numerical comparison |
-| Phase 6 / G6 | Synthetic/test-only RRS state, actuator, queue, and five-scenario model | P6-T01 through P6-T07 complete; G6 `CONDITIONAL PASS`; 46 focused tests and the full regression pass | No applicable RRS comparison, production, external, or golden authority |
-
-This map is the safest way to interpret the evidence: G4-R5 did not fail to
-clear a model that G4-R6 later silently relabelled. R5 rejected the candidate
-as authority. G4K supplied a new independent authority package, and R6 passed
-only the narrower ReducedModel scope that package actually covered.
 
 ### 4.3 Homogenization and energy groups
 
@@ -920,49 +661,6 @@ a separate project-authored ReducedModel authority with six approved profiles,
 and G5 is `PASS` for the bounded Phase 5/Core sequence and lifecycle scope.
 Neither gate establishes direct production/full-core CANDU authority.
 
-### 6.7 Phase 5/G5 status and validation snapshot
-
-The final same-context G5 review returned `PASS` for the approved
-`ReducedModel` / engine-neutral Core scope. The result is a bounded validation
-and lifecycle approval, not a direct production or full-core external solver
-baseline.
-
-| Evidence | Result |
-| --- | --- |
-| P3-T04 serialization regression | 5/5 PASS |
-| P5-T11/P5-T16 focused complete-state regression | 7/7 PASS |
-| Phase 5 focused Core tests | 44/44 PASS |
-| Full Core and Golden suites | Core 110/110; Golden 19/19 PASS |
-| Complete solution regression | 129/129 PASS |
-| G4-R6 approved consumer | 3/3 PASS |
-| P5-T10 sequence consumer | 2/2 PASS |
-| Profile digest audit and formatter | 6 profiles PASS; clean |
-
-The review receipt is verified as `gpt-5.6-sol` with high effort in the reused
-reviewer context. The approved G4-R6 artifact and manifest hashes are
-unchanged. Direct production/external authority remains deferred, and the
-Phase 6/G6 result is recorded separately below.
-
-### 6.8 Current test results and evidence boundary
-
-The following checks were recorded or rerun on 2026-08-24 with the
-repository-pinned .NET SDK 10.0.302. They are implementation evidence, not a
-claim of production or external CANDU validation.
-
-| Check | Fresh result |
-| --- | --- |
-| Direct full headless solution regression | Core 158/158 PASS; Golden 19/19 PASS; zero failures and zero skips |
-| Direct Phase 6 focused regression | Core 46/46 PASS; zero failures and zero skips |
-| `TEST-INFRA-01` artifact-output wrapper recovery | Core 156/156 and Golden 19/19 PASS; zero failures and zero skips |
-
-The direct run shows 177 passing headless tests in the normal repository
-layout. `TEST-INFRA-01` closed the former artifact-output location defect for
-the recovery baseline; the later direct count includes the separately
-characterized Phase 6 integration and internal tests. All Phase 6 results
-remain synthetic/test-only contract evidence. G6 is still a `CONDITIONAL PASS`:
-no applicable RRS comparison package, production/full-core CANDU authority, or
-unconditional external claim has been admitted.
-
 ## 7. Point kinetics and xenon history
 
 ### 7.1 Quasi-static amplitude
@@ -1215,30 +913,12 @@ This project does not implement or investigate as runtime behavior:
 - hidden random behavior, Unity-frame-driven physics, or nondeterministic
   parallel reductions.
 
-## 13. Living-document maintenance
-
-This guide is a derived teaching document. Specifications and ADRs record the
-technical design, executable code records current behavior, and the literature
-digest supplies context and candidate-case evidence only.
-
-Update the guide when any of the following changes:
-
-- a physics specification, unit, sign, equation, state field, or numerical
-  method changes;
-- a runtime physics class or data-pack loader is implemented;
-- the literature digest adds or reclassifies a relevant claim; or
-- the game loop, scoring, player decision, or out-of-scope boundary changes.
-
 ## 14. References
 
 - [Topology, indexing, units, and boundaries](../spec/topology-indexing-units-boundaries-v1.md)
 - [Two-group solver, normalization, and convergence](../spec/two-group-solver-normalization-convergence-v1.md)
 - [Refuelling and burnup transitions](../spec/refuelling-burnup-transitions-v1.md)
-- [Kinetics, xenon, RRS, and feedback](../spec/kinetics-xenon-rrs-feedback-v1.md)
-- [Observables and validation methodology](../spec/observables-validation-methodology-v1.md)
-- [Reduced-model interpolation boundary](../spec/reduced-model-interpolation-boundary-v1.md)
 - [CANDU literature digest](../reference/candu-literature-digest-v1.md)
-- [Engine-neutral JSON serialization](../adr/ADR-011-engine-neutral-json-serialization.md)
 
 ### Literature evidence boundary
 
@@ -1269,27 +949,3 @@ normalization, output definition, independent reproduction, and licensing.
 | Reactivity | A signed measure derived from `k` that indicates a tendency to change power |
 | Source iteration | Repeatedly solve a spatial balance using the latest fission source |
 | Xenon poisoning | Absorption by Xe-135, whose concentration depends on recent power history |
-
-## Change record
-
-| Version | Date | Change |
-| --- | --- | --- |
-| 2.8 | 2026-08-24 | Refreshed the living handoff with direct Core 158/158 and Golden 19/19, Phase 6 focused 46/46, the TEST-INFRA-01 wrapper recovery, the completed Phase 6 refactor/naming chain, and the unchanged synthetic-only G6 limitation |
-| 2.7 | 2026-08-21 | Added the G6 conditional synthetic/test-only disposition and recorded the then-current direct and artifact-wrapper validation boundary; kept external RRS authority deferred |
-| 2.6 | 2026-08-18 | Added the ReducedModel channel-plane geometry visualization; preserved authority boundaries |
-| 2.5 | 2026-08-18 | Added model cards, evidence mapping, and visualizations |
-| 2.4 | 2026-08-18 | Recorded G4-R6 approval, the final G5 PASS for the bounded ReducedModel/Core scope, P5-T10 through P5-T16 evidence, and Phase 6/G6 activation; kept direct production/full-core authority deferred |
-| 2.3 | 2026-08-16 | Recorded the G4-R3 BLOCKED disposition, the P4-T06-G4H next handoff, and the P5-T10/G5 dependency; kept production tolerances and golden status deferred |
-| 2.2 | 2026-08-16 | Recorded the R2D-selected reduced/synthetic offline boundary, existing-table interpolation surface, direct Candu6.x2m admission retirement, and completed P5-T09 lifecycle/I-Xe contract status; kept R4/R5, G4/G5, reference comparisons, and golden consumers pending |
-| 2.1 | 2026-08-15 | Recorded P5-T08 test-only deterministic multistep S4/S8 history evidence, explicit interval/refuelling ordering, shuffled-input replay equality, complete per-bundle/discharge trace coverage, and identity non-reuse; kept production history schema, reference comparisons, golden consumers, and G4/G5 approval pending |
-| 2.0 | 2026-08-15 | Recorded P5-T07 explicit bundle-count, identity, location, nonnegative-burnup, exact energy-accounting, interval-energy, monotonicity, and refuelling partition invariants; kept complete lifecycle/I-Xe/power-history envelopes, deterministic long histories, reference comparisons, golden consumers, and G4/G5 approval pending |
-| 1.9 | 2026-08-15 | Recorded P5-T06 explicit epoch/period/index cadence, burnup-selected node coefficient rebinding, preserved validated conductances, deterministic spatial solve, exact topology-instance binding, and converged atomic lifecycle acceptance; kept full scheduler/kinetics/I-Xe transitions, canonical checksum serialization, complete power-history binding, reference comparisons, golden consumers, and G4 approval pending |
-| 1.8 | 2026-08-15 | Recorded P5-T05 immutable burnup-indexed coefficient values/table metadata, strict-knot validation, exact/linear lookup, derived `chi_2`, and fail-closed out-of-range behavior; kept canonical data-pack checksum verification, solver recomputation, complete lifecycle/history binding, reference comparisons, golden consumers, and G4 approval pending |
-| 1.7 | 2026-08-15 | Recorded P5-T04 accepted bundle-power binding, explicit left-endpoint energy integration, derived burnup, immutable replacement, monotonicity/overflow validation, and proposed version advancement; kept full power-history/digest lifecycle binding, coefficient lookup, reference comparisons, golden consumers, and G4 approval pending |
-| 1.6 | 2026-08-15 | Recorded P5-T03 named refuelling mapping/atomicity bodies, canonical position bindings, immutable paired event append, and bounded basic discharge audit records; kept complete I/Xe-bearing discharge/transaction envelopes, burnup, coefficient lookup, reference comparisons, golden consumers, and G4 approval pending |
-| 1.5 | 2026-08-15 | Recorded P5-T02 immutable atomic directional movement over the current BundleInventory fields; kept complete lifecycle/I/Xe/event envelopes, burnup, coefficient lookup, reference comparisons, golden consumers, and G4 approval pending |
-| 1.4 | 2026-08-15 | Recorded P5-T01 declarative S4/S8 scheme metadata and canonical flow-bound position-plan validation; kept atomic movement, burnup, reference comparisons, golden consumers, and G4 approval pending |
-| 1.3 | 2026-08-15 | Recorded P4-T05 synthetic solved-case coverage; kept traceable reference comparisons, golden consumers, and G4 approval pending |
-| 1.2 | 2026-08-15 | Recorded P4-T04 outer convergence and fail-closed diagnostics as implemented; kept synthetic coverage, reference comparisons, golden consumers, and G4 approval pending |
-| 1.1 | 2026-08-15 | Corrected implemented Phase 3/4 status; separated the one-iteration solver foundation from pending outer convergence, comparison, golden-data, and G4 work; aligned maintenance and authority references |
-| 1.0 | 2026-08-10 | Initial extraction of implemented status, P2 physics contracts, planned numerical methods, game coupling, and maintenance checks |

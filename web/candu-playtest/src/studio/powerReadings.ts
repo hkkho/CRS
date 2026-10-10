@@ -1,15 +1,18 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
+import { CHANNEL_COLOR_MIN_WATTS, BUNDLE_COLOR_MIN_WATTS } from "./displayScales";
 export type MapMode = "burnup" | "power" | "ripple" | "bundle-power";
 // Legacy hosts have no published limits; these defaults affect presentation only.
 export const channelLimit = (snapshot: CanduSnapshot): number => snapshot.ripple?.maximumChannelPowerWatts ?? 7_300_000;
 export const bundleLimit = (snapshot: CanduSnapshot): number => snapshot.ripple?.maximumBundlePowerWatts ?? 935_000;
+export const channelColorMinimum = (snapshot: CanduSnapshot): number => channelLimit(snapshot) > CHANNEL_COLOR_MIN_WATTS ? CHANNEL_COLOR_MIN_WATTS : channelLimit(snapshot) * .6;
+export const bundleColorMinimum = (snapshot: CanduSnapshot): number => bundleLimit(snapshot) > BUNDLE_COLOR_MIN_WATTS ? BUNDLE_COLOR_MIN_WATTS : bundleLimit(snapshot) * .6;
 export function channelWatts(snapshot: CanduSnapshot, channel: CanduChannelSnapshot): number {
   const reference = snapshot.ripple?.referenceChannelPowerWatts[channel.channelIndex];
   const ratio = snapshot.ripple?.channelRippleFractions[channel.channelIndex];
   return reference !== undefined && ratio !== undefined ? reference * ratio : channel.powerWatts;
 }
-export function powerColor(fractionOfLimit: number): string {
-  const fraction = Math.min(1, Math.max(0, fractionOfLimit));
+export function powerColor(watts: number, minimumWatts: number, limitWatts: number): string {
+  const fraction = Math.min(1, Math.max(0, (watts - minimumWatts) / (limitWatts - minimumWatts)));
   return `hsl(${220 * (1 - fraction)} 78% 55%)`;
 }
 export function rippleColor(ratio: number): string {

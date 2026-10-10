@@ -2,15 +2,15 @@
 
 Branch: `cpu-parallel-experiment`. Date: 2026-10-01.
 
-GPU migration is paused at the user's request. Gameplay remains on the
-authoritative shared C# CPU simulation. Previous read-only GPU experiments are
-retained; no GPU backend is selected by the game.
+This is a historical numerical study. The native row-partition code and
+comparison tool remain useful; GPU and threaded browser hosts have been retired.
+The web game always publishes the single-threaded CPU solver.
 
 ## Implementation
 
 `SpatialOperator` supports one to eight contiguous row partitions, with one
 partition as the normal default. `EnableCpuParallelism=true` selects two default
-partitions; the browser publishing script also enables the threaded WASM runtime.
+partitions for native numerical experiments. The browser publisher disables threads.
 Native callers can explicitly select a partition count on operator or eigen
 iteration construction.
 
@@ -79,40 +79,11 @@ browser command timings. The standard product still uses its serial worker.
 See `tmp/cpu-threaded-debug.log` and
 `tmp/cpu-parallel-threaded-smoke.log` for the reproduction.
 
-The subsequent [alternate hosting experiment](cpu-main-thread-hosting.md)
-successfully initializes the runtime on the browser main thread and executes
-serialized simulation commands on managed background threads. It preserves
-sampled poison/zone states and final state/replay digests. Its measured browser
-speedup is small; it remains a developer experiment.
-
-The default `public/wasm` runtime remains serial. The publishing script refuses
-to stage an experimental threaded runtime into that default directory; use a
-temporary target to reproduce:
-
-Threaded build intermediates are isolated in `tmp/cpu-threaded-build` to avoid
-reusing serial runtime/AOT output when switching configurations.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools/Build-BrowserWasm.ps1 `
-  -RunAOTCompilation -EnableCpuParallelism -OmitPrecompressedAssets `
-  -TargetPath tmp/cpu-threaded-wasm -StagingPath tmp/cpu-threaded-publish
-```
-
-Local Vite server/preview isolation headers can be enabled with
-`$env:CANDU_CPU_THREADS = '1'`. That does not select the threaded runtime.
-Vercel configuration remains unchanged; no deployment was made.
-
-## Browser hosting follow-up
-
-The alternate host establishes serialized command ownership and demonstrates
-background execution without patching generated runtime internals. It still
-needs integration into the actual product transport and broader browser/device
-testing before becoming a selectable gameplay backend.
-
-Once startup is reliable, compare serial/threaded complete worker-equivalent
-commands, exact per-step state and replay digests, rejection atomicity, and p95
-latency on more than one browser/device. Native gains alone do not justify
-enabling threading in the deployed game.
+The subsequent alternate-host experiment showed only a small browser speedup.
+Its host and publishing options have been removed. These native measurements
+alone do not justify changing the shipped browser solver. Future optimization
+must compare complete daily commands, exact state/replay digests, atomic failure
+and multiple browsers/devices. Historical sources remain in Git history.
 
 ## Verification
 

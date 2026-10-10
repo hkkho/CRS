@@ -10,7 +10,7 @@ public sealed class ZoneLayoutSessionTests
     [Fact]
     public void LayoutEditsCommitTogetherAndInvalidLayoutsPreserveLiveState()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, dailyTurns: false);
         Assert.True(session.ConfigureZoneLayout(session.CurrentLiquidZoneRrs.Mapping.Nodes).Accepted);
         var before = session.Snapshot;
         Assert.False(before.Provenance.IsModified);

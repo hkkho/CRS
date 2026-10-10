@@ -21,3 +21,6 @@ supabase/.temp/
 .vercel/
 output/
 **/__pycache__/
+
+# Local study uploads are not source artifacts to publish.
+.codex-remote-attachments/

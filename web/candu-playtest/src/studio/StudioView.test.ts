@@ -50,6 +50,45 @@ function harness() {
 }
 
 describe("Reactor Studio live interface", () => {
+  it('zooms benchmark power and zone trends, retains off-scale limits, and expands for an excursion', () => {
+    const { view, session, emit } = harness();
+    session.snapshot = { ...session.snapshot, simulationTimeSeconds: 86400,
+      core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 6e6,
+        bundles: c.bundles.map(b => ({ ...b, powerWatts: 550e3 })) })) } };
+    session.history.clear(); emit();
+    view.element.querySelector<HTMLButtonElement>('[data-tab="power"]')!.click();
+    const plot = () => view.element.querySelector<SVGElement>('.studio-trend-plot svg')!;
+    expect(Number(plot().dataset.yMin)).toBe(5.7);
+    expect(Number(plot().dataset.yMax)).toBe(6.2);
+    expect(plot().textContent).toContain('7.30 MW thermal ↑ above view');
+    session.snapshot = { ...session.snapshot, simulationTimeSeconds: 172800,
+      core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 8e6 })) } };
+    emit();
+    expect(Number(plot().dataset.yMax)).toBeGreaterThan(8);
+    expect(plot().textContent).not.toContain('above view');
+    view.element.querySelector<HTMLButtonElement>('[data-tab="zones"]')!.click();
+    expect(Number(plot().dataset.yMin)).toBe(45);
+    expect(Number(plot().dataset.yMax)).toBeGreaterThan(58);
+    expect(plot().textContent).toContain('10.00 % full ↓ below view');
+    expect(plot().textContent).toContain('90.00 % full ↑ above view');
+  });
+
+  it('uses benchmark axial power bounds and expands to include unusually low and high bundles', () => {
+    const { view, session, emit } = harness();
+    session.snapshot.core.channels[0].bundles.forEach((b, i) => { b.powerWatts = (330 + i * 20) * 1000; });
+    emit();
+    const plot = () => view.element.querySelector<SVGElement>('[data-axial="power"]')!;
+    expect(Number(plot().dataset.yMin)).toBe(100);
+    expect(Number(plot().dataset.yMax)).toBe(800);
+    expect(plot().textContent).toContain('935 kW limit ↑ above view');
+    session.snapshot.core.channels[0].bundles[0].powerWatts = 0;
+    session.snapshot.core.channels[0].bundles[11].powerWatts = 1000e3;
+    emit();
+    expect(Number(plot().dataset.yMin)).toBeLessThanOrEqual(0);
+    expect(Number(plot().dataset.yMax)).toBeGreaterThan(1000);
+    expect(plot().textContent).not.toContain('above view');
+  });
+
   it("shows authoritative adjuster planes, channel overlaps and the LZC spatial limitation", () => {
     const { view, session, emit, button } = harness();
     session.snapshot.core.adjusters = [4, 5.5, 7].map((axialPosition, i) => ({ id: i + 1,

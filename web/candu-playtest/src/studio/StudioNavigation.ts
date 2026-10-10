@@ -9,5 +9,5 @@ export interface StudioNavigation {
   mapMode?: MapMode;
 }
 export type StudioSession = Pick<BridgeSessionController, "snapshot" | "status" | "isPending" | "subscribe" | "dispatch" | "history"> &
-  Partial<Pick<BridgeSessionController, "presentation">>;
+  Partial<Pick<BridgeSessionController, "presentation" | "dailyPlan" | "setDailyPlan">>;
 export type WorkspaceSession = StudioSession & Pick<BridgeSessionController, "startShift" | "stopShift">;

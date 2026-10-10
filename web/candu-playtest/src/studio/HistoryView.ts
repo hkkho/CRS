@@ -3,6 +3,7 @@ import { HISTORY_CAPACITY, ReactorHistory, type ReactorHistoryPoint } from "./Re
 import { displaySamples } from './displaySamples';
 import { patchMarkup } from './domPatch';
 import type { CanduSnapshot } from "../protocol";
+import { readingRange, CHANNEL_PEAK_RANGE, BUNDLE_PEAK_RANGE, ZONE_LEVEL_RANGE } from "./displayScales";
 
 export type StudioTab = "reactor" | "power" | "burnup" | "zones" | "tilt" | "reactivity" | "xenon" | "fuel";
 const TABS: [StudioTab, string][] = [["reactor", "Reactor"], ["power", "Power peaks"],
@@ -24,6 +25,7 @@ interface Chart {
   zero?: boolean;
   domain?: [number, number];
   reference?: number;
+  limits?: { value: number; label: string }[];
 }
 const series = (name: string, field: keyof Omit<ReactorHistoryPoint, "zoneFills" | "zoneXenon">, color = COLORS[0], step = false): Series =>
   ({ name, read: point => point[field], color, step });
@@ -31,36 +33,38 @@ const series = (name: string, field: keyof Omit<ReactorHistoryPoint, "zoneFills"
 function chartsFor(tab: StudioTab): Chart[] {
   switch (tab) {
     case "xenon": return [
-      { title: "Core iodine and xenon", unit: "10²⁰ atoms/m³", zero: true,
+      { title: "Core iodine and xenon", unit: "10²⁰ atoms/m³",
         series: [series("Iodine-135", "meanIodine"), series("Xenon-135", "meanXenon", COLORS[1])] },
-      { title: "Xenon by measured zone", unit: "10²⁰ atoms/m³", zero: true,
+      { title: "Xenon by measured zone", unit: "10²⁰ atoms/m³",
         series: Array.from({ length: 14 }, (_, zone) => ({ name: formatLiquidZoneRegion(zone),
           color: COLORS[zone], dashed: zone >= 7, read: (point: ReactorHistoryPoint) => point.zoneXenon[zone] })) },
     ];
     case "power": return [
-      { title: "Maximum channel power", unit: "MW thermal", zero: true, reference: 7.3, series: [series("Hottest channel", "maxChannelMw")] },
-      { title: "Maximum bundle power", unit: "kW thermal", zero: true, reference: 935, series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
+      { title: "Maximum channel power", unit: "MW thermal", domain: CHANNEL_PEAK_RANGE, limits: [{ value: 7.3, label: "Channel limit" }], series: [series("Hottest channel", "maxChannelMw")] },
+      { title: "Maximum bundle power", unit: "kW thermal", domain: BUNDLE_PEAK_RANGE, limits: [{ value: 935, label: "Bundle limit" }], series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
       { title: "Total reactor output", unit: "MW", zero: true, series: [series("Thermal", "thermalMw"), series("Electrical", "electricalMw", COLORS[2])] },
     ];
     case "burnup": return [
-      { title: "Maximum discharged bundle burnup", unit: "MWd/kg HM", zero: true,
+      { title: "Maximum discharged bundle burnup", unit: "MWd/kg HM",
         series: [series("Last discharge maximum", "lastDischargeBurnup", COLORS[1], true), series("Shift record", "maximumDischargeBurnup", COLORS[0], true)] },
-      { title: "Fuel still in the core", unit: "MWd/kg HM", zero: true,
+      { title: "Fuel still in the core", unit: "MWd/kg HM",
         series: [series("Maximum bundle burnup", "maximumFuelBurnup"), series("Average bundle burnup", "meanFuelBurnup", COLORS[2])] },
     ];
-    case "zones": return [{ title: "Fourteen liquid-zone levels", unit: "% full", domain: [0, 100], series: [
+    case "zones": return [{ title: "Fourteen liquid-zone levels", unit: "% full", domain: ZONE_LEVEL_RANGE,
+      limits: [{ value: 10, label: "Lower limit" }, { value: 90, label: "Upper limit" }], series: [
       ...Array.from({ length: 14 }, (_, zone) => ({ name: formatLiquidZoneRegion(zone),
         color: COLORS[zone], dashed: zone >= 7, read: (point: ReactorHistoryPoint) => point.zoneFills[zone] })),
       { name: "Core average", color: COLORS[14], dashed: true, read: point => point.meanZoneFill },
     ] }];
     case "tilt": return [
       { title: "Signed core axial tilt", unit: "% · End B positive", reference: 0, series: [series("Core axial tilt", "axialTiltPercent")] },
-      { title: "Largest local axial tilt", unit: "% absolute", zero: true, series: [series("Maximum channel tilt", "maxLocalTiltPercent", COLORS[1])] },
+      { title: "Largest local axial tilt", unit: "% absolute", series: [series("Maximum channel tilt", "maxLocalTiltPercent", COLORS[1])] },
     ];
     case "reactivity": return [
       { title: "Effective multiplication factor", unit: "Keff", reference: 1, series: [series("Solved Keff", "effectiveK")] },
       { title: "Reactivity", unit: "mk", reference: 0, series: [series("Regulated net", "reactivityMk"), series("Core before RRS", "coreReactivityMk", COLORS[1])] },
-      { title: "LZC average level", unit: "% full", domain: [0, 100], series: [series("LZC average level", "meanZoneFill", COLORS[2])] },
+      { title: "LZC average level", unit: "% full", domain: ZONE_LEVEL_RANGE,
+        limits: [{ value: 10, label: "Lower limit" }, { value: 90, label: "Upper limit" }], series: [series("LZC average level", "meanZoneFill", COLORS[2])] },
     ];
     case "fuel": return [
       { title: "Fresh fuel remaining", unit: "bundles", zero: true, series: [series("Fresh inventory", "freshBundles", COLORS[0], true)] },
@@ -163,7 +167,7 @@ export class HistoryView {
     live.disabled = this.inspectionTime === null;
     live.textContent = this.inspectionTime === null ? "Following live" : "Return to live";
     this.text("readout", readout); this.inspector.setAttribute("aria-valuetext", readout);
-    this.text("note", `${points.length} samples shown · ${all.length} / ${HISTORY_CAPACITY} trend samples retained · ${inspectable.length} complete snapshots available to inspect. History clears on New shift. Lines connect observed snapshots; time uses the simulation clock.`);
+    this.text("note", `${points.length} samples shown · ${all.length} / ${HISTORY_CAPACITY} trend samples retained · ${inspectable.length} complete snapshots available to inspect. History clears on New shift. Lines connect observed snapshots; time uses the simulation clock. Vertical axes zoom to the readings and expand for outliers; check the displayed bounds.`);
     this.charts.forEach((chart, chartIndex) => {
       let card = this.plots.children[chartIndex] as HTMLElement | undefined;
       if (!card) {
@@ -193,9 +197,7 @@ export class HistoryView {
     const values = traces.flatMap(trace => points.map(trace.read)).filter((value): value is number => value !== null && Number.isFinite(value));
     if (chart.reference !== undefined) values.push(chart.reference);
     if (chart.zero) values.push(0);
-    const minimum = Math.min(...values), maximum = Math.max(...values);
-    const padding = Math.max((maximum - minimum) * .12, chart.unit === "Keff" ? .00001 : Math.abs(maximum) * .04, .000001);
-    const [low, high] = chart.domain ?? (values.length ? [chart.zero ? 0 : minimum - padding, maximum + padding] : [0, 1]);
+    const [low, high] = readingRange(values, chart.domain, chart.zero, chart.unit === "Keff" ? .00002 : .01);
     const start = points[0]?.timeSeconds ?? 0, end = points.at(-1)?.timeSeconds ?? start;
     const x = (time: number) => 74 + (end === start ? .5 : (time - start) / (end - start)) * 802;
     const y = (value: number) => 210 - (value - low) / (high - low) * 184;
@@ -217,10 +219,14 @@ export class HistoryView {
       return `<path d="${path}" fill="none" stroke="${trace.color}" stroke-width="2" ${trace.dashed ? 'stroke-dasharray="6 4"' : ""}/>${last && previousValue !== null ? `<circle cx="${x(last.timeSeconds)}" cy="${y(previousValue)}" r="3" fill="${trace.color}"/>` : ""}`;
     }).join("");
     const reference = chart.reference === undefined ? "" : `<path d="M74 ${y(chart.reference)}H876" stroke="#83a98a" stroke-dasharray="3 5"/>`;
+    const limits = (chart.limits ?? []).map(({ value, label }, i) => {
+      const inside = value >= low && value <= high;
+      return `${inside ? `<path d="M74 ${y(value)}H876" stroke="#f76c6c" stroke-dasharray="3 5"/>` : ""}<text x="${i ? 480 : 74}" y="18" fill="#ff9999" data-chart-limit="${value}">${label}: ${numberLabel(value, chart.unit)} ${chart.unit}${inside ? "" : value > high ? " ↑ above view" : " ↓ below view"}</text>`;
+    }).join("");
     const cursor = selected ? `<path d="M${x(selected.timeSeconds)} 26V210" stroke="#ffc56c" opacity=".6"/>` : "";
     const noData = !traces.some(trace => points.some(point => trace.read(point) !== null))
       ? `<text x="475" y="120" text-anchor="middle">${this.tab === "burnup" ? "No discharged fuel yet — refuel a channel to begin." : "No recorded readings for the selected traces."}</text>` : "";
-    return `<svg viewBox="0 0 900 252" role="img" aria-label="${chart.title} over simulated time; ${chart.unit}"><title>${chart.title}</title><desc>Time runs left to right. Read exact values with the sample slider and legend buttons.</desc>${grid}${times}${reference}${paths}${cursor}${noData}</svg>`;
+    return `<svg viewBox="0 0 900 252" data-y-min="${low}" data-y-max="${high}" role="img" aria-label="${chart.title} over simulated time; ${chart.unit}; vertical range ${numberLabel(low, chart.unit)} to ${numberLabel(high, chart.unit)}"><title>${chart.title}</title><desc>Time runs left to right. Vertical axes may start above zero. Read exact values with the sample slider and legend buttons.</desc>${grid}${times}${reference}${limits}${paths}${cursor}${noData}</svg>`;
   }
 
   public destroy(): void {

@@ -34,7 +34,9 @@ npm run preview -- --configLoader runner --outDir dist-pages --base /CRS/ --host
 In another terminal:
 
 ```powershell
-node scripts/smoke.mjs http://127.0.0.1:4175/CRS/
+npm run smoke -- http://127.0.0.1:4175/CRS/
+npm run smoke:scales -- http://127.0.0.1:4175/CRS/
+npm run smoke:saves -- http://127.0.0.1:4175/CRS/
 node scripts/benchmark-wasm.mjs http://127.0.0.1:4175/CRS/ --bridge=direct --label=pages-local --warm-samples=1
 ```
 

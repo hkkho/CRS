@@ -22,8 +22,8 @@ namespace ReactorSim.Core
         public const double InitialFillFraction = 0.5;
         public const double AbsorptionReferenceFillFraction = 0.0;
         public const double CalibratedTotalZoneWorthMk = 7.0;
-        public const double Group1AbsorptionPerMPerFillFraction = 0.005554638539404282;
-        public const double Group2AbsorptionPerMPerFillFraction = 0.055546385394042816;
+        public const double Group1AbsorptionPerMPerFillFraction = 0.005934480366805991;
+        public const double Group2AbsorptionPerMPerFillFraction = 0.05934480366805991;
         public const int ResponseVariableCount = (int)LogicalZoneCount;
         public const int ResponseOutputCount = ResponseVariableCount + 1;
         public const double ResponseGroup1AbsorptionWeight = 0.65;
@@ -49,11 +49,11 @@ namespace ReactorSim.Core
         public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v4";
         public const string ResponseModelIdentity =
             "synthetic-practice-liquid-zone-response-common-shape-v3";
-        public const string MappingIdentity = "candu6-regions-localized-tubes-moving-water-380x12-v4";
-        public const string OverlayIdentity = "synthetic-practice-liquid-zone-tube-water-absorption-v3";
+        public const string MappingIdentity = "candu6-regions-localized-tubes-axial-marshak-380x12-v5";
+        public const string OverlayIdentity = "synthetic-practice-liquid-zone-tube-water-absorption-v4";
         public const string CadenceIdentity = "equilibrium-three-minute-step-and-event-rrs-v3";
         public const string Provenance =
-            "project-authored-synthetic; St-Aubin/Marleau 2018 Figs1-2 six tube layout; one-pitch by one-bundle homogenization; vertical endpoints rounded to lattice boundaries; bottom-up water overlap; independent regional measurement; authored absorption calibrated to 7 mk with seed-1001 reference critical at half fill";
+            "project-authored-synthetic; St-Aubin/Marleau 2018 Figs1-2 six tube layout; one-pitch by one-bundle homogenization; vertical endpoints rounded to lattice boundaries; bottom-up water overlap; independent regional measurement; v8 axial Marshak boundary; authored absorption recalibrated to 7 mk with seed-1001 reference critical at half fill";
     }
 
     /// <summary>

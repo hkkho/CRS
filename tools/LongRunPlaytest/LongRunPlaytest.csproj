@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup><ProjectReference Include="../../src/ReactorSim.Game/ReactorSim.Game.csproj" /></ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/ReactorSim.Game/ReactorSim.Game.csproj" />
+    <ProjectReference Include="../../src/ReactorSim.Browser/ReactorSim.Browser.csproj" />
+  </ItemGroup>
 </Project>

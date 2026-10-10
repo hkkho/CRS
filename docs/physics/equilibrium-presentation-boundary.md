@@ -1,4 +1,4 @@
-# Equilibrium presentation and retained IQS research
+# Equilibrium presentation boundary
 
 The active Game/Browser consume `EquilibriumCoreProjectionV1` directly. Its
 immutable arrays remain channel-major (380 channels × 12 positions), group 1
@@ -10,18 +10,12 @@ candidate or adjoint compatibility result is constructed for equilibrium solves.
 The projection is mapped at the accepted Game snapshot boundary; unchanged
 projection identity is retained through rejected commands and clock-only updates.
 
-`src/ReactorSim.Core.Research` retains `IqsSpatialCandidateV1` and
-`IqsFullCoreSolver` in the original namespace for `BurnupAndPowerTests` research
-coverage. Core tests explicitly reference this project; Game, Browser and WASM
-Host do not. The original source was moved without numerical changes. The IQS
-metadata pack remains in Core because adjoint/diffusion public research APIs
-consume `IqsKineticsDataPackV1`; its resource identity and group ordering remain
-unchanged. `AdjointContracts`, `AdjointReactivityContracts` and the kinetics-pack
-parameter on `FullCoreDiffusionModelContracts` are retained consumers, not grounds
-for wholesale deletion. Their wider classification belongs to task 21.
+The retired IQS research engine and its duplicate transition tests have been
+removed. The IQS metadata pack remains in Core because shared adjoint/diffusion
+APIs consume it. Its resource identity and group ordering remain unchanged.
 
 Active invariant coverage remains in equilibrium/burnup tests, Practice Xenon
 and RRS tests, Game refuelling/rejection tests, and Browser compact-core/replay
 checks. The two-seed phase-4 command corpus compares complete serialized response
-byte hashes to its pre-refactor baseline, rather than substituting new expected
+byte hashes to its checked shared fixture, rather than substituting new expected
 values. Protocol names, SI units, digests and omitted/null fields are unchanged.

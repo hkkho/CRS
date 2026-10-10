@@ -7,6 +7,44 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--channel-reference")
+{
+    string path = Path.GetFullPath(args.Length > 1 ? args[1] : "artifacts/channel-reference.json");
+    var reference = PracticeGameSessionFactory.ReferenceChannelPower;
+    Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+    File.WriteAllText(path, JsonSerializer.Serialize(new {
+        referenceId = PracticeChannelPowerReference.ModelId, pack = reference.DataPackVersion,
+        thermalPowerWatts = reference.ThermalPowerWatts,
+        coefficientDigest = Convert.ToHexString(reference.CoefficientBindingDigest.ToArray()).ToLowerInvariant(),
+        referenceChannelPowerWatts = reference.ChannelPowerWatts
+    }));
+    Console.WriteLine($"Reference {reference.DataPackVersion}: {reference.ChannelPowerWatts.Count} channels, {reference.ThermalPowerWatts:F3} W; {path}");
+    return;
+}
+if (args.Length > 0 && args[0] == "--fit-axial-marshak")
+{
+    if (args.Length != 3) throw new ArgumentException("Usage: --fit-axial-marshak SOURCE_PACK OUTPUT_DIRECTORY");
+    AxialMarshakCalibration.Run(args[1], args[2]);
+    return;
+}
+if (args.Length > 0 && args[0] == "--axial-boundary-audit")
+{
+    AxialBoundaryAudit.Run(args.Length > 1 ? args[1] : "artifacts/axial-boundary-audit.json");
+    return;
+}
+if (args.Length > 0 && args[0] == "--bundle-power-adjusters")
+{
+    BundlePowerAdjusterAudit.Run(args.Length > 1 ? args[1] : "artifacts/bundle-power-adjusters.json",
+        args.Length > 2 ? ulong.Parse(args[2], CultureInfo.InvariantCulture) : 1001,
+        args.Length > 3 ? uint.Parse(args[3], CultureInfo.InvariantCulture) : 200);
+    return;
+}
+if (args.Length > 0 && args[0] == "--bundle-absorption")
+{
+    BundleAbsorptionAudit.Run(args.Length > 1 ? args[1] : "artifacts/bundle-absorption.json",
+        args.Length > 2 ? ulong.Parse(args[2], CultureInfo.InvariantCulture) : 1001);
+    return;
+}
 if (args.Length > 0 && args[0] == "--fit-lzc-tubes")
 {
     if (args.Length != 3) throw new ArgumentException("Usage: --fit-lzc-tubes SOURCE_PACK OUTPUT_DIRECTORY");
@@ -91,7 +129,7 @@ var totalTimer = Stopwatch.StartNew();
 foreach (ulong seed in seeds)
 {
     var timer = Stopwatch.StartNew();
-    var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+    var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
     BundleState[] initialBundles = session.CoreState.EnumerateBundles().ToArray();
     var rows = new List<Sample>();
     rows.Add(Measure(session));
@@ -268,7 +306,7 @@ static void AuditZones(string outputPath)
     foreach (ulong seed in new ulong[] { 0, 1001, 1002, 1003, 1004, uint.MaxValue })
     {
         if (completedSeeds.Contains(seed)) continue;
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
         BundleState[] initialBundles = session.CoreState.EnumerateBundles().ToArray();
         double[] initialFills = session.CurrentLiquidZoneRrs.ZoneFills.ToArray();
         double initialGameplayRho = session.CurrentLiquidZoneRrs.CompensatedNetReactivity;
@@ -356,7 +394,7 @@ static void AuditZoneGeometry(string outputPath)
     var results = new List<object>();
     foreach (ulong seed in new ulong[] { 0, 1001, 1002, 1003, 1004, uint.MaxValue })
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
         var bundles = session.CoreState.EnumerateBundles().ToArray();
         var solver = Require(EquilibriumCoreSolverV1.TryCreate(TightModel(), bundles, 1e9));
         ContractValidationResult<EquilibriumCoreProjectionV1> Solve(double fill, double scale, bool emptyReference = false)
@@ -479,7 +517,7 @@ static T Require<T>(ContractValidationResult<T> result)
 static void AuditRefuelWorth(string outputPath)
 {
     Directory.CreateDirectory(outputPath);
-    var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001);
+    var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, dailyTurns: false);
     while (session.Snapshot.SimulationTimeSeconds < 14 * 3600)
     {
         var advance = session.AdvanceWallMilliseconds(1000);
@@ -556,7 +594,7 @@ static void BenchmarkRefuelResponse(string outputPath, ulong seed)
     var timer = Stopwatch.StartNew();
     foreach (string scenario in new[] { "no-refuelling", "two-channels-at-14h" })
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(seed, dailyTurns: false);
         uint operations = 0;
         void Capture(string phase)
         {

@@ -10,7 +10,11 @@ export class SessionPresentation {
   accept(response: CanduCommandResponse, previous: CanduSnapshot): void {
     if (response === this.lastResponse) return;
     this.lastResponse = response;
-    if (response.command.type === "commit-refuel") {
+    if (response.command.type === "commit-day") {
+      this.message = response.message; this.result = response.accepted ? "accepted" : "rejected";
+      const day = response.snapshot.lastDayResult;
+      if (response.accepted && day) this.impactText = `${day.executedChannels.length} channels refuelled · ${day.fuelUsed} fresh bundles · +${day.scoreDelta.toFixed(2)} points\nLZC ${(day.averageLzcFillFraction * 100).toFixed(1)}% · tilt ${(day.axialTiltFraction * 100).toFixed(1)}%`;
+    } else if (response.command.type === "commit-refuel") {
       this.message = response.message;
       if (response.accepted) this.impactText = refuelImpactText(previous, response.snapshot, response.command.request.channelIndex);
       this.result = response.accepted ? "accepted" : "rejected";

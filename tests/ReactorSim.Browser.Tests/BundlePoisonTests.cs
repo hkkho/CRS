@@ -13,7 +13,7 @@ public sealed partial class PlaytestBridgeTests
     [InlineData(211, "toward-end-b")]
     public void BundlePoisonSurvivesTransportAndFreshFuelStartsAtZero(int channel, string direction)
     {
-        var runtime = new PlaytestRuntime();
+        var runtime = new PlaytestRuntime("real-time");
         JsonElement before = Parse(runtime.Initialize(PlayRequest)).GetProperty("snapshot");
         var old = ReadBundlePoison(before.GetProperty("core"), before.GetProperty("xenon"));
         Assert.All(old.Values, pair => { Assert.True(pair.I > 0); Assert.True(pair.X > 0); });

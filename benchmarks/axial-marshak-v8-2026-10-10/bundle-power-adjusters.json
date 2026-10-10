@@ -1,0 +1,202 @@
+{
+  "dataPack": "candu6-two-group-diffusion-v1-axial-marshak-v8",
+  "seed": 1001,
+  "channelIndex": 200,
+  "simulationTimeSeconds": 0,
+  "method": "All 21 adjusters inserted versus all 21 removed. Identical seed-aged fuel, frozen actual xenon and included reference, all 14 frozen LZC fills, leakage, fission coefficients and solver tolerances. Independent tighter static solves, each normalized to 2064 MW thermal; no controller compensation, fuel movement or time advancement. Only the adjuster absorption block changes.",
+  "groupOrdering": [
+    "fast",
+    "thermal"
+  ],
+  "zoneFills": [
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897,
+    0.49984561255994897
+  ],
+  "backgroundOverlayDigest": "sha256:ca67361111bd118459ae4ad2c767afdfa07e730448cd87066e9931f13802d1f5",
+  "insertedCorePowerWatts": 2064000000.0000036,
+  "withdrawnCorePowerWatts": 2064000000.000001,
+  "insertedChannelKw": 5451.952172231132,
+  "withdrawnChannelKw": 6086.845141807065,
+  "directlyOverlappingBundleDepressionPercent": 16.055438997849635,
+  "insertedK": 1.0000013988835015,
+  "withdrawnK": 1.0172953589780984,
+  "adjusterWorthMk": 16.999916248283675,
+  "insertedIterations": 82,
+  "withdrawnIterations": 101,
+  "insertedResidual": 1.9827425093467026E-07,
+  "withdrawnResidual": 1.8876351723355306E-07,
+  "insertedCoefficientDigest": "12c19062cfded99f1c220db931977694c86d61cdc21cad82bea8c737dd23db70",
+  "withdrawnCoefficientDigest": "aa2a31c2497dbf31ace3192a7630a7047901efe0de5e8c9bac3e6d129e5f8538",
+  "adjusters": [
+    {
+      "id": 4,
+      "axialBundleCoordinate": 5
+    },
+    {
+      "id": 11,
+      "axialBundleCoordinate": 6.5
+    },
+    {
+      "id": 18,
+      "axialBundleCoordinate": 8
+    }
+  ],
+  "lzcCompartments": [
+    {
+      "zone": 4,
+      "fill": 0.49984561255994897,
+      "axialBundleCoordinate": 3.5
+    },
+    {
+      "zone": 11,
+      "fill": 0.49984561255994897,
+      "axialBundleCoordinate": 9.5
+    }
+  ],
+  "bundles": [
+    {
+      "bundlePosition": 1,
+      "bundleId": "00000000-0000-0000-0000-000000002401",
+      "burnupMwdPerKg": 6.0082915236423915,
+      "adjustersInKw": 115.52542640375317,
+      "adjustersOutKw": 113.92962464540274,
+      "powerDifferenceKw": -1.595801758350433,
+      "insertedDepressionPercent": -1.400690789000003,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 2,
+      "bundleId": "00000000-0000-0000-0000-000000002402",
+      "burnupMwdPerKg": 5.87111231918684,
+      "adjustersInKw": 293.25480351997413,
+      "adjustersOutKw": 293.8401811520393,
+      "powerDifferenceKw": 0.5853776320651605,
+      "insertedDepressionPercent": 0.19921633241924974,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 3,
+      "bundleId": "00000000-0000-0000-0000-000000002403",
+      "burnupMwdPerKg": 5.6122037098416975,
+      "adjustersInKw": 434.8445747666205,
+      "adjustersOutKw": 449.84145599741686,
+      "powerDifferenceKw": 14.996881230796362,
+      "insertedDepressionPercent": 3.333814843174987,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": true
+    },
+    {
+      "bundlePosition": 4,
+      "bundleId": "00000000-0000-0000-0000-000000002404",
+      "burnupMwdPerKg": 5.24920988946713,
+      "adjustersInKw": 544.7405577839863,
+      "adjustersOutKw": 594.3938858687801,
+      "powerDifferenceKw": 49.65332808479377,
+      "insertedDepressionPercent": 8.35360680270446,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": true
+    },
+    {
+      "bundlePosition": 5,
+      "bundleId": "00000000-0000-0000-0000-000000002405",
+      "burnupMwdPerKg": 2.3574380204679795,
+      "adjustersInKw": 632.7728143690445,
+      "adjustersOutKw": 753.4474408879822,
+      "powerDifferenceKw": 120.67462651893777,
+      "insertedDepressionPercent": 16.016329735849343,
+      "directlyOverlapsAdjuster": true,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 6,
+      "bundleId": "00000000-0000-0000-0000-000000002406",
+      "burnupMwdPerKg": 2.431656810315488,
+      "adjustersInKw": 685.7886078459851,
+      "adjustersOutKw": 816.7518981900267,
+      "powerDifferenceKw": 130.96329034404164,
+      "insertedDepressionPercent": 16.034647808503966,
+      "directlyOverlapsAdjuster": true,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 7,
+      "bundleId": "00000000-0000-0000-0000-000000002407",
+      "burnupMwdPerKg": 2.431656810315488,
+      "adjustersInKw": 683.9599746629018,
+      "adjustersOutKw": 814.8428475770294,
+      "powerDifferenceKw": 130.88287291412757,
+      "insertedDepressionPercent": 16.06234543302595,
+      "directlyOverlapsAdjuster": true,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 8,
+      "bundleId": "00000000-0000-0000-0000-000000002408",
+      "burnupMwdPerKg": 2.357438020467979,
+      "adjustersInKw": 627.2776277915187,
+      "adjustersOutKw": 747.7385358530989,
+      "powerDifferenceKw": 120.4609080615802,
+      "insertedDepressionPercent": 16.1100307508086,
+      "directlyOverlapsAdjuster": true,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 9,
+      "bundleId": "00000000-0000-0000-0000-000000002409",
+      "burnupMwdPerKg": 2.21405832864872,
+      "adjustersInKw": 560.717423031528,
+      "adjustersOutKw": 612.9493947561775,
+      "powerDifferenceKw": 52.2319717246495,
+      "insertedDepressionPercent": 8.521416640834866,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": true
+    },
+    {
+      "bundlePosition": 10,
+      "bundleId": "00000000-0000-0000-0000-000000002410",
+      "burnupMwdPerKg": 2.0112888239090494,
+      "adjustersInKw": 448.9740106488995,
+      "adjustersOutKw": 465.32177472282956,
+      "powerDifferenceKw": 16.34776407393008,
+      "insertedDepressionPercent": 3.5132170815921238,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": true
+    },
+    {
+      "bundlePosition": 11,
+      "bundleId": "00000000-0000-0000-0000-000000002411",
+      "burnupMwdPerKg": 1.7629479129045258,
+      "adjustersInKw": 304.0031648301238,
+      "adjustersOutKw": 305.15067383649205,
+      "powerDifferenceKw": 1.1475090063682387,
+      "insertedDepressionPercent": 0.37604668930966145,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": false
+    },
+    {
+      "bundlePosition": 12,
+      "bundleId": "00000000-0000-0000-0000-000000002412",
+      "burnupMwdPerKg": 1.4859596183173462,
+      "adjustersInKw": 120.0931865767962,
+      "adjustersOutKw": 118.6374283197899,
+      "powerDifferenceKw": -1.4557582570062948,
+      "insertedDepressionPercent": -1.2270649133444334,
+      "directlyOverlapsAdjuster": false,
+      "directlyOverlapsLzcWater": false
+    }
+  ]
+}

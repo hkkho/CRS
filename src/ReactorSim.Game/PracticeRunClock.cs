@@ -126,6 +126,33 @@ namespace ReactorSim.Game
         }
         internal PracticeRunState CaptureState() => new PracticeRunState(elapsed, accumulator, targets,
             SimulationTimeSeconds, NormalizedPowerFraction, Outcome, TurnSummaryCount);
+
+        internal ulong Generation => generation;
+
+        internal PracticeRunClock Fork()
+        {
+            var copy = (PracticeRunClock)MemberwiseClone();
+            copy.targets = new List<double>(targets);
+            return copy;
+        }
+
+        internal ContractValidationResult<PracticeRunAdvance> TryPlanSimulationStep(double seconds)
+        {
+            if (TurnSummaryCount == uint.MaxValue)
+                return Invalid<PracticeRunAdvance>("GameSession.Day.StepCount.Overflow", "steps", "The simulation step count cannot advance.");
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds) || seconds <= 0 || targets.Count > 0)
+                return Invalid<PracticeRunAdvance>("GameSession.Day.Step.Invalid", "seconds", "A daily step requires positive finite simulation time and no queued targets.");
+            var candidate = Fork();
+            double end = SimulationTimeSeconds + seconds;
+            if (double.IsInfinity(end) || end <= SimulationTimeSeconds)
+                return Invalid<PracticeRunAdvance>("GameSession.Day.Time.Overflow", "seconds", "Simulation time cannot advance.");
+            candidate.SimulationTimeSeconds = ScenarioHorizonSeconds > 0 ? Math.Min(ScenarioHorizonSeconds, end) : end;
+            if (ScenarioHorizonSeconds > 0 && candidate.SimulationTimeSeconds >= ScenarioHorizonSeconds)
+                candidate.Outcome = PracticeRunOutcome.SurvivedScenarioHorizon;
+            candidate.TurnSummaryCount = checked(TurnSummaryCount + 1);
+            return ContractValidationResult<PracticeRunAdvance>.Valid(new PracticeRunAdvance(this, generation, candidate,
+                new List<PracticeRunSegment> { new PracticeRunSegment(SimulationTimeSeconds, candidate.SimulationTimeSeconds, NormalizedPowerFraction) }));
+        }
         private static ContractValidationResult<T> Invalid<T>(string code, string path, string message) => ContractValidationResult<T>.Invalid(code, path, message);
     }
 }

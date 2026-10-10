@@ -2,9 +2,12 @@ import { randomCoreSeed } from "./coreSeed";
 import {
   CORE_BUNDLE_POSITION_COUNT,
   CORE_CHANNEL_COUNT,
+  DAILY_INTEGRATION_ID,
   CORE_GRID_HEIGHT,
   CORE_GRID_WIDTH,
   type BridgeStatus,
+  type PacingMode,
+  type DayProgress,
   type BridgeModeId,
   type CanduCommand,
   type CanduCommandResponse,
@@ -49,7 +52,8 @@ const unavailableStatus: BridgeStatus = {
 };
 
 export interface CanduPlaytestBridgeLifecycle extends CanduPlaytestBridge {
-  initializeMode: (mode: BridgeModeId) => Promise<CanduSnapshot>;
+  readonly dayProgress?: DayProgress;
+  initializeMode: (mode: BridgeModeId, pacingMode?: PacingMode, seed?: number) => Promise<CanduSnapshot>;
   subscribe: (listener: (status: BridgeStatus, snapshot: CanduSnapshot) => void) => () => void;
   getTransportMetrics?: () => readonly TransportMetric[];
   dispose?: () => void;
@@ -128,13 +132,13 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
     return this.metrics.slice();
   }
 
-  async initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed)): Promise<CanduSnapshot> {
+  async initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed), pacingMode: PacingMode = "daily-turn"): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
 
     const callStarted = nowMs();
-    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed }));
+    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed, pacingMode }));
     const callDuration = nowMs() - callStarted;
     const parseStarted = nowMs();
     try {
@@ -255,6 +259,7 @@ interface WorkerRequest {
   type: "initialize" | "get-snapshot" | "dispatch";
   mode?: BridgeModeId;
   seed?: number;
+  pacingMode?: PacingMode;
   commandJson?: string;
 }
 
@@ -277,7 +282,7 @@ interface WorkerReadyMessage {
   error?: string;
 }
 
-type WorkerMessage = WorkerResultMessage | WorkerErrorMessage | WorkerReadyMessage;
+type WorkerMessage = WorkerResultMessage | WorkerErrorMessage | WorkerReadyMessage | ({ type: "progress"; id: number } & DayProgress);
 
 export interface WorkerProtocolWorker {
   onmessage: ((event: MessageEvent) => void) | null;
@@ -290,6 +295,8 @@ export interface WorkerProtocolWorker {
 export type WorkerProtocolWorkerFactory = () => WorkerProtocolWorker;
 
 export interface WorkerProtocolBridgeOptions {
+  initialPacingMode?: PacingMode;
+  onProgress?: () => void;
   createWorker?: WorkerProtocolWorkerFactory;
   onFatalError?: (error: Error) => void;
   startupTimeoutMs?: number;
@@ -305,6 +312,8 @@ interface PendingWorkerRequest {
   resolve: (value: WorkerResultMessage) => void;
   reject: (reason: unknown) => void;
   timer: ReturnType<typeof setTimeout>;
+  acceptsProgress: boolean;
+  lastProgress: number;
 }
 
 /**
@@ -314,6 +323,8 @@ interface PendingWorkerRequest {
 export class WorkerProtocolBridge implements CanduPlaytestBridge {
   readonly status = authoritativeWasmStatus;
   readonly ready: Promise<void>;
+  public dayProgress?: DayProgress;
+  private readonly onProgress: () => void;
 
   private readonly worker: WorkerProtocolWorker;
   private readonly onFatalError: (error: Error) => void;
@@ -333,6 +344,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
   private startupTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(options: WorkerProtocolBridgeOptions = {}) {
+    this.onProgress = options.onProgress ?? (() => {});
     this.startupTimeoutMs = timeoutOption(options.startupTimeoutMs, WORKER_STARTUP_TIMEOUT_MS);
     this.commandTimeoutMs = timeoutOption(options.commandTimeoutMs, WORKER_COMMAND_TIMEOUT_MS);
     this.onFatalError = options.onFatalError ?? (() => undefined);
@@ -377,10 +389,10 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     this.terminateWorker();
   }
 
-  initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed)): Promise<CanduSnapshot> {
+  initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed), pacingMode: PacingMode = "daily-turn"): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
-      const result = await this.request({ id: 0, type: "initialize", mode, seed });
+      const result = await this.request({ id: 0, type: "initialize", mode, seed, pacingMode });
       const parseStarted = nowMs();
       let snapshot: CanduSnapshot;
       let response: CanduCommandResponse;
@@ -509,7 +521,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       const timeoutMs = request.type === "initialize" ? this.startupTimeoutMs : this.commandTimeoutMs;
       const timer = setTimeout(() => this.failReady(new Error(
         "The reactor stopped responding. The last order's result is unknown; it will not be retried.")), timeoutMs);
-      this.pending.set(id, { resolve, reject, timer });
+      this.pending.set(id, { resolve, reject, timer, lastProgress: -1, acceptsProgress: request.type === "dispatch" && (JSON.parse(request.commandJson!).payload ?? JSON.parse(request.commandJson!)).type === "commit-day" });
       try {
         this.worker.postMessage({ ...request, id });
       } catch (error) {
@@ -541,6 +553,17 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       return;
     }
 
+    if (message.type === "progress") {
+      const pending = this.pending.get(message.id);
+      if (!pending) return;
+      if (!pending.acceptsProgress || message.simulationSecondsAdvanced < pending.lastProgress) { this.failReady(new Error("Invalid daily progress from the WASM worker.")); return; }
+      if (message.simulationSecondsAdvanced === pending.lastProgress) return;
+      pending.lastProgress = message.simulationSecondsAdvanced;
+      clearTimeout(pending.timer);
+      pending.timer = setTimeout(() => this.failReady(new Error("The reactor stopped responding. The last order's result is unknown; it will not be retried.")), this.commandTimeoutMs);
+      this.dayProgress = { simulationSecondsAdvanced: message.simulationSecondsAdvanced, requestedSimulationSeconds: message.requestedSimulationSeconds };
+      this.onProgress(); return;
+    }
     if (message.type !== "result" && message.type !== "error") {
       return;
     }
@@ -550,6 +573,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
       return;
     }
     this.pending.delete(message.id);
+    if (this.dayProgress) { this.dayProgress = undefined; this.onProgress(); }
     clearTimeout(pending.timer);
     if (message.type === "error") {
       // An exception may occur after state committed. Do not let the clock retry.
@@ -627,6 +651,7 @@ function isWorkerMessage(value: unknown): value is WorkerMessage {
   if (message.type === "load-error") return message.error === undefined || typeof message.error === "string";
   if (!Number.isSafeInteger(message.id) || (message.id as number) <= 0) return false;
   if (message.type === "error") return typeof message.error === "string";
+  if (message.type === "progress") return typeof message.simulationSecondsAdvanced === "number" && Number.isFinite(message.simulationSecondsAdvanced) && message.simulationSecondsAdvanced >= 0 && typeof message.requestedSimulationSeconds === "number" && Number.isFinite(message.requestedSimulationSeconds) && message.requestedSimulationSeconds > 0 && message.requestedSimulationSeconds <= 86400 && message.simulationSecondsAdvanced <= message.requestedSimulationSeconds;
   return message.type === "result" && typeof message.resultJson === "string" &&
     typeof message.wasmCallDurationMs === "number" && Number.isFinite(message.wasmCallDurationMs) && message.wasmCallDurationMs >= 0 &&
     typeof message.returnedUtf8PayloadBytes === "number" && Number.isSafeInteger(message.returnedUtf8PayloadBytes) && message.returnedUtf8PayloadBytes >= 0;
@@ -648,6 +673,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
   private activeStatus: BridgeStatus;
   private selectedMode: BridgeModeId = "play";
   private readonly settled: Promise<void>;
+  public get dayProgress(): DayProgress | undefined { return this.wasm?.dayProgress; }
   private failedClosed = false;
   private disposed = false;
 
@@ -663,6 +689,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
       this.wasm = new WorkerProtocolBridge({
         ...options,
         onFatalError: (error) => this.transitionToUnavailable(error),
+        onProgress: () => this.notify(this.active.getSnapshot()),
       });
     } catch {
       this.wasm = null;
@@ -676,11 +703,12 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     }
 
     this.settled = this.wasm.ready
-      .then(() => this.wasm!.initialize(this.selectedMode))
+      .then(() => this.wasm!.initialize(this.selectedMode, undefined, options.initialPacingMode ?? "daily-turn"))
       .then((snapshot) => {
         if (this.disposed || this.failedClosed) {
           return;
         }
+        if ((options.initialPacingMode ?? "daily-turn") === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns. Reload the updated game.");
         this.active = this.wasm!;
         this.activeStatus = this.wasm!.status;
         this.notify(snapshot);
@@ -719,11 +747,12 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     this.wasm?.dispose();
   }
 
-  async initializeMode(mode: BridgeModeId): Promise<CanduSnapshot> {
+  async initializeMode(mode: BridgeModeId, pacingMode: PacingMode = "daily-turn", seed?: number): Promise<CanduSnapshot> {
     this.selectedMode = mode;
     await this.settled;
     if (this.active === this.wasm && this.wasm !== null) {
-      const snapshot = await this.wasm.initialize(mode);
+      const snapshot = await this.wasm.initialize(mode, seed, pacingMode);
+      if (pacingMode === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns.");
       this.notify(snapshot);
       return snapshot;
     }

@@ -12,7 +12,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-lzc-tubes-v7`, units profile
+`candu6-two-group-diffusion-v1-axial-marshak-v8`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -27,8 +27,8 @@ group 2 is thermal.
 | `Sigma_a2` | `0.16` | m^-1 | Thermal absorption |
 | `Sigma_f1` | `0.035` | m^-1 | Fast fission rate for power |
 | `Sigma_f2` | `0.1545382857142857` | m^-1 | Thermal fission rate for power |
-| `nuSigma_f1` | `0.08575000000000002` | m^-1 | Fast neutron production |
-| `nuSigma_f2` | `0.37861880000000003` | m^-1 | Thermal neutron production |
+| `nuSigma_f1` | `0.08866224431312562` | m^-1 | Fast neutron production |
+| `nuSigma_f2` | `0.3914774641066174` | m^-1 | Thermal neutron production |
 | `Sigma_s12` | `0.200` | m^-1 | Fast-to-thermal downscatter |
 | `chi1` | `1.0` | dimensionless | Fast fission spectrum fraction |
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
@@ -41,19 +41,21 @@ conductances used by the 380-channel by 12-position model:
 | --- | ---: | ---: | --- |
 | Axial interior edge | `0.00659423076923077` | `0.003297115384615385` | m^2 |
 | Transverse interior edge | `0.019812` | `0.009906` | m^2 |
-| Effective outer boundary face | `0.0007875467350470583` | `0.00039377336752352915` | m^2 |
+| Radial effective outer boundary face | `0.0007875467350470583` | `0.0003937733675235292` | m^2 |
+| Axial zero-incoming-current face | `0.009968327483595302` | `0.005677250999478533` | m^2 |
 
+The [v8 axial fit](axial-marshak-v8.md) refits production and device strengths.
 See [xenon reference v6](xenon-reference-v6.md) for the included-reference replacement
-and [localized LZC tubes](lzc-tubes-v7.md) for the current device strengths and boundary refit,
+and [localized LZC tubes](lzc-tubes-v7.md) for tube geometry,
 and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption,
 and [v4 calibration](literature-geometry-v4.md) for source geometry, authored
 effective diffusion coefficients, fitted boundary leakage and the poison-basis
 limitation of the static burnup curve plus gameplay xenon perturbation.
 
-## Live 380 × 12 design
+## Live 380 Ã— 12 design
 
 The live game maps every `(channel, position)` pair to one diffusion node, for
-`380 × 12 = 4560` nodes. The bundle inventory remains present at every node so
+`380 Ã— 12 = 4560` nodes. The bundle inventory remains present at every node so
 that identity, burnup, refuelling, and presentation state stay aligned with
 the spatial solve.
 
@@ -102,7 +104,11 @@ L_2(phi_2)_i = Sigma_a2_i * phi_2,i
 
 `C` is a two-group conductance in m^2. The interior term is the reciprocal
 edge current contribution. A vacuum boundary contributes its conductance times
-the node flux. A reflective boundary contributes zero. Every removal and
+the node flux. A reflective boundary contributes zero. For nonreflective axial ends, zero
+incoming partial current gives `phi + 2 D_g d(phi)/dn = 0`. With cell length
+`h = 0.4953 m`, `D_g = C_interior,g h^2/V` and `A = V/h`, the node-centred end
+conductance is `C_end,g = D_g A/(h/2 + 2D_g)`. It adds outward current loss;
+material absorption is unchanged. Every removal and
 leakage term has the same volumetric source units after division by volume.
 
 The fission production source is
@@ -216,8 +222,8 @@ Substitution into the fast equation gives the infinite-medium eigenvalue
 ```text
 k_inf = (nuSigma_f1 + nuSigma_f2 * (phi_2 / phi_1)) /
         (Sigma_a1 + Sigma_s12)
-      = (0.08575 + 0.3786188 * 1.25) / 0.50
-      = 1.118047
+      = (0.08866224431312562 + 0.3914774641066174 * 1.25) / 0.50
+      = 1.1560181488927948
 ```
 
 The one-watt normalization is computed from the actual `Sigma_f`, energy, and
@@ -241,7 +247,7 @@ The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 | Result | Value |
 | --- | ---: |
 | Status | `Converged` |
-| Effective `k` | `1.118047` (10 decimal places) |
+| Effective `k` | `1.1560181488927948` (10 decimal places) |
 | Fast flux | Within `1e-11` relative of the analytic value |
 | Thermal flux | Within `1e-11` relative of the analytic value |
 | Total power | `1 W` |
@@ -252,11 +258,11 @@ The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 the six-face reflective boundary assembly. It runs the same
 `SpatialEigenIteration` and `SpatialEigenSolve` implementation used by the
 live full-core session. The browser does not create a second one-cell solver;
-Reactor Studio displays the live 380 × 12 solve and its per-cell fields.
+Reactor Studio displays the live 380 Ã— 12 solve and its per-cell fields.
 
 ## Interpretation boundary
 
 The pack metadata, coefficient rows, conductances, and one-cell result define
 the deterministic solver contract used by the game. The one-cell result is a
 small regression check for the assembled equations; the live game result comes
-from solving all 4560 nodes in the configured 380 × 12 topology.
+from solving all 4560 nodes in the configured 380 Ã— 12 topology.

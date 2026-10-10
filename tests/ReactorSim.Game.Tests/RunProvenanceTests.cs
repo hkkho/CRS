@@ -11,7 +11,7 @@ public sealed class RunProvenanceTests
     [Fact]
     public void AcceptedPhysicalEditsPersistReasonsButRejectedAndNoOpEditsDoNot()
     {
-        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true);
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true, dailyTurns: false);
         var standard = session.Snapshot.Provenance;
         Assert.True(standard.EligibleForStandardChallenge);
         Assert.True(session.ConfigureCell(0, 0, true, Array.Empty<TopologyFace>()).Accepted);
@@ -40,7 +40,7 @@ public sealed class RunProvenanceTests
         Assert.True(session.Snapshot.ScoreTotal > 0);
         Assert.True(session.DebugResetSyntheticResponse().Accepted);
         Assert.Contains("Developer score reset", session.Snapshot.Provenance.Reasons);
-        Assert.True(PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true).Snapshot.Provenance.EligibleForStandardChallenge);
+        Assert.True(PracticeGameSessionFactory.CreateBrowserPlaytest(1001, challenge: true, dailyTurns: false).Snapshot.Provenance.EligibleForStandardChallenge);
     }
 
     [Fact]

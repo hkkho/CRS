@@ -30,7 +30,8 @@ async function zoomDesktop() {
   check(await page.evaluate(() => innerWidth === 640 && devicePixelRatio === 2), "200% zoom metrics were not applied.");
 }
 try {
-  await page.goto(process.argv[2] ?? "http://127.0.0.1:4173");
+  const legacyUrl = new URL(process.argv[2] ?? "http://127.0.0.1:4173"); legacyUrl.searchParams.set("pacing", "real-time");
+  await page.goto(legacyUrl.toString());
   const launcher = page.locator(".reactor-launcher");
   const begin = launcher.locator('[data-action="begin"]');
   await page.waitForFunction(() => document.querySelector('.reactor-launcher [data-action="begin"]')?.getAttribute("aria-disabled") === "false", undefined, { timeout: 60000 });

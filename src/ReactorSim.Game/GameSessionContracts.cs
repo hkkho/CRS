@@ -43,8 +43,10 @@ namespace ReactorSim.Game
             GameCorePresentationSnapshot core,
             RefuellingScoreBreakdown? lastRefuellingScore,
             ShiftProgress shift,
-            RefuellingMovement? lastFuelMovement, RunProvenance provenance, ChannelRippleSnapshot ripple)
+            RefuellingMovement? lastFuelMovement, RunProvenance provenance, ChannelRippleSnapshot ripple,
+            string pacingMode = "real-time", uint completedDays = 0, DailyTurnResult? lastDayResult = null)
         {
+            PacingMode = pacingMode; CompletedDays = completedDays; LastDayResult = lastDayResult;
             ScenarioId = scenarioId;
             DifficultyId = difficultyId;
             Seed = seed;
@@ -86,6 +88,9 @@ namespace ReactorSim.Game
         }
 
         public RunProvenance Provenance { get; }
+        public string PacingMode { get; }
+        public uint CompletedDays { get; }
+        public DailyTurnResult? LastDayResult { get; }
         public ChannelRippleSnapshot Ripple { get; }
         public ShiftProgress Shift { get; }
         public RefuellingMovement? LastFuelMovement { get; }

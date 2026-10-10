@@ -10,6 +10,7 @@ import {
   type LiveClockSchedulerOptions,
 } from "./liveClock";
 import type {
+  DayProgress,
   BridgeModeId,
   BridgeStatus,
   CanduCommand,
@@ -22,6 +23,8 @@ import { ObservedPace, type PaceReading } from './observedPace';
 import { RunJournal, parseRunSave, type RunSave } from './runSave';
 
 export interface SessionUpdate {
+  pendingCommand?: CanduCommand | null;
+  dayProgress?: DayProgress;
   pace?: PaceReading;
   changeKind?: "snapshot" | "status";
   status: BridgeStatus;
@@ -49,6 +52,7 @@ export class BridgeSessionController {
   private snapshotValue: CanduSnapshot;
   private pendingCount = 0;
   private foregroundPendingCount = 0;
+  private foregroundCommand: CanduCommand | null = null;
   private modePending = false;
   private modeValue: BridgeModeId;
   private active = false;
@@ -60,6 +64,12 @@ export class BridgeSessionController {
   private readonly now: () => number;
   private visible = true;
   private restoring = false;
+  private draftChannels: number[] = [];
+  public get dailyPlan(): readonly number[] { return this.draftChannels; }
+  public setDailyPlan(channels: readonly number[]): void {
+    if (this.isPending || this.restoring || isRunTerminal(this.snapshotValue)) return;
+    this.draftChannels = [...new Set(channels)].sort((a, b) => a - b); this.emit();
+  }
 
   public constructor(
     bridge: CanduPlaytestBridgeLifecycle = createCanduPlaytestBridge(),
@@ -124,6 +134,10 @@ export class BridgeSessionController {
     this.active = true;
     this.syncScheduler();
     this.emit();
+    // A frozen initial decision can be saved before the first day. Record an
+    // authoritative no-time pause so the journal has a verifiable digest.
+    if (this.snapshotValue.pacingMode === "daily-turn" && !this.journal.hasCommands && this.pendingCount === 0)
+      void this.dispatch({ type: "pause" }).catch(() => undefined);
   }
 
   public stopShift(): void {
@@ -152,6 +166,7 @@ export class BridgeSessionController {
     try {
       const snapshot = await this.bridge.initializeMode(mode);
       this.journal.clear();
+      this.draftChannels = [];
       this.history.clear();
       this.modeValue = mode;
       this.snapshotValue = snapshot;
@@ -187,10 +202,12 @@ export class BridgeSessionController {
       );
     }
 
+    if (command.type === "commit-day" && this.pendingCount > 0) throw new Error("Wait until the current day finishes.");
     const isClockTick = command.type === "advance";
     this.pendingCount += 1;
     if (!isClockTick) {
       this.foregroundPendingCount += 1;
+      this.foregroundCommand = command;
       this.scheduler.suppressNextAdvance();
     }
     this.lastError = null;
@@ -203,6 +220,7 @@ export class BridgeSessionController {
       const response = await this.bridge.dispatch(command, responseOptions);
       this.journal.record(command, response, responseOptions.responseMode ?? 'full');
       this.presentation.accept(response, previous);
+      if (response.accepted && ["commit-day", "reset"].includes(command.type)) this.draftChannels = [];
       if (command.type === "reset" && response.accepted) this.history.clear();
       this.lastResponse = response;
       this.snapshotValue = response.snapshot;
@@ -216,6 +234,7 @@ export class BridgeSessionController {
       this.pendingCount = Math.max(0, this.pendingCount - 1);
       if (!isClockTick) {
         this.foregroundPendingCount = Math.max(0, this.foregroundPendingCount - 1);
+        if (this.foregroundPendingCount === 0) this.foregroundCommand = null;
         this.scheduler.releaseForegroundCommand();
       }
       this.syncScheduler();
@@ -236,7 +255,7 @@ export class BridgeSessionController {
     this.listeners.clear();
   }
 
-  public captureRun(): RunSave { return this.journal.capture(this.snapshotValue); }
+  public captureRun(): RunSave { return this.journal.capture(this.snapshotValue, this.draftChannels); }
 
   /** Restore in a separate WASM worker; failures leave the current reactor untouched. */
   public async restoreRun(input: unknown, progress: (done: number, total: number) => void = () => {},
@@ -245,12 +264,14 @@ export class BridgeSessionController {
     if (save.ended) throw new Error('Ended runs cannot be continued.');
     if (save.dataPackId !== this.snapshotValue.dataPackId || save.scorePolicyId !== this.snapshotValue.scorePolicyId)
       throw new Error('This save uses a different simulation or scoring version.');
+    if (save.version === 2 && save.pacingMode === "daily-turn" && save.dailyIntegrationId !== this.snapshotValue.physics.cadenceIdentity)
+      throw new Error("This saved daily run uses a different time-step model. Start a new daily run.");
     if (this.pendingCount || this.restoring) throw new Error('Wait for the current command to finish.');
     this.restoring = true; this.modePending = true; this.syncScheduler(); this.emit();
     let candidate: CanduPlaytestBridgeLifecycle | null = null;
     try {
       candidate = factory();
-      await candidate.initializeMode('play');
+      await candidate.initializeMode('play', save.version === 1 ? 'real-time' : save.pacingMode, save.seed);
       let result: CanduCommandResponse | null = null;
       for (let i = 0; i < save.commands.length; i++) {
         if (this.disposed) throw new Error('Restore cancelled.');
@@ -263,11 +284,15 @@ export class BridgeSessionController {
         throw new Error('Saved state verification failed. The current run was preserved.');
       const paused = await candidate.dispatch({ type: 'pause' }, { responseMode: 'compact' });
       if (!paused.accepted) throw new Error('Could not pause the restored run.');
+      const restoredDraft = save.draftChannels ?? [];
+      if (restoredDraft.some(i => !paused.snapshot.core.channels.find(c => c.channelIndex === i)?.canRefuel)) throw new Error("Saved fuel plan contains an ineligible channel.");
       this.unsubscribeBridge(); this.bridge.dispose?.(); this.bridge = candidate; candidate = null;
       this.unsubscribeBridge = this.bridge.subscribe((status, snapshot) => {
         this.statusValue = status; this.snapshotValue = snapshot; this.emit();
       });
       this.statusValue = this.bridge.status; this.snapshotValue = paused.snapshot;
+
+      this.draftChannels = [...restoredDraft];
       this.journal.adopt(save); this.journal.record({ type: 'pause' }, paused, 'compact');
       this.lastResponse = paused; this.lastError = null; this.presentation.clear(); this.history.clear();
     } finally {
@@ -283,6 +308,7 @@ export class BridgeSessionController {
     return this.active &&
       this.statusValue.isWasmAvailable &&
       this.modeValue === "play" &&
+      this.snapshotValue.pacingMode !== "daily-turn" &&
       !this.snapshotValue.isPaused &&
       this.snapshotValue.playbackModeId !== "pause" &&
       !isRunTerminal(this.snapshotValue);
@@ -299,6 +325,8 @@ export class BridgeSessionController {
 
   private createUpdate(response: CanduCommandResponse | null = this.lastResponse): SessionUpdate {
     return {
+      pendingCommand: this.foregroundCommand,
+      dayProgress: this.bridge.dayProgress,
       pace: {
         requested: this.snapshotValue.isPaused ? 'Paused' : this.snapshotValue.playbackModeId.replace('x', '×'),
         simulatedMinutesPerSecond: this.observedPace.observe(this.isPlaybackActive() && this.visible ? this.snapshotValue.playbackModeId : null,

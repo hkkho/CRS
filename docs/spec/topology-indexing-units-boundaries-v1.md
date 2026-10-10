@@ -287,4 +287,4 @@ The following are intentionally left for later approved specifications:
   is added by this task.
 
 Source: the retained P2-T01 specification and
-[`reference-output-formats-v1.md`](reference-output-formats-v1.md).
+the historical reference-output formats specification (retained in Git history).

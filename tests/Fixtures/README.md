@@ -5,7 +5,7 @@ indices projected by Game from Core. The presentation fields alone do not
 alter simulation or replay digests. Older hosts can omit the geometry; the client
 then reports locations unavailable rather than drawing an assumed layout.
 
-The current fixtures were regenerated for the lzc-tubes-v7 physics
+The current fixtures were regenerated for the axial-marshak-v8 physics
 pack. The wire schema is unchanged; physical values, pack identity and digests
 intentionally change with the calibration.
 
@@ -23,9 +23,8 @@ dotnet run --project tools/Phase4ContractCorpus -- --fixtures tests/Fixtures/pla
 ```
 
 Do not regenerate to conceal drift. `tools/Phase4ContractCorpus` also records the
-two-seed characterization corpus (24 responses) to an output path. The original
-pre-refactor hashes in `benchmarks/phase4-contract-baseline.json` remain the
-acceptance baseline for Phase 4.
+two-seed characterization corpus (24 responses) to an output path. The checked wire fixture is the current protocol acceptance baseline. Historical
+pre-refactor hashes are available in Git history.
 
 The v3 reactivity pack, three-minute LZC cadence identity and named refuelling
 messages are reflected in the exact serialized responses.
@@ -34,4 +33,11 @@ eight-bundle plans, automatic channel-flow orders, and LZC average-level
 diagnostics. They were deliberately regenerated for these gameplay changes.
 The main-game fixtures now include explicit endless and unlimited-fuel flags,
 zero numeric sentinels, and fuel-consumption accounting.
-The original Phase 4 hashes remain a historical refactor baseline.
+
+
+The retained v2 corpus runs with an explicit `PlaytestRuntime("real-time")`
+constructor default so its original response bytes and digests remain covered.
+Daily fields are omitted on legacy responses. The exact response bytes were
+intentionally regenerated for the v8 axial Marshak pack and its new reference;
+the real-time protocol shape remains covered. Daily default and full/compact
+reports have separate focused bridge tests.

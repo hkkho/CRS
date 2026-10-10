@@ -7,8 +7,6 @@ param(
     [string]$StagingPath,
     [switch]$RunAOTCompilation,
     [switch]$EnableRuntimeProfiling,
-    [switch]$EnableCpuParallelism,
-    [switch]$EnableResearchExperiments,
     [switch]$OmitPrecompressedAssets,
     [ValidateSet('default', 'true', 'false')]
     [string]$WasmEnableSIMD = 'default'
@@ -59,9 +57,6 @@ $targetPath = Resolve-ManagedPath -Path $(if ([string]::IsNullOrWhiteSpace($Targ
 $stagingPath = Resolve-ManagedPath -Path $(if ([string]::IsNullOrWhiteSpace($StagingPath)) { $defaultStagingPath } else { $StagingPath }) -Label 'StagingPath'
 
 $defaultTargetPath = [IO.Path]::GetFullPath($defaultTargetPath)
-if (($EnableCpuParallelism -or $EnableResearchExperiments) -and $targetPath.Equals($defaultTargetPath, [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'Research publishing requires -TargetPath under tmp to preserve the runnable default browser runtime.'
-}
 if (-not $targetPath.Equals($defaultTargetPath, [StringComparison]::OrdinalIgnoreCase) -and
     -not (Test-StrictChildPath -Path $targetPath -Parent $tmpRoot)) {
     throw "TargetPath must be exactly $defaultTargetPath or a strict child of ${tmpRoot}: $targetPath"
@@ -92,17 +87,9 @@ $publishArguments = @(
     '--configuration', $Configuration,
     '--runtime', 'browser-wasm',
     '--output', $stagingPath,
-    "-p:WasmEnableThreads=$($EnableCpuParallelism.IsPresent.ToString().ToLowerInvariant())",
-    "-p:EnableCpuParallelism=$($EnableCpuParallelism.IsPresent.ToString().ToLowerInvariant())",
-    "-p:EnableResearchExperiments=$($EnableResearchExperiments.IsPresent.ToString().ToLowerInvariant())"
+    '-p:WasmEnableThreads=false',
+    '-p:EnableCpuParallelism=false'
 )
-if ($EnableCpuParallelism) {
-    # Separate runtime/AOT intermediates from the normal single-threaded publish.
-    $publishArguments += @('--artifacts-path', (Join-Path $tmpRoot 'cpu-threaded-build'))
-}
-if ($EnableResearchExperiments -and -not $EnableCpuParallelism) {
-    $publishArguments += @('--artifacts-path', (Join-Path $tmpRoot 'research-experiments-build'))
-}
 if ($RunAOTCompilation) {
     $publishArguments += '-p:RunAOTCompilation=true'
 }
@@ -182,9 +169,9 @@ $buildInfo = [ordered]@{
     runAotCompilation  = [bool]$RunAOTCompilation
     enableRuntimeProfiling = [bool]$EnableRuntimeProfiling
     wasmEnableSIMD     = $WasmEnableSIMD
-    researchExperiments = [bool]$EnableResearchExperiments
-    wasmEnableThreads  = [bool]$EnableCpuParallelism
-    cpuOperatorPartitions = $(if ($EnableCpuParallelism) { 2 } else { 1 })
+    researchExperiments = $false
+    wasmEnableThreads  = $false
+    cpuOperatorPartitions = 1
     omitPrecompressedAssets = [bool]$OmitPrecompressedAssets
 }
 $buildInfo | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $targetPath 'build-info.json') -Encoding utf8

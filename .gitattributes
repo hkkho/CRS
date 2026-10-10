@@ -1,7 +1,7 @@
 # Physics-pack identities hash the exact embedded bytes. Never rewrite their
 # line endings during checkout: wire fixtures and provenance use these hashes.
-/data/packs/*.json -text
-/src/ReactorSim.Core/EmbeddedData/*.json -text
+/data/packs/*.json -text whitespace=cr-at-eol
+/src/ReactorSim.Core/EmbeddedData/*.json -text whitespace=cr-at-eol
 /data/calibration/literature-geometry-v4/*.json -text
 /data/calibration/literature-geometry-v4/fit/*.json -text
 
@@ -10,3 +10,7 @@
 
 /data/calibration/xenon-reference-v6/*.json -text
 /data/calibration/xenon-reference-v6/fit/*.json -text
+
+# V8 calibration/pack identities preserve their authored LF or CRLF bytes.
+/data/calibration/axial-marshak-v8/*.json -text whitespace=cr-at-eol
+/data/calibration/axial-marshak-v8/fit/*.json -text whitespace=cr-at-eol
