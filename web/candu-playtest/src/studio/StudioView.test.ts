@@ -50,6 +50,39 @@ function harness() {
 }
 
 describe("Reactor Studio live interface", () => {
+  it("closes view and map menus after selection and restores focus without issuing reactor commands", () => {
+    const { view, session } = harness();
+    const mapMenu = view.element.querySelector<HTMLDetailsElement>(".studio-map-menu")!;
+    mapMenu.open = true;
+    view.element.querySelector<HTMLButtonElement>('[data-map="power"]')!.click();
+    expect(mapMenu.open).toBe(false);
+    expect(mapMenu.querySelector("summary")!.textContent).toBe("Channel kW");
+    expect(document.activeElement).toBe(mapMenu.querySelector("summary"));
+    const viewMenu = view.element.querySelector<HTMLDetailsElement>(".studio-view-menu")!;
+    viewMenu.open = true;
+    view.element.querySelector<HTMLButtonElement>('[data-tab="power"]')!.click();
+    expect(viewMenu.open).toBe(false);
+    expect(viewMenu.querySelector("summary")!.textContent).toBe("Power peaks");
+    expect(document.activeElement).toBe(viewMenu.querySelector("summary"));
+    expect(session.dispatch).not.toHaveBeenCalled();
+  });
+
+  it("dismisses secondary menus on Escape or an outside click and leaves the selection intact", () => {
+    const { view, session } = harness();
+    const menu = view.element.querySelector<HTMLDetailsElement>(".studio-watchlist")!;
+    const summary = menu.querySelector<HTMLElement>("summary")!;
+    const selected = view.element.querySelector('[data-field="channel"]')!.textContent;
+    menu.open = true;
+    summary.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+    expect(menu.open).toBe(false);
+    expect(document.activeElement).toBe(summary);
+    menu.open = true;
+    view.element.querySelector<HTMLElement>(".studio-core h2")!.click();
+    expect(menu.open).toBe(false);
+    expect(view.element.querySelector('[data-field="channel"]')!.textContent).toBe(selected);
+    expect(session.dispatch).not.toHaveBeenCalled();
+  });
+
   it('zooms benchmark power and zone trends, retains off-scale limits, and expands for an excursion', () => {
     const { view, session, emit } = harness();
     session.snapshot = { ...session.snapshot, simulationTimeSeconds: 86400,
@@ -216,6 +249,8 @@ describe("Reactor Studio live interface", () => {
     expect(reading("xenon", 7)).toContain("0.00");
     expect(reading("iodine", 8)).toContain("3.00");
     expect(reading("xenon", 11)).toContain("2.00");
+    const detail = view.element.querySelector<HTMLDetailsElement>('[data-field="bundles"] details')!;
+    detail.open = true;
     const core = session.snapshot.core;
     session.snapshot = { ...session.snapshot, xenon: { ...session.snapshot.xenon,
       nodeI135NumberDensityM3: session.snapshot.xenon.nodeI135NumberDensityM3!.map(x => x === 0 ? 1e20 : x),
@@ -224,6 +259,7 @@ describe("Reactor Studio live interface", () => {
     expect(session.snapshot.core).toBe(core);
     expect(reading("iodine", 0)).toContain("1.00");
     expect(reading("xenon", 7)).toContain("0.50");
+    expect(detail.open).toBe(true);
     view.element.querySelector<SVGRectElement>('rect[data-channel="211"]')!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     expect(reading("iodine", 0)).toContain("3.00");
   });
@@ -236,8 +272,9 @@ describe("Reactor Studio live interface", () => {
     expect(view.element.querySelector('rect[data-channel="210"]')!.getAttribute("fill")).toBe("hsl(220 78% 55%)");
     expect(view.element.querySelector('rect[data-channel="211"]')!.getAttribute("fill")).toBe("hsl(0 78% 55%)");
     expect(view.element.querySelector('[data-field="reserve"]')!.textContent).toBe("58.0%");
-    expect(view.element.textContent).toContain("LZC AVERAGE LEVEL");
-    expect(view.element.textContent).toContain("Limit ±20%");
+    expect(view.element.querySelector('.studio-metrics article')!.textContent).toContain("LZC / %");
+    expect(view.element.querySelector('.studio-metrics article')!.getAttribute("title")).toContain("Average liquid-zone water level · allowed 10–90%");
+    expect(view.element.querySelector('[data-field="tilt"]')!.getAttribute("title")).toContain("Limit ±20%");
     expect(view.element.querySelector('[data-action="size"]')).toBeNull();
     expect(view.element.querySelector('[data-action="direction"]')).toBeNull();
     session.snapshot.rrs.averageFillFraction = .91; emit();
@@ -347,7 +384,8 @@ describe("Reactor Studio live interface", () => {
     emit({ ...response, sequence: 3 });
     expect(animate).toHaveBeenCalledTimes(2);
     HTMLElement.prototype.animate = original;
-    expect(view.element.querySelector('[data-field="movement-plan"]')!.textContent).toContain("positions 5, 6, 7, 8, 9, 10, 11, 12 leave End B");
+    expect(view.element.querySelector('[data-field="movement-plan"]')!.textContent).toContain("8 in / End A → 8 out / End B");
+    expect(view.element.querySelector('[data-field="movement-plan"] > p')!.getAttribute("aria-label")).toContain("positions 5, 6, 7, 8, 9, 10, 11, 12 leave End B");
     expect(view.element.querySelectorAll('[data-movement="outgoing"]')).toHaveLength(8);
     const outgoing = view.element.querySelector('[data-movement="outgoing"]');
     session.snapshot.core.channels[0].bundles[4].currentBurnupMwdPerKg += .1;

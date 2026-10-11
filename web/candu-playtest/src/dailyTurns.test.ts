@@ -29,6 +29,22 @@ function harness() {
 }
 
 describe("daily browser decisions", () => {
+  it("keeps the draft frozen while the manual is open and blocks gameplay shortcuts inside it", () => {
+    const { session, bridge } = harness();
+    const view = new StudioView(session, document.body); disposables.push(() => view.destroy());
+    session.setDailyPlan([210]);
+    const open = view.element.querySelector<HTMLButtonElement>("[data-manual-open]")!;
+    view.element.querySelector<HTMLDetailsElement>(".studio-game-menu")!.open = true;
+    open.click();
+    const manual = view.element.querySelector<HTMLDialogElement>(".simulator-manual")!;
+    manual.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+    expect(session.dailyPlan).toEqual([210]);
+    expect(session.snapshot.simulationTimeSeconds).toBe(0);
+    expect(bridge.dispatch).not.toHaveBeenCalled();
+    manual.querySelector<HTMLButtonElement>("[data-manual-close]")!.click();
+    expect(session.dailyPlan).toEqual([210]);
+    expect(document.activeElement).toBe(open);
+  });
   it("never schedules time and can save a frozen first-day draft", async () => {
     const { session, timer } = harness(); session.startShift();
     await vi.waitFor(() => expect(session.isPending).toBe(false));
@@ -55,7 +71,8 @@ describe("daily browser decisions", () => {
     expect(bridge.dispatch).toHaveBeenCalledTimes(1);
     expect(bridge.dispatch).toHaveBeenCalledWith({ type: "commit-day", expectedCompletedDays: 0, channelIndices: [210, 211] }, expect.anything());
     expect(session.dailyPlan).toEqual([]);
-    expect(button("commit-day").textContent).toBe("Advance 1 day without refuelling");
+    expect(button("commit-day").textContent).toBe("Advance day");
+    expect(button("commit-day").getAttribute("aria-label")).toBe("Advance 1 day without refuelling");
     expect(view.element.querySelector('[data-field="time"]')!.textContent).toBe("Day 2");
   });
 

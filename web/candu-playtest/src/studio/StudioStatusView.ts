@@ -12,7 +12,7 @@ export class StudioStatusView {
     pace: PaceReading | undefined, draft: RefuelDraft | null, selected: number, mapMode: MapMode, historical = false): void {
     const channel = snapshot.core.channels.find(channel => channel.channelIndex === selected);
     this.text("feedback", historical ? "Recorded observation · Return to live to issue orders." : !ready ? detail : pending ? snapshot.pacingMode === "daily-turn" ? "Advancing day…" : "Reactor is solving your order…" : message);
-    this.text('pace', historical ? "Historical observation" : snapshot.pacingMode === "daily-turn" ? "Daily turns · inspect freely, then advance 1 day" : `Requested ${pace?.requested ?? (snapshot.isPaused ? 'Paused' : snapshot.playbackModeId.replace('x', '×'))} · Observed ${pace?.simulatedMinutesPerSecond == null ? '—' : `${pace.simulatedMinutesPerSecond.toFixed(1)} sim min/s`}`);
+    this.text('pace', historical ? "Historical observation" : snapshot.pacingMode === "daily-turn" ? "Planning" : `Requested ${pace?.requested ?? (snapshot.isPaused ? 'Paused' : snapshot.playbackModeId.replace('x', '×'))} · Observed ${pace?.simulatedMinutesPerSecond == null ? '—' : `${pace.simulatedMinutesPerSecond.toFixed(1)} sim min/s`}`);
     setAttribute(this.element, "aria-busy", String(pending));
     this.element.querySelectorAll<HTMLButtonElement>("button[data-action]").forEach(button => {
       const action = button.dataset.action;
@@ -29,5 +29,8 @@ export class StudioStatusView {
     });
     this.text("refuel", historical ? "Return to live to refuel" : isRunTerminal(snapshot) ? "Shift complete" : "Refuel 8 bundles →");
     this.text("order-note", !isChannelRefuellable(channel) ? channel?.refuellingIneligibilityReason || "This channel contains nonfuel cells and cannot be refuelled." : !snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8 ? "Not enough fresh fuel. Start a new shift to restock." : `Cost: 8 fresh bundles · ${snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${snapshot.freshBundlesAvailable} in stock`}${channel ? ` · ${channelHeadroom(snapshot, channel)}` : ""}`);
+    // Keep blocked-order explanations visible without expanding routine guidance.
+    if (!isChannelRefuellable(channel) || (!snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8))
+      this.element.querySelector<HTMLDetailsElement>(".studio-fuel-status")!.open = true;
   }
 }

@@ -1,4 +1,4 @@
-# CANDU Refuelling Game
+# CRS
 
 This repository is the source for the web CANDU on-power refuelling game
 deployed from `web/candu-playtest` to [GitHub Pages](https://hkkho.github.io/CRS/).
@@ -8,12 +8,13 @@ see [hosting and verification](docs/maintenance/hosting.md).
 
 The player keeps a deterministic practice reactor at useful power, manages average
 LZC level between 10% and 90%, spends a finite fresh-bundle inventory, and builds
-score by keeping channel powers close to their time-average reference. Reactor Studio consumes
+score by keeping channel powers close to their time-average reference. CRS consumes
 one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
-Reactor Studio defaults to **daily turns**. Time stays frozen while you inspect
-power/burnup maps, bundle profiles, the fuel watchlist and zone levels. Use
+CRS defaults to **daily turns**. Time stays frozen while you inspect
+power/burnup maps, bundle profiles, the fuel watchlist and zone levels. The core
+opens on **Channel kW**; the map dropdown also offers burnup, ripple and bundle power. Use
 **Highest burnup** (`N`) to inspect a candidate, then **Add to today's fuel plan**
 (`R`) to add or remove that channel. Each chosen channel receives eight fresh
 bundles with its flow. Adjacent channels have opposite flow directions.
@@ -41,6 +42,14 @@ Refuelling affects later score through its power response. See the
 [scoring policy](docs/gameplay/score-balance.md),
 [reference derivation](docs/physics/channel-power-reference.md) and
 [daily-turn contract](docs/gameplay/daily-turn-mode.md).
+
+The compact blue-panel interface keeps operating readings and the fuel plan visible.
+Open **Menu → Manual** (or press `F1`) for the daily workflow, fuelling theory, map guide,
+limits, scoring, shortcuts and saves. `Escape` closes it and restores focus;
+the plan stays frozen. Detailed mission, device, poison and day reports expand on demand.
+The status header and dropdowns for views, map modes, fuel candidates and devices
+leave the workspace to the enlarged core and channel profiles. History plots use
+the full available width.
 
 The native launcher and Studio support keyboard operation, a 320px layout and
 quiet operation announcements. History records complete day-boundary observations;
@@ -113,7 +122,7 @@ ended early on channel-power limits; the [v4 rerun](benchmarks/fuelling-capabili
 completed 100 days with both policies. These results predate the adjusters and corrected xenon reference.
 
 Reference output is 650 MW electrical at 2,064 MW thermal. Burnup and
-channel/bundle power use thermal fission energy; Reactor Studio shows both
+channel/bundle power use thermal fission energy; CRS shows both
 core totals. The electrical conversion is an authored presentation estimate.
 
 Runs now start from a seeded aged-core snapshot. **New aged core** on the title

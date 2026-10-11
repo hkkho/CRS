@@ -9,18 +9,17 @@ export class DailyPlanView {
     this.element.className = "studio-card studio-daily-plan";
     this.element.setAttribute("aria-label", "Daily fuel plan");
     this.element.innerHTML = `<p class="studio-eyebrow">TODAY'S FUEL PLAN</p><h2 data-day-heading></h2>
-      <p>Choose channels while time is frozen. Orders use eight fresh bundles each and run in channel order before the day advances.</p>
-      <p data-plan-total></p><ul data-plan-list></ul>
+      <details data-plan-review><summary>Fuel plan · <span data-plan-total></span></summary><ul data-plan-list></ul></details>
       <div class="studio-report-actions"><button data-action="clear-plan">Clear plan</button><button class="studio-primary" data-action="commit-day">Advance 1 day without refuelling</button></div>
-      <p data-day-pending></p><section aria-label="Last day result" data-day-report hidden><h3>Last day</h3><p data-day-summary></p><ul data-day-moves></ul></section>`;
+      <p data-day-pending></p><details aria-label="Last day result" data-day-report hidden><summary>Day report</summary><p data-day-summary></p><ul data-day-moves></ul></details>`;
   }
   update(snapshot: CanduSnapshot, channels: readonly number[], pending: boolean, historical: boolean, progress?: DayProgress, ready = true): void {
     this.element.hidden = snapshot.pacingMode !== "daily-turn";
     if (this.element.hidden) return;
     const text = (selector: string, value: string) => { const e = this.element.querySelector(selector)!; if (e.textContent !== value) e.textContent = value; };
     text("[data-day-heading]", `Day ${(snapshot.completedDays ?? 0) + 1}`);
-    text("[data-plan-total]", `${channels.length} channels · ${channels.length * 8} fresh bundles${snapshot.shift?.unlimitedFreshFuel ? " · Unlimited stock" : ` · ${snapshot.freshBundlesAvailable} in stock`}`);
-    text("[data-day-pending]", pending ? `Advancing day…${progress && progress.simulationSecondsAdvanced > 0 ? ` ${(100 * progress.simulationSecondsAdvanced / progress.requestedSimulationSeconds).toFixed(0)}% calculated` : ""}` : historical ? "Return to live to edit or advance today's plan." : "Time stays frozen until you advance the day.");
+    text("[data-plan-total]", `${channels.length} ${channels.length === 1 ? "channel" : "channels"} · ${channels.length * 8} bundles`);
+    text("[data-day-pending]", pending ? `Advancing day…${progress && progress.simulationSecondsAdvanced > 0 ? ` ${(100 * progress.simulationSecondsAdvanced / progress.requestedSimulationSeconds).toFixed(0)}% calculated` : ""}` : historical ? "Return to live to edit or advance today's plan." : "");
     const key = `${snapshot.simulationTimeSeconds}:${snapshot.refuellingOperationCount}:${channels.join(",")}`;
     if (key !== this.key) {
       this.key = key;
@@ -62,7 +61,8 @@ export class DailyPlanView {
       b.disabled = !ready || pending || historical || isRunTerminal(snapshot);
       if (b.dataset.action === "clear-plan") b.disabled ||= channels.length === 0;
       if (b.dataset.action === "commit-day") {
-        b.textContent = channels.length ? "Refuel & advance 1 day" : "Advance 1 day without refuelling";
+        b.textContent = channels.length ? "Refuel & advance" : "Advance day";
+        b.setAttribute("aria-label", channels.length ? "Refuel & advance 1 day" : "Advance 1 day without refuelling");
         b.disabled ||= !snapshot.shift?.unlimitedFreshFuel && channels.length * 8 > snapshot.freshBundlesAvailable;
       }
     });

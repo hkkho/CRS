@@ -25,9 +25,13 @@ it("opens the native Studio over the existing session and cleans up its subscrib
     return () => { listeners.delete(listener); };
   } };
   shell = new AppShell(shared, document.body);
+  expect(document.querySelector('.reactor-launcher h1')!.textContent).toBe("CRS");
   expect(listeners.size).toBe(1);
   click('[data-action="begin"]');
   expect(document.querySelector('.reactor-studio')).not.toBeNull();
+  expect(document.querySelector('.studio-brand h1')!.textContent).toBe("CRS");
+  expect((document.querySelector('.reactor-studio') as HTMLElement).dataset.mapMode).toBe("power");
+  expect(document.querySelector('[data-map="power"]')!.getAttribute("aria-pressed")).toBe("true");
   expect(document.querySelector('[data-action="designer"]')).toBeNull();
   expect(document.querySelector('canvas')).toBeNull();
   expect(listeners.size).toBe(1);

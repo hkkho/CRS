@@ -20,6 +20,7 @@ import { StudioStatusView } from "./StudioStatusView";
 import { SessionPresentation } from "../SessionPresentation";
 import { channelWatts, channelLimit, bundleLimit, channelColorMinimum, bundleColorMinimum, type MapMode } from "./powerReadings";
 import { adjusterSummary } from "./devicePresentation";
+import { SimulatorManual } from "../SimulatorManual";
 
 /** A presentation of the existing bridge session, with no reactor state or rules. */
 export class StudioView {
@@ -36,13 +37,14 @@ export class StudioView {
   }
   private draft: RefuelDraft | null = null;
   private selected = -1;
-  private mapMode: MapMode = "burnup";
+  private mapMode: MapMode = "power";
   private inspectionSnapshot: CanduSnapshot | null = null;
   private lastHandledResponse: CanduCommandResponse | null = null;
   private showedEnding = false;
   private readonly mapView: StudioMapView;
   private readonly orderView: StudioOrderView;
   private readonly statusView: StudioStatusView;
+  private readonly manual: SimulatorManual;
   private readonly presentation: SessionPresentation;
   private impactKey = "";
   private readonly fields = new Map<string, HTMLElement>();
@@ -59,15 +61,15 @@ export class StudioView {
     this.snapshot = session.snapshot;
     this.element.className = "reactor-studio";
     this.element.tabIndex = -1;
-    this.element.setAttribute("aria-label", "Reactor Studio game interface");
+    this.element.setAttribute("aria-label", "CRS game interface");
     this.element.innerHTML = `
       <div class="studio-shell">
         <header class="studio-header">
-          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">CANDU 6 / ON-POWER REFUELLING</p><h1>Reactor Studio<span class="studio-brand-dot">.</span></h1></div></div>
-          <nav aria-label="Game controls"><button data-action="challenge" class="studio-quiet" data-field="challenge-button">One-day challenge</button><button data-action="reset" class="studio-quiet">New shift</button></nav>
+          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">CANDU 6 / ON-POWER REFUELLING</p><h1>CRS</h1></div></div>
+          <nav aria-label="Game controls"><details class="studio-dropdown studio-game-menu"><summary>Menu</summary><div class="studio-dropdown-panel"><button data-manual-open title="Fuelling theory, instructions and controls (F1)">Manual</button><button data-action="challenge" class="studio-quiet" data-field="challenge-button">One-day challenge</button><button data-action="reset" class="studio-quiet">New shift</button></div></details></nav>
         </header>
         <section class="studio-objective studio-card" aria-label="Shift objective" data-field="objective-card">
-          <div><p class="studio-eyebrow" data-field="objective-title"></p><p data-field="objective"></p><small data-field="objective-reward"></small><p data-field="provenance" class="studio-provenance"></p></div>
+          <div><p class="studio-eyebrow" data-field="objective-title"></p><details><summary>Mission details</summary><p data-field="objective"></p><small data-field="objective-reward"></small><p data-field="provenance" class="studio-provenance"></p></details></div>
           <div class="studio-objective-progress"><strong data-field="objective-progress"></strong><small data-field="remaining"></small></div>
         </section>
         <section class="studio-ending studio-card" data-field="ending" hidden aria-labelledby="studio-ending-title">
@@ -77,45 +79,47 @@ export class StudioView {
           <div class="studio-report-actions"><button data-action="retry" class="studio-primary">Retry same seed</button><button data-action="new-seed">Try new seed</button></div>
         </section>
         <section class="studio-metrics" aria-label="Live reactor status">
-          <article><span class="studio-eyebrow">LZC AVERAGE LEVEL</span><strong data-field="reserve"></strong><small>Keep between 10% and 90%</small><small data-field="status"></small></article>
-          <article><span class="studio-eyebrow">RIPPLE SCORE</span><strong data-field="score"></strong><small data-field="ripple-score"></small><small><span data-field="operations"></span> fuel moves completed</small></article>
-          <article><span class="studio-eyebrow">FRESH BUNDLES</span><strong data-field="stock"></strong><small>8 bundles per move · with flow</small></article>
+          <article title="Average liquid-zone water level · allowed 10–90%"><span class="studio-eyebrow">LZC / %</span><strong data-field="reserve"></strong><small data-field="status"></small></article>
+          <article><span class="studio-eyebrow">SCORE</span><strong data-field="score"></strong><small data-field="ripple-score"></small><small><span data-field="operations"></span> moves</small></article>
+          <article title="Eight fresh bundles per channel"><span class="studio-eyebrow">FUEL / BUNDLES</span><strong data-field="stock"></strong></article>
           <article class="studio-clock"><span class="studio-eyebrow">SIMULATION CLOCK</span><strong data-field="time"></strong><div class="studio-segments" aria-label="Playback speed"><button data-action="pause" aria-label="Pause simulation" data-field="pause">Ⅱ</button><button data-action="speed" data-speed="1x">1×</button><button data-action="speed" data-speed="10x">10×</button><button data-action="speed" data-speed="60x">60×</button></div><small data-field="pace" title="Observed simulation minutes per real second includes time spent solving. Requested speed is a target; no catch-up work is queued."></small></article>
         </section>
         <div data-field="history"></div>
         <div id="studio-reactor-panel" role="tabpanel" aria-labelledby="studio-tab-reactor" data-field="reactor-panel">
         <main class="studio-workspace">
-          <aside class="studio-card studio-watchlist">
-            <p class="studio-eyebrow">01 / INSPECT</p><h2>Fuel watchlist</h2><p class="studio-description">Ranked by observed average burnup, not age or predicted score. Compare both ends.</p>
-            <button data-action="oldest" class="studio-outline">◎ Highest burnup</button>
-            <div data-field="watchlist" class="studio-candidates"></div>
-            <div class="studio-tip"><span class="studio-eyebrow">RIPPLE TARGET</span><p>Keep each channel close to its reference power. Lower RMS ripple earns more points over time.</p><span data-field="tilt"></span></div>
-          </aside>
           <section class="studio-card studio-core">
-            <div class="studio-card-heading"><div><p class="studio-eyebrow">380 CHANNELS / CORE</p><h2>The reactor face</h2></div><div class="studio-segments studio-map-modes"><button data-action="map" data-map="burnup">Burnup</button><button data-action="map" data-map="power">Channel kW</button><button data-action="map" data-map="ripple">Ripple %</button><button data-action="map" data-map="bundle-power">Bundle kW</button></div></div>
+            <div class="studio-card-heading"><h2>Core</h2><div class="studio-core-tools">
+              <details class="studio-dropdown studio-map-menu"><summary data-field="map-mode-title">Channel kW</summary><div class="studio-dropdown-panel studio-map-modes"><button data-action="map" data-map="burnup">Burnup</button><button data-action="map" data-map="power">Channel kW</button><button data-action="map" data-map="ripple">Ripple %</button><button data-action="map" data-map="bundle-power">Bundle kW</button></div></details>
+              <details class="studio-dropdown studio-watchlist"><summary>Fuel</summary><div class="studio-dropdown-panel"><h2 title="Eligible channels ranked by average burnup">Fuel watchlist</h2><button data-action="oldest" class="studio-outline">◎ Highest burnup</button><div data-field="watchlist" class="studio-candidates"></div></div></details>
+              <details class="studio-dropdown studio-device-menu"><summary>Devices</summary><div class="studio-dropdown-panel studio-devices"><button data-action="devices" aria-pressed="true">Adjusters</button><span class="studio-lzc-planes" aria-label="Liquid-zone face plane"><button data-action="lzc-plane" data-plane="0" aria-pressed="true">End A LZC</button><button data-action="lzc-plane" data-plane="1" aria-pressed="false">End B LZC</button></span><details><summary>Device geometry</summary><p data-field="device-note"></p><p data-field="lzc-device-note">Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time.</p><div data-field="device-plan"></div></details></div></details>
+            </div></div>
             <div class="studio-map-wrap"><svg data-field="map" viewBox="0 0 560 560" aria-label="Core channel map" role="group"><defs><radialGradient id="studio-vessel"><stop stop-color="#2d4945"/><stop offset="1" stop-color="#142421"/></radialGradient></defs><circle cx="280" cy="280" r="256" fill="url(#studio-vessel)"/><circle cx="280" cy="280" r="249" fill="none" stroke="#58716a" stroke-width="1"/><circle cx="280" cy="280" r="238" fill="none" stroke="#58716a" stroke-dasharray="2 8"/><path d="M280 10v32 M280 518v32 M10 280h32 M518 280h32" stroke="#a9c4b2" stroke-width="1"/><g data-field="map-labels" fill="#becbc1" font-size="10" font-family="monospace"></g><g data-field="channels"></g></svg><span class="studio-map-tag" data-field="map-tag"></span></div>
-            <div class="studio-map-legend"><span class="studio-legend-gradient"></span><span data-field="legend">Fresh → higher burnup · MWd/kg HM</span><span>Arrows select</span></div>
-            <div class="studio-devices"><button data-action="devices" aria-pressed="true">Show adjusters</button><span class="studio-lzc-planes" aria-label="Liquid-zone face plane"><button data-action="lzc-plane" data-plane="0" aria-pressed="true">End A LZC</button><button data-action="lzc-plane" data-plane="1" aria-pressed="false">End B LZC</button></span><p data-field="device-note"></p><p data-field="lzc-device-note">Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time.</p><div data-field="device-plan"></div></div>
+            <div class="studio-map-legend"><span class="studio-legend-gradient"></span><span data-field="legend">Channel power / kW thermal</span><span>Arrows select</span></div>
+            <span data-field="tilt" class="studio-core-readings"></span>
           </section>
           <section class="studio-card studio-inspector">
-            <p class="studio-eyebrow">02 / MAKE A MOVE</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
-            <div class="studio-channel-metrics"><div><span>CHANNEL / kW</span><strong data-field="local-power"></strong></div><div><span>RIPPLE / TARGET 100%</span><strong data-field="local-ripple"></strong></div><div><span>PEAK BUNDLE / kW</span><strong data-field="bundle-peak"></strong></div><div><span>SIGNED TILT · B+</span><strong data-field="local-tilt"></strong></div></div><p data-field="channel-reference"></p>
+            <p class="studio-eyebrow">CHANNEL</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
+            <div class="studio-channel-metrics"><div><span>CHANNEL / kW</span><strong data-field="local-power"></strong></div><div><span>RIPPLE / %</span><strong data-field="local-ripple"></strong></div><div><span>PEAK BUNDLE / kW</span><strong data-field="bundle-peak"></strong></div><div><span>TILT / B+</span><strong data-field="local-tilt"></strong></div></div><details class="studio-reference"><summary>Power reference</summary><p data-field="channel-reference"></p></details>
             <div class="studio-rack-heading"><span class="studio-eyebrow">12 BUNDLE POSITIONS</span><span data-field="burnup"></span></div>
             <div data-field="bundles" class="studio-axial-profile" aria-label="Selected channel axial power, burnup, iodine and xenon profiles"></div><div class="studio-rack-ends"><span>END A / 01</span><span>AXIAL BUNDLE POSITION</span><span>12 / END B</span></div>
             <div class="studio-order"><p class="studio-order-size"><span>Fuel with flow</span><strong data-field="direction"></strong></p>
-            <button data-action="refuel" data-field="refuel" class="studio-primary">Refuel channel →</button><p class="studio-order-note" data-field="order-note"></p><div data-field="movement-plan" class="studio-movement"></div></div>
+            <button data-action="refuel" data-field="refuel" class="studio-primary">Refuel channel →</button><details class="studio-fuel-status"><summary>Fuel status</summary><p class="studio-order-note" data-field="order-note"></p></details><div data-field="movement-plan" class="studio-movement"></div></div>
             <details class="studio-controls"><summary>Power &amp; time controls</summary><small>Applied target <span data-field="power-target"></span> · <span data-field="power-rating"></span></small><label>Power target <output data-field="target-output"></output><input data-field="target-input" type="range" min="80" max="120" step="1" aria-label="Power target percent" /></label><div><button data-action="target">Apply target</button><button data-action="step">Advance 1 hour</button></div><small>Resume to apply a power target. Pause to step time.</small></details>
           </section>
         </main>
         <section class="studio-bottom">
           <article class="studio-card studio-result"><div class="studio-card-heading"><h2>Last fuel move</h2><span class="studio-eyebrow">EQUILIBRIUM RESPONSE</span></div><p data-field="feedback"></p><div data-field="movement-result" class="studio-movement-result"></div><div class="studio-impact-grid" data-field="impact">Local power, tilt, LZC level and inventory will appear here after refuelling.</div></article>
-          <article class="studio-card studio-zones"><div class="studio-card-heading"><h2>Regulating headroom</h2><span class="studio-eyebrow">14 LIQUID ZONES</span></div><div data-field="zones" class="studio-zone-strip"></div><p data-field="zone-note"></p></article>
+          <article class="studio-card studio-zones"><div class="studio-card-heading"><h2>LZC levels</h2><span class="studio-eyebrow">14 ZONES</span></div><div data-field="zones" class="studio-zone-strip"></div><details><summary>Controller report</summary><p data-field="zone-note"></p></details></article>
         </section>
         </div>
-        <footer class="studio-footer"><span data-field="guidance"></span><span>SPACE pause / resume · R refuel</span></footer>
+        <footer class="studio-footer"><span data-field="guidance"></span><span>F1 Manual · N Highest burnup · R Fuel plan</span></footer>
       </div>`;
     this.element.querySelectorAll<HTMLElement>("[data-field]").forEach(field => this.fields.set(field.dataset.field!, field));
+    const header = this.element.querySelector(".studio-header")!;
+    header.querySelector("nav")!.before(this.element.querySelector(".studio-metrics")!);
+    this.element.querySelector(".studio-game-menu > .studio-dropdown-panel")!.prepend(this.field("objective-card"));
     parent.append(this.element);
+    this.manual = new SimulatorManual(this.element);
     this.calculationView = new DayCalculationView(() => {
       if (this.session.isPending) { this.element.focus({ preventScroll: true }); return; }
       this.inspectionSnapshot = null;
@@ -134,9 +138,9 @@ export class StudioView {
       this.render();
     });
     this.field("history").append(this.historyView.element);
-    this.element.querySelector(".studio-metrics")!.after(this.dailyView.element);
+    header.after(this.dailyView.element);
     this.historyView.setTab(initial.selectedTab ?? "reactor");
-    this.mapMode = initial.mapMode ?? "burnup";
+    this.mapMode = initial.mapMode ?? "power";
     this.mapView = new StudioMapView(name => this.field(name), this.snapshot.core.channels);
     this.orderView = new StudioOrderView(name => this.field(name));
     this.statusView = new StudioStatusView(this.element, name => this.field(name));
@@ -157,6 +161,7 @@ export class StudioView {
     this.unsubscribe();
     this.historyView.destroy();
     this.calculationView.destroy();
+    this.manual.destroy();
     this.element.removeEventListener("click", this.onClick);
     this.element.removeEventListener("keydown", this.onKeyDown);
     this.field("target-input").removeEventListener("input", this.onTargetInput);
@@ -252,9 +257,10 @@ export class StudioView {
       this.text("time", snapshot.pacingMode === "daily-turn" ? `Day ${(snapshot.completedDays ?? 0) + 1}` : formatSimulationTime(snapshot.simulationTimeSeconds));
       (this.element.querySelector('.studio-clock .studio-segments') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
       (this.element.querySelector('.studio-controls') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
-      this.element.querySelector(".studio-footer > span:last-child")!.textContent = snapshot.pacingMode === "daily-turn" ? "R add / remove channel · N highest burnup" : "SPACE pause / resume · R refuel";
+      this.element.querySelector(".studio-footer > span:last-child")!.textContent = snapshot.pacingMode === "daily-turn" ? "F1 Manual · N Highest burnup · R Fuel plan" : "F1 Manual · SPACE pause / resume · R refuel";
       this.text("status", isRunTerminal(snapshot) ? "Shift complete" : getOverallStatus(snapshot));
-      this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)} · Global tilt ${getTiltLabel(snapshot.axialTiltFraction)} · Limit ±20% · End B positive`);
+      this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)}\nTilt ${getTiltLabel(snapshot.axialTiltFraction)}`);
+      this.field("tilt").title = "Global axial tilt · Limit ±20% · End B positive";
       this.text("guidance", operationGuidance(snapshot));
 
       this.text("pause", snapshot.isPaused ? "▶" : "Ⅱ");
@@ -275,6 +281,7 @@ export class StudioView {
       this.text("direction", this.draft ? formatRefuelDirection(this.draft.directionId) : "Select a channel");
       this.text("map-tag", `${this.inspectionSnapshot ? `HISTORY ${formatSimulationTime(snapshot.simulationTimeSeconds)}` : "LIVE"} / ${this.mapMode.toUpperCase()}`);
       this.element.dataset.mapMode = this.mapMode;
+      this.text("map-mode-title", ({ burnup: "Burnup", power: "Channel kW", ripple: "Ripple %", "bundle-power": "Bundle kW" })[this.mapMode]);
       this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM"
         : this.mapMode === "power" ? `Blue ≤${(channelColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(channelLimit(snapshot) / 1000).toFixed(0)} kW / channel · red = limit`
         : this.mapMode === "bundle-power" ? `Blue ≤${(bundleColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(bundleLimit(snapshot) / 1000).toFixed(0)} kW / hottest bundle · red = limit`
@@ -301,7 +308,8 @@ export class StudioView {
       this.presentation.message, this.pace, this.draft, this.selected, this.mapMode, this.inspectionSnapshot !== null);
     if (snapshot.pacingMode === "daily-turn") {
       const included = this.dailyPlan.includes(this.selected);
-      this.text("refuel", this.inspectionSnapshot ? "Return to live to plan" : included ? "Remove from today's fuel plan" : "Add to today's fuel plan");
+      this.text("refuel", this.inspectionSnapshot ? "Return to live" : included ? "Remove channel" : "Add channel");
+      this.field("refuel").setAttribute("aria-label", this.inspectionSnapshot ? "Return to live to plan" : included ? "Remove from today's fuel plan" : "Add to today's fuel plan");
       const button = this.field<HTMLButtonElement>("refuel");
       button.disabled = !ready || pending || !!this.inspectionSnapshot || isRunTerminal(snapshot) || (!included && !isChannelRefuellable(snapshot.core.channels.find(c => c.channelIndex === this.selected)));
     }
@@ -382,9 +390,18 @@ export class StudioView {
   };
 
   private readonly onClick = (event: MouseEvent): void => {
+    const source = event.target instanceof Element ? event.target : null;
+    if (source?.closest(".simulator-manual")) return;
+    this.element.querySelectorAll<HTMLDetailsElement>(".studio-dropdown[open]").forEach(menu => {
+      if (!source || !menu.contains(source)) menu.open = false;
+    });
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action], [data-channel]") : null;
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
     if (target.dataset.action === "remove-plan") { this.setDailyPlan(this.dailyPlan.filter(c => c !== Number(target.dataset.planChannel))); return; }
+    const menu = target.closest<HTMLDetailsElement>(".studio-dropdown");
+    if (menu && ["map", "channel", "oldest", "reset", "challenge"].includes(target.dataset.action ?? "")) {
+      menu.open = false; menu.querySelector<HTMLElement>(":scope > summary")!.focus({ preventScroll: true });
+    }
     if (target.dataset.channel) { this.select(Number(target.dataset.channel)); this.render(); return; }
     switch (target.dataset.action) {
       case "lzc-plane":
@@ -420,7 +437,12 @@ export class StudioView {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
     const target = event.target as Element;
-    if (target.closest(".studio-day-dialog")) return;
+    if (target.closest(".studio-day-dialog, .simulator-manual")) return;
+    if (event.key === "Escape") {
+      const menu = this.element.querySelector<HTMLDetailsElement>(".studio-dropdown[open]");
+      if (menu) { event.preventDefault(); menu.open = false; menu.querySelector<HTMLElement>(":scope > summary")!.focus({ preventScroll: true }); }
+      return;
+    }
     if (target.closest(".studio-history")) return;
     if (target.matches("input, select, textarea")) return;
     const key = event.key.toLowerCase();

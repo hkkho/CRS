@@ -42,6 +42,7 @@ async function selectChannel(studio, index) {
 try {
   await page.goto(process.argv[2] ?? process.env.PLAYTEST_URL ?? "http://127.0.0.1:4173");
   const launcher = page.locator(".reactor-launcher");
+  check(await page.title() === 'CRS' && await launcher.locator('.launcher-shell > h1').textContent() === 'CRS', 'Game title is not CRS.');
   const begin = launcher.locator('[data-action="begin"]');
   await page.waitForFunction(() => document.querySelector('.reactor-launcher [data-action="begin"]')?.getAttribute("aria-disabled") === "false", undefined, { timeout: 120_000 });
   check(await page.locator("#status-mirror").getAttribute("data-pacing") === "daily-turn", "Accessibility acceptance must use default daily turns.");
@@ -50,6 +51,12 @@ try {
   await zoomDesktop(); await noOverflow(launcher, "Launcher at 200% equivalent width"); await capture("launcher-zoom-width");
   await page.setViewportSize({ width: 320, height: 720 }); await noOverflow(launcher, "Launcher at 320px"); await capture("launcher-320");
   await page.setViewportSize({ width: 1280, height: 720 });
+
+  await activate(launcher.locator('[data-manual-open]'));
+  const launcherManual = launcher.locator('.simulator-manual');
+  check(await launcherManual.isVisible(), 'Launcher manual did not open.');
+  await page.keyboard.press('Escape');
+  check(await launcher.locator('[data-manual-open]').evaluate(e => e === document.activeElement), 'Launcher manual did not restore focus.');
 
   const seed = launcher.locator('[data-field="seed"]'); await tabTo(seed);
   await page.keyboard.press("Control+a"); await page.keyboard.type("1001");
@@ -62,11 +69,14 @@ try {
   check((await launcher.locator('[data-field="objective"]').textContent()).includes("seed 1001"), "Seed choice was not applied.");
   await activate(begin);
   const studio = page.locator(".reactor-studio"); await studio.waitFor(); await idle(".reactor-studio");
+  check(await studio.locator('.studio-brand h1').textContent() === 'CRS', 'Gameplay title is not CRS.');
+  check(await studio.getAttribute('data-map-mode') === 'power', 'Initial core map is not channel power.');
   check(!await studio.locator('[data-action="pause"]').isVisible(), "Daily Studio exposed real-time controls.");
+  await activate(studio.locator('.studio-watchlist > summary'));
   await activate(studio.locator('[data-action="oldest"]'));
   const before = await studio.locator('[data-field="channel"]').textContent();
   await page.keyboard.press("ArrowRight");
-  check(await studio.locator('[data-action="oldest"]').evaluate(e => e === document.activeElement) && await studio.locator('[data-field="channel"]').textContent() === before, "Arrow on the watchlist button stole map focus.");
+  check(await studio.locator('.studio-watchlist > summary').evaluate(e => e === document.activeElement) && await studio.locator('[data-field="channel"]').textContent() === before, "Arrow on the fuel menu stole map focus.");
   await selectChannel(studio, 210);
   await page.evaluate(() => {
     globalThis.accessibilityMessages = [];
@@ -77,6 +87,44 @@ try {
   check(await studio.locator('[data-plan-list] > li').count() === 1, "Keyboard did not add the channel to today's plan.");
   check(await page.locator("#status-mirror").getAttribute("data-fuel-consumed") === "0", "Planning consumed fuel.");
   check(await page.evaluate(() => globalThis.accessibilityMessages.filter(message => message.startsWith("Accepted:")).length) === 0, "Draft planning was announced as an executed order.");
+  await activate(studio.locator('[data-plan-review] > summary'));
+  check(await studio.locator('[data-plan-list] > li').first().isVisible(), 'Plan review did not reveal outgoing fuel.');
+  await activate(studio.locator('[data-plan-review] > summary'));
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await studio.evaluate(e => { e.scrollTop = 0; });
+  const mapBounds = await studio.locator('[data-field="map"]').boundingBox();
+  const axialBounds = await studio.locator('[data-axial="power"]').boundingBox();
+  check(mapBounds.width >= 600 && axialBounds.width >= 500, 'Core or channel graphs did not expand at desktop width.');
+  check(mapBounds.y < 250, 'Stacked controls pushed the core below the desktop workspace.');
+  await capture('studio-1280');
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await activate(studio.locator('.studio-map-menu > summary'));
+  await activate(studio.locator('[data-map="power"]'));
+  check(await studio.locator('.studio-map-menu').evaluate(e => !e.open), 'Choosing a map left its menu open.');
+  check(await studio.locator('.studio-map-menu > summary').evaluate(e => e === document.activeElement), 'Map menu did not restore focus.');
+  await activate(studio.locator('.studio-map-menu > summary'));
+  await activate(studio.locator('[data-map="burnup"]'));
+  await activate(studio.locator('.studio-game-menu > summary'));
+  await activate(studio.locator('[data-manual-open]'));
+  const manual = studio.locator('.simulator-manual');
+  check(await manual.isVisible(), 'Studio manual did not open.');
+  await page.keyboard.press('r');
+  check(await studio.locator('[data-plan-list] > li').count() === 1, 'Manual shortcut changed the fuel plan.');
+  check(await page.locator('#status-mirror').getAttribute('data-time-seconds') === '0', 'Manual advanced the reactor.');
+  await activate(manual.locator('[data-manual-chapter="physics"]'));
+  await capture('manual-1280');
+  // Native modal dialog must keep keyboard focus inside the manual.
+  for (let i = 0; i < 12; i++) {
+    await page.keyboard.press('Tab');
+    check(await manual.evaluate(e => e.contains(document.activeElement)), 'Manual leaked keyboard focus to game controls.');
+  }
+  await page.setViewportSize({ width: 320, height: 720 });
+  await noOverflow(manual, 'Manual at 320px'); await capture('manual-320');
+  await page.keyboard.press('Escape');
+  check(await studio.locator('[data-manual-open]').evaluate(e => e === document.activeElement), 'Studio manual did not restore focus.');
+  await page.keyboard.press('Escape');
+  check(await studio.locator('.studio-game-menu > summary').evaluate(e => e === document.activeElement), 'Game menu did not restore focus.');
+  await page.setViewportSize({ width: 1280, height: 720 });
   await zoomDesktop(); await noOverflow(studio, "Studio at 200% equivalent width"); await capture("studio-zoom-width");
   await page.setViewportSize({ width: 320, height: 720 }); await noOverflow(studio, "Studio at 320px"); await capture("studio-320");
   await page.setViewportSize({ width: 1280, height: 720 });
@@ -94,12 +142,20 @@ try {
   check(await page.locator("#status-mirror").getAttribute("data-time-seconds") === "86400", "Keyboard order did not advance one day.");
   check(await page.locator("#status-mirror").getAttribute("data-fuel-consumed") === "8", "Keyboard day used the wrong fuel count.");
   check(await studio.locator('[data-plan-list] > li').count() === 0, "Completed day did not clear the plan.");
+  await activate(studio.locator('.studio-view-menu > summary'));
+  await tabTo(studio.locator('[data-tab="reactor"]'));
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
+  check(await studio.locator('.studio-view-menu').evaluate(e => !e.open), 'Choosing a graph left the view menu open.');
+  check((await studio.locator('.studio-trend-plot svg').first().boundingBox()).width > 1200, 'History plot did not use the available desktop width.');
+  await studio.evaluate(e => { e.scrollTop = 0; }); await capture('power-1280');
+  await page.setViewportSize({ width: 320, height: 720 }); await noOverflow(studio, 'Graphs at 320px'); await capture('power-320');
+  await page.setViewportSize({ width: 1280, height: 720 });
   check(await page.evaluate(() => globalThis.accessibilityMessages.filter(message => message.startsWith("Accepted:")).length) === 1, "Completed day was not announced exactly once.");
   const quietMessage = await page.locator("#session-announcements").textContent();
   await page.waitForTimeout(300);
   check(await page.locator("#session-announcements").textContent() === quietMessage, "Frozen planning changed the live announcement.");
   check(errors.length === 0, errors.join(" | "));
-  const result = { status: "passed", pacing: "daily-turn", keyboardOnly: "launcher/seed/objective/map/plan/day/result", layouts: [1280, 640, 320], zoomEmulation: "200%: 640x360 CSS pixels at DPR 2", reducedMotion: "respected", focus: "dialog and return preserved", duplicateAnnouncements: 0, browserErrors: errors };
+  const result = { status: "passed", pacing: "daily-turn", keyboardOnly: "launcher/menus/manual/seed/objective/map/plan/day/result/graphs", desktopSizes: { core: mapBounds.width, channelGraph: axialBounds.width }, layouts: [1280, 640, 320], zoomEmulation: "200%: 640x360 CSS pixels at DPR 2", reducedMotion: "respected", manual: "focus trapped, chapters reachable, draft preserved", focus: "menus, dialog and return preserved", duplicateAnnouncements: 0, browserErrors: errors };
   if (captures) await writeFile(`${captures}/accessibility-acceptance.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } catch (error) { await capture("accessibility-failure"); throw error; }

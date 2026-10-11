@@ -100,9 +100,9 @@ export class HistoryView {
   public constructor(private readonly history: ReactorHistory, private readonly onTab: (tab: StudioTab) => void,
     private readonly onInspection: (snapshot: CanduSnapshot | null) => void = () => {}) {
     this.element.className = "studio-history";
-    this.element.innerHTML = `<div class="studio-tabs" role="tablist" aria-label="Reactor Studio tabs">${TABS.map(([id, label]) =>
-      `<button id="studio-tab-${id}" role="tab" data-tab="${id}" aria-controls="${id === "reactor" ? "studio-reactor-panel" : "studio-history-panel"}" aria-selected="${id === "reactor"}" tabindex="${id === "reactor" ? 0 : -1}">${label}</button>`).join("")}</div>
-      <div class="studio-history-inspect"><label>View time <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Return to live</button></div>
+    this.element.innerHTML = `<div class="studio-history-toolbar"><details class="studio-dropdown studio-view-menu"><summary data-history="view-title">Reactor</summary><div class="studio-tabs studio-dropdown-panel" role="tablist" aria-label="CRS views">${TABS.map(([id, label]) =>
+      `<button id="studio-tab-${id}" role="tab" data-tab="${id}" aria-controls="${id === "reactor" ? "studio-reactor-panel" : "studio-history-panel"}" aria-selected="${id === "reactor"}" tabindex="${id === "reactor" ? 0 : -1}">${label}</button>`).join("")}</div></details>
+      <div class="studio-history-inspect"><label>View time <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Return to live</button></div></div>
       <section id="studio-history-panel" class="studio-history-panel" role="tabpanel" hidden>
         <div class="studio-history-heading"><div><p class="studio-eyebrow">SHIFT HISTORY / SIMULATION TIME</p><h2 data-history="title"></h2><p data-history="description"></p></div>
           <label>Time window <select data-history="window" aria-label="Graph time window"><option value="0">All recorded</option><option value="21600">Last 6 hours</option><option value="86400">Last 24 hours</option><option value="604800">Last 7 days</option></select></label></div>
@@ -134,6 +134,7 @@ export class HistoryView {
     this.plots.replaceChildren();
     this.plots.classList.toggle("is-zones", tab === "zones");
     this.text("title", TABS.find(([id]) => id === tab)![1]);
+    this.text("view-title", TABS.find(([id]) => id === tab)![1]);
     this.text("description", tab === "burnup" ? "Confirmed discharge readings appear after a fuel move. The shift record never decreases."
       : tab === "zones" ? "Each compartment's water level, plus the core average. Toggle traces below; dashed traces belong to End B."
       : "Live measurements follow the newest data. Click a graph or move the time slider to inspect a retained snapshot across the whole view.");
@@ -237,7 +238,11 @@ export class HistoryView {
   private text(field: string, value: string): void { this.element.querySelector(`[data-history="${field}"]`)!.textContent = value; }
   private readonly onClick = (event: MouseEvent): void => {
     const button = (event.target as Element).closest<HTMLButtonElement>("button");
-    if (button?.dataset.tab) this.setTab(button.dataset.tab as StudioTab);
+    if (button?.dataset.tab) {
+      this.setTab(button.dataset.tab as StudioTab);
+      this.element.querySelector<HTMLDetailsElement>(".studio-view-menu")!.open = false;
+      this.element.querySelector<HTMLElement>('[data-history="view-title"]')!.focus({ preventScroll: true });
+    }
     else if (button?.dataset.trace) {
       const key = button.dataset.trace;
       if (this.hiddenSeries.has(key)) this.hiddenSeries.delete(key); else this.hiddenSeries.add(key);

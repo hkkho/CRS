@@ -2,6 +2,7 @@ import { randomCoreSeed } from "./coreSeed";
 import type { CanduCommand, ShiftId } from "./protocol";
 import type { BridgeSessionController, SessionUpdate } from "./sessionController";
 import "./workspace.css";
+import { SimulatorManual } from "./SimulatorManual";
 
 type LauncherSession = Pick<BridgeSessionController, "snapshot" | "status" | "isPending" | "subscribe" | "dispatch">;
 
@@ -12,30 +13,29 @@ export class LauncherView {
   private lastSeed: number | undefined;
   private lastShift: string | undefined;
   private starting = false;
+  private readonly manual: SimulatorManual;
 
   constructor(private readonly session: LauncherSession, parent: HTMLElement, private readonly begin: () => void) {
     this.element.className = "reactor-launcher workspace-native";
     this.element.innerHTML = `<div class="launcher-shell">
       <p class="workspace-kicker">CANDU / ON-POWER REFUELLING</p>
-      <h1>Keep the core productive.</h1>
-      <p class="launcher-intro">Read the fuel. Choose today’s channels. Refuel at power, then advance one day.</p>
-      <p>Power limits: each channel at or below 7,300 kW and every bundle at or below 935 kW.</p>
+      <h1>CRS</h1>
+      <p class="launcher-intro">On-power fuelling simulator</p>
       <div class="launcher-grid"><section><h2>Your next shift</h2>
         <p data-field="objective"></p><p data-field="connection"></p>
         <button data-action="begin" class="workspace-primary">Begin shift</button>
-        <p>Daily turns are the default. Time stays frozen while you plan. Each selected channel uses eight fresh bundles.</p><p>No login required. Use <strong>Saves · Stats · Login</strong> for optional GitHub login, saved runs and the endless leaderboard.</p>
-        <p>Use Tab to reach controls and Enter or Space to activate. Studio includes a keyboard channel map, fuel watchlist and history charts.</p>
+        <button type="button" data-manual-open>Simulator manual</button>
       </section><section><h2>Choose a starting core</h2>
         <form><label>Core seed <input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label>
         <label>Shift objective <select data-field="shift"><option value="free-practice">Free practice · Endless</option><option value="useful-fuel-day-v1">One-day challenge</option></select></label>
         <button data-action="apply" type="submit">Use seed & objective</button></form>
         <button data-action="next">New aged core</button>
-        <p>The same seed recreates the same aged fuel. Fresh fuel enters with zero iodine and xenon; retained bundles keep their inventories.</p>
         <p data-field="error"></p>
       </section></div>
       <p class="workspace-kicker">380 CHANNELS · 12 BUNDLE POSITIONS · ONE LIVE REACTOR</p>
     </div>`;
     parent.append(this.element);
+    this.manual = new SimulatorManual(this.element);
     this.element.addEventListener("click", this.onClick);
     this.element.querySelector("form")!.addEventListener("submit", this.onSubmit);
     this.unsubscribe = session.subscribe(update => this.render(update));
@@ -51,6 +51,7 @@ export class LauncherView {
     this.element.setAttribute("aria-busy", String(update.pending));
     const wasDisabled = this.field<HTMLButtonElement>("begin").disabled;
     this.element.querySelectorAll<HTMLButtonElement>("button").forEach(button => {
+      if (button.hasAttribute("data-manual-open") || button.closest(".simulator-manual")) return;
       const disabled = !ready || update.pending || this.starting;
       button.setAttribute("aria-disabled", String(disabled));
       button.disabled = disabled && button !== document.activeElement;
@@ -92,6 +93,7 @@ export class LauncherView {
   };
 
   destroy(): void {
+    this.manual.destroy();
     this.unsubscribe(); this.element.removeEventListener("click", this.onClick);
     this.element.querySelector("form")!.removeEventListener("submit", this.onSubmit); this.element.remove();
   }

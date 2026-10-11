@@ -1,22 +1,27 @@
-.workspace-native { box-sizing: border-box; color: #c5efd0; background: #08140e; font: 1rem/1.55 Consolas, "Courier New", monospace; color-scheme: dark; }
+.workspace-native { box-sizing: border-box; color: #f4f5ff; background: #05071b; font: 1rem/1.55 Arial, sans-serif; color-scheme: dark; }
 .workspace-native * { box-sizing: border-box; }
-.workspace-native h1 { color: #e5ffe7; font-size: clamp(1.7rem, 4vw, 3.4rem); line-height: 1.1; margin: .5rem 0 1.5rem; }
-.workspace-native h2 { font-size: 1.25rem; color: #ffd182; }
+.workspace-native h1 { color: #ffffff; font-size: clamp(1.7rem, 4vw, 3.4rem); line-height: 1.1; margin: .5rem 0 1.5rem; }
+.workspace-native h2 { font-size: 1.25rem; color: #ffe49a; }
 .workspace-native p { overflow-wrap: anywhere; }
-.workspace-kicker { font-size: .85rem; letter-spacing: .08em; color: #96d6aa; }
-.workspace-native button, .workspace-native input, .workspace-native select { font: inherit; color: inherit; background: #10291b; border: 1px solid #5b8d69; padding: .7rem; max-width: 100%; }
+.workspace-kicker { font-size: .85rem; letter-spacing: .08em; color: #c2caf2; }
+.workspace-native button, .workspace-native input, .workspace-native select { font: inherit; color: inherit; background: #101c68; border: 1px solid #a7b0d1; padding: .7rem; max-width: 100%; }
 .workspace-native button { cursor: pointer; min-height: 44px; }
 .workspace-native button:disabled, .workspace-native [aria-disabled="true"] { opacity: .5; cursor: wait; }
-.workspace-native button:hover:not(:disabled) { background: #24432e; }
-.workspace-native :focus-visible { outline: 3px solid #ffd182; outline-offset: 3px; }
+.workspace-native button:hover:not(:disabled) { background: #2b45af; }
+.workspace-native :focus-visible { outline: 3px solid #ffe49a; outline-offset: 3px; }
 .workspace-native label { display: grid; gap: .4rem; margin: 1rem 0; }
-.workspace-native .workspace-primary { color: #07100b; background: #ffd182; font-weight: bold; padding: 1rem 2rem; }
-.reactor-launcher { position: absolute; z-index: 12; inset: 0; overflow: auto; background: radial-gradient(ellipse at 80% 20%, #214a2e, transparent 60%), #08140e; }
+.workspace-native .workspace-primary { color: #05071b; background: #ffe49a; font-weight: bold; padding: 1rem 2rem; }
+.reactor-launcher { position: absolute; z-index: 12; inset: 0; overflow: auto; background: radial-gradient(ellipse at 80% 20%, #1c3289, transparent 60%), #05071b; }
 .launcher-shell { max-width: 75rem; padding: clamp(1rem, 4vw, 4rem); margin: auto; }
 .launcher-intro { max-width: 46rem; font-size: 1.15rem; }
 .launcher-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
-.launcher-grid section { border: 1px solid #426d4c; padding: 1.5rem; background: #07120dbb; min-width: 0; }
+.launcher-grid section { border: 1px solid #d4d9ee; padding: 1.5rem; background: #101c68; min-width: 0; }
 .launcher-grid form { margin-bottom: 1rem; }
+.launcher-grid section { border-width: 2px; border-radius: 7px; background: linear-gradient(135deg, #203aab, #080c38); box-shadow: inset 0 0 0 2px #606a96, 3px 4px 0 #0006; }
+.launcher-grid [data-manual-open] { display: block; margin-top: 12px; width: 100%; }
+.workspace-native button { border-radius: 3px; }
+.workspace-native h1 { text-shadow: 2px 3px 1px #000; }
+.reactor-launcher { padding-bottom: 90px; }
 @media (max-width: 800px) {
   .launcher-grid { grid-template-columns: 1fr; gap: 1rem; }
   .launcher-grid section { padding: 1rem; }

@@ -21,13 +21,14 @@ export class StudioOrderView {
     const key = JSON.stringify([channel?.channelIndex, channel?.bundles, iodine, xenon, bundleLimit(snapshot), snapshot.core.adjusters, snapshot.core.liquidZoneTubes, snapshot.rrs.zones.map(z => z.fillFraction)]);
     if (key === this.bundlesKey) return;
     this.bundlesKey = key;
+    const poisonOpen = this.field("bundles").querySelector<HTMLDetailsElement>("details")?.open ?? false;
     patchMarkup(this.field("bundles"), [
       axialLineGraph(channel, "power", "POWER / kW THERMAL", bundle => bundle.powerWatts / 1000, bundleLimit(snapshot) / 1000, liquidZonePowerMarkers(snapshot, channel) + adjusterPowerMarkers(snapshot, channel)),
-      `<p class="studio-device-explanation">${channelDeviceNote(snapshot, channel)}</p>`,
       axialLineGraph(channel, "burnup", "BURNUP / MWd/kg HM", bundle => bundle.currentBurnupMwdPerKg),
+      `<details${poisonOpen ? " open" : ""}><summary>Poison &amp; device detail</summary><p class="studio-device-explanation">${channelDeviceNote(snapshot, channel)}</p>`,
       axialLineGraph(channel, "iodine", "IODINE-135 / 10²⁰ atoms/m³", bundle => iodine?.[bundle.position] === undefined ? null : iodine[bundle.position] / 1e20),
       axialLineGraph(channel, "xenon", "XENON-135 / 10²⁰ atoms/m³", bundle => xenon?.[bundle.position] === undefined ? null : xenon[bundle.position] / 1e20),
-      '<p class="studio-description">Fresh bundles enter with zero iodine and xenon. Both build up as simulation time advances. The four retained bundles keep their inventories.</p>',
+      '</details>',
     ].join(""));
   }
 
@@ -41,7 +42,8 @@ export class StudioOrderView {
         // Keep the fuel strip stable as burnup readings change on clock ticks.
         if (!box.firstElementChild) box.innerHTML = '<p></p><div class="studio-fuel-strip"></div>';
         const label = box.firstElementChild!;
-        label.textContent = `Fresh fuel enters End ${plan.incomingEnd}; positions ${plan.dischargedPositions.map(p => p + 1).join(", ")} leave End ${plan.outgoingEnd}.`;
+        label.textContent = `${plan.shiftCount} in / End ${plan.incomingEnd} → ${plan.dischargedPositions.length} out / End ${plan.outgoingEnd}`;
+        label.setAttribute("aria-label", `Fresh fuel enters End ${plan.incomingEnd}; positions ${plan.dischargedPositions.map(p => p + 1).join(", ")} leave End ${plan.outgoingEnd}.`);
         const strip = box.children[1];
         while (strip.children.length > channel.bundles.length) strip.lastElementChild!.remove();
         channel.bundles.forEach((bundle, index) => {

@@ -1,6 +1,6 @@
-# CANDU On-Power Refuelling
+# CRS
 
-The native DOM/SVG Reactor Studio is the playable browser client for the
+The native DOM/SVG CRS interface is the playable browser client for the
 shared C# simulation. It consumes the versioned WASM bridge through a dedicated
 worker and fails closed when that authoritative bridge is unavailable.
 Core Designer, its zone editor, and Phaser have been removed.

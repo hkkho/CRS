@@ -32,10 +32,12 @@ try {
   await page.getByRole('button', { name: 'Continue without login', exact: true }).click();
   await page.getByRole('button', { name: 'Begin shift', exact: true }).click(); await idle();
   const studio = page.locator('.reactor-studio');
+  await studio.locator('.studio-watchlist > summary').click();
   await studio.locator('[data-action="oldest"]').click();
   await studio.locator('[data-action="refuel"]').click();
   await studio.locator('[data-action="commit-day"]').click(); await idle();
   await studio.locator('.studio-day-dialog').getByRole('button', { name: 'Continue', exact: true }).click();
+  await studio.locator('.studio-watchlist > summary').click();
   await studio.locator('[data-action="oldest"]').click();
   await studio.locator('[data-action="refuel"]').click();
   const time = await studio.locator('[data-field="time"]').textContent();

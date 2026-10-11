@@ -24,6 +24,7 @@ try {
   const studio = page.locator('.reactor-studio');
   const palettes = {};
   for (const [mode, floor] of [['power', '4500'], ['bundle-power', '400']]) {
+    await studio.locator('.studio-map-menu > summary').click();
     await studio.locator(`[data-map="${mode}"]`).click();
     check((await studio.locator('[data-field="legend"]').textContent()).includes(`Blue ≤${floor}`), `${mode} color floor is missing.`);
     palettes[mode] = await studio.locator('rect[data-channel]').evaluateAll(cells => new Set(cells.map(cell => cell.getAttribute('fill'))).size);
@@ -41,6 +42,7 @@ try {
   check((await page.locator('.game-update').textContent()).includes('Axial incoming current = 0'), 'Loaded physics version is missing.');
   await studio.locator('[data-axial="power"]').screenshot({ path: `${capture}/axial-power.png` });
   for (const tab of ['power', 'zones', 'reactivity']) {
+    await studio.locator('.studio-view-menu > summary').click();
     await studio.locator(`[data-tab="${tab}"]`).click();
     const plots = studio.locator('.studio-trend-plot svg');
     ranges[tab] = await plots.evaluateAll(elements => elements.map(svg => ({ title: svg.querySelector('title').textContent,

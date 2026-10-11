@@ -1,0 +1,35 @@
+.simulator-manual { box-sizing: border-box; color-scheme: dark; color: #f4f5ff; background: linear-gradient(135deg, #182e9b, #080c38); border: 2px solid #d4d9ee; border-radius: 7px; box-shadow: inset 0 0 0 2px #606a96, 0 16px 70px #000b; width: min(960px, calc(100vw - 28px)); max-height: calc(100dvh - 28px); padding: 22px; font: 16px/1.6 Arial, sans-serif; text-shadow: 1px 2px 1px #0009; }
+.simulator-manual::backdrop { background: #020416d9; }
+.simulator-manual *, .simulator-manual *::before { box-sizing: border-box; }
+.simulator-manual [hidden] { display: none !important; }
+.simulator-manual header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #8795cb; }
+.simulator-manual h1 { font-size: 24px; margin: 0; }
+.simulator-manual small { color: #c2caf2; font-size: 11px; letter-spacing: .12em; }
+.simulator-manual h2 { font-size: 23px; margin: 0 0 16px; }
+.simulator-manual h3 { font-size: 18px; margin: 22px 0 8px; }
+.simulator-manual p { margin: 0 0 16px; }
+.simulator-manual button { font: inherit; text-shadow: inherit; cursor: pointer; color: inherit; border: 1px solid #8996c5; border-radius: 3px; background: #0b1553; padding: 8px 12px; min-height: 44px; }
+.simulator-manual button:hover { background: #243faa; }
+.simulator-manual :focus-visible { outline: 3px solid #ffe49a; outline-offset: 3px; }
+.manual-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 26px; margin-top: 20px; }
+.manual-layout nav { display: flex; flex-direction: column; gap: 5px; }
+.manual-layout nav button { text-align: left; border-color: transparent; padding-left: 24px; position: relative; }
+.manual-layout nav [aria-pressed="true"] { background: #2b45af; border-color: #b5c5f4; }
+.manual-layout nav [aria-pressed="true"]::before { content: "▸"; position: absolute; left: 7px; color: #fff; }
+.manual-pages { min-width: 0; }
+.manual-pages section { max-height: calc(100dvh - 176px); overflow: auto; padding: 4px 12px 12px 4px; overflow-wrap: anywhere; scrollbar-color: #8d9edc #0b124c; }
+.manual-pages li { padding-bottom: 12px; }
+.manual-pages ol { padding-left: 22px; }
+.manual-pages dt { color: #ffe49a; font-weight: bold; margin: 18px 0 4px; }
+.manual-pages dd { margin: 0; }
+.manual-pages table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+.manual-pages caption { text-align: left; margin-bottom: 8px; color: #c2caf2; }
+.manual-pages th, .manual-pages td { text-align: left; padding: 8px; border-bottom: 1px solid #6c7db4; }
+@media (max-width: 620px) {
+  .simulator-manual { padding: 14px; font-size: 15px; }
+  .simulator-manual h1 { font-size: 20px; }
+  .manual-layout { grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+  .manual-layout nav { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+  .manual-layout nav button { font-size: 13px; flex: 1 1 120px; }
+  .manual-pages section { max-height: none; overflow: visible; }
+}
