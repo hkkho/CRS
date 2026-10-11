@@ -3,12 +3,13 @@ import { SessionAnnouncements } from "./SessionAnnouncements";
 import { BridgeSessionController } from "./sessionController";
 import { BridgeRecoveryView } from "./BridgeRecoveryView";
 import { PlayerPanel } from './PlayerPanel';
+import { GameUpdateView } from './GameUpdateView';
 
 import { createCanduPlaytestBridge } from "./bridge";
 
 const session = new BridgeSessionController(createCanduPlaytestBridge({
-  initialPacingMode: new URLSearchParams(location.search).get("pacing") === "real-time" ? "real-time" : "daily-turn",
-}));
+  initialPacingMode: "daily-turn",
+}), {}, "daily-turn");
 
 const statusMirror = document.getElementById("status-mirror");
 const recovery = new BridgeRecoveryView(document.body);
@@ -32,22 +33,11 @@ session.subscribe(update => {
 
 const shell = new AppShell(session, document.getElementById("game-root")!);
 const player = new PlayerPanel(session, () => shell.showStudio());
+const updates = new GameUpdateView(session, () => player.saveBeforeUpdate());
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, { scope: import.meta.env.BASE_URL, updateViaCache: 'none' })
-    .then(registration => {
-      const installing = registration.installing;
-      installing?.addEventListener('statechange', () => {
-        if (installing.state === 'redundant' && !registration.active)
-          window.dispatchEvent(new Event('candu-offline-unavailable'));
-      });
-      return navigator.serviceWorker.ready;
-    })
-    .then(() => window.dispatchEvent(new Event('candu-offline-ready')))
-    .catch(() => window.dispatchEvent(new Event('candu-offline-unavailable')));
-}
+void updates.initialize(import.meta.env.BASE_URL, import.meta.env.PROD);
 
 document.addEventListener("visibilitychange", () => {
   session.setVisible(document.visibilityState === "visible");
 });
-window.addEventListener("beforeunload", () => { player.destroy(); shell.destroy(); session.dispose(); }, { once: true });
+window.addEventListener("beforeunload", () => { updates.destroy(); player.destroy(); shell.destroy(); session.dispose(); }, { once: true });

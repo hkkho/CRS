@@ -2,7 +2,8 @@
 
 Status: implemented. Daily turns are the default for new browser test runs.
 The delivery slices below document the implementation and acceptance contract.
-The explicit `?pacing=real-time` developer URL retains the legacy loop.
+The public game requires daily turns. Old `?pacing=real-time` URLs cannot enable
+the clock; legacy real-time saves remain stored but cannot resume here.
 See [local verification and calculation time](../performance/daily-turns.md).
 
 ## Product decision
@@ -16,9 +17,9 @@ turns, with its existing fuel budget, objective and badge rules.
 
 Daily turns are the launcher, initial initialization and new-run default.
 Retry same seed and Try new seed preserve the run's objective and pacing mode.
-Real-time pacing stays available only as an explicit legacy/developer option for
-comparison and old-save replay, outside the normal test loop. Do not switch pacing
-inside an active run in the first release.
+Real-time pacing remains in direct physics comparison tools. The public game
+does not resume real-time saves or enable the clock through URL options. Do not
+switch pacing inside an active run.
 
 ## Player loop
 
@@ -45,8 +46,8 @@ in the plan; click order does not affect the result.
 
 Replace pause/resume, speed buttons and the one-hour step with the daily action
 and plan controls in normal Studio. Keep rated power at the existing reference
-target for the first daily release; retain power-target experiments in legacy
-developer pacing. Update the R shortcut to add/remove the inspected channel and
+target for the first daily release; retain power-target experiments in direct
+comparison tools. Update the R shortcut to add/remove the inspected channel and
 the on-screen help accordingly. Space retains native button activation and no
 longer toggles playback. Provide native Add/Remove/Clear/Advance buttons, stable
 focus, keyboard map operation, 320px reflow and quiet announcements.
@@ -94,7 +95,7 @@ Use one large simulation interval for each daily decision. Freeze the accepted
 post-refuelling power/flux over that interval, integrate bundle fission energy,
 analytic iodine/xenon and operating score once, then perform one final spatial
 and LZC equilibrium solve. Do not subdivide the day into real-time ticks. The
-real-time developer path retains its 180-second cadence and solver tolerances.
+direct real-time comparison path retains its 180-second cadence and solver tolerances.
 Physics cadence identity `practice-daily-one-step-v1` distinguishes this model
 from the earlier 480-step implementation; its daily saves cannot be silently
 replayed using the new integrator. Bundle identities, inventory, provenance and
@@ -133,10 +134,10 @@ Save the explicit pacing mode and exact `commit-day` inputs in the journal. A
 new save version also preserves the unsubmitted draft separately from simulation
 commands, validating it against the restored snapshot. Restore into an isolated
 worker and verify the authoritative state digest before adoption. Missing pacing
-in version-1 saves means legacy real-time: replay with the original initialization
-and digest policy, rather than applying the new default. If legacy verification
-cannot be retained, reject the old save clearly while preserving the current
-run. Never silently reinterpret old command history as daily turns.
+in version-1 saves means legacy real-time. The public controller rejects those
+saves before constructing a replay worker, preserving the saved copy and current
+run. Direct comparison tools retain original initialization and digest semantics.
+Never silently reinterpret old command history as daily turns.
 
 ## Delivery slices
 

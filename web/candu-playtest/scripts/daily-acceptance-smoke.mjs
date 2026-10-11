@@ -24,6 +24,7 @@ try {
   }
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('live reactor online'), undefined, { timeout: 120_000 });
+  await page.waitForFunction(sha => document.querySelector('.game-update')?.textContent?.includes(`Build ${sha.slice(0, 7)}`), buildInfo.gitCommitSha);
   await page.locator('.reactor-launcher [data-field="seed"]').fill('1001');
   await page.locator('.reactor-launcher [data-field="shift"]').selectOption('free-practice');
   await page.getByRole('button', { name: 'Use seed & objective', exact: true }).click();

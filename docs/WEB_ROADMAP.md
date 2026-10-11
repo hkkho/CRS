@@ -19,7 +19,9 @@ including its successful 100-day LZC-guided policy. Benchmark-based maps/charts
 reveal daily changes while retaining outliers. Endless practice, the optional
 one-day challenge, seeded retries, movements, ripple scoring, history, keyboard
 input, narrow layouts, guest saves and private cloud saves are implemented.
-Legacy pacing remains a compatibility/developer path inside the same client.
+The public client requires daily pacing; legacy real-time commands remain available
+only to direct physics comparison tools. Build identity and safe local-save updates
+are visible in the game.
 
 ## Next improvements
 

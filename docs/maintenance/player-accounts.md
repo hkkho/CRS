@@ -41,10 +41,16 @@ internet and available browser storage; merely opening a URL once is not enough.
 Local development and research builds do not register an offline worker.
 
 The worker only handles the app's own static assets and entry navigation,
-never Supabase, GitHub, tokens or API responses. A new build waits for old app
-tabs to close before activating, keeping JS and WASM versions together. Close
-all game tabs and reopen to receive an update. Browser eviction or clearing site
-data removes offline assets and local saves.
+never Supabase, GitHub, tokens or API responses. The game shows its loaded build,
+daily pacing and axial boundary model. A waiting build offers **Save locally &
+update** while online. This saves the current run and draft first, then checks
+for other open game tabs. Close those tabs and retry; the last tab unregisters
+the old worker and reloads a complete current build. A save failure prevents
+reload. No browser storage or login data is cleared.
+
+Tabs from before this update have no update button: close all game tabs and
+reopen once. URL query parameters do not bypass the old worker's cached game.
+Browser eviction or clearing site data removes offline assets and local saves.
 
 ## Save format and compatibility
 
@@ -64,7 +70,9 @@ Replaying a long run can be slow, proportional to original simulation work;
 the panel reports commands completed. Saves are limited to 100,000 commands
 and 12 MB. Limits or incompatible physics changes produce a visible error,
 never a partially restored reactor. Native checkpoints would be a future Game/
-Core feature, not a frontend reconstruction of physical state.
+Core feature, not a frontend reconstruction of physical state. The public game
+continues daily saves only. Legacy real-time saves remain stored, but starting
+a new daily run is required; they are never silently converted.
 
 Cloud saves use optimistic revisions attached to the particular saved copy.
 Refreshing the list does not silently grant a stale local copy the revision of

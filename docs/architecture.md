@@ -29,8 +29,9 @@ channel order, integrates one large 86,400-second exposure/poison interval, then
 solves final equilibrium and LZC response. Detached candidates make numerical
 failure atomic. See the [daily contract](gameplay/daily-turn-mode.md).
 
-The real-time path supports older saves and physics comparisons inside the same
-web client. Release acceptance exercises daily turns. Publishing disables WASM
+The public web client requires daily pacing and rejects real-time saves, commands
+and mismatched runtimes. Direct comparison tools retain real-time bridge contracts.
+Release acceptance exercises daily turns and saved-run updates. Publishing disables WASM
 threads; obsolete GPU and alternate-host experiments have been removed. Optional
 profiling uses the same solver. Native tools support numerical comparison.
 Adjoint/diffusion metadata and the IQS metadata pack remain mathematical dependencies;

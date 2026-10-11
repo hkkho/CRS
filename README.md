@@ -45,16 +45,21 @@ Refuelling affects later score through its power response. See the
 The native launcher and Studio support keyboard operation, a 320px layout and
 quiet operation announcements. History records complete day-boundary observations;
 return to live before issuing orders. Version-2 saves include daily pacing and
-the unfinished fuel plan; legacy version-1 saves replay in real-time mode.
+the unfinished fuel plan. The public game accepts daily saves only; older
+real-time saves remain stored but require a new daily run.
 Apply the new [cloud save migration](supabase/migrations/20261009232415_daily_turn_saves.sql)
 to an existing Supabase deployment before uploading version-2 saves.
 
-For developer comparisons, `?pacing=real-time` explicitly starts the retained
-real-time loop with pause/resume, accelerated speeds and power-target controls.
+The public game always uses daily turns, including old `?pacing=real-time` URLs.
+Its controller rejects real-time commands, saves and incompatible runtimes.
+The loaded build and axial boundary version are shown on screen. A newer build
+offers **Save locally & update**; close other game tabs before applying it.
+Existing tabs from before this update need all game tabs closed and reopened
+once. Keep browser site data to preserve saves.
 Normal new test runs use one large 24-hour step: update burnup and poison once
 using the post-refuelling power/flux, then solve equilibrium and LZC once at the
 next day boundary. Limits are checked after fuel moves and at the day end.
-Real-time developer pacing retains its three-minute integration cadence.
+Direct physics comparison tools retain the real-time three-minute integration cadence.
 
 The shift report shows the ending reason, thermal energy and estimated electrical
 energy delivered, fresh fuel consumed, useful discharged bundles and cumulative
@@ -101,7 +106,7 @@ and the [21 fixed adjusters](docs/physics/adjusters-v5.md),
 17 mk total adjuster worth and 7 mk total liquid-zone worth.
 The [v7 tube model](docs/physics/lzc-tubes-v7.md) localizes LZC absorption and
 tracks bottom-up water filling, retaining those device worths after retuning.
-Group constants remain a surrogate, with a documented poison-basis limitation. Daily LZC solves occur at the day boundary; the real-time developer mode
+Group constants remain a surrogate, with a documented poison-basis limitation. Daily LZC solves occur at the day boundary; direct real-time comparison
 retains its three-minute solve cadence.
 The historical [v3 attempts](benchmarks/fuelling-capability-2026-10-06/README.md)
 ended early on channel-power limits; the [v4 rerun](benchmarks/fuelling-capability-2026-10-07/README.md)

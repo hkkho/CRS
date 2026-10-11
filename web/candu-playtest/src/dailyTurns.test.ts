@@ -95,4 +95,29 @@ describe("daily browser decisions", () => {
     await expect(session.restoreRun({ ...save, dailyIntegrationId: "old-three-minute-model" }, undefined, factory)).rejects.toThrow("time-step model");
     expect(factory).not.toHaveBeenCalled();
   });
+
+  it("daily-only public sessions reject real-time commands and saves without touching the reactor", async () => {
+    const { bridge } = harness(), timer = vi.fn();
+    const session = new BridgeSessionController(bridge, { setTimer: timer }, "daily-turn");
+    disposables.push(() => session.dispose());
+    await session.dispatch({ type: "pause" });
+    const saved = session.captureRun(), factory = vi.fn(() => harness().bridge);
+    for (const command of [{ type: "resume" }, { type: "advance", wallMilliseconds: 100 }, { type: "step", simulationSeconds: 3600 }, { type: "set-playback-mode", modeId: "60x" }, { type: "queue-power-target", targetFraction: 1 }, { type: "reset", pacingMode: "real-time" }] as CanduCommand[])
+      await expect(session.dispatch(command)).rejects.toThrow("daily turns");
+    await expect(session.restoreRun({ ...saved, pacingMode: "real-time" }, undefined, factory)).rejects.toThrow("real-time save");
+    await expect(session.restoreRun({ ...saved, version: 1, pacingMode: undefined }, undefined, factory)).rejects.toThrow("real-time save");
+    expect(factory).not.toHaveBeenCalled();
+    session.startShift(); expect(timer).not.toHaveBeenCalled();
+    expect(bridge.dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("daily-only public sessions refuse an old runtime with missing pacing metadata", () => {
+    const { bridge } = harness(), timer = vi.fn();
+    bridge.getSnapshot = () => createSnapshot();
+    const session = new BridgeSessionController(bridge, { setTimer: timer }, "daily-turn");
+    disposables.push(() => session.dispose());
+    expect(session.status.isWasmAvailable).toBe(false);
+    expect(session.status.title).toBe("Game update required");
+    session.startShift(); expect(timer).not.toHaveBeenCalled();
+  });
 });

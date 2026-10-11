@@ -11,13 +11,13 @@
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
     "smoke": "node scripts/daily-acceptance-smoke.mjs",
-    "smoke:legacy": "node scripts/smoke.mjs",
     "smoke:daily": "node scripts/daily-acceptance-smoke.mjs",
     "smoke:scales": "node scripts/display-scales-smoke.mjs",
     "smoke:saves": "node scripts/saves-smoke.mjs",
     "benchmark": "node scripts/benchmark-wasm.mjs",
     "benchmark:xenon": "node scripts/benchmark-xenon.mjs",
-    "smoke:accessibility": "node scripts/accessibility-smoke.mjs"
+    "smoke:accessibility": "node scripts/accessibility-smoke.mjs",
+    "smoke:upgrade": "node scripts/upgrade-smoke.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2"

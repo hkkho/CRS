@@ -47,9 +47,10 @@ pacing, completed days and `lastDayResult`. See [daily semantics](gameplay/daily
 The scheduler never ticks daily sessions. The waiting dialog supports reduced
 motion and flashes survival/loss with day points and total score. Rejection and
 interrupted unknown outcomes are distinct from physical losses. Solver accuracy
-takes priority over real-time latency. Explicit `?pacing=real-time` and version-1
-replay retain the old clock for compatibility/comparison. New development targets
-daily turns.
+takes priority over real-time latency. The public controller requires daily pacing,
+rejects legacy real-time saves and commands, and refuses mismatched runtimes.
+Old URL options cannot enable the live clock. Direct comparison tools retain
+real-time contracts; new development targets daily turns.
 
 ## Limits, score and fuel
 
@@ -97,9 +98,13 @@ drafts across navigation. Remove listeners/subscriptions when views close.
 ## Saves and release checks
 
 Version-2 saves include pacing/drafts, replay shared commands and reject incompatible
-pack/scoring/integration identities. Version-1 uses real-time replay. Cloud saves
+pack/scoring/integration identities. Version-1 real-time saves remain stored but
+cannot resume in the public game. Cloud saves
 preserve ownership/revision checks; apply the [daily migration](../supabase/migrations/20261009232415_daily_turn_saves.sql)
-before version-2 uploads. Guest/offline play remains available. See [accounts](maintenance/player-accounts.md).
+before version-2 uploads. Guest/offline play remains available. The loaded build
+and physics model are visible. A waiting update saves locally, requires other game
+tabs to close, then unregisters the old worker and reloads a complete current build.
+Failed saves prevent reload. See [accounts](maintenance/player-accounts.md).
 
 Use `tools/Test-DotNet.ps1` and `tools/Test-Browser.ps1`, with `-Configuration Release`
 to match CI. Add focused changed-behavior tests. Releases publish AOT WASM, build

@@ -143,6 +143,7 @@ jobs:
           npm run smoke:scales 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/scales-smoke.log"
           npm run smoke:accessibility 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/accessibility-smoke.log"
           npm run smoke:saves 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/saves-smoke.log"
+          npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
           npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 --expected-commit-sha=${{ github.sha }} 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
       - name: Upload Pages site
         uses: actions/upload-pages-artifact@v4
@@ -190,6 +191,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$PLAYTEST_CAPTURE_DIR"
           npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
+          npm run smoke:scales 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/scales-smoke.log"
           npm run benchmark -- --label=github-pages --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
       - name: Save Pages deployment diagnostics
         if: always()

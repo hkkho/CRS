@@ -31,6 +31,14 @@ try {
     await studio.locator('[data-field="map"]').screenshot({ path: `${capture}/${mode}-map.png` });
   }
   const ranges = {};
+  await studio.locator('[data-channel="210"]').first().click();
+  const axialPowers = await studio.locator('[data-axial="power"] [data-axial-position] title')
+    .evaluateAll(titles => titles.map(title => Number(title.textContent.split(': ')[1].split(' ')[0])));
+  check(axialPowers.length === 12, 'Selected channel lost its twelve bundle power readings.');
+  const peak = Math.max(...axialPowers);
+  check(axialPowers[0] < peak * .3 && axialPowers[11] < peak * .3,
+    'Axial end powers do not show the v8 zero-incoming-current boundary response.');
+  check((await page.locator('.game-update').textContent()).includes('Axial incoming current = 0'), 'Loaded physics version is missing.');
   await studio.locator('[data-axial="power"]').screenshot({ path: `${capture}/axial-power.png` });
   for (const tab of ['power', 'zones', 'reactivity']) {
     await studio.locator(`[data-tab="${tab}"]`).click();
@@ -51,7 +59,7 @@ try {
     await page.setViewportSize({ width: 1280, height: 900 });
   }
   check(errors.length === 0, errors.join(' | '));
-  const result = { status: 'passed', url, seed: 1001, daily, palettes, ranges, narrowLayout: 'passed', errors };
+  const result = { status: 'passed', url, seed: 1001, daily, palettes, ranges, axialPowers, narrowLayout: 'passed', errors };
   await writeFile(`${capture}/acceptance.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } finally { await browser.close(); }

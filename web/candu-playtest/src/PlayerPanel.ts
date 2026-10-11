@@ -72,6 +72,13 @@ export class PlayerPanel {
   }
 
   private owner(): string { return this.cloud.user?.id ?? 'guest'; }
+
+  async saveBeforeUpdate(): Promise<void> {
+    if (this.busy || this.session.isPending) throw new Error('Wait for the current operation before updating.');
+    if (!this.session.status.isWasmAvailable) return;
+    if (!this.session.journal.hasCommands) await this.pause();
+    await this.persist();
+  }
   private message(value: string): void { this.dialog.querySelector('[data-message]')!.textContent = value; }
   private readonly network = (): void => this.render();
   private readonly offline = (): void => { this.offlineReady = true; this.render(); };

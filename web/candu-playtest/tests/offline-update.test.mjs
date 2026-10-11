@@ -55,3 +55,22 @@ test('an offline update installs current HTML with its matching script despite s
   expect(installed.get('/CRS/index.html')).toBe(currentHtml);
   expect(installed.get('/CRS/assets/current.js')).toBe('current build');
 });
+
+test('a waiting update refuses to replace another open game tab', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'candu-offline-tabs-')); directories.push(root);
+  await writeFile(join(root, 'index.html'), 'current');
+  const plugin = offlinePlugin(); plugin.configResolved({ base: '/CRS/', build: { outDir: root } }); await plugin.closeBundle();
+  const handlers = new Map(), replies = [];
+  let windows = [{ url: 'https://example.test/CRS/' }, { url: 'https://example.test/CRS/?seed=2' }], activated = 0;
+  runInNewContext(await readFile(join(root, 'sw.js'), 'utf8'), {
+    URL,
+    self: { addEventListener: (name, handler) => handlers.set(name, handler), clients: { matchAll: async () => windows }, skipWaiting: async () => { activated++; } },
+  });
+  const send = async () => {
+    let completion;
+    handlers.get('message')({ data: { type: 'CANDU_ACTIVATE_UPDATE' }, ports: [{ postMessage: value => replies.push(value) }], waitUntil: promise => { completion = promise; } });
+    await completion;
+  };
+  await send(); expect(activated).toBe(0); expect(replies[0].status).toBe('other-tabs'); expect(replies[0].otherTabs).toBe(1);
+  windows = [windows[0]]; await send(); expect(activated).toBe(0); expect(replies[1].status).toBe('ready');
+});

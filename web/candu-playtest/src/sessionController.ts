@@ -11,6 +11,7 @@ import {
 } from "./liveClock";
 import type {
   DayProgress,
+  PacingMode,
   BridgeModeId,
   BridgeStatus,
   CanduCommand,
@@ -74,16 +75,17 @@ export class BridgeSessionController {
   public constructor(
     bridge: CanduPlaytestBridgeLifecycle = createCanduPlaytestBridge(),
     schedulerOptions: Pick<LiveClockSchedulerOptions, "now" | "setTimer" | "clearTimer"> = {},
+    private readonly requiredPacing?: PacingMode,
   ) {
     this.bridge = bridge;
     this.now = schedulerOptions.now ?? (() => performance.now());
-    this.statusValue = bridge.status;
     this.snapshotValue = bridge.getSnapshot();
+    this.statusValue = this.checkedStatus(bridge.status, this.snapshotValue);
     this.history.record(this.snapshotValue);
     // Play is the only live session mode.
     this.modeValue = "play";
     this.unsubscribeBridge = bridge.subscribe((status, snapshot) => {
-      this.statusValue = status;
+      this.statusValue = this.checkedStatus(status, snapshot);
       this.snapshotValue = snapshot;
       this.emit();
     });
@@ -193,6 +195,10 @@ export class BridgeSessionController {
     command: CanduCommand,
     options?: CanduDispatchOptions,
   ): Promise<CanduCommandResponse> {
+    const realTimeCommand = ["advance", "step", "resume", "set-playback-mode", "queue-power-target"].includes(command.type) ||
+      (command.type === "reset" && command.pacingMode === "real-time");
+    if (this.requiredPacing === "daily-turn" && realTimeCommand)
+      throw new Error("This game uses daily turns. Time advances only when you commit a day.");
     if (this.restoring) throw new Error('Please wait until the saved run finishes restoring.');
     if (!this.statusValue.isWasmAvailable) {
       throw new Error(
@@ -261,6 +267,8 @@ export class BridgeSessionController {
   public async restoreRun(input: unknown, progress: (done: number, total: number) => void = () => {},
     factory: () => CanduPlaytestBridgeLifecycle = createCanduPlaytestBridge): Promise<void> {
     const save = parseRunSave(input);
+    if (this.requiredPacing && (save.version === 1 ? "real-time" : save.pacingMode) !== this.requiredPacing)
+      throw new Error("This is a real-time save. The public game uses daily turns; start a new daily run. Your saved run is retained.");
     if (save.ended) throw new Error('Ended runs cannot be continued.');
     if (save.dataPackId !== this.snapshotValue.dataPackId || save.scorePolicyId !== this.snapshotValue.scorePolicyId)
       throw new Error('This save uses a different simulation or scoring version.');
@@ -288,9 +296,9 @@ export class BridgeSessionController {
       if (restoredDraft.some(i => !paused.snapshot.core.channels.find(c => c.channelIndex === i)?.canRefuel)) throw new Error("Saved fuel plan contains an ineligible channel.");
       this.unsubscribeBridge(); this.bridge.dispose?.(); this.bridge = candidate; candidate = null;
       this.unsubscribeBridge = this.bridge.subscribe((status, snapshot) => {
-        this.statusValue = status; this.snapshotValue = snapshot; this.emit();
+        this.statusValue = this.checkedStatus(status, snapshot); this.snapshotValue = snapshot; this.emit();
       });
-      this.statusValue = this.bridge.status; this.snapshotValue = paused.snapshot;
+      this.statusValue = this.checkedStatus(this.bridge.status, paused.snapshot); this.snapshotValue = paused.snapshot;
 
       this.draftChannels = [...restoredDraft];
       this.journal.adopt(save); this.journal.record({ type: 'pause' }, paused, 'compact');
@@ -304,8 +312,14 @@ export class BridgeSessionController {
     return !this.restoring && this.isPlaybackActive() && this.pendingCount === 0;
   }
 
+  private checkedStatus(status: BridgeStatus, snapshot: CanduSnapshot): BridgeStatus {
+    if (status.isWasmAvailable && this.requiredPacing && snapshot.pacingMode !== this.requiredPacing)
+      return { ...status, source: "unavailable", isWasmAvailable: false, title: "Game update required", detail: "This tab loaded an older real-time runtime. Close older game tabs and reload the current daily-turn game." };
+    return status;
+  }
+
   private isPlaybackActive(): boolean {
-    return this.active &&
+    return this.requiredPacing !== "daily-turn" && this.active &&
       this.statusValue.isWasmAvailable &&
       this.modeValue === "play" &&
       this.snapshotValue.pacingMode !== "daily-turn" &&

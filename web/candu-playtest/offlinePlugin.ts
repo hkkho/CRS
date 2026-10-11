@@ -42,6 +42,17 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
   for (const name of await caches.keys()) if (name.startsWith(PREFIX) && name !== CACHE) await caches.delete(name);
   await self.clients.claim();
 })()));
+self.addEventListener('message', event => {
+  if (event.data?.type !== 'CANDU_ACTIVATE_UPDATE' || !event.ports[0]) return;
+  event.waitUntil((async () => {
+    const windows = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .filter(client => new URL(client.url).pathname.startsWith(BASE));
+    if (windows.length > 1) { event.ports[0].postMessage({ status: 'other-tabs', otherTabs: windows.length - 1 }); return; }
+    // The page saves first, then unregisters and navigates once. The next
+    // document loads a complete current build without mixing old WASM files.
+    event.ports[0].postMessage({ status: 'ready' });
+  })());
+});
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;

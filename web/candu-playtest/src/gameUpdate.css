@@ -1,0 +1,8 @@
+.game-update { position: fixed; z-index: 40; left: .6rem; bottom: .4rem; max-width: min(54rem, calc(100vw - 13rem)); color: #bad4c5; background: #10231de8; font: 11px/1.4 system-ui; padding: .35rem .5rem; overflow-wrap: anywhere; }
+.game-update p { margin: .4rem 0; font-size: 13px; }
+.game-update button { font: inherit; padding: .4rem; color: #e4f4ea; background: #213b30; border: 1px solid #8bbba5; cursor: pointer; }
+.game-update button:disabled { opacity: .5; cursor: default; }
+.game-update button:focus-visible { outline: 3px solid #e1ffb0; }
+.game-update-progress { max-width: calc(100vw - 3rem); color: #e4f4ea; background: #10231d; border: 1px solid #8bbba5; padding: 1.5rem; font: 16px/1.5 system-ui; }
+.game-update-progress::backdrop { background: #0009; }
+@media (max-width: 640px) { .game-update { max-width: calc(100vw - 13rem); } .game-update span { display: block; max-height: 3.1em; overflow: hidden; } .game-update:has(button:not([hidden])) { bottom: 3rem; max-width: calc(100vw - 2rem); } }

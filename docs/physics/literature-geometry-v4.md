@@ -120,6 +120,6 @@ Before/after numerical metrics and active/baseline hashes are retained in
 `benchmarks/literature-geometry-v4-comparison.json`. The scripts used were
 `tools/Test-DotNet.ps1 -Suite Core`, `-Suite Game`, `tools/Test-Browser.ps1`,
 `tools/Build-BrowserWasm.ps1`, `npm run build:pages`, and the existing
-`scripts/smoke.mjs` and `scripts/benchmark-wasm.mjs` against the local `/CRS/`
+The then-current UI smoke and `scripts/benchmark-wasm.mjs` against the local `/CRS/`
 preview. No published deployment, AOT performance or 100-day fuelling capability
 claim is implied by these checks.

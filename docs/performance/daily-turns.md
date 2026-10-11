@@ -22,7 +22,8 @@ worker; calculation speed is not a release performance gate.
 
 Daily saves record the integration identity. Saves from the initial subdivided
 daily model are rejected explicitly rather than replayed with different physics.
-Version-1 saves retain explicit real-time replay. Existing cloud databases require
+Version-1 real-time saves cannot resume in the daily-only public game. Direct
+comparison tools retain real-time replay. Existing cloud databases require
 the generated `daily_turn_saves` migration to accept version-2 saves.
 
 ## Corrected 100-day campaign

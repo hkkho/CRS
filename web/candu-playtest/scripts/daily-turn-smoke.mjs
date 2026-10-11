@@ -10,7 +10,7 @@ export async function verifyDailyTurns(page) {
   check(!await studio.locator('[data-action="pause"]').isVisible(), 'Daily run exposed live playback controls.');
   const before = await mirror.getAttribute('data-time-seconds');
   // Short deliberate observation window checks that the scheduler stays asleep.
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(2000);
   check(await mirror.getAttribute('data-time-seconds') === before, 'Time advanced while choosing a plan.');
   for (const index of [210, 211]) {
     await studio.locator(`[data-channel="${index}"]`).first().click();
@@ -33,6 +33,8 @@ export async function verifyDailyTurns(page) {
     await outcome.getByRole('button', { name: 'Continue', exact: true }).click();
     check(await mirror.getAttribute('data-time-seconds') === String(day * 86400), `Day ${day} did not advance exactly one day.`);
     check(await mirror.getAttribute('data-completed-days') === String(day), `Day ${day} count is incorrect.`);
+    await page.waitForTimeout(2000);
+    check(await mirror.getAttribute('data-time-seconds') === String(day * 86400), 'Time kept ticking after completing a turn.');
     check(await mirror.getAttribute('data-fuel-consumed') === '16', 'Daily fuel accounting differs from two eight-bundle moves.');
     check(await studio.locator('[data-plan-list] li').count() === 0, 'Accepted day did not clear the plan.');
     check(await studio.locator('[data-day-summary]').textContent() !== '', 'Daily result is missing.');

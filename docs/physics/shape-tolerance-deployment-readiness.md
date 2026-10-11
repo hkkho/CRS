@@ -150,5 +150,5 @@ preview. From `web/candu-playtest`, using that preview URL:
 node scripts/benchmark-xenon.mjs http://127.0.0.1:4186 20
 node scripts/benchmark-wasm.mjs http://127.0.0.1:4186 --bridge=direct --warm-samples=1
 node scripts/benchmark-xenon.mjs http://127.0.0.1:4186 --campaign-72h
-node scripts/smoke.mjs http://127.0.0.1:4186
+npm run smoke -- http://127.0.0.1:4186
 ```
