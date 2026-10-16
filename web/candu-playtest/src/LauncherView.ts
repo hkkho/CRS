@@ -15,7 +15,7 @@ export class LauncherView {
   private starting = false;
   private readonly manual: SimulatorManual;
 
-  constructor(private readonly session: LauncherSession, parent: HTMLElement, private readonly begin: () => void) {
+  constructor(private readonly session: LauncherSession, parent: HTMLElement, private readonly begin: () => void, private readonly arcade?: () => void) {
     this.element.className = "reactor-launcher workspace-native";
     this.element.innerHTML = `<div class="launcher-shell">
       <p class="workspace-kicker">CANDU / ON-POWER REFUELLING</p>
@@ -24,6 +24,8 @@ export class LauncherView {
       <div class="launcher-grid"><section><h2>Your next shift</h2>
         <p data-field="objective"></p><p data-field="connection"></p>
         <button data-action="begin" class="workspace-primary">Begin shift</button>
+        <button data-action="arcade" class="workspace-primary">Play Arcade · phone friendly</button>
+        <p>One day. One fuel plan. Earn the Efficient refueller badge, then retry to improve your score.</p>
         <button type="button" data-manual-open>Simulator manual</button>
       </section><section><h2>Choose a starting core</h2>
         <form><label>Core seed <input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label>
@@ -90,6 +92,16 @@ export class LauncherView {
     }
     if (action === "next") void this.reset({ type: "reset", seed: randomCoreSeed(this.session.snapshot.shift?.seed),
       shiftId: this.field<HTMLSelectElement>("shift").value as ShiftId });
+    if (action === "arcade" && this.arcade && !this.starting && !this.session.isPending) {
+      this.starting = true;
+      void this.session.dispatch({ type: "reset", seed: this.session.snapshot.shift?.seed ?? randomCoreSeed(), shiftId: "useful-fuel-day-v1" })
+        .then(response => { if (response.accepted) this.arcade?.(); else { this.starting = false; this.field("error").textContent = response.message; } })
+        .catch(error => { this.starting = false; this.field("error").textContent = String(error); })
+        .finally(() => {
+          if (this.element.isConnected && !this.starting) this.render({ snapshot: this.session.snapshot, status: this.session.status,
+            pending: this.session.isPending, response: null, error: null });
+        });
+    }
   };
 
   destroy(): void {

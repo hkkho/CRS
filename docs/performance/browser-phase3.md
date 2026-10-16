@@ -131,8 +131,11 @@ checks caught issues which were fixed before final acceptance.
 Final acceptance: 32 Browser .NET tests, 124 frontend tests and production build
 passed. Full local gameplay/recovery and keyboard smoke passed. Visual review
 caught a desktop flex-column wrap issue introduced by the pace label; final
-`pace-layout-smoke.mjs` checks actual 60x rate, quiet telemetry, foreground pause,
+the historical pace-layout smoke checked actual 60x rate, quiet telemetry, foreground pause,
 rate reset and clock-card containment at 320/640/720/1280/1600px. No deployment is
 claimed. Final entry JS is 100.15kB (30.12kB gzip); task 14 startup measurements
 were taken at its 96.41kB feature-split boundary. The on-demand Designer remains
 1.25MB; WASM still dominates cold readiness.
+
+The real-time pace smoke was retired with daily-only public play. Current release
+checks are documented in [hosting](../maintenance/hosting.md).

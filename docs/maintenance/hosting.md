@@ -39,6 +39,7 @@ In another terminal:
 
 ```powershell
 npm run smoke -- http://127.0.0.1:4175/CRS/
+npm run smoke:arcade -- http://127.0.0.1:4175/CRS/
 npm run smoke:scales -- http://127.0.0.1:4175/CRS/
 npm run smoke:accessibility -- http://127.0.0.1:4175/CRS/
 npm run smoke:saves -- http://127.0.0.1:4175/CRS/

@@ -29,7 +29,16 @@ boundary. A violating fuel move stops remaining orders; a day-end loss commits
 the completed one-day update. Invalid plans or numerical failures consume no fuel or time.
 
 The default **Free practice** run is endless with unlimited fresh fuel. The
-optional **One-day challenge** uses the same daily controls and existing finite
+launcher also offers **Play Arcade**, a phone-friendly presentation of the
+one-day challenge. Tap the full core map, inspect outgoing burnup, lock in a fuel
+plan, and retry the same core to improve your score. Planning is untimed;
+the shared simulation owns the fuel budget, score, limits and badge outcome.
+Arcade uses a large interactive 380-channel power/burnup map, with gold markings
+for planned channels. Zoom enlarges targets for phone selection; tap to inspect,
+then Add to plan. A pick → review → run flow keeps a persistent action button. Detailed readings
+expand on demand; a dedicated result screen offers replay. It supports 320px portrait screens.
+Open Studio preserves the current run and draft for detailed inspection.
+The optional **One-day challenge** uses the same daily controls and existing finite
 fuel budget: discharge at least eight bundles at 6 MWd/kg or above and finish
 the day within the operating limits to earn **Efficient refueller**.
 **New shift** draws a new aged-core seed; retry preserves the seed and objective.

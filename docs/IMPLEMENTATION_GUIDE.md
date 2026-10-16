@@ -3,7 +3,9 @@
 ## Product and ownership
 
 Develop `web/candu-playtest`, with GitHub Pages as the primary acceptance path.
-Reactor Studio is the sole gameplay view. Keep changes small, playable and testable.
+Reactor Studio provides detailed play; Arcade presents the same shared one-day
+challenge with a full interactive core map, touch zoom, plan review and a result screen. Keep changes small,
+playable and testable.
 Shutdown, scram, accidents, operator training, full plant operations and plant-grade
 safety claims are outside scope.
 

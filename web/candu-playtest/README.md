@@ -30,8 +30,8 @@ authoritative bridge and project-authored physics pack.
 
 - Begin shift with the native launcher; select seed and objective there.
 - Select channels using the map, arrow keys, or Highest burnup (`N`).
-- Refuel (`R`) inserts eight bundles automatically with channel flow.
-- Space pauses/resumes; power targets apply while running and time steps while paused.
+- Add or remove channels from today's plan with `R`; each order inserts eight bundles with channel flow.
+- Review the fuel plan, then refuel and advance one day. Planning keeps time frozen.
 - Inspect power, burnup, iodine and xenon for all twelve bundle positions.
   Fresh bundles enter with zero iodine and xenon; the four retained bundles keep
   their inventories. Advancing time builds poison in fresh fuel.
@@ -68,8 +68,9 @@ with 21 inserted adjusters and the xenon reference, and integrates ripple points
 See [derivation](../../docs/physics/channel-power-reference.md) and
 [policy](../../docs/gameplay/score-balance.md).
 
-Verify target changes, fixed references and paused refuelling through the Pages path:
+Verify daily planning, fixed references and Arcade through the Pages path:
 
 ```powershell
-node scripts/ripple-smoke.mjs http://127.0.0.1:4173/CRS/
+npm run smoke -- http://127.0.0.1:4173/CRS/
+npm run smoke:arcade -- http://127.0.0.1:4173/CRS/
 ```

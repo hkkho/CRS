@@ -1,0 +1,71 @@
+.reactor-arcade { position: absolute; inset: 0; z-index: 10; overflow: auto; box-sizing: border-box; max-width: 760px; margin: auto; padding: 16px 16px 80px; color: #ecf8ff; background: radial-gradient(ellipse at 50% 18%, #163e53 0, #0b1c30 45%, #091526 80%); font: 15px/1.45 system-ui, sans-serif; color-scheme: dark; }
+.reactor-arcade * { box-sizing: border-box; min-width: 0; }
+.reactor-arcade [hidden] { display: none !important; }
+.reactor-arcade header, .reactor-arcade nav, .arcade-section-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.reactor-arcade p { margin: 8px 0; }
+.arcade-kicker { letter-spacing: .12em; color: #79efca; font-size: 11px; font-weight: 800; }
+header .arcade-kicker { font-size: 17px; }
+header .arcade-kicker span { color: #a9c4da; font-size: 11px; }
+.arcade-round { font-size: 10px; letter-spacing: .08em; color: #c6d7ed; }
+.reactor-arcade h1 { font-size: clamp(30px, 7vw, 44px); line-height: 1.05; margin: 6px 0 12px; letter-spacing: -.04em; }
+.reactor-arcade h2 { font-size: 22px; margin: 8px 0; }
+.reactor-arcade button, .reactor-arcade summary { min-height: 48px; padding: 12px; cursor: pointer; touch-action: manipulation; font: inherit; }
+.reactor-arcade button { border: 1px solid #577b96; border-radius: 14px; background: #1a324b; color: #fff; box-shadow: 0 3px 0 #050e1b; transition: background .15s, transform .15s; }
+.reactor-arcade button:active:not(:disabled) { transform: translateY(2px); }
+.reactor-arcade button:disabled { opacity: .45; cursor: default; }
+.reactor-arcade :focus-visible { outline: 3px solid #ffd680; outline-offset: 3px; }
+.arcade-hud { display: flex; justify-content: space-between; border-bottom: 1px solid #365268; padding-bottom: 8px; }
+.arcade-hud p { font-size: 10px; letter-spacing: .12em; color: #a9c4da; }
+.arcade-hud strong { display: inline-block; margin-left: 10px; font-size: 24px; letter-spacing: 0; color: #fff; }
+.arcade-mission { margin: 12px 0 18px; }
+.arcade-caption, .arcade-legend { color: #a9c4da; font-size: 12px; }
+.arcade-map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.arcade-map-toolbar label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+.arcade-map-toolbar select { min-height: 44px; padding: 8px; border: 1px solid #577b96; border-radius: 10px; background: #1a324b; color: #fff; font: inherit; }
+.arcade-map-scroll { overflow: auto; aspect-ratio: 1; border: 1px solid #375b72; border-radius: 20px; background: #081b2c; overscroll-behavior: contain; }
+.arcade-map { position: relative; width: 100%; aspect-ratio: 1; background: radial-gradient(circle, #153c4b 0 64%, #306d78 64.2% 64.5%, transparent 65%); }
+.reactor-arcade .arcade-map button { position: absolute; width: 3.9%; height: 3.9%; min-height: 0; padding: 0; border: 1px solid #0a2131; border-radius: 24%; box-shadow: none; font-size: 0; color: #051520; touch-action: manipulation; transition: none; }
+.reactor-arcade .arcade-map [data-planned="true"] { outline: 2px solid #ffd574; outline-offset: -1px; z-index: 1; }
+.reactor-arcade .arcade-map [aria-pressed="true"] { outline: 3px solid white; outline-offset: 0; z-index: 2; }
+.reactor-arcade .arcade-map [data-planned="true"]::after { content: ''; position: absolute; width: 35%; height: 35%; top: 32%; left: 32%; border-radius: 50%; background: #ffe18b; border: 1px solid #0b1c30; }
+.reactor-arcade .arcade-map button:focus-visible { outline: 3px dashed white; }
+.is-zoomed .arcade-map { width: max(200%, 1200px); }
+.reactor-arcade .is-zoomed .arcade-map button { font-size: 11px; font-weight: 800; }
+.arcade-inspector { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; align-items: center; margin-top: 12px; padding: 14px; background: #173047; border: 1px solid #4b748b; border-radius: 18px; }
+.arcade-inspector h2, .arcade-inspector p { margin: 2px 0; }
+.arcade-inspector [data-reading] { font-size: 13px; text-align: right; }
+.arcade-inspector [data-outgoing], .arcade-inspector button, .arcade-inspector [data-eligibility] { grid-column: 1 / -1; }
+.arcade-inspector [data-outgoing], .arcade-inspector [data-eligibility] { font-size: 12px; color: #c6d7ed; overflow-wrap: anywhere; }
+.arcade-inspector button { margin-top: 8px; }
+.arcade-inspector [data-eligibility]:empty { display: none; }
+.arcade-plan { padding: 18px; background: #173047; border: 1px solid #578297; border-radius: 18px; }
+.arcade-plan [data-plan], .arcade-retry { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0; }
+.arcade-plan > button { margin: 0 6px 8px 0; }
+.reactor-arcade footer { position: sticky; bottom: 0; z-index: 2; border: 1px solid #426477; border-radius: 18px; margin-top: 16px; padding: 8px 12px 12px; background: #102738f5; box-shadow: 0 -8px 24px #071423aa; text-align: center; }
+.reactor-arcade footer p { font-size: 12px; color: #d8e8f3; margin: 0 0 8px; }
+.reactor-arcade .arcade-primary { width: 100%; background: linear-gradient(180deg, #b6ffb6, #6fe4b2); color: #092d29; border-color: #c5ffcf; font-weight: 850; min-height: 54px; box-shadow: 0 4px 0 #277561; }
+.arcade-result { text-align: center; border: 1px solid #b79353; padding: 20px; background: linear-gradient(160deg, #323c49, #192d41); border-radius: 20px; margin: 18px 0; }
+.arcade-medal { display: inline-grid; place-items: center; border: 2px solid #ffd680; border-radius: 50%; width: 64px; height: 64px; font-size: 36px; color: #ffd680; background: #514735; }
+[data-phase="won"] .arcade-result { border-color: #79efca; background: linear-gradient(160deg, #205548, #172e41); }
+[data-phase="ended"] .arcade-medal { display: none; }
+.arcade-retry { justify-content: center; }
+.arcade-details { color: #b7ccdf; margin-top: 16px; font-size: 13px; }
+.arcade-details summary { padding-left: 0; }
+[data-message]:empty { display: none; }
+[data-phase="busy"] .arcade-map { animation: arcade-pulse 1.4s ease-in-out infinite alternate; }
+@keyframes arcade-pulse { to { opacity: .45; } }
+@media (min-width: 900px) {
+  .reactor-arcade { max-width: 1120px; padding-inline: 28px; }
+  .arcade-mission { display: flex; align-items: center; gap: 20px; margin: 12px 0; }
+  .arcade-mission .arcade-kicker { display: none; }
+  .arcade-mission h1 { font-size: 28px; margin: 0; }
+  .arcade-mission > p { font-size: 13px; }
+  [data-picker] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 0 24px; grid-template-areas: "toolbar inspector" "caption inspector" "map inspector" "legend inspector"; }
+  .arcade-map-toolbar { grid-area: toolbar; }
+  [data-picker] > .arcade-caption { grid-area: caption; }
+  .arcade-map-scroll { grid-area: map; width: min(100%, max(340px, calc(100dvh - 290px))); }
+  .arcade-legend { grid-area: legend; }
+  .arcade-inspector { grid-area: inspector; align-self: start; margin-top: 0; }
+  .reactor-arcade footer { position: fixed; right: max(28px, calc((100vw - 1064px) / 2)); bottom: 80px; width: min(346px, calc((100vw - 80px) / 3)); margin: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .reactor-arcade *, .reactor-arcade *::before { animation: none !important; transition: none !important; } }

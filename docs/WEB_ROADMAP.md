@@ -23,6 +23,10 @@ The public client requires daily pacing; legacy real-time commands remain availa
 only to direct physics comparison tools. Build identity and safe local-save updates
 are visible in the game.
 
+Arcade presents the shared one-day challenge with a large interactive core map,
+power/burnup views, touch zoom, a channel inspector, plan review and a replay screen.
+Detailed reactor readings expand on demand. All outcomes remain Game-owned.
+
 ## Next improvements
 
 - Gather human feedback on channel selection and understanding the day report.
