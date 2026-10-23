@@ -180,6 +180,13 @@ ReactorSim.Core
 The exact active two-group equations are documented in
 [`docs/physics/active-two-group-solver.md`](docs/physics/active-two-group-solver.md).
 The current architecture is [docs/architecture.md](docs/architecture.md).
+For a detailed walkthrough from browser startup through commands, daily transactions,
+physics, snapshots and saves, start with the
+[code documentation library](docs/code-library/index.md). It includes Mermaid
+diagrams and a source atlas. The published [documentation site](https://hkkho.github.io/CRS/docs/)
+also includes the [player manual](https://hkkho.github.io/CRS/docs/manual/) and
+[reactor theory](https://hkkho.github.io/CRS/docs/theory/). The in-game F1 manual
+uses the same Markdown chapters as the website.
 The current product contract is
 [`docs/IMPLEMENTATION_GUIDE.md`](docs/IMPLEMENTATION_GUIDE.md), and the active
 work plan is [`docs/WEB_ROADMAP.md`](docs/WEB_ROADMAP.md).

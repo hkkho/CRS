@@ -1,5 +1,9 @@
 # Nuclear Diffusion Theory in a CANDU Reactor
 
+The current, searchable [MkDocs reactor theory](../code-library/theory/index.md)
+explains the active daily-turn model and is published alongside the game. This
+long-form guide remains a historical research reference.
+
 This guide preserves diffusion, fuel and poison explanations from earlier research.
 Its phase/gate status and point-kinetics design are historical. The current web game
 uses [these active equations](active-two-group-solver.md), [daily equilibrium turns](../gameplay/daily-turn-mode.md)

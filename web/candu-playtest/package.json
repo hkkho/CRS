@@ -15,13 +15,15 @@
     "smoke:arcade": "node scripts/arcade-smoke.mjs",
     "smoke:scales": "node scripts/display-scales-smoke.mjs",
     "smoke:saves": "node scripts/saves-smoke.mjs",
+    "smoke:docs": "node scripts/docs-smoke.mjs",
     "benchmark": "node scripts/benchmark-wasm.mjs",
     "benchmark:xenon": "node scripts/benchmark-xenon.mjs",
     "smoke:accessibility": "node scripts/accessibility-smoke.mjs",
     "smoke:upgrade": "node scripts/upgrade-smoke.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.2"
+    "@supabase/supabase-js": "^2.117.2",
+    "marked": "18.1.1"
   },
   "engines": {
     "node": ">=22.12.0"

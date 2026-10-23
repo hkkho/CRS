@@ -49,4 +49,15 @@ describe("simulator manual", () => {
     close.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
     expect(document.activeElement).toBe(page);
   });
+
+  it("renders the shared Markdown and links to the published manual without replacing the run", () => {
+    const { manual, opener } = setup(); opener.click();
+    expect(manual.element.querySelectorAll("h1")).toHaveLength(1);
+    expect(manual.element.querySelector("#manual-start h2")?.textContent).toBe("One day at a time");
+    expect(manual.element.querySelectorAll("#manual-score tbody tr")).toHaveLength(4);
+    const link = manual.element.querySelector<HTMLAnchorElement>(".manual-library-link")!;
+    expect(link.getAttribute("href")).toBe(`${import.meta.env.BASE_URL}docs/manual/`);
+    expect(link.target).toBe("_blank");
+    expect(link.rel).toBe("noopener");
+  });
 });

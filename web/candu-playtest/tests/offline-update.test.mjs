@@ -15,6 +15,8 @@ test('an offline update installs current HTML with its matching script despite s
   const root = await mkdtemp(join(tmpdir(), 'candu-offline-update-'));
   directories.push(root);
   await mkdir(join(root, 'assets'));
+  await mkdir(join(root, 'docs'));
+  await writeFile(join(root, 'docs/index.html'), 'independent documentation');
   const currentHtml = '<script src="/CRS/assets/current.js"></script>';
   await writeFile(join(root, 'index.html'), currentHtml);
   await writeFile(join(root, 'assets/current.js'), 'current build');
@@ -54,6 +56,7 @@ test('an offline update installs current HTML with its matching script despite s
   await completion;
   expect(installed.get('/CRS/index.html')).toBe(currentHtml);
   expect(installed.get('/CRS/assets/current.js')).toBe('current build');
+  expect(installed.has('/CRS/docs/index.html')).toBe(false);
 });
 
 test('a waiting update refuses to replace another open game tab', async () => {
@@ -73,4 +76,6 @@ test('a waiting update refuses to replace another open game tab', async () => {
   };
   await send(); expect(activated).toBe(0); expect(replies[0].status).toBe('other-tabs'); expect(replies[0].otherTabs).toBe(1);
   windows = [windows[0]]; await send(); expect(activated).toBe(0); expect(replies[1].status).toBe('ready');
+  windows.push({ url: 'https://example.test/CRS/docs/' }, { url: 'https://example.test/CRS/docs/manual/' });
+  await send(); expect(replies[2].status).toBe('ready');
 });

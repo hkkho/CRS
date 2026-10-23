@@ -4,6 +4,7 @@
 .simulator-manual [hidden] { display: none !important; }
 .simulator-manual header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #8795cb; }
 .simulator-manual h1 { font-size: 24px; margin: 0; }
+.simulator-manual .manual-library-link { display: inline-block; color: #ffe49a; font-size: 14px; padding-block: 6px; }
 .simulator-manual small { color: #c2caf2; font-size: 11px; letter-spacing: .12em; }
 .simulator-manual h2 { font-size: 23px; margin: 0 0 16px; }
 .simulator-manual h3 { font-size: 18px; margin: 22px 0 8px; }

@@ -1,0 +1,5 @@
+/* Keep wide sequence diagrams readable, with local horizontal scrolling. */
+.md-typeset .mermaid {
+  overflow-x: auto;
+  margin-block: 1.25em;
+}

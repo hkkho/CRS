@@ -1,0 +1,65 @@
+site_name: CRS Documentation
+site_description: Player manual, reactor theory and a walkthrough of the shared CANDU simulation
+site_url: https://hkkho.github.io/CRS/docs/
+repo_url: https://github.com/hkkho/CRS
+docs_dir: docs/code-library
+site_dir: artifacts/code-library
+use_directory_urls: true
+theme:
+  name: material
+  font: false
+  palette:
+    scheme: default
+    primary: indigo
+  features:
+    - navigation.sections
+    - navigation.footer
+    - search.highlight
+plugins:
+  - search
+hooks:
+  - tools/docs/repository_links.py
+extra_css:
+  - stylesheets/library.css
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+validation:
+  links:
+    anchors: warn
+nav:
+  - Documentation: index.md
+  - Player manual:
+      - Overview: manual/index.md
+      - Quick start: manual/start.md
+      - Fuelling: manual/fuel.md
+      - Reactor readings: manual/physics.md
+      - Maps and readings: manual/maps.md
+      - Limits and score: manual/score.md
+      - Controls and saves: manual/controls.md
+      - Simulation model: manual/model.md
+  - Reactor theory:
+      - Overview: theory/index.md
+      - Neutrons and power: theory/neutrons.md
+      - Fuel and burnup: theory/fuel.md
+      - Poison and regulation: theory/regulation.md
+      - Numerical model: theory/numerical-model.md
+  - Code walkthrough:
+      - 1. Entry points and startup: 01-startup.md
+      - 2. Browser commands and transport: 02-browser-transport.md
+      - 3. One complete daily turn: 03-daily-turn.md
+      - 4. Core state and physics: 04-core-physics.md
+      - 5. Snapshots and presentation: 05-presentation.md
+      - 6. Saves and lifecycle: 06-saves-lifecycle.md
+  - Working on the code:
+      - 7. Build, tests and debugging: 07-development.md
+      - 8. Source atlas and glossary: 08-source-atlas.md
+      - 9. Documentation tools: 09-documentation-tools.md
+  - Play CRS: https://hkkho.github.io/CRS/

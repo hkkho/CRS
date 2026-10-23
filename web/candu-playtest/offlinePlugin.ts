@@ -15,7 +15,8 @@ export function offlinePlugin(): Plugin {
       async function walk(directory: string): Promise<void> {
         for (const entry of await readdir(directory, { withFileTypes: true })) {
           const path = join(directory, entry.name);
-          if (entry.isDirectory()) await walk(path);
+          // Documentation is published beside the game but has its own assets.
+          if (entry.isDirectory()) { if (relative(root, path) !== 'docs') await walk(path); }
           else if (!/\.(map|br|gz)$/.test(entry.name) && entry.name !== 'sw.js' && !entry.name.startsWith('.')) paths.push(path);
         }
       }
@@ -46,7 +47,7 @@ self.addEventListener('message', event => {
   if (event.data?.type !== 'CANDU_ACTIVATE_UPDATE' || !event.ports[0]) return;
   event.waitUntil((async () => {
     const windows = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .filter(client => new URL(client.url).pathname.startsWith(BASE));
+      .filter(client => { const path = new URL(client.url).pathname; return path === BASE || path === INDEX; });
     if (windows.length > 1) { event.ports[0].postMessage({ status: 'other-tabs', otherTabs: windows.length - 1 }); return; }
     // The page saves first, then unregisters and navigates once. The next
     // document loads a complete current build without mixing old WASM files.
