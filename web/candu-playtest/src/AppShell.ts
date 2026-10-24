@@ -9,7 +9,7 @@ export class AppShell {
   private disposed = false;
 
   constructor(private readonly session: WorkspaceSession, private readonly parent: HTMLElement) {
-    this.view = new LauncherView(session, parent, () => this.showStudio(), () => this.showArcade());
+    this.view = new LauncherView(session, parent, guided => this.showStudio(guided), () => this.showArcade());
   }
 
   public showArcade(): void {
@@ -19,11 +19,11 @@ export class AppShell {
     this.view = new ArcadeView(this.session, this.parent, () => this.showStudio());
   }
 
-  public showStudio(): void {
+  public showStudio(guided = false): void {
     if (this.disposed) return;
     this.view?.destroy();
     this.session.startShift();
-    this.view = new StudioView(this.session, this.parent);
+    this.view = new StudioView(this.session, this.parent, { guided });
   }
 
   destroy(): void {

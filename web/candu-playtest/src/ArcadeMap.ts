@@ -1,3 +1,4 @@
+import { ReactorFrame } from "./ReactorFrame";
 import type { CanduSnapshot } from "./protocol";
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { channelColorMinimum, channelLimit, channelWatts, powerColor } from "./studio/powerReadings";
@@ -9,6 +10,7 @@ export class ArcadeMap {
   private snapshot: CanduSnapshot;
   private selected: number;
   private locked = false;
+  private readonly frame: ReactorFrame;
 
   constructor(snapshot: CanduSnapshot, private readonly select: (index: number) => void) {
     this.snapshot = snapshot;
@@ -16,6 +18,9 @@ export class ArcadeMap {
     this.element.className = "arcade-map";
     this.element.setAttribute("role", "group");
     this.element.setAttribute("aria-label", "Core channels. Use arrow keys to inspect, then Add to plan.");
+    const housing = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    housing.setAttribute("viewBox", "0 0 560 560"); housing.setAttribute("aria-hidden", "true"); housing.classList.add("arcade-vessel-art");
+    this.element.append(housing); this.frame = new ReactorFrame(housing, true);
     for (const channel of snapshot.core.channels) {
       const cell = document.createElement("button");
       cell.type = "button"; cell.dataset.channel = String(channel.channelIndex);
@@ -28,6 +33,7 @@ export class ArcadeMap {
     this.element.addEventListener("keydown", this.onKey);
   }
   update(snapshot: CanduSnapshot, selected: number, planned: readonly number[], mode: "power" | "burnup", locked: boolean): void {
+    this.frame.update(snapshot, selected);
     this.snapshot = snapshot; this.selected = selected; this.locked = locked;
     for (const channel of snapshot.core.channels) {
       const cell = this.cells.get(channel.channelIndex);
@@ -62,5 +68,5 @@ export class ArcadeMap {
       : Math.abs(a.gridRow - current.gridRow) - Math.abs(b.gridRow - current.gridRow));
     if (candidates[0]) { this.select(candidates[0].channelIndex); this.cells.get(candidates[0].channelIndex)?.focus(); }
   };
-  destroy(): void { this.element.removeEventListener("click", this.onClick); this.element.removeEventListener("keydown", this.onKey); }
+  destroy(): void { this.frame.destroy(); this.element.removeEventListener("click", this.onClick); this.element.removeEventListener("keydown", this.onKey); }
 }

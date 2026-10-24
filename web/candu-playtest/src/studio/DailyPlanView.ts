@@ -1,42 +1,40 @@
 import { isRunTerminal, type DayProgress, type CanduSnapshot } from "../protocol";
 import { gridCoordinateLabel } from "../channelCoordinates";
+import { FuelOrderList } from "../FuelOrderList";
 
 /** Draft and report presentation. Orders and reactor decisions remain in Game. */
 export class DailyPlanView {
   readonly element = document.createElement("section");
   private key = "";
+  private readonly orders = new FuelOrderList();
   constructor() {
-    this.element.className = "studio-card studio-daily-plan";
+    this.element.className = "studio-daily-plan fuel-sheet";
     this.element.setAttribute("aria-label", "Daily fuel plan");
-    this.element.innerHTML = `<p class="studio-eyebrow">TODAY'S FUEL PLAN</p><h2 data-day-heading></h2>
-      <details data-plan-review><summary>Fuel plan · <span data-plan-total></span></summary><ul data-plan-list></ul></details>
+    this.element.innerHTML = `<header class="fuel-sheet-header"><span>CORE SERVICES / F-08</span><span data-sheet-state>DRAFT</span></header><p class="studio-eyebrow">TODAY'S FUEL PLAN</p><h2 data-day-heading></h2>
+      <div class="fuel-sheet-reference"><span>On-power fuelling list</span><span data-sheet-seed></span></div>
+      <details data-plan-review><summary>Fuel plan · <span data-plan-total></span></summary><p>Rows execute in channel order, with channel flow. Drafting spends no fuel or time. Exit burnup describes the current outgoing fuel, not a power forecast.</p></details>
+      <div data-sheet-rows></div><p class="fuel-sheet-total"><span>FRESH BUNDLES REQUIRED</span><strong data-sheet-cost></strong></p><p class="fuel-sheet-stock" data-sheet-stock></p>
       <div class="studio-report-actions"><button data-action="clear-plan">Clear plan</button><button class="studio-primary" data-action="commit-day">Advance 1 day without refuelling</button></div>
       <p data-day-pending></p><details aria-label="Last day result" data-day-report hidden><summary>Day report</summary><p data-day-summary></p><ul data-day-moves></ul></details>`;
+    this.element.querySelector("[data-sheet-rows]")!.append(this.orders.element);
   }
   update(snapshot: CanduSnapshot, channels: readonly number[], pending: boolean, historical: boolean, progress?: DayProgress, ready = true): void {
     this.element.hidden = snapshot.pacingMode !== "daily-turn";
     if (this.element.hidden) return;
     const text = (selector: string, value: string) => { const e = this.element.querySelector(selector)!; if (e.textContent !== value) e.textContent = value; };
-    text("[data-day-heading]", `Day ${(snapshot.completedDays ?? 0) + 1}`);
+    text("[data-day-heading]", `Day ${isRunTerminal(snapshot) ? Math.max(1, snapshot.completedDays ?? 0) : (snapshot.completedDays ?? 0) + 1}`);
     text("[data-plan-total]", `${channels.length} ${channels.length === 1 ? "channel" : "channels"} · ${channels.length * 8} bundles`);
+    text("[data-sheet-cost]", String(channels.length * 8));
+    text("[data-sheet-seed]", `CORE ${snapshot.shift?.seed ?? "—"}`);
+    text("[data-sheet-state]", historical ? "READ ONLY" : pending ? "SUBMITTED" : isRunTerminal(snapshot) ? "CLOSED" : "DRAFT");
+    text("[data-sheet-stock]", snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh stock · consumption is recorded"
+      : channels.length * 8 > snapshot.freshBundlesAvailable ? `This list needs ${channels.length * 8} bundles; only ${snapshot.freshBundlesAvailable} are available. Remove a channel before advancing.`
+      : `${snapshot.freshBundlesAvailable} fresh bundles available for this run`);
+    this.orders.update(snapshot, channels, !ready || pending || historical || isRunTerminal(snapshot));
     text("[data-day-pending]", pending ? `Advancing day…${progress && progress.simulationSecondsAdvanced > 0 ? ` ${(100 * progress.simulationSecondsAdvanced / progress.requestedSimulationSeconds).toFixed(0)}% calculated` : ""}` : historical ? "Return to live to edit or advance today's plan." : "");
     const key = `${snapshot.simulationTimeSeconds}:${snapshot.refuellingOperationCount}:${channels.join(",")}`;
     if (key !== this.key) {
       this.key = key;
-      const list = this.element.querySelector("[data-plan-list]")!;
-      const focused = document.activeElement instanceof HTMLButtonElement && list.contains(document.activeElement) ? document.activeElement.dataset.planChannel : undefined;
-      list.replaceChildren(...channels.map(index => {
-        const channel = snapshot.core.channels.find(c => c.channelIndex === index)!;
-        const item = document.createElement("li");
-        const plan = snapshot.refuellingPlans?.find(p => p.directionId === channel.flowDirection && p.shiftCount === 8);
-        const outgoing = plan?.dischargedPositions.map(p => channel.bundles.find(b => b.position === p)?.currentBurnupMwdPerKg).filter((n): n is number => n !== undefined) ?? [];
-        const label = document.createElement("span");
-        label.textContent = `${gridCoordinateLabel(channel)} · 8 bundles${outgoing.length ? ` · outgoing ${Math.min(...outgoing).toFixed(1)}–${Math.max(...outgoing).toFixed(1)} MWd/kg` : ""} `;
-        const remove = document.createElement("button"); remove.dataset.action = "remove-plan"; remove.dataset.planChannel = String(index);
-        remove.textContent = `Remove ${gridCoordinateLabel(channel)}`;
-        item.append(label, remove); return item;
-      }));
-      if (focused !== undefined) (list.querySelector<HTMLButtonElement>(`[data-plan-channel="${focused}"]`) ?? this.element.querySelector<HTMLButtonElement>('[data-action="commit-day"]'))?.focus();
       const result = snapshot.lastDayResult;
       (this.element.querySelector("[data-day-report]") as HTMLElement).hidden = !result;
       if (result) {

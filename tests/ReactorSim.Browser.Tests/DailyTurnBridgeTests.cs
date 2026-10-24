@@ -6,6 +6,22 @@ namespace ReactorSim.Browser.Tests;
 
 public sealed class DailyTurnBridgeTests
 {
+    [Theory]
+    [InlineData("three-day-rhythm-v1", 3)]
+    [InlineData("seven-day-stewardship-v1", 7)]
+    public void MultiDayGoalsRoundTripAcrossInitializationAndSameSeedReset(string id, int days)
+    {
+        var runtime = new PlaytestRuntime();
+        var initial = Parse(runtime.Initialize("{\"protocol\":\"candu-playtest-v2\",\"seed\":1001,\"shiftId\":\"" + id + "\"}"));
+        Assert.True(initial.GetProperty("accepted").GetBoolean());
+        var shift = initial.GetProperty("snapshot").GetProperty("shift");
+        Assert.Equal(id, shift.GetProperty("id").GetString());
+        Assert.Equal(days * 86400, shift.GetProperty("horizonSeconds").GetDouble());
+        var reset = Parse(runtime.DispatchJson("{\"protocol\":\"candu-playtest-v2\",\"type\":\"reset\"}"));
+        Assert.True(reset.GetProperty("accepted").GetBoolean());
+        Assert.Equal(shift.GetRawText(), reset.GetProperty("snapshot").GetProperty("shift").GetRawText());
+    }
+
     private static JsonElement Parse(string json) => JsonDocument.Parse(json).RootElement.Clone();
     [Fact]
     public void DefaultCapabilityAndCompactDayResultAreAuthoritative()

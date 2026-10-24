@@ -525,7 +525,7 @@ namespace ReactorSim.Browser
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId == ShiftProgress.ChallengeId, pacing == "daily-turn"));
+                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId, pacing == "daily-turn"));
         }
 
         private static bool TryReadPacing(JsonElement payload, string fallback, out string pacing)
@@ -543,7 +543,7 @@ namespace ReactorSim.Browser
             if (!PlaytestInput.TryGetProperty(payload, out JsonElement value, "shiftId")) return true;
             if (value.ValueKind != JsonValueKind.String) return false;
             shiftId = value.GetString()!;
-            return shiftId == ShiftProgress.PracticeId || shiftId == ShiftProgress.ChallengeId;
+            return ShiftObjective.IsSupported(shiftId);
         }
 
         private static bool TryReadSeed(JsonElement payload, ulong fallback, out ulong seed)

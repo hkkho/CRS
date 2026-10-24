@@ -3,6 +3,7 @@ import type { RefuelDraft } from "../commandState";
 import type { StudioTab } from "./HistoryView";
 import type { MapMode } from "./powerReadings";
 export interface StudioNavigation {
+  guided?: boolean;
   selectedChannelIndex?: number;
   refuelDraft?: RefuelDraft;
   selectedTab?: StudioTab;

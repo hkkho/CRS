@@ -26,6 +26,12 @@ function bridge(digest = 'digest'): CanduPlaytestBridgeLifecycle & { dispose: Re
 }
 
 describe('run saves', () => {
+  it.each(['three-day-rhythm-v1', 'seven-day-stewardship-v1'])('accepts %s in the save and replay journal', shiftId => {
+    const run = saved(); run.shiftId = shiftId;
+    run.commands = [{ command: { type: 'reset', seed: 1001, shiftId: shiftId as 'three-day-rhythm-v1' | 'seven-day-stewardship-v1' }, accepted: true, responseMode: 'compact' }];
+    expect(parseRunSave(run).shiftId).toBe(shiftId);
+    expect(() => parseRunSave({ ...run, shiftId: 'invented-goal' })).toThrow();
+  });
   it('records rejected commands and preserves exact advance intervals and response modes', () => {
     const journal = new RunJournal();
     const command: CanduCommand = { type: 'advance', wallMilliseconds: 87.5321 };

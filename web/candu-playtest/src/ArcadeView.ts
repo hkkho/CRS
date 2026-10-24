@@ -5,6 +5,7 @@ import type { SessionUpdate } from "./sessionController";
 import type { WorkspaceSession } from "./studio/StudioNavigation";
 import "./arcade.css";
 import { ArcadeMap } from "./ArcadeMap";
+import { FuelOrderList } from "./FuelOrderList";
 
 /** Touch presentation of the Game-owned useful-fuel challenge. No local simulation or victory rules. */
 export class ArcadeView {
@@ -15,6 +16,7 @@ export class ArcadeView {
   private zoomed = false;
   private mapMode: "power" | "burnup" = "power";
   private readonly map: ArcadeMap;
+  private readonly orders = new FuelOrderList("remove-sheet-channel");
   private busy = false;
   private reviewing = false;
   private disposed = false;
@@ -39,6 +41,10 @@ export class ArcadeView {
     this.selected = session.snapshot.core.channels[0]?.channelIndex ?? 0;
     this.map = new ArcadeMap(session.snapshot, index => { this.selected = index; this.render(); });
     this.field("[data-map-scroll]").append(this.map.element);
+    const sheet = document.createElement("aside"); sheet.className = "fuel-sheet arcade-fuel-sheet";
+    sheet.setAttribute("aria-label", "Draft fuelling list");
+    sheet.innerHTML = `<header class="fuel-sheet-header"><span>CORE SERVICES / F-08</span><span>DRAFT</span></header><h2>Fuelling list</h2><p class="fuel-sheet-reference">Eight fresh bundles per channel · with flow</p><div data-arcade-orders></div><p class="fuel-sheet-total"><span>FRESH BUNDLES REQUIRED</span><strong data-arcade-fuel-total></strong></p>`;
+    sheet.querySelector("[data-arcade-orders]")!.append(this.orders.element); this.field("[data-picker]").append(sheet);
     this.element.querySelector("[data-map-mode]")!.addEventListener("change", this.onMapMode);
     parent.append(this.element);
     this.element.addEventListener("click", this.onClick);
@@ -70,6 +76,8 @@ export class ArcadeView {
     this.field("[data-score]").textContent = s.scoreTotal.toFixed(2);
     this.field("[data-level]").textContent = `${(s.rrs.averageFillFraction * 100).toFixed(1)}%`;
     this.field("[data-stock]").textContent = String(s.freshBundlesAvailable);
+    this.orders.update(s, this.plan, locked || terminal || this.reviewing);
+    this.field("[data-arcade-fuel-total]").textContent = String(this.plan.length * 8);
     this.field(".arcade-result").hidden = !terminal;
     this.field("[data-outcome]").textContent = shift?.rewardEarned ? "Challenge cleared!" : shift?.outcome === "missed" ? "Goal missed — try another plan" : "Run ended";
     this.field("[data-result]").textContent = `${shift?.usefulBundlesDischarged ?? 0} / ${shift?.usefulBundlesRequired ?? 8} useful bundles discharged · ${s.scoreTotal.toFixed(2)} points. ${s.runEndReason ?? ""}${shift?.rewardEarned ? ` · ${shift.reward}` : ""}`;
@@ -119,6 +127,7 @@ export class ArcadeView {
   private readonly onClick = (event: MouseEvent): void => {
     const button = (event.target as Element).closest<HTMLButtonElement>("button");
     if (!button || button.disabled || this.busy || this.session.isPending) return;
+    if (button.dataset.action === "remove-sheet-channel") { this.setPlan(this.plan.filter(i => i !== Number(button.dataset.planChannel))); this.field('[data-action="toggle-channel"]').focus({ preventScroll: true }); return; }
     if (button.dataset.remove !== undefined) {
       this.setPlan(this.plan.filter(i => i !== Number(button.dataset.remove)));
       this.field('[data-action="back"]').focus(); return;

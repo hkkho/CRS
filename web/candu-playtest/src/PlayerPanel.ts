@@ -158,7 +158,8 @@ export class PlayerPanel {
     for (const { run, label } of entries) {
       const row = document.createElement('p');
       row.dataset.runId = run.id; row.dataset.source = label;
-      row.textContent = `${label} · ${run.shiftId === 'free-practice' ? 'Endless' : 'One-day challenge'} · seed ${run.seed} · ${run.score.toFixed(2)} points · ${(run.seconds / 86400).toFixed(2)} days · ${new Date(run.savedAt).toLocaleString()} · ${run.ended ? 'Ended' : 'Active'} `;
+      const objective = ({ 'free-practice': 'Endless', 'useful-fuel-day-v1': 'One-day challenge', 'three-day-rhythm-v1': 'Three-day rhythm', 'seven-day-stewardship-v1': 'Seven-day stewardship' } as Record<string, string>)[run.shiftId] ?? run.shiftId;
+      row.textContent = `${label} · ${objective} · seed ${run.seed} · ${run.score.toFixed(2)} points · ${(run.seconds / 86400).toFixed(2)} days · ${new Date(run.savedAt).toLocaleString()} · ${run.ended ? 'Ended' : 'Active'} `;
       // Any newer ended copy is a tombstone: do not offer the earlier live save.
       const dead = entries.some(e => e.run.id === run.id && e.run.ended);
       if (!run.ended && !dead) {

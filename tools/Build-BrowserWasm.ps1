@@ -174,7 +174,7 @@ $buildInfo = [ordered]@{
     cpuOperatorPartitions = 1
     omitPrecompressedAssets = [bool]$OmitPrecompressedAssets
 }
-$buildInfo | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $targetPath 'build-info.json') -Encoding utf8
+[IO.File]::WriteAllText((Join-Path $targetPath 'build-info.json'), ($buildInfo | ConvertTo-Json), [Text.UTF8Encoding]::new($false))
 
 $mainModulePath = Join-Path $targetPath 'main.mjs'
 $wasmFiles = @(Get-ChildItem -LiteralPath $targetPath -Recurse -File -Filter '*.wasm')

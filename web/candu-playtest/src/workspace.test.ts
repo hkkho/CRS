@@ -7,6 +7,20 @@ import type { SessionUpdate } from "./sessionController";
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).forEach(destroy => destroy()); document.body.replaceChildren(); });
 
+it.each(["three-day-rhythm-v1", "seven-day-stewardship-v1", "guided"])("launches %s only after a successful shared reset", async choice => {
+  const snapshot = createSnapshot(); snapshot.shift = createShift();
+  const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };
+  const dispatch = vi.fn().mockResolvedValueOnce({ accepted: false, message: "Reset rejected" }).mockResolvedValue({ accepted: true });
+  const session = { snapshot, status, isPending: false, dispatch,
+    subscribe: (callback: (update: SessionUpdate) => void) => { callback({ snapshot, status, pending: false, response: null, error: null }); return vi.fn(); } };
+  const begin = vi.fn(); const view = new LauncherView(session, document.body, begin); cleanup.push(() => view.destroy());
+  const button = view.element.querySelector<HTMLButtonElement>(choice === "guided" ? '[data-action="guided"]' : `[data-goal="${choice}"]`)!;
+  button.click(); await vi.waitFor(() => expect(view.element.querySelector('[data-field="error"]')!.textContent).toBe("Reset rejected"));
+  expect(begin).not.toHaveBeenCalled(); button.click();
+  await vi.waitFor(() => expect(begin).toHaveBeenCalledWith(choice === "guided"));
+  expect(dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: choice === "guided" ? 1001 : 42, shiftId: choice === "guided" ? "free-practice" : choice });
+});
+
 it("launches once, preserves seed drafts during notifications and sends the selected seed/objective", () => {
   const snapshot = createSnapshot(); snapshot.shift = createShift();
   const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };

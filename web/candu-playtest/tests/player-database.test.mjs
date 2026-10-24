@@ -87,3 +87,14 @@ it('accepts daily v2 saves, rejects invalid pacing and keeps pacing immutable', 
   await expect(save({ ...daily, pacingMode: 'real-time' }, 1)).rejects.toThrow('cannot change');
   expect((await save({ ...daily, seconds: 86400, draftChannels: [] }, 1)).rows[0].revision).toBe(2);
 });
+
+it('saves multi-day objectives without permitting objective changes or leaderboard publication', async () => {
+  await asUser(alice);
+  for (const [index, shiftId] of ['three-day-rhythm-v1', 'seven-day-stewardship-v1'].entries()) {
+    const id = index ? '66666666-6666-4666-8666-666666666666' : '55555555-5555-4555-8555-555555555555';
+    const run = payload({ id, shiftId, version: 2, pacingMode: 'daily-turn', draftChannels: [210] });
+    expect((await save(run, 0)).rows[0].revision).toBe(1);
+    await expect(save({ ...run, shiftId: 'free-practice' }, 1)).rejects.toThrow('cannot change');
+    await expect(db.query('select public.publish_endless_score($1)', [id])).rejects.toThrow('ended endless');
+  }
+});

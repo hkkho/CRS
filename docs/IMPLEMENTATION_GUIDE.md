@@ -61,6 +61,14 @@ optional one-day challenge has finite stock and rewards discharging at least eig
 bundles at 6 MWd/kg HM or above while finishing within limits. Retry preserves seed
 and objective; new shift draws a new aged-core seed.
 
+`three-day-rhythm-v1` completes three days within limits; `seven-day-stewardship-v1`
+completes seven days and requires 48 useful discharged bundles at the same 6 MWd/kg
+threshold. Both share 128 fresh bundles across the entire run. `ShiftObjective`
+owns authored horizons and requirements; `ShiftProgress` owns published outcomes
+and badge eligibility. The existing ripple scoring and reactor physics are unchanged.
+The persistent fuelling sheet presents the sorted draft. Optional first-shift
+guidance follows actual input and results without issuing commands.
+
 A run ends outside 10-90% average LZC, beyond 20% absolute global tilt, above
 7,300 kW/channel or above 935 kW/bundle. Equality is allowed. Game publishes status
 and reason separately from numerical diagnostics/RRS exhaustion. Terminal runs

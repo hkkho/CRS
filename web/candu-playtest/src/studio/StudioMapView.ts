@@ -1,3 +1,4 @@
+import { ReactorFrame } from "../ReactorFrame";
 import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
 import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../channelCoordinates";
 import { bundleLimit, channelLimit, channelColorMinimum, bundleColorMinimum, channelWatts, powerColor, rippleColor, type MapMode } from "./powerReadings";
@@ -11,11 +12,18 @@ export class StudioMapView {
   private readonly tubes = document.createElementNS("http://www.w3.org/2000/svg", "g");
   private tubeKey = "";
   private plane = 0;
+  private readonly frame: ReactorFrame;
   setLiquidZonePlane(plane: number): void { this.plane = plane; }
   showAdjusters(visible: boolean): void { this.devices.style.display = visible ? "" : "none"; }
-  constructor(private readonly field: (name: string) => HTMLElement, channels: CanduChannelSnapshot[]) { this.build(channels); }
+  constructor(private readonly field: (name: string) => HTMLElement, channels: CanduChannelSnapshot[]) {
+    this.build(channels);
+    this.frame = new ReactorFrame(this.field("map") as unknown as SVGSVGElement);
+    this.frame.sockets(channels);
+  }
+  destroy(): void { this.frame.destroy(); }
   focus(index: number): void { this.channelCells.get(index)?.focus({ preventScroll: true }); }
   update(snapshot: CanduSnapshot, selected: number, mode: MapMode, planned: readonly number[] = []): void {
+    this.frame.update(snapshot, selected);
     this.updateDevices(snapshot);
     for (const current of snapshot.core.channels) {
       const circle = this.channelCells.get(current.channelIndex);
@@ -110,6 +118,7 @@ export class StudioMapView {
       cell.setAttribute("x", String(62 + channel.gridColumn * 20));
       cell.setAttribute("y", String(62 + channel.gridRow * 20));
       cell.setAttribute("width", "16"); cell.setAttribute("height", "16");
+      cell.setAttribute("rx", "8");
       cell.setAttribute("role", "button");
       cell.dataset.channel = String(channel.channelIndex);
       const title = document.createElementNS(svgNamespace, "title"); cell.append(title);

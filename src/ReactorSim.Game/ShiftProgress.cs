@@ -16,14 +16,13 @@ namespace ReactorSim.Game
         internal ShiftProgress(bool challenge, ulong seed, double horizon, double time,
             bool terminal, bool horizonCompleted, uint fuelConsumed, uint usefulDischarged,
             double thermalEnergyJoules, double dischargeReward, double freshFuelCost, double score, bool standardRun = true,
-            bool unlimitedFreshFuel = false)
+            bool unlimitedFreshFuel = false, string? objectiveId = null)
         {
-            Id = challenge ? ChallengeId : PracticeId;
+            var goal = ShiftObjective.ForId(objectiveId ?? (challenge ? ChallengeId : PracticeId));
+            Id = goal.Id;
             Seed = seed;
-            Title = challenge ? "One useful fuel day" : "Free practice";
-            Objective = challenge
-                ? "Discharge 8 bundles at 6 MWd/kg or above, then finish the day with regulating headroom."
-                : "Keep channel powers close to their time-average reference to reduce ripple and build score.";
+            Title = goal.Title;
+            Objective = goal.Objective;
             HorizonSeconds = horizon;
             IsEndless = horizon == 0;
             UnlimitedFreshFuel = unlimitedFreshFuel;
@@ -31,7 +30,7 @@ namespace ReactorSim.Game
             FuelBudget = unlimitedFreshFuel ? 0 : ReactorSim.Core.SyntheticGameCoreStateV1.DefaultFreshBundleCount;
             FuelConsumed = fuelConsumed;
             UsefulBundlesDischarged = usefulDischarged;
-            UsefulBundlesRequired = challenge ? UsefulBundleGoal : 0;
+            UsefulBundlesRequired = goal.UsefulBundles;
             UsefulBurnupThresholdMwdPerKg = UsefulBurnupThresholdMwDayPerKg;
             ThermalEnergyMwh = thermalEnergyJoules / 3_600_000_000.0;
             ElectricalEnergyMwhEstimate = ThermalEnergyMwh *
@@ -41,9 +40,9 @@ namespace ReactorSim.Game
             FreshFuelCost = freshFuelCost;
             OperatingPoints = score - (dischargeReward - freshFuelCost);
             Outcome = !terminal ? "in-progress" : !horizonCompleted ? "ended" :
-                challenge && usefulDischarged < UsefulBundleGoal ? "missed" : "success";
-            Reward = challenge ? "Efficient refueller badge" : "";
-            RewardEarned = challenge && standardRun && Outcome == "success";
+                usefulDischarged < goal.UsefulBundles ? "missed" : "success";
+            Reward = goal.Reward;
+            RewardEarned = goal.IsChallenge && standardRun && Outcome == "success";
         }
 
         public string Id { get; }

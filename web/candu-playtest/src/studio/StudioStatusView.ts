@@ -30,7 +30,10 @@ export class StudioStatusView {
     this.text("refuel", historical ? "Return to live to refuel" : isRunTerminal(snapshot) ? "Shift complete" : "Refuel 8 bundles →");
     this.text("order-note", !isChannelRefuellable(channel) ? channel?.refuellingIneligibilityReason || "This channel contains nonfuel cells and cannot be refuelled." : !snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8 ? "Not enough fresh fuel. Start a new shift to restock." : `Cost: 8 fresh bundles · ${snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${snapshot.freshBundlesAvailable} in stock`}${channel ? ` · ${channelHeadroom(snapshot, channel)}` : ""}`);
     // Keep blocked-order explanations visible without expanding routine guidance.
-    if (!isChannelRefuellable(channel) || (!snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8))
+    if (!isChannelRefuellable(channel) || (!snapshot.shift?.unlimitedFreshFuel && snapshot.freshBundlesAvailable < 8)) {
       this.element.querySelector<HTMLDetailsElement>(".studio-fuel-status")!.open = true;
+      const detail = this.element.querySelector<HTMLDetailsElement>(".studio-inspection-details");
+      if (detail) detail.open = true;
+    }
   }
 }

@@ -50,6 +50,17 @@ namespace ReactorSim.Game
             return session;
         }
 
+        public static GameSession CreateBrowserPlaytest(ulong seed, string objectiveId, bool dailyTurns = true)
+        {
+            var goal = ShiftObjective.ForId(objectiveId);
+            var session = CreateSession(BrowserBaseSimulationSecondsPerWallSecond,
+                BrowserBaseSimulationSecondsPerWallSecond * 10.0, BrowserBaseSimulationSecondsPerWallSecond * 60.0,
+                BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
+                goal.Days * 86_400.0, RealTimePlaybackModeId, seed, goal.IsChallenge, !goal.IsChallenge, goal.Id);
+            if (dailyTurns) session.UseDailyTurns();
+            return session;
+        }
+
         /// <summary>Retained bounded configuration for offline comparisons and scenario fixtures.</summary>
         public static GameSession CreateBoundedBrowserPlaytest(ulong seed = 1001, bool challenge = false)
         {
@@ -76,7 +87,8 @@ namespace ReactorSim.Game
             string initialPlaybackModeId,
             ulong seed,
             bool challenge = false,
-            bool unlimitedFreshFuel = false)
+            bool unlimitedFreshFuel = false,
+            string? objectiveId = null)
         {
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
@@ -99,7 +111,7 @@ namespace ReactorSim.Game
             };
 
             var runtime = new PracticeRunClock(
-                challenge ? ShiftProgress.ChallengeId : ScenarioId, seed,
+                objectiveId == null || objectiveId == ShiftProgress.PracticeId ? challenge ? ShiftProgress.ChallengeId : ScenarioId : objectiveId, seed,
                 scenarioHorizonSeconds, timeModel, playbackModes[initialPlaybackModeId]);
             FullCoreDiffusionDataPackV1 dataPack = Require(
                 FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
@@ -168,7 +180,7 @@ namespace ReactorSim.Game
                 WallControlTickMilliseconds,
                 coreState,
                 equilibriumSolver,
-                acceptedRrs.State, challenge, settledXenon);
+                acceptedRrs.State, challenge, settledXenon, objectiveId);
             // Let the player read the objective and inspect fuel before the challenge clock starts.
             if (challenge) session.Pause();
             return session;

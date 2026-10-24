@@ -23,6 +23,7 @@ namespace ReactorSim.Game
         private double _lastFullCoreSolveSimulationTime;
         private double _syntheticScore;
         private readonly bool _challenge;
+        private readonly string _objectiveId;
         private double _thermalEnergyJoules;
         private uint _fuelConsumed;
         private uint _usefulBundlesDischarged;
@@ -48,9 +49,11 @@ namespace ReactorSim.Game
             EquilibriumCoreSolverV1 equilibriumSolver,
             PracticeLiquidZoneRrsV1 practiceRrs,
             bool challenge = false,
-            PracticeXenonStateV1? initialXenon = null)
+            PracticeXenonStateV1? initialXenon = null,
+            string? objectiveId = null)
         {
             _challenge = challenge;
+            _objectiveId = objectiveId ?? (challenge ? ShiftProgress.ChallengeId : ShiftProgress.PracticeId);
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
             _playbackModes = playbackModes ?? throw new ArgumentNullException(nameof(playbackModes));
             _wallControlTickMilliseconds = wallControlTickMilliseconds;
@@ -712,7 +715,7 @@ namespace ReactorSim.Game
                         _runtime.NormalizedPowerFraction),
                     _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
                     _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0,
-                    _coreState.UnlimitedFreshFuel),
+                    _coreState.UnlimitedFreshFuel, _objectiveId),
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
                 new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
                     CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude),
@@ -739,7 +742,7 @@ namespace ReactorSim.Game
             : OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection, _runtime.NormalizedPowerFraction).Length > 0
                 ? OperatingEndReason(_practiceRrs, CurrentEquilibriumProjection, _runtime.NormalizedPowerFraction)
             : _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon
-                ? _challenge ? "Challenge day completed" : "Practice horizon completed"
+                ? _objectiveId == ShiftProgress.ChallengeId ? "Challenge day completed" : _challenge ? "Challenge run completed" : "Practice horizon completed"
                 : _runtime.Outcome != PracticeRunOutcome.Running
                     ? "Practice operating envelope ended the run"
                     : string.Empty;

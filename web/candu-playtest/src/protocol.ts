@@ -306,7 +306,9 @@ export interface CanduLiquidZoneTubeSnapshot extends Omit<CanduAdjusterSnapshot,
   zoneId: number;
 }
 
-export type ShiftId = "free-practice" | "useful-fuel-day-v1";
+export const SHIFT_IDS = ["free-practice", "useful-fuel-day-v1", "three-day-rhythm-v1", "seven-day-stewardship-v1"] as const;
+export type ShiftId = typeof SHIFT_IDS[number];
+export const isShiftId = (value: unknown): value is ShiftId => typeof value === "string" && (SHIFT_IDS as readonly string[]).includes(value);
 export interface ShiftProgress {
   id: ShiftId;
   seed: number;
@@ -1277,7 +1279,7 @@ function isRunProvenance(value: unknown): boolean {
 }
 
 function isShiftProgress(value: unknown): value is ShiftProgress {
-  return isRecord(value) && ["free-practice", "useful-fuel-day-v1"].includes(value.id as string) &&
+  return isRecord(value) && isShiftId(value.id) &&
     (value.isEndless === undefined || isBoolean(value.isEndless)) &&
     (value.unlimitedFreshFuel === undefined || isBoolean(value.unlimitedFreshFuel)) &&
     (value.isEndless !== true || (value.horizonSeconds === 0 && value.remainingSeconds === 0)) &&
@@ -1363,7 +1365,7 @@ function isCanduCommand(value: unknown): value is CanduCommand {
       return true;
     case "reset":
       return (value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295)) &&
-        (value.shiftId === undefined || ["free-practice", "useful-fuel-day-v1"].includes(value.shiftId as string)) &&
+        (value.shiftId === undefined || isShiftId(value.shiftId)) &&
         (value.pacingMode === undefined || ["daily-turn", "real-time"].includes(value.pacingMode as string));
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);

@@ -27,6 +27,12 @@ Arcade presents the shared one-day challenge with a large interactive core map,
 power/burnup views, touch zoom, a channel inspector, plan review and a replay screen.
 Detailed reactor readings expand on demand. All outcomes remain Game-owned.
 
+The Observatory branch adds three-day rhythm and seven-day stewardship goals,
+an optional guided first shift, a persistent ruled fuelling sheet, and original
+vector reactor materials with event-driven locator/movement feedback. Goal
+outcomes remain Game-owned; the guide never dispatches an order. See the
+[implementation and verification report](design/OBSERVATORY_PLAY_LOOP.md).
+
 ## Next improvements
 
 - Gather human feedback on channel selection and understanding the day report.

@@ -1,4 +1,4 @@
-import { isRunTerminal, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type PacingMode } from './protocol';
+import { isRunTerminal, isShiftId, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type PacingMode } from './protocol';
 
 export const SAVE_VERSION = 2;
 export const MAX_SAVE_COMMANDS = 100_000;
@@ -84,7 +84,7 @@ function validCommand(value: unknown): value is CanduCommand {
     case 'step': return finite(c.simulationSeconds, 0, 86_400);
     case 'set-playback-mode': return ['pause', '1x', '10x', '60x'].includes(String(c.modeId));
     case 'queue-power-target': return finite(c.targetFraction, 0, 2);
-    case 'reset': return finite(c.seed, 0, 4294967295) && Number.isInteger(c.seed) && ['free-practice', 'useful-fuel-day-v1'].includes(String(c.shiftId)) && (c.pacingMode === undefined || ['daily-turn', 'real-time'].includes(String(c.pacingMode)));
+    case 'reset': return finite(c.seed, 0, 4294967295) && Number.isInteger(c.seed) && isShiftId(c.shiftId) && (c.pacingMode === undefined || ['daily-turn', 'real-time'].includes(String(c.pacingMode)));
     case 'commit-refuel': {
       const r = c.request as Record<string, unknown> | undefined;
       return !!r && Number.isInteger(r.channelIndex) && finite(r.channelIndex, 0, 379) &&
@@ -103,7 +103,7 @@ export function parseRunSave(input: unknown): RunSave {
     typeof s.savedAt !== 'string' || !Number.isFinite(Date.parse(s.savedAt)) ||
     typeof s.dataPackId !== 'string' || typeof s.scorePolicyId !== 'string' ||
     !Number.isInteger(s.seed) || s.seed < 0 || s.seed > 4294967295 ||
-    !['free-practice', 'useful-fuel-day-v1'].includes(s.shiftId) ||
+    !isShiftId(s.shiftId) ||
     ![s.score, s.seconds, s.fuelConsumed].every(n => Number.isFinite(n) && n >= 0) ||
     typeof s.ended !== 'boolean' || typeof s.stateDigest !== 'string' || !s.stateDigest ||
     (s.cloudRevision !== undefined && (!Number.isInteger(s.cloudRevision) || s.cloudRevision < 1)) ||
