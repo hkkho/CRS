@@ -2,6 +2,10 @@
 
 Implemented on `design/reactor-observatory`, 24 October 2026.
 
+Implementation commit: `3e95bc5`. Run the Pages preview from
+`web/candu-playtest` with `npm run preview -- --host 127.0.0.1 --port 4178`, then
+open `http://127.0.0.1:4178/CRS/` after building the Pages package.
+
 This extends the [visual redesign](REACTOR_OBSERVATORY_REDESIGN.md) with the
 approved multi-day goals, optional first-minute guidance, a physical reactor
 scene and a persistent fuelling-list form. The shared physics, integration,
@@ -119,6 +123,7 @@ planned markings and power alerts retain their meanings.
 | Committed branch isolation | Exported the staged branch independently of the pre-existing map work: 196 frontend/database tests and the production build passed. |
 | New-goal restore | Saved Three-day rhythm after one day with an unexecuted channel on the sheet. Reloaded and continued through shared replay: same goal, one day complete, eight bundles consumed and the one-channel/eight-bundle draft retained. |
 | First-minute guide | Actual map selection advanced steps 1→2; adding a channel advanced to step 3 without fuel consumption; a real completed day advanced to step 4. |
+| Final package recheck | Build identity `3e95bc5`: daily smoke passed with no browser errors; guided launcher remained visible; the 320px sheet fit within its container, with 44×44px removal controls. Final accessibility acceptance also passed. |
 | Reproduction | All six direct bridge cases matched across two samples; no browser errors. The deterministic matrix hash matches the pre-expansion result. |
 
 The restored three-day run also completed and earned Steady hands.
@@ -130,6 +135,12 @@ interfaces, not mockups. More captures and reproduction output are retained unde
 ignored `artifacts/observatory-expansion/`.
 
 ![Completed seven-day run](observatory-expansion/week-result.jpg)
+
+![Physical reactor and populated side fuelling sheet](observatory-expansion/fuelling-sheet.jpg)
+
+![Optional first-shift introduction](observatory-expansion/guide.jpg)
+
+![Fuelling sheet at 320px](observatory-expansion/fuelling-sheet-phone.jpg)
 
 ## Cloud deployment compatibility
 
