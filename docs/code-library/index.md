@@ -17,8 +17,28 @@ structures and component relationships, from the first browser script to the
 numerical calculation and the resulting display. Each chapter identifies the
 relevant source files, inputs, operations and outputs. It describes the working tree
 reviewed on **23 October 2026**, including daily turns, Arcade and Studio, and the
-v8 axial physics pack. Source links intentionally target files rather than fragile
-line numbers.
+v8 axial physics pack.
+
+### Read code with its explanation alongside
+
+The six walkthrough chapters now include actual source excerpts in two columns:
+**source code on the left, explanations on the right**. Each row covers a
+consecutive group of numbered lines and explains its inputs, operations, purpose
+and consequences. On phones the explanation follows immediately below its code.
+
+Start with [the complete browser entry file](01-startup.md#maints-constructs-and-connects-the-application),
+then follow [command dispatch](02-browser-transport.md#read-the-command-path-beside-the-code),
+[the daily transaction](03-daily-turn.md#prepare-fuel-moves-on-a-detached-session),
+[Core's movement and numerical loops](04-core-physics.md#read-the-position-mapping-itself),
+[snapshot projection](05-presentation.md#project-total-and-channel-power-from-accepted-numerical-state)
+and [verified save replay](06-saves-lifecycle.md#reconstruct-and-verify-before-replacing-the-live-worker).
+
+Excerpts are extracted from the repository at build time. Line numbers and
+**Open full source** links lead to that passage in the release's source revision.
+If an extraction anchor changes or a passage contains unexplained lines, the
+documentation build fails so the commentary can be reviewed with the code.
+These selected passages explain the main execution path; the source atlas links
+the wider repository, including files without a line-by-line walkthrough yet.
 
 ## Reading order
 
@@ -82,11 +102,13 @@ substitute its own simulation.
 
 ## Interpreting examples and diagrams
 
-The library uses three kinds of fenced block. JSON and shell examples show data
+Alongside the annotated source passages, JSON and shell examples show data
 or commands in their actual syntax. Blocks labelled `text` express mathematical
 relationships using code-like names; they are explanatory notation rather than
 complete executable programs. Mermaid blocks describe diagrams that a compatible
-viewer converts into figures.
+viewer converts into figures. An `annotated-source` fence in the editable Markdown
+is an extraction specification: MkDocs replaces it with highlighted repository
+code and the adjacent commentary.
 
 Each block is introduced by its purpose and followed by an explanation of its
 fields, symbols, operations or paths. Numerical examples illustrate the stated

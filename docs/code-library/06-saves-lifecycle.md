@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # 6. Saves, restore and application lifecycle
 
 [Previous: presentation](05-presentation.md) · [Library](index.md) · [Next: development](07-development.md)
@@ -36,6 +41,35 @@ input size.
 `capture()` requires a verified digest and unmodified run, includes the unfinished
 daily plan, then validates the assembled save with `parseRunSave()`.
 `startShift()`'s initial no-time pause makes a brand-new frozen decision saveable.
+
+### Record commands as replay inputs
+
+This is the journal's complete `record` method. A transport response may contain an
+authoritative rejection, which still belongs in the replay log. A transport error
+with no response cannot supply a verified acceptance or digest.
+
+```annotated-source
+path: web/candu-playtest/src/runSave.ts
+title: Journal exact command inputs and returned acceptance
+language: typescript
+start: 'record(command: CanduCommand, response: CanduCommandResponse, responseMode: ''full'' | ''compact''): void {'
+end: 'this.digest = response.stateDigest ?? '''';
+
+  }'
+steps:
+- through: this.clear();
+  explanation: '**Start a new journal after an accepted reset.** Earlier commands belong to the previous run. A rejected reset does not clear the current history.'
+- through: 'command = { type: ''reset'', seed: response.snapshot.shift?.seed, shiftId: response.snapshot.shift?.id, ...(response.snapshot.pacingMode === "daily-turn" ? { pacingMode: "daily-turn" as const } : {}) };
+
+    }'
+  explanation: '**Make implicit reset choices explicit.** Copy the resulting seed and objective into the recorded command. A later replay in a new worker must reproduce this run, rather than draw another seed. The spread includes daily pacing when appropriate.'
+- through: if (this.commands.length >= MAX_SAVE_COMMANDS) { this.invalid = true; return; }
+  explanation: '**Protect the supported replay contract.** Geometry modification invalidates standard saves, and the command limit bounds log growth. Reaching the limit marks the journal invalid and stops appending.'
+- through: 'this.digest = response.stateDigest ?? '''';
+
+    }'
+  explanation: '**Store a stable replay record.** `structuredClone` prevents later UI changes from mutating the recorded command. Retain acceptance and response representation, then remember the latest state digest. Capture later requires a verified, nonempty digest.'
+```
 
 ## Step 2: validate compatibility before restore
 
@@ -108,6 +142,64 @@ History and transient presentation are cleared on success; the saved draft and
 journal are adopted. A `finally` block disposes an unadopted candidate and clears
 restore/pending status after either outcome. Full chart history is not reconstructed
 as a persisted artifact of restore.
+
+### Reconstruct and verify before replacing the live worker
+
+The first excerpt contains the compatibility checks; the second contains the
+candidate replay and adoption. Together they show the complete restore method.
+The factory parameter lets tests supply a controlled bridge, while ordinary play
+creates a new authoritative WASM worker.
+
+```annotated-source
+path: web/candu-playtest/src/sessionController.ts
+title: Check saved-run compatibility and enter restore mode
+language: typescript
+start: 'public async restoreRun(input: unknown, progress: (done: number, total: number) => void = () => {},'
+end: 'let candidate: CanduPlaytestBridgeLifecycle | null = null;'
+steps:
+- through: const save = parseRunSave(input);
+  explanation: '**Parse the untrusted input.** The method accepts `unknown`, so `parseRunSave` validates the format, command shapes and size before any replay. `progress` defaults to a no-op callback and `factory` defaults to the real bridge constructor.'
+- through: if (save.ended) throw new Error('Ended runs cannot be continued.');
+  explanation: '**Require compatible pacing and a continuable run.** Version-1 saves are interpreted as real-time. The public daily client rejects them, and completed terminal runs cannot be restored for continued play.'
+- through: throw new Error("This saved daily run uses a different time-step model. Start a new daily run.");
+  explanation: '**Compare simulation identities.** Pack and scoring IDs must match the loaded runtime. A daily version-2 save must also match the integration cadence. The same seed and commands are insufficient if those rules changed.'
+- through: 'let candidate: CanduPlaytestBridgeLifecycle | null = null;'
+  explanation: '**Prevent overlapping work and enter pending state.** Restore cannot start during another command or restore. Updating scheduler and UI flags freezes normal interaction while replay is underway. The candidate remains nullable so cleanup can safely handle early failure.'
+```
+
+
+```annotated-source
+path: web/candu-playtest/src/sessionController.ts
+title: Replay, verify the final digest and adopt the candidate
+language: typescript
+start: candidate = factory();
+end: 'candidate?.dispose?.(); this.restoring = false; this.modePending = false; this.syncScheduler(); this.emit();
+
+  }
+
+  }'
+steps:
+- through: 'let result: CanduCommandResponse | null = null;'
+  explanation: '**Create a separate reactor.** Initialize the candidate from the saved seed and pacing. The current bridge remains alive throughout replay. `result` will retain the final response for verification.'
+- through: 'progress(i + 1, save.commands.length);
+
+    }'
+  explanation: '**Replay every recorded command in order.** Abort if the controller is disposed. Use each record''s original response mode and compare its accepted/rejected outcome. The progress callback describes completed replay records, not intermediate reactor time.'
+- through: throw new Error('Saved state verification failed. The current run was preserved.');
+  explanation: '**Verify the reconstructed endpoint.** A missing final response, different state digest or terminal snapshot rejects restoration. This prevents substituting a merely similar reactor for the exact saved endpoint.'
+- through: if (restoredDraft.some(i => !paused.snapshot.core.channels.find(c => c.channelIndex === i)?.canRefuel)) throw new Error("Saved fuel plan contains an ineligible channel.");
+  explanation: '**Pause and validate the unfinished plan.** The reconstructed reactor must accept pause. Every saved draft channel must still be eligible in the paused authoritative observation. The draft is browser planning data, so it is restored after replay rather than executed as fuel movement.'
+- through: this.statusValue = this.checkedStatus(this.bridge.status, paused.snapshot); this.snapshotValue = paused.snapshot;
+  explanation: '**Replace the bridge after verification.** Unsubscribe and dispose the old worker, transfer candidate ownership, then subscribe to the replacement. Setting `candidate = null` prevents the cleanup block from disposing the newly adopted live bridge.'
+- through: this.lastResponse = paused; this.lastError = null; this.presentation.clear(); this.history.clear();
+  explanation: '**Restore local session context.** Copy the draft, adopt the command journal and record the final pause. Reset old-run feedback and observations so the interface starts from the verified restored state.'
+- through: 'candidate?.dispose?.(); this.restoring = false; this.modePending = false; this.syncScheduler(); this.emit();
+
+    }
+
+    }'
+  explanation: '**Clean up on both success and failure.** An unadopted candidate is disposed. Restore flags are cleared and subscribers are notified even when a check throws. Failed replay or endpoint verification occurs before bridge replacement, preserving the live reactor.'
+```
 
 ## Step 4: store and optionally synchronize
 

@@ -3,3 +3,54 @@
   overflow-x: auto;
   margin-block: 1.25em;
 }
+
+/* Consecutive source ranges share a row with the explanation of those lines. */
+.md-grid { max-width: 96rem; }
+.md-typeset .annotated-code {
+  margin: 1.5rem 0 2rem;
+  border: 1px solid #cbd5e1;
+  border-radius: .4rem;
+  overflow: hidden;
+  font-size: .75rem;
+}
+.annotated-heading { padding: .8rem 1rem; background: #eef2ff; }
+.annotated-heading strong { display: block; font-size: .9rem; color: #172554; }
+.annotated-heading a { display: block; margin-top: .25rem; overflow-wrap: anywhere; }
+.annotated-columns, .annotated-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+.annotated-columns { background: #e2e8f0; font-weight: 700; color: #334155; }
+.annotated-columns span { padding: .4rem .8rem; }
+.annotated-step + .annotated-step { border-top: 1px solid #cbd5e1; }
+.md-typeset .annotated-source { min-width: 0; margin: 0; background: #f8fafc; }
+.md-typeset .annotated-source pre { height: 100%; margin: 0; padding: .65rem 0; overflow: auto; }
+.md-typeset .annotated-source pre > code {
+  display: block; padding: 0; background: transparent; font-size: .66rem;
+  line-height: 1.65; white-space: pre; overflow: visible;
+}
+.source-line { display: flex; min-height: 1.65em; }
+.source-line > span {
+  flex: 1; min-width: 0; padding-right: .8rem;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.md-typeset .source-number {
+  flex: 0 0 3.5em; padding-right: .9em; margin-right: .8em;
+  color: #64748b; text-align: right; border-right: 1px solid #e2e8f0;
+  user-select: none;
+}
+.annotated-explanation { min-width: 0; padding: .65rem .9rem; border-left: 1px solid #cbd5e1; }
+.md-typeset .annotated-explanation p { margin: 0 0 .55rem; }
+.md-typeset .annotated-explanation p:last-child { margin-bottom: 0; }
+.md-typeset .annotated-explanation .source-range {
+  font-size: .6rem; font-weight: 700; text-transform: uppercase; color: #475569;
+}
+@media (max-width: 60em) {
+  .annotated-columns { display: none; }
+  .annotated-step { grid-template-columns: minmax(0, 1fr); }
+  .annotated-explanation { border-left: 0; border-top: 1px dashed #cbd5e1; }
+}
+@media print {
+  .annotated-step { break-inside: avoid; }
+  .md-typeset .annotated-source pre > code { white-space: pre-wrap; }
+}

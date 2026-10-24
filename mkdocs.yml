@@ -18,6 +18,7 @@ theme:
 plugins:
   - search
 hooks:
+  - tools/docs/annotated_source.py
   - tools/docs/repository_links.py
 extra_css:
   - stylesheets/library.css

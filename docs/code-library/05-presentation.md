@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # 5. From accepted state to the screen
 
 [Previous: Core physics](04-core-physics.md) · [Library](index.md) · [Next: saves and lifecycle](06-saves-lifecycle.md)
@@ -68,6 +73,57 @@ define the read-only presentation objects. Geometry is projected through
 [LiquidZoneTubePresentation.cs](../../src/ReactorSim.Game/LiquidZoneTubePresentation.cs).
 The client consumes that geometry; it does not invent a second device layout.
 
+### Project total and channel power from accepted numerical state
+
+These lines are from the beginning of `GamePresentationProjector.Build`. The
+preceding loop gathers the accepted bundle arrays. A **power shape** specifies
+the normalized spatial distribution; amplitude scales it to the operating level.
+
+```annotated-source
+path: src/ReactorSim.Game/GamePresentationProjector.cs
+title: Derive observed power without advancing the simulation
+language: csharp
+start: double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
+end: 'projection.ShapeNodePowerWatts[index] * physicalShapeScale;
+
+  }'
+steps:
+- through: 'double meanChannelPowerWatts = totalPowerWatts /
+
+    GameCorePresentationConstants.ChannelCount;'
+  explanation: '**Scale the accepted power shape.** Amplitude is bounded to the supported range and multiplied into total shape power. Divide by the reference watts for the operating fraction and by channel count for mean channel power. These are derived readings, not new solves.'
+- through: 'projection.ShapeNodePowerWatts[index] * physicalShapeScale;
+
+    }'
+  explanation: '**Aggregate node powers by channel.** Allocate one total per channel. Integer division by twelve maps the flat node index back to its channel; `+=` sums all twelve scaled bundle powers into that channel. The result stays in watts until a view formats it.'
+```
+
+### Publish identity, burnup and power for each bundle
+
+This is the inner bundle loop. `nodeIndex` tracks the same channel-major numerical
+array used to build the channel powers; `bundle` comes from the accepted inventory.
+
+```annotated-source
+path: src/ReactorSim.Game/GamePresentationProjector.cs
+title: Build one immutable bundle observation at a time
+language: csharp
+start: for (int bundleIndex = 0; bundleIndex < bundles.Count; bundleIndex++)
+end: 'bundle.StateVersion));
+
+  }'
+steps:
+- through: GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram;
+  explanation: '**Convert the stored exposure unit.** Read the accepted bundle and divide J/kg heavy metal by the conversion constant to obtain MWd/kg heavy metal. This changes the display unit; it does not alter inventory burnup.'
+- through: double thermalFlux = projection.SpatialSolve.Group2Flux[nodeIndex++];
+  explanation: '**Read corresponding power and thermal flux.** Scale the node power by amplitude. Group 2 is the thermal neutron group. Post-increment advances the flat node cursor once per bundle, keeping fuel and numerical observations aligned.'
+- through: (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
+  explanation: '**Accumulate channel summaries.** Add burnup and thermal flux. The axial coordinate maps positions 0–11 to -1 through +1, so its flux-weighted moment describes which end has more thermal flux. It is a spatial observation, not fuel-flow direction.'
+- through: 'bundle.StateVersion));
+
+    }'
+  explanation: '**Freeze the bundle reading.** Construct a snapshot with physical position, stable bundle ID, material ID, converted burnup, watts, insertion time and state version. These values let views label the bundle and inspect changes while ownership of accepted state remains in the shared simulation.'
+```
+
 ## Step 2: Browser maps the wire representation
 
 [PlaytestSnapshotMapping.cs](../../src/ReactorSim.Browser/PlaytestSnapshotMapping.cs)
@@ -98,6 +154,34 @@ compact patch. [Chapter 2](02-browser-transport.md) explains baseline recovery.
 `StudioNavigation.ts` describes the session/navigation interface used by views.
 The controller survives view changes. Views own selection, expanded sections,
 map mode and their DOM; the session owns the shared plan, history and journal.
+
+### Fan one observation out to all subscribers
+
+By this point Browser has serialized the Game snapshot and the protocol parser
+has materialized a complete `CanduSnapshot`. The controller distributes it here.
+
+```annotated-source
+path: web/candu-playtest/src/sessionController.ts
+title: Emit a coherent session update
+language: typescript
+start: 'private emit(response: CanduCommandResponse | null = null): void {'
+end: 'listener(update);
+
+  }
+
+  }'
+steps:
+- through: const update = this.createUpdate(response ?? this.lastResponse);
+  explanation: '**Record the observation and assemble the update.** History sees the same snapshot reference as the views. A supplied response is preferred; otherwise the most recent response provides context. History applies its own duplicate/boundary rules.'
+- through: this.lastEmittedSnapshot = this.snapshotValue;
+  explanation: '**Distinguish a new snapshot from a status change.** Reference equality identifies whether the snapshot object changed. Loading, pending-state or visibility updates can therefore be labelled `status` even when the reactor observation is unchanged.'
+- through: 'listener(update);
+
+    }
+
+    }'
+  explanation: '**Notify every subscriber.** The launcher, active view, announcements and other consumers receive the same update object. They render or record it; they do not each advance an independent reactor.'
+```
 
 ## Step 4: Studio receives and renders
 

@@ -10,13 +10,51 @@ documents into HTML pages before they are served. In this library, MkDocs is the
 generator and Material is the presentation theme. Mermaid is the diagram
 language used inside selected fenced blocks.
 
-The Markdown files are the editable library. They can be read in the repository
-without installing a documentation generator. Mermaid fences describe the startup,
+The Markdown files are the editable library. Their prose, examples and annotation
+specifications can be read in the repository. MkDocs assembles the source excerpts
+and side-by-side commentary into their reading layout. Mermaid fences describe the startup,
 request, transaction, numerical and presentation connections alongside the prose.
 MkDocs adds navigation, search and browser-rendered diagrams. The Pages workflow
 publishes the player manual, current reactor theory and code walkthrough together
 at [CRS Documentation](https://hkkho.github.io/CRS/docs/); local preview uses the
 same configuration.
+
+## Maintaining the annotated source passages
+
+Chapters 1–6 contain `annotated-source` fences. Each fence names a repository file,
+language, title, starting and ending source anchors, and consecutive explanation
+groups. The [annotated-source hook](../../tools/docs/annotated_source.py) reads the
+actual file during the build and renders source and explanation in paired rows.
+It dedents the passage for display, preserves its original line numbers, highlights
+its syntax and links each line to the configured source revision. The layout wraps
+long lines and stacks the code above its explanation on narrow screens.
+
+To edit a passage, change its fence in the chapter Markdown. `start` must match a
+unique source line or consecutive multiline anchor. `end` selects the first matching
+ending anchor after that start. Each item in `steps` has `through`, the exact last
+line or lines of that group, and `explanation`, Markdown explaining those lines.
+The next group begins immediately afterward; the last group must reach `end`.
+Blank lines and braces belong to the surrounding group. Anchors ignore leading
+indentation but require the same source text.
+
+Write each explanation as a short teaching paragraph: name the operation, explain
+its inputs and outputs, define unfamiliar syntax where useful, then explain its
+effect on the next step. Include early returns and error paths. State the scope
+of an excerpt before it, especially when validation or surrounding setup is
+outside the selected lines. Read the complete containing method before writing
+the explanation; the displayed fragment alone may omit an important condition.
+
+Missing files, ambiguous start anchors, missing or out-of-order ending anchors,
+empty explanations and uncovered trailing lines fail the build. This catches
+structural drift; it cannot prove that prose is correct. When implementation changes
+inside a selected range, review the corresponding explanations as part of that
+change even if all anchors still match. The focused generator tests run with
+`python -m unittest discover -s tools/docs -p "test_*.py"`.
+
+The generated code is an exact source excerpt apart from common indentation and
+visual line wrapping. A fragment may intentionally begin or end inside a method;
+the source link provides its full context. Plain Markdown viewers show the
+extraction specification; use MkDocs to read the assembled annotated code.
 
 ## Preview with MkDocs
 
@@ -123,9 +161,9 @@ responsibilities. `docs_dir` selects the Markdown inputs and `site_dir` selects
 the generated output. `nav` defines reading order. The theme controls visual
 presentation, while the search plugin builds a searchable index. The Markdown
 extensions enable tables, linked headings, code highlighting and Mermaid fences.
-`extra_css` adds local scrolling for wide diagrams.
+`extra_css` controls the paired source/commentary layout and scrolling for wide diagrams.
 
-The hook named in `hooks` runs `on_page_markdown()` from
+The first hook expands annotated source fences. The next runs `on_page_markdown()` from
 [repository_links.py](../../tools/docs/repository_links.py) for each page. Its
 operation is a sequence of transformations:
 

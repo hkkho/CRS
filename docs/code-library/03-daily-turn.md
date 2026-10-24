@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # 3. One complete daily turn
 
 [Previous: transport](02-browser-transport.md) · [Library](index.md) · [Next: Core physics](04-core-physics.md)
@@ -44,6 +49,35 @@ canonical order. Caller insertion order is not an execution-order contract.
 Failure returns a rejected result against the live observation before any fuel
 is spent.
 
+### Validate the plan before constructing replacement state
+
+`null` is this method's success result; any non-null value is a complete rejection.
+The caller must stop when it receives one. These checks protect the whole plan
+before any fuel movement is attempted.
+
+```annotated-source
+path: src/ReactorSim.Game/GameSession.cs
+title: The complete daily-plan validator
+language: csharp
+start: private GameSessionCommandResult? ValidateDailyPlan(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)
+end: 'return null;
+
+  }'
+steps:
+- through: if (expectedCompletedDays != _completedDays) return Rejected("GameSession.Day.Stale", "This day has already changed. Review the current core.");
+  explanation: '**Check the run and decision boundary.** Terminal runs cannot continue. Daily commands require daily pacing. `expectedCompletedDays` must match the live counter, preventing an old decision from being applied to a newer day.'
+- through: return Rejected("GameSession.Day.Channels.Invalid", "Supply unique channel indices from 0 through 379.");
+  explanation: '**Validate the channel list.** Reject a missing list, too many entries, an out-of-range index or duplicates. `Any` detects an invalid member; `Distinct().Count()` checks uniqueness. No fuel has been consumed.'
+- through: return Rejected("GameSession.Day.Channel.Nonfuel", RefuellingIneligibilityReason(channel));
+  explanation: '**Canonicalize order and check eligibility.** Sorting makes execution independent of click order. The loop asks the shared session whether each channel can be fuelled; a nonempty reason rejects the plan.'
+- through: if (_completedDays == uint.MaxValue) return Rejected("GameSession.Day.Count.Overflow", "The day count cannot advance.");
+  explanation: '**Check stock and counter capacity.** Each selected channel requires eight fresh bundles. Finite stock must cover the entire plan. The overflow guard prevents wrapping the unsigned day counter back to zero.'
+- through: 'return null;
+
+    }'
+  explanation: '**Allow preparation to proceed.** Returning `null` means all plan checks passed. It does not mean the fuel movements or physics solve have already succeeded.'
+```
+
 ## Step 3: detach the candidate
 
 `BeginDay()` clones the session, forks `PracticeRunClock`, and forks
@@ -89,6 +123,37 @@ In the Mermaid source, `flowchart TD` requests a top-to-bottom layout, square
 brackets define operation boxes, braces define decision diamonds, and
 `-->|Yes|` or `-->|No|` adds a branch label. This notation describes control flow;
 it does not execute the transaction.
+
+### Prepare fuel moves on a detached session
+
+A **candidate** is provisional replacement state. Copying the session alone is
+insufficient because its mutable clock and solver would still be shared; the forks
+below create separate instances for those components.
+
+```annotated-source
+path: src/ReactorSim.Game/GameSession.cs
+title: BeginDay prepares the transaction
+language: csharp
+start: public DailyTurnOperation BeginDay(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)
+end: 'return new DailyTurnOperation(this, candidate, ordered, movements);
+
+  }'
+steps:
+- through: uint[] ordered = channelIndices.OrderBy(c => c).ToArray();
+  explanation: '**Validate before doing work.** A rejection becomes an already-completed operation. Otherwise the same sorted channel order used for validation becomes the execution order.'
+- through: candidate._executingDay = true;
+  explanation: '**Detach mutable dependencies.** `MemberwiseClone` initially copies field references. The clock and equilibrium solver are explicitly forked; accepted inventory and projection values are replaced through candidate operations. `_executingDay` permits the internal daily fuel path while public bypass commands remain restricted.'
+- through: if (candidate.IsRunTerminal) break;
+  explanation: '**Visit selected channels in order.** A fuel movement can create a physical loss. Once the candidate is terminal, `break` stops the remaining orders while retaining already accepted movements.'
+- through: 'movements.Add(candidate._lastFuelMovement!);
+
+    }'
+  explanation: '**Execute and retain each move.** The active Game method enforces actual channel flow, so the supplied direction is a placeholder. A numerical or validation rejection returns a failed operation without adopting the candidate. Successful moves retain their bundle movement report.'
+- through: 'return new DailyTurnOperation(this, candidate, ordered, movements);
+
+    }'
+  explanation: '**Package the provisional day.** Clear the internal execution flag and return an operation containing owner, candidate, plan and completed fuel movements. This method has not adopted replacement state into the live owner.'
+```
 
 ## Step 4: execute each eight-bundle movement
 
@@ -153,6 +218,43 @@ perform many numerical solves; “one day step” does not mean one Jacobi itera
 then applies its candidate values. Any numerical rejection still leaves the live
 owner untouched.
 
+### Calculate exposure, energy and the new equilibrium
+
+This is the complete one-interval integration method. Its builder accumulates
+replacement values; each invalid result exits before the live session is adopted.
+`ContractValidationResult<T>` carries either a value of type `T` or diagnostics.
+
+```annotated-source
+path: src/ReactorSim.Game/GameSession.cs
+title: Build the daily advance without changing the live owner
+language: csharp
+start: private ContractValidationResult<PracticeCandidate> TryBuildDailyAdvance(PracticeRunAdvance advance)
+end: 'return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, amplitude));
+
+  }'
+steps:
+- through: return InvalidTransaction("GameSession.Day.Segment.Invalid", "advance", "A day requires exactly one simulation-time segment.");
+  explanation: '**Verify the time binding and segment count.** The accepted numerical state must correspond to the current clock, and the planned advance must contain one interval. A mismatched or subdivided plan is rejected.'
+- through: return InvalidTransaction("GameSession.Day.Duration.Invalid", "advance", "A day requires one positive interval of at most 86400 seconds.");
+  explanation: '**Compute and validate duration.** Subtract start from end in seconds. The interval must be finite, positive, at most one day and begin at the accepted simulation time. `86_400` uses C# digit separators and equals 86400.'
+- through: _lastFullCoreSolveSimulationTime, _syntheticScore, _powerProjectionVersion, _xenon, _coupledXenon, _thermalEnergyJoules);
+  explanation: '**Initialize a replacement-state builder.** Clamp the power amplitude to the supported range, then seed the builder with accepted fuel, projection, control, poison, score, energy and version values. These inputs describe the post-refuelling state.'
+- through: '{ return InvalidTransaction("GameSession.Xenon.Advance.Invalid", "xenon", error.Message); }'
+  explanation: '**Advance iodine/xenon once.** The analytic poison update uses the accepted spatial solution, amplitude and interval length. Expected arithmetic or state errors become validation diagnostics rather than partially committed reactor updates.'
+- through: if (!exposed.IsValid) return InvalidTransaction(exposed.FirstDiagnostic.Code, exposed.FirstDiagnostic.Path, exposed.FirstDiagnostic.Message);
+  explanation: '**Convert power into exposure.** For every node, watts × amplitude × seconds gives thermal fission energy in joules. Core validates and applies those increments to new bundle states. A bad increment rejects this candidate.'
+- through: transaction.ThermalEnergyJoules += energy.Sum();
+  explanation: '**Retain exposed fuel and energy.** Replace the builder inventory, bind poison references to its new burnup and add the sum of node energies to the thermal-energy total. Stable bundle identities preserve the connection between fuel and poison.'
+- through: PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, amplitude));
+  explanation: '**Accumulate operating points.** The score policy compares the accepted power shape, scaled by amplitude, to fixed channel references. The rate is integrated over this same duration; this call does not award a direct fuel-move bonus.'
+- through: transaction.PowerProjectionVersion = version.Value;
+  explanation: '**Advance control time and observation identity.** The RRS timestamp moves to the interval end, and the projection version increments with overflow validation. These metadata changes are still provisional.'
+- through: 'return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, amplitude));
+
+    }'
+  explanation: '**Solve the day boundary and freeze the result.** Updated burnup and poison feed the scheduled equilibrium/RRS calculation. Only a valid solution produces an immutable `PracticeCandidate`. The caller can then commit it to the detached session and eventually adopt the full day.'
+```
+
 ## Step 7: report and adopt
 
 On a full 86,400-second advance, increment `_completedDays`. An early fuel-move
@@ -170,6 +272,39 @@ The Browser layer maps this result into JSON. The controller replaces its
 observation, clears the accepted draft, records the journal and notifies views.
 Studio's `DayCalculationView` displays completion/rejection/interruption; Arcade
 shows its shared challenge result.
+
+### Adopt only after the detached calculation succeeds
+
+The outer `DailyTurnOperation` constructor retained the original clock generation,
+inventory and spatial projection. This method first checks that those starting
+conditions still belong to the live owner.
+
+```annotated-source
+path: src/ReactorSim.Game/GameSession.cs
+title: CalculateDay checks, commits the candidate and adopts once
+language: csharp
+start: public void CalculateDay()
+end: '"Day " + live._completedDays + " complete. " + movements.Count + " channels refuelled; choose the next day''s plan.");
+
+  }'
+steps:
+- through: var next = candidate!; var live = owner!;
+  explanation: '**Make repeated completion harmless.** A completed or rejected operation already has `Result`, so it returns immediately. Otherwise `next` names the detached session and `live` names the current owner.'
+- through: '{ Result = live.Rejected("GameSession.Day.StaleCandidate", "The reactor changed while calculating the day."); return; }'
+  explanation: '**Reject a stale candidate.** Reference checks and the clock generation detect changes since preparation. The candidate cannot overwrite a live reactor that has moved to a different starting point.'
+- through: if (!transaction.IsValid) { Result = live.Rejected(transaction.FirstDiagnostic.Code, transaction.FirstDiagnostic.Message); return; }
+  explanation: '**Plan and calculate only when still running.** If fuel movements have not ended the run, plan the remaining time and build the daily replacement values. Either failure returns a rejection while leaving the live owner intact.'
+- through: 'next.ApplyPracticeCandidate(transaction.Value);
+
+    }'
+  explanation: '**Commit inside the detached session.** Commit its spatial projection and clock, checking both results, then apply the remaining candidate values. These writes affect `next`; the live owner has not yet adopted them.'
+- through: live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0);
+  explanation: '**Count completed time and build the report.** A full 86400-second advance increments completed days; an early fuel-move loss does not. The report receives final candidate observations and original totals so it can describe differences. Dividing joules by 3.6 billion expresses thermal energy in MWh.'
+- through: '"Day " + live._completedDays + " complete. " + movements.Count + " channels refuelled; choose the next day''s plan.");
+
+    }'
+  explanation: '**Adopt once and return an accepted outcome.** `AdoptDailyCandidate` replaces the owner fields with the completed candidate. An accepted result can describe a physical loss: acceptance means the transaction committed, while `RunEndReason` describes its operating outcome.'
+```
 
 ## What each outcome means
 

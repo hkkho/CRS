@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # 2. Browser commands and transport
 
 [Previous: startup](01-startup.md) · [Library](index.md) · [Next: daily turn](03-daily-turn.md)
@@ -7,6 +12,111 @@ contexts. Its **protocol** is the agreement about request names, data fields,
 versions and responses. These mechanisms connect TypeScript presentation code
 to C# simulation code without giving the interface direct access to mutable
 reactor objects.
+
+## Read the command path beside the code
+
+The excerpts below follow one command from the controller into the worker. A
+**promise** represents a value or failure that will arrive later. Chaining promises
+serializes requests without calculating reactor physics on the browser main thread.
+
+### The controller accepts an authoritative response
+
+This is the dispatch method's main execution block, after availability and pending
+command checks. The `finally` block runs after either success or failure.
+
+```annotated-source
+path: web/candu-playtest/src/sessionController.ts
+title: Dispatch, publish the result and release pending state
+language: typescript
+start: const previous = this.snapshotValue;
+end: 'this.syncScheduler();
+
+  this.emit();
+
+  }'
+steps:
+- through: const response = await this.bridge.dispatch(command, responseOptions);
+  explanation: '**Keep the before-state and await the response.** The previous snapshot is retained for impact feedback. The bridge sends the command to the authoritative runtime; `await` suspends this method until the response arrives.'
+- through: this.presentation.accept(response, previous);
+  explanation: '**Record evidence, then prepare feedback.** The journal records the command and its returned acceptance for replay. Presentation compares the old and returned observations to explain changes; neither operation decides whether the reactor accepts the command.'
+- through: if (command.type === "reset" && response.accepted) this.history.clear();
+  explanation: '**Reconcile local planning state.** A successful day or reset consumes the current draft, while a rejected command retains it for correction. A successful reset also clears observations from the old run.'
+- through: return response;
+  explanation: '**Publish the returned snapshot.** Store the response and authoritative observation, notify subscribers, then return the same response to the caller. Updating this reference makes maps, reports and controls observe the same accepted state.'
+- through: throw error;
+  explanation: '**Surface transport failure.** Save a readable error, notify listeners and rethrow so the caller can handle it. A missing response is not evidence that the command was rejected or that retrying is safe.'
+- through: 'this.scheduler.releaseForegroundCommand();
+
+    }'
+  explanation: '**Release pending bookkeeping.** `finally` decrements counters even if dispatch threw. `Math.max` prevents negative counts. When the last foreground operation finishes, its label is cleared and scheduler suppression is released.'
+- through: 'this.syncScheduler();
+
+    this.emit();
+
+    }'
+  explanation: '**Refresh lifecycle and controls.** Recompute scheduler activity and notify listeners after cleanup. The interface can now leave its waiting state. The enclosing dispatch method returns or rethrows the outcome selected above.'
+```
+
+### The bridge serializes main-thread operations
+
+This helper belongs to `WorkerProtocolBridge`. The promise returned to the caller
+retains failure, while a separate recovered tail allows the queue to be maintained.
+
+```annotated-source
+path: web/candu-playtest/src/bridge.ts
+title: Keep requests in a single promise chain
+language: typescript
+start: 'private enqueue<T>(operation: () => Promise<T>): Promise<T> {'
+end: 'return result;
+
+  }'
+steps:
+- through: 'throw error;
+
+    });'
+  explanation: '**Append one operation.** `then(operation, operation)` schedules it after either resolution or rejection of the previous tail. Processing failures call `failReady` to mark the bridge unavailable, then remain rejected for this caller. `T` is the generic result type.'
+- through: 'return result;
+
+    }'
+  explanation: '**Separate queue continuity from the result.** The stored queue tail catches rejection so the promise chain itself is reusable. The returned `result` still rejects; this catch does not declare a failed command successful or resend it.'
+```
+
+### The worker serializes and returns requests
+
+The worker also has a queue because messages can arrive while earlier asynchronous
+work is waiting. Request IDs connect each reply to its waiting main-thread caller.
+
+```annotated-source
+path: web/candu-playtest/src/wasmWorker.ts
+title: Process each worker message in order
+language: typescript
+start: scope.addEventListener("message", (event) => {
+end: 'scope.postMessage({ type: "error", id: event.data.id, error: formatError(error) });
+
+  }
+
+  });
+
+  });'
+steps:
+- through: const resultJson = await dispatchRequest(api, event.data);
+  explanation: '**Queue the request and call managed code.** Appending to `requestQueue` prevents overlap between asynchronous handlers. `getWasmExports` waits for startup. The timer begins before dispatch and measures the worker call, not the whole UI interaction.'
+- through: ': new TextEncoder().encode(resultJson).byteLength;'
+  explanation: '**Measure transport cost.** Compute elapsed milliseconds and UTF-8 payload bytes. The string-length fallback is used if `TextEncoder` is unavailable. These values support performance diagnosis and do not change simulation results.'
+- through: 'returnedUtf8PayloadBytes,
+
+    });'
+  explanation: '**Return the matching result.** The response carries the original request ID, JSON and measurements. The bridge resolves the promise registered for that ID.'
+- through: 'scope.postMessage({ type: "error", id: event.data.id, error: formatError(error) });
+
+    }
+
+    });
+
+    });'
+  explanation: '**Return failure without breaking the queue.** Exceptions become an error message tied to the same ID. Because the catch finishes normally, this queue item resolves and later messages can be considered. Bridge lifecycle checks still determine whether the client remains usable.'
+```
+
 
 ## The controller is the browser's session boundary
 
@@ -177,6 +287,62 @@ as `_preparedDayResult`, so response mapping, sequence and replay processing hap
 once. Begin already performs candidate fuel work; the continue call performs the
 large daily calculation. Yielding here does **not** subdivide the physical day
 into fine time steps or expose a partially committed reactor.
+
+### Yield JavaScript between the daily export calls
+
+This branch is inside the worker's `dispatch` case, after the optional profiling
+path. The JSON may be an envelope with `payload` or a direct command. The check
+selects the daily exports; it does not implement any reactor rule in TypeScript.
+
+```annotated-source
+path: web/candu-playtest/src/wasmWorker.ts
+title: Route a daily command through begin and continue
+language: typescript
+start: const root = JSON.parse(request.commandJson);
+end: return normalizeJson(await api.dispatchJson(request.commandJson));
+steps:
+  - through: if (!api.beginDailyDispatchJson || !api.continueDailyDispatchJson) throw new Error("This WASM host lacks yielding daily execution. Reload the updated game.");
+    explanation: '**Choose the daily route and check capability.** Parse the command JSON, inspect its payload type and require both daily exports. An older host is rejected explicitly so the client cannot silently select a different execution contract.'
+  - through: let progress = JSON.parse(normalizeJson(await api.beginDailyDispatchJson(request.commandJson)));
+    explanation: '**Begin preparation in C#.** Await the managed begin call and normalize its return into JSON before parsing. Begin validates the envelope and prepares the detached fuel movements. Its progress object describes completion status and requested duration.'
+  - through: await new Promise(resolve => setTimeout(resolve, 0));
+    explanation: '**Publish progress and yield.** While the operation is incomplete, post progress using the original request ID. A zero-delay timer yields to the worker event loop before the next managed call. It does not advance simulation time or schedule a smaller physical integration step.'
+  - through: return normalizeJson(progress.responseJson);
+    explanation: '**Continue until a final response exists.** The managed continuation calculates the daily operation. Loop termination requires its completed flag; the final protocol response is returned to the normal worker message handler.'
+  - through: return normalizeJson(await api.dispatchJson(request.commandJson));
+    explanation: '**Route other commands normally.** Leaving the daily branch reaches ordinary dispatch. Its returned value is normalized to the same JSON-string boundary so the surrounding worker handler can return either kind of result consistently.'
+```
+
+### Finish the managed daily operation through normal response handling
+
+`BeginDailyDispatchJson` has already stored a pending operation and the original
+command JSON. This complete continuation method calculates it, then passes its
+prepared result into the usual protocol dispatcher.
+
+```annotated-source
+path: src/ReactorSim.Browser/DailyDispatch.cs
+title: Complete daily work and construct one protocol response
+language: csharp
+start: public string ContinueDailyDispatchJson()
+end: |
+  finally { _preparedDayResult = null; }
+  }
+  }
+steps:
+  - through: _pendingDay.CalculateDay();
+    explanation: '**Require and calculate the pending day.** The runtime lock protects its pending-operation fields. Calling continue without begin is an invalid lifecycle operation. Otherwise Game performs the detached calculation and decides whether a completed result is available.'
+  - through: |
+      RequestedSimulationSeconds = _pendingDay.RequestedSimulationSeconds
+      });
+    explanation: '**Return progress if incomplete.** A null result produces a serialized progress object containing advanced and requested simulation seconds. The default completed flag remains false; JavaScript can yield and call again. This branch describes pending work, not an adopted intermediate observation.'
+  - through: _pendingDay = null; _pendingDayCommand = null;
+    explanation: '**Prepare exactly one final dispatch.** Retain the completed Game result and original command, then clear the pending-operation fields. The normal dispatcher will consume the prepared result rather than execute the day again.'
+  - through: |
+      finally { _preparedDayResult = null; }
+      }
+      }
+    explanation: '**Use the shared protocol response path, then clear temporary state.** Dispatch performs ordinary response mapping, sequence and replay processing. The wrapper marks the returned response completed. The finally block clears the prepared result even if response construction throws; the closing braces release the lock and end the method.'
+```
 
 ## Failure and cleanup
 
