@@ -42,7 +42,7 @@ async function selectChannel(studio, index) {
 try {
   await page.goto(process.argv[2] ?? process.env.PLAYTEST_URL ?? "http://127.0.0.1:4173");
   const launcher = page.locator(".reactor-launcher");
-  check(await page.title() === 'CRS' && await launcher.locator('.launcher-shell > h1').textContent() === 'CRS', 'Game title is not CRS.');
+  check(await page.title() === 'CRS' && await launcher.locator('.launcher-story h1').textContent() === 'CRS', 'Game title is not CRS.');
   const begin = launcher.locator('[data-action="begin"]');
   await page.waitForFunction(() => document.querySelector('.reactor-launcher [data-action="begin"]')?.getAttribute("aria-disabled") === "false", undefined, { timeout: 120_000 });
   check(await page.locator("#status-mirror").getAttribute("data-pacing") === "daily-turn", "Accessibility acceptance must use default daily turns.");
@@ -94,8 +94,10 @@ try {
   await studio.evaluate(e => { e.scrollTop = 0; });
   const mapBounds = await studio.locator('[data-field="map"]').boundingBox();
   const axialBounds = await studio.locator('[data-axial="power"]').boundingBox();
-  check(mapBounds.width >= 600 && axialBounds.width >= 500, 'Core or channel graphs did not expand at desktop width.');
-  check(mapBounds.y < 250, 'Stacked controls pushed the core below the desktop workspace.');
+  check(mapBounds.width >= 580 && axialBounds.width >= 480, 'Core or channel graphs did not expand at desktop width.');
+  check(mapBounds.y < 450, 'Stacked controls pushed the core below the desktop workspace.');
+  const fuelActionBounds = await studio.locator('[data-action="refuel"]').boundingBox();
+  check(fuelActionBounds.y >= 0 && fuelActionBounds.y + fuelActionBounds.height < 720, 'Channel action is buried below the initial desktop view.');
   await capture('studio-1280');
   await page.setViewportSize({ width: 1280, height: 720 });
   await activate(studio.locator('.studio-map-menu > summary'));
@@ -146,7 +148,7 @@ try {
   await tabTo(studio.locator('[data-tab="reactor"]'));
   await page.keyboard.press('ArrowRight'); await page.keyboard.press('Enter');
   check(await studio.locator('.studio-view-menu').evaluate(e => !e.open), 'Choosing a graph left the view menu open.');
-  check((await studio.locator('.studio-trend-plot svg').first().boundingBox()).width > 1200, 'History plot did not use the available desktop width.');
+  check((await studio.locator('.studio-trend-plot svg').first().boundingBox()).width > 1100, 'History plot did not use the available desktop width.');
   await studio.evaluate(e => { e.scrollTop = 0; }); await capture('power-1280');
   await page.setViewportSize({ width: 320, height: 720 }); await noOverflow(studio, 'Graphs at 320px'); await capture('power-320');
   await page.setViewportSize({ width: 1280, height: 720 });

@@ -24,9 +24,10 @@ export class ArcadeView {
     this.plan = [...session.dailyPlan ?? []];
     this.update = { snapshot: session.snapshot, status: session.status, pending: session.isPending, response: null, error: null };
     this.element.className = "reactor-arcade";
-    this.element.innerHTML = `<header><p class="arcade-kicker">CRS <span>/ ARCADE</span></p><span class="arcade-round">ONE-DAY CHALLENGE</span></header>
+    this.element.innerHTML = `<header><p class="arcade-kicker">CRS <span>/ ARCADE</span></p><span class="arcade-round">THE REACTOR OBSERVATORY</span></header>
       <div class="arcade-hud"><p>POINTS<strong data-score></strong></p><p>FUEL LEFT<strong data-stock></strong></p></div>
       <section class="arcade-mission"><p class="arcade-kicker" data-phase>01 / PICK YOUR CHANNELS</p><h1>Fuel the core.</h1><p data-mission></p></section>
+      <ol class="arcade-journey" aria-label="Challenge stages"><li data-stage="pick"><span>01</span> Explore</li><li data-stage="review"><span>02</span> Plan</li><li data-stage="result"><span>03</span> Result</li></ol>
       <section class="arcade-result" aria-live="polite" hidden><span class="arcade-medal" aria-hidden="true">★</span><h2 data-outcome tabindex="-1"></h2><p data-result></p>
       <div class="arcade-retry"><button class="arcade-primary" data-action="retry">Play again</button><button data-action="new">New core</button></div></section>
       <section data-picker aria-label="Choose fuel channels"><div class="arcade-map-toolbar"><label>Core map <select data-map-mode><option value="power">Power</option><option value="burnup">Burnup</option></select></label><button data-action="zoom" aria-pressed="false">Zoom in</button></div>
@@ -53,6 +54,10 @@ export class ArcadeView {
     const shift = s.shift;
     this.element.setAttribute("aria-busy", String(this.busy || pending));
     this.element.dataset.phase = locked ? "busy" : terminal ? (shift?.rewardEarned ? "won" : "ended") : this.reviewing ? "review" : "pick";
+    this.element.querySelectorAll<HTMLElement>("[data-stage]").forEach(stage => {
+      if (stage.dataset.stage === (terminal ? "result" : this.reviewing ? "review" : "pick")) stage.setAttribute("aria-current", "step");
+      else stage.removeAttribute("aria-current");
+    });
     this.field("[data-phase]").textContent = locked ? "RUNNING YOUR CORE…" : terminal ? "ROUND COMPLETE" : this.reviewing ? "02 / LOCK IN YOUR PLAN" : "01 / PICK YOUR CHANNELS";
     this.field("[data-mission]").textContent = `Recover ${shift?.usefulBundlesRequired ?? 8} well-used bundles. Keep the core running.`;
     this.field("[data-seed]").textContent = `Core seed ${shift?.seed ?? "—"}`;

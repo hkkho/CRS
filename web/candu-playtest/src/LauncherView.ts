@@ -18,23 +18,34 @@ export class LauncherView {
   constructor(private readonly session: LauncherSession, parent: HTMLElement, private readonly begin: () => void, private readonly arcade?: () => void) {
     this.element.className = "reactor-launcher workspace-native";
     this.element.innerHTML = `<div class="launcher-shell">
-      <p class="workspace-kicker">CANDU / ON-POWER REFUELLING</p>
-      <h1>CRS</h1>
-      <p class="launcher-intro">On-power fuelling simulator</p>
-      <div class="launcher-grid"><section><h2>Your next shift</h2>
-        <p data-field="objective"></p><p data-field="connection"></p>
-        <button data-action="begin" class="workspace-primary">Begin shift</button>
-        <button data-action="arcade" class="workspace-primary">Play Arcade · phone friendly</button>
-        <p>One day. One fuel plan. Earn the Efficient refueller badge, then retry to improve your score.</p>
-        <button type="button" data-manual-open>Simulator manual</button>
-      </section><section><h2>Choose a starting core</h2>
+      <header class="launcher-masthead"><span class="observatory-wordmark" aria-hidden="true">C<span>06</span></span><p class="workspace-kicker">CRS / THE REACTOR OBSERVATORY</p><span class="launcher-edition">ON-POWER REFUELLING</span></header>
+      <div class="launcher-hero"><div class="launcher-story"><p class="workspace-kicker">A SMALL DECISION. A CHANGING CORE.</p>
+      <h1>CRS</h1><p class="launcher-headline">Find your<br><em>balance.</em></p>
+      <p class="launcher-intro">Read the core. Renew the fuel. See what tomorrow brings.</p>
+      <p class="launcher-description">A thoughtful reactor game, one day at a time. Shape a smoother power distribution with every fuel plan.</p>
+      <div class="launcher-actions"><button data-action="begin" class="workspace-primary">Begin shift</button><button data-action="arcade">Play Arcade · phone friendly</button></div>
+      <p class="launcher-mode-note">Studio for deep inspection. Arcade for a focused one-day challenge.</p></div>
+      <figure class="launcher-art" aria-label="Illustration of a reactor vessel and its fuel channels"><svg viewBox="0 0 600 580" role="img"><title>Reactor vessel study</title><defs><radialGradient id="observatory-glow"><stop stop-color="#244f4a"/><stop offset="1" stop-color="#0b171c"/></radialGradient><linearGradient id="observatory-metal" x2="1" y2="1"><stop stop-color="#79b4a8"/><stop offset=".45" stop-color="#243e41"/><stop offset="1" stop-color="#0c1b22"/></linearGradient></defs>
+      <g fill="none" stroke="#395653"><circle cx="300" cy="278" r="245" stroke-dasharray="1 9"/><circle cx="300" cy="278" r="223"/><path d="M300 11v50M300 495v48M28 278h55M517 278h55"/></g>
+      <ellipse cx="324" cy="305" rx="203" ry="205" fill="#050d12"/><circle cx="300" cy="278" r="205" fill="url(#observatory-metal)" stroke="#74a497"/><circle cx="300" cy="278" r="187" fill="url(#observatory-glow)" stroke="#466c64"/>
+      <g>${Array.from({ length: 17 }, (_, row) => Array.from({ length: 17 }, (_, col) => {
+        const x = (col - 8) * 19, y = (row - 8) * 19;
+        if (x * x + y * y > 164 * 164) return "";
+        const warm = (col + row * 3) % 11 < 3;
+        return `<circle cx="${300 + x}" cy="${278 + y}" r="6.5" fill="${warm ? "#bfa16b" : "#467e72"}" stroke="${warm ? "#e8cd92" : "#80b5a1"}" stroke-width="1.2"/><circle cx="${300 + x}" cy="${278 + y}" r="2" fill="#0c1c21"/>`;
+      }).join("")).join("")}</g><g fill="none" stroke="#d1b47a"><path d="M417 149l57-43h64M182 408l-54 53H67"/><circle cx="417" cy="149" r="10"/><circle cx="182" cy="408" r="10"/></g><g fill="#a8bcb5" font-family="monospace" font-size="10" letter-spacing="2"><text x="450" y="93">CANDU / 06</text><text x="50" y="482">FUEL CHANNELS</text><text x="300" y="563" text-anchor="middle">VESSEL STUDY / ON-POWER REFUELLING</text></g></svg><figcaption><span>380 channels</span><span>12 bundle positions</span><span>One evolving core</span></figcaption></figure></div>
+      <ol class="observatory-loop" aria-label="The daily loop"><li><span>01</span><div><strong>Read the core</strong><p>Look for used fuel and watch the power shape.</p></div></li><li><span>02</span><div><strong>Make your plan</strong><p>Choose channels. Inspect what leaves.</p></div></li><li><span>03</span><div><strong>Meet tomorrow</strong><p>Advance a day. Read the result. Refine.</p></div></li></ol>
+      <div class="launcher-grid"><section><p class="workspace-kicker">YOUR NEXT SHIFT</p><h2>Ready when you are.</h2>
+        <p data-field="objective"></p><p data-field="connection" role="status"></p>
+        <button type="button" data-manual-open>Simulator manual <span aria-hidden="true">↗</span></button>
+      </section><section><p class="workspace-kicker">A DIFFERENT START</p><h2>Choose a starting core</h2>
         <form><label>Core seed <input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label>
         <label>Shift objective <select data-field="shift"><option value="free-practice">Free practice · Endless</option><option value="useful-fuel-day-v1">One-day challenge</option></select></label>
         <button data-action="apply" type="submit">Use seed & objective</button></form>
         <button data-action="next">New aged core</button>
         <p data-field="error"></p>
       </section></div>
-      <p class="workspace-kicker">380 CHANNELS · 12 BUNDLE POSITIONS · ONE LIVE REACTOR</p>
+      <p class="launcher-footnote">Planning is untimed. Every core has a different story.</p>
     </div>`;
     parent.append(this.element);
     this.manual = new SimulatorManual(this.element);

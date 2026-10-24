@@ -65,7 +65,7 @@ export class StudioView {
     this.element.innerHTML = `
       <div class="studio-shell">
         <header class="studio-header">
-          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">CANDU 6 / ON-POWER REFUELLING</p><h1>CRS</h1></div></div>
+          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">THE REACTOR OBSERVATORY</p><h1>CRS</h1></div></div>
           <nav aria-label="Game controls"><details class="studio-dropdown studio-game-menu"><summary>Menu</summary><div class="studio-dropdown-panel"><button data-manual-open title="Fuelling theory, instructions and controls (F1)">Manual</button><button data-action="challenge" class="studio-quiet" data-field="challenge-button">One-day challenge</button><button data-action="reset" class="studio-quiet">New shift</button></div></details></nav>
         </header>
         <section class="studio-objective studio-card" aria-label="Shift objective" data-field="objective-card">
@@ -88,7 +88,7 @@ export class StudioView {
         <div id="studio-reactor-panel" role="tabpanel" aria-labelledby="studio-tab-reactor" data-field="reactor-panel">
         <main class="studio-workspace">
           <section class="studio-card studio-core">
-            <div class="studio-card-heading"><h2>Core</h2><div class="studio-core-tools">
+            <div class="studio-card-heading"><div><p class="studio-eyebrow">01 / EXPLORE</p><h2>Core</h2></div><div class="studio-core-tools">
               <details class="studio-dropdown studio-map-menu"><summary data-field="map-mode-title">Channel kW</summary><div class="studio-dropdown-panel studio-map-modes"><button data-action="map" data-map="burnup">Burnup</button><button data-action="map" data-map="power">Channel kW</button><button data-action="map" data-map="ripple">Ripple %</button><button data-action="map" data-map="bundle-power">Bundle kW</button></div></details>
               <details class="studio-dropdown studio-watchlist"><summary>Fuel</summary><div class="studio-dropdown-panel"><h2 title="Eligible channels ranked by average burnup">Fuel watchlist</h2><button data-action="oldest" class="studio-outline">◎ Highest burnup</button><div data-field="watchlist" class="studio-candidates"></div></div></details>
               <details class="studio-dropdown studio-device-menu"><summary>Devices</summary><div class="studio-dropdown-panel studio-devices"><button data-action="devices" aria-pressed="true">Adjusters</button><span class="studio-lzc-planes" aria-label="Liquid-zone face plane"><button data-action="lzc-plane" data-plane="0" aria-pressed="true">End A LZC</button><button data-action="lzc-plane" data-plane="1" aria-pressed="false">End B LZC</button></span><details><summary>Device geometry</summary><p data-field="device-note"></p><p data-field="lzc-device-note">Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time.</p><div data-field="device-plan"></div></details></div></details>
@@ -98,7 +98,7 @@ export class StudioView {
             <span data-field="tilt" class="studio-core-readings"></span>
           </section>
           <section class="studio-card studio-inspector">
-            <p class="studio-eyebrow">CHANNEL</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
+            <p class="studio-eyebrow">02 / CHANNEL WORKBENCH</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
             <div class="studio-channel-metrics"><div><span>CHANNEL / kW</span><strong data-field="local-power"></strong></div><div><span>RIPPLE / %</span><strong data-field="local-ripple"></strong></div><div><span>PEAK BUNDLE / kW</span><strong data-field="bundle-peak"></strong></div><div><span>TILT / B+</span><strong data-field="local-tilt"></strong></div></div><details class="studio-reference"><summary>Power reference</summary><p data-field="channel-reference"></p></details>
             <div class="studio-rack-heading"><span class="studio-eyebrow">12 BUNDLE POSITIONS</span><span data-field="burnup"></span></div>
             <div data-field="bundles" class="studio-axial-profile" aria-label="Selected channel axial power, burnup, iodine and xenon profiles"></div><div class="studio-rack-ends"><span>END A / 01</span><span>AXIAL BUNDLE POSITION</span><span>12 / END B</span></div>
@@ -139,6 +139,9 @@ export class StudioView {
     });
     this.field("history").append(this.historyView.element);
     header.after(this.dailyView.element);
+    // Keep the next action and its fuel preview above the supporting axial plots.
+    const inspector = this.element.querySelector(".studio-inspector")!;
+    inspector.querySelector(".studio-rack-heading")!.before(inspector.querySelector(".studio-order")!);
     this.historyView.setTab(initial.selectedTab ?? "reactor");
     this.mapMode = initial.mapMode ?? "power";
     this.mapView = new StudioMapView(name => this.field(name), this.snapshot.core.channels);
