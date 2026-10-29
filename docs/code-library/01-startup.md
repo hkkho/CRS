@@ -328,7 +328,7 @@ path: src/ReactorSim.Game/PracticeGameSessionFactory.cs
 title: Create the model, aged fuel and equilibrium solver
 language: csharp
 start: FullCoreDiffusionDataPackV1 dataPack = Require(
-end: runtime.SimulationTimeSeconds));
+end: "referenceNodePowerWatts: ReferenceChannelPower.NodePowerWatts));"
 steps:
 - through: FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
   explanation: '**Load the authored model.** The embedded pack supplies material data and numerical policy. `TryCreateCandu6` binds it to the CANDU topology. The pack is a local runtime input, so no external analysis application is required.'
@@ -336,7 +336,7 @@ steps:
   explanation: '**Create reproducible initial fuel.** The seed determines the aged inventory. Unlimited practice changes stock policy while preserving consumption accounting; it does not change the inventory into a browser-owned model.'
 - through: PracticeReferencePowerWatts));
   explanation: '**Solve the initial spatial state.** The solver receives the model, every bundle and reference power in watts. Its accepted projection will provide the power shape read by the session and presentation layer.'
-- through: runtime.SimulationTimeSeconds));
+- through: "referenceNodePowerWatts: ReferenceChannelPower.NodePowerWatts));"
   explanation: '**Construct regulation state.** The mapping identifies fourteen liquid zones. Initial RRS state is derived from the accepted projection and current simulation time. Later settling passes reconcile this control state with the equilibrium solution before the player sees the core.'
 ```
 

@@ -161,7 +161,7 @@ steps:
   explanation: '**Parse the untrusted input.** The method accepts `unknown`, so `parseRunSave` validates the format, command shapes and size before any replay. `progress` defaults to a no-op callback and `factory` defaults to the real bridge constructor.'
 - through: if (save.ended) throw new Error('Ended runs cannot be continued.');
   explanation: '**Require compatible pacing and a continuable run.** Version-1 saves are interpreted as real-time. The public daily client rejects them, and completed terminal runs cannot be restored for continued play.'
-- through: throw new Error("This saved daily run uses a different time-step model. Start a new daily run.");
+- through: throw new Error("This saved daily run uses a different reactor model. Start a new daily run.");
   explanation: '**Compare simulation identities.** Pack and scoring IDs must match the loaded runtime. A daily version-2 save must also match the integration cadence. The same seed and commands are insufficient if those rules changed.'
 - through: 'let candidate: CanduPlaytestBridgeLifecycle | null = null;'
   explanation: '**Prevent overlapping work and enter pending state.** Restore cannot start during another command or restore. Updating scheduler and UI flags freezes normal interaction while replay is underway. The candidate remains nullable so cleanup can safely handle early failure.'
