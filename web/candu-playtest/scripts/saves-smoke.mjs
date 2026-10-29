@@ -23,14 +23,12 @@ const localRuns = () => page.evaluate(() => new Promise((resolve, reject) => {
 try {
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('live reactor online'), undefined, { timeout: 900_000 });
+  await page.locator('.launcher-setup details > summary').click();
   await page.locator('.reactor-launcher [data-field="seed"]').fill('2024');
-  await page.getByRole('button', { name: 'Use seed & objective', exact: true }).click();
-  await page.waitForFunction(() => document.querySelector('.reactor-launcher')?.getAttribute('aria-busy') === 'false' &&
-    document.querySelector('.reactor-launcher [data-field="objective"]')?.textContent?.includes('2024'), undefined, { timeout: 900_000 });
   await page.locator('.player-toggle').click(); await panelIdle();
   check(await page.getByRole('button', { name: 'Continue without login', exact: true }).isVisible(), 'Guest option is missing.');
   await page.getByRole('button', { name: 'Continue without login', exact: true }).click();
-  await page.getByRole('button', { name: 'Begin shift', exact: true }).click(); await idle();
+  await page.getByRole('button', { name: 'Start run', exact: true }).click(); await idle();
   const studio = page.locator('.reactor-studio');
   await studio.locator('.studio-watchlist > summary').click();
   await studio.locator('[data-action="oldest"]').click();

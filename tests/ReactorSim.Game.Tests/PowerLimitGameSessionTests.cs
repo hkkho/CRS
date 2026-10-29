@@ -15,9 +15,9 @@ public sealed class PowerLimitGameSessionTests
         var session = PracticeGameSessionFactory.Create();
         SetTestPowerAmplitude(session, 1.5);
         var snapshot = session.Snapshot;
-        Assert.True(snapshot.Core.Channels.Max(c => c.PowerWatts) > 7_300_000);
+        Assert.True(snapshot.Core.Channels.Max(c => c.PowerWatts) > 7_100_000);
         Assert.True(snapshot.IsGameOver);
-        Assert.Equal("Channel power exceeds 7,300 kW", snapshot.GameOverReason);
+        Assert.Equal("Channel power exceeds 7,100 kW", snapshot.GameOverReason);
         Assert.False(snapshot.Rrs.IsGameOver);
         Assert.Equal("ended", snapshot.Shift.Outcome);
         Assert.False(snapshot.Shift.RewardEarned);
@@ -35,7 +35,7 @@ public sealed class PowerLimitGameSessionTests
         // The nominal adjuster core no longer exceeds the cap at 120%.
         // Give this isolated first-tick fixture a reference power whose shape
         // crosses the channel cap at the same valid queued amplitude.
-        SetTestReferencePower(session, 1.01 * 7_300_000 /
+        SetTestReferencePower(session, 1.01 * 7_100_000 /
             (1.2 * session.CurrentEquilibriumProjection.ShapeChannelPowerWatts.Max()));
         SetTestPowerAmplitude(session, 0.4);
         Assert.False(session.Snapshot.IsGameOver);
@@ -45,7 +45,7 @@ public sealed class PowerLimitGameSessionTests
         var result = session.AdvanceWallMilliseconds(5_000);
         Assert.True(result.Accepted, result.DiagnosticMessage);
         Assert.True(result.Snapshot.IsGameOver);
-        Assert.Equal("Channel power exceeds 7,300 kW", result.Snapshot.GameOverReason);
+        Assert.Equal("Channel power exceeds 7,100 kW", result.Snapshot.GameOverReason);
         Assert.Equal(0.1, result.Snapshot.WallElapsedSeconds, 10);
         Assert.Equal(1, result.Snapshot.SimulationTimeSeconds, 10);
         Assert.Same(projection, session.CurrentEquilibriumProjection);
@@ -60,8 +60,8 @@ public sealed class PowerLimitGameSessionTests
     {
         var session = PracticeGameSessionFactory.Create();
         var projection = session.CurrentEquilibriumProjection;
-        double safeAmplitude = 0.9 * Math.Min(1, Math.Min(7_300_000 / projection.ShapeChannelPowerWatts.Max(),
-            935_000 / projection.ShapeNodePowerWatts.Max()));
+        double safeAmplitude = 0.9 * Math.Min(1, Math.Min(7_100_000 / projection.ShapeChannelPowerWatts.Max(),
+            900_000 / projection.ShapeNodePowerWatts.Max()));
         SetTestPowerAmplitude(session, safeAmplitude);
         Assert.False(session.Snapshot.IsGameOver);
         Assert.True(session.Pause().Accepted);
@@ -71,8 +71,8 @@ public sealed class PowerLimitGameSessionTests
         Assert.False(result.Snapshot.IsGameOver);
         Assert.All(result.Snapshot.Core.Channels, channel =>
         {
-            Assert.InRange(channel.PowerWatts, 0, 7_300_000);
-            Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 935_000));
+            Assert.InRange(channel.PowerWatts, 0, 7_100_000);
+            Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 900_000));
         });
         Assert.Equal(before.SimulationTimeSeconds, result.Snapshot.SimulationTimeSeconds);
         Assert.Equal(before.ScoreTotal, result.Snapshot.ScoreTotal);

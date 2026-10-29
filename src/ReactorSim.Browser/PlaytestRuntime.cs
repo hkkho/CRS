@@ -25,7 +25,7 @@ namespace ReactorSim.Browser
         private readonly string _defaultPacing;
         public PlaytestRuntime(string defaultPacing = "daily-turn")
         {
-            if (defaultPacing != "daily-turn" && defaultPacing != "real-time") throw new ArgumentOutOfRangeException(nameof(defaultPacing));
+            if (defaultPacing != "daily-turn" && defaultPacing != "real-time" && defaultPacing != "demo") throw new ArgumentOutOfRangeException(nameof(defaultPacing));
             _defaultPacing = defaultPacing;
         }
 
@@ -186,7 +186,7 @@ namespace ReactorSim.Browser
                         return SerializeError("initialize", PlaytestProtocolV2.Diagnostic(
                             "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
                     if (!TryReadPacing(root, _defaultPacing, out string pacing))
-                        return SerializeError("initialize", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn or real-time."), _runtime);
+                        return SerializeError("initialize", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn, demo or real-time."), _runtime);
                     BridgeRuntime candidate = CreateRuntime(
                         mode,
                         requestJson ?? "{}", seed, shiftId, pacing);
@@ -344,9 +344,9 @@ namespace ReactorSim.Browser
                             return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic(
                                 "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
                         if (!TryReadPacing(payload, previousGame.PacingMode, out string pacing))
-                            return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn or real-time."), _runtime);
+                            return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn, demo or real-time."), _runtime);
                         string resetInitialization = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":" +
-                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"" + (pacing == "daily-turn" ? ",\"pacingMode\":\"daily-turn\"" : "") + "}";
+                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"" + (pacing != "real-time" ? ",\"pacingMode\":\"" + pacing + "\"" : "") + "}";
                         BridgeRuntime candidate = CreateRuntime(
                             _runtime.Mode,
                             resetInitialization, resetSeed, shiftId, pacing);
@@ -525,7 +525,7 @@ namespace ReactorSim.Browser
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId, pacing == "daily-turn"));
+                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId, pacing == "daily-turn", pacing == "demo"));
         }
 
         private static bool TryReadPacing(JsonElement payload, string fallback, out string pacing)
@@ -534,7 +534,7 @@ namespace ReactorSim.Browser
             if (!PlaytestInput.TryGetProperty(payload, out JsonElement value, "pacingMode")) return true;
             if (value.ValueKind != JsonValueKind.String) return false;
             pacing = value.GetString()!;
-            return pacing == "daily-turn" || pacing == "real-time";
+            return pacing == "daily-turn" || pacing == "real-time" || pacing == "demo";
         }
 
         private static bool TryReadShiftId(JsonElement payload, string fallback, out string shiftId)

@@ -93,7 +93,7 @@ describe("Reactor Studio live interface", () => {
     const plot = () => view.element.querySelector<SVGElement>('.studio-trend-plot svg')!;
     expect(Number(plot().dataset.yMin)).toBe(5.7);
     expect(Number(plot().dataset.yMax)).toBe(6.2);
-    expect(plot().textContent).toContain('7.30 MW thermal ↑ above view');
+    expect(plot().textContent).toContain('7.10 MW thermal ↑ above view');
     session.snapshot = { ...session.snapshot, simulationTimeSeconds: 172800,
       core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 8e6 })) } };
     emit();
@@ -113,7 +113,7 @@ describe("Reactor Studio live interface", () => {
     const plot = () => view.element.querySelector<SVGElement>('[data-axial="power"]')!;
     expect(Number(plot().dataset.yMin)).toBe(100);
     expect(Number(plot().dataset.yMax)).toBe(800);
-    expect(plot().textContent).toContain('935 kW limit ↑ above view');
+    expect(plot().textContent).toContain('900 kW limit ↑ above view');
     session.snapshot.core.channels[0].bundles[0].powerWatts = 0;
     session.snapshot.core.channels[0].bundles[11].powerWatts = 1000e3;
     emit();
@@ -164,10 +164,10 @@ describe("Reactor Studio live interface", () => {
     session.snapshot = { ...session.snapshot, freshBundlesAvailable: 0,
       shift: { ...createShift(), isEndless: true, unlimitedFreshFuel: true, horizonSeconds: 0, remainingSeconds: 0, fuelBudget: 0, fuelConsumed: 160 } };
     emit();
-    expect(view.element.querySelector('[data-field="stock"]')!.textContent).toBe("∞");
-    expect(view.element.querySelector('[data-field="remaining"]')!.textContent).toBe("Endless run · Unlimited fresh fuel");
+    expect(view.element.querySelector('[data-field="stock"]')).toBeNull();
+    expect(view.element.querySelector(".run-goal")!.textContent).not.toContain("fresh left");
     expect(view.element.querySelector('[data-field="fuel-used"]')!.textContent).toBe("160 bundles");
-    expect(view.element.querySelector('[data-field="order-note"]')!.textContent).toContain("Unlimited fresh fuel");
+    expect(view.element.querySelector('[data-field="order-note"]')!.textContent).toContain("8 fresh bundles with channel flow");
     expect(button("refuel").disabled).toBe(false);
     button("refuel").click();
     expect(session.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-refuel" }));
@@ -176,23 +176,26 @@ describe("Reactor Studio live interface", () => {
   it("uses separate absolute, ripple and peak-bundle maps with operating-limit colors", () => {
     const { view, session, emit, button } = harness();
     session.snapshot = { ...session.snapshot, ripple: { referenceId: "test", dataPackVersion: "test", coefficientBindingDigestHex: "a".repeat(64),
-      referenceThermalPowerWatts: 2.064e9, maximumChannelPowerWatts: 7.3e6, maximumBundlePowerWatts: 935e3,
+      referenceThermalPowerWatts: 2.064e9, maximumChannelPowerWatts: 7.1e6, maximumBundlePowerWatts: 900e3,
       referenceChannelPowerWatts: Array(380).fill(5e6), channelRippleFractions: Array(380).fill(1.46), rmsDeviationFraction: .46, pointsPerHour: .04 },
-      core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 7.3e6,
-        bundles: c.bundles.map(b => ({ ...b, powerWatts: 935e3 })) })) } };
+      core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 7.1e6,
+        bundles: c.bundles.map(b => ({ ...b, powerWatts: 900e3 })) })) } };
     emit();
     const cell = view.element.querySelector('rect[data-channel="210"]')!;
     const mode = (value: string) => view.element.querySelector<HTMLButtonElement>(`[data-map="${value}"]`)!.click();
     mode("power");
-    expect(cell.getAttribute("fill")).toBe("hsl(0 78% 55%)");
-    expect(view.element.querySelector('[data-field="legend"]')!.textContent).toContain("7300 kW / channel");
+    expect(cell.getAttribute("fill")).toBe("#ff6b6b");
+    expect(view.element.querySelector('[data-field="legend"]')!.textContent).toContain("7100 kW / channel");
+    expect(cell.getAttribute("data-alert")).toBe("true");
     mode("ripple");
-    expect(cell.getAttribute("fill")).toBe("hsl(0 80% 50%)");
+    expect(cell.getAttribute("data-alert")).toBe("false");
+    expect(cell.getAttribute("fill")).toBe("#ff6b6b");
     expect(view.element.querySelector('[data-field="local-ripple"]')!.textContent).toBe("146.00%");
     mode("bundle-power");
-    expect(cell.getAttribute("fill")).toBe("hsl(0 78% 55%)");
-    expect(view.element.querySelector('[data-field="bundle-peak"]')!.textContent).toBe("935 / 935");
-    expect(view.element.querySelector('[data-power-limit="935"]')).not.toBeNull();
+    expect(cell.getAttribute("data-alert")).toBe("true");
+    expect(cell.getAttribute("fill")).toBe("#ff6b6b");
+    expect(view.element.querySelector('[data-field="bundle-peak"]')!.textContent).toBe("900 / 900");
+    expect(view.element.querySelector('[data-power-limit="900"]')).not.toBeNull();
     expect(button("refuel").disabled).toBe(false);
   });
 
@@ -215,7 +218,7 @@ describe("Reactor Studio live interface", () => {
     expect(view.element.querySelector('[data-field="score"]')!.textContent).toBe("0");
     view.element.querySelector<HTMLButtonElement>('[data-history="live"]')!.click();
     expect(view.element.querySelector('[data-field="score"]')!.textContent).toBe("2");
-    expect(view.element.querySelector('[data-field="bundle-peak"]')!.textContent).toBe("500 / 935");
+    expect(view.element.querySelector('[data-field="bundle-peak"]')!.textContent).toBe("500 / 900");
     expect(button("refuel").disabled).toBe(false);
     expect(slider.value).toBe("2");
     view.element.querySelector<HTMLButtonElement>('[data-tab="power"]')!.click();
@@ -267,10 +270,10 @@ describe("Reactor Studio live interface", () => {
   it("shows average LZC level and global tilt limits, with blue low power and red high power", () => {
     const { session, view, emit } = harness();
     session.snapshot.core.channels[0].powerWatts = 0;
-    session.snapshot.core.channels[1].powerWatts = 7.3e6;
+    session.snapshot.core.channels[1].powerWatts = 7.1e6;
     view.element.querySelector<HTMLButtonElement>('[data-map="power"]')!.click();
-    expect(view.element.querySelector('rect[data-channel="210"]')!.getAttribute("fill")).toBe("hsl(220 78% 55%)");
-    expect(view.element.querySelector('rect[data-channel="211"]')!.getAttribute("fill")).toBe("hsl(0 78% 55%)");
+    expect(view.element.querySelector('rect[data-channel="210"]')!.getAttribute("fill")).toBe("#263346");
+    expect(view.element.querySelector('rect[data-channel="211"]')!.getAttribute("fill")).toBe("#ff6b6b");
     expect(view.element.querySelector('[data-field="reserve"]')!.textContent).toBe("58.0%");
     expect(view.element.querySelector('.studio-metrics article')!.textContent).toContain("LZC / %");
     expect(view.element.querySelector('.studio-metrics article')!.getAttribute("title")).toContain("Average liquid-zone water level · allowed 10–90%");
@@ -325,14 +328,14 @@ describe("Reactor Studio live interface", () => {
     session.snapshot.shift = { ...createShift(), outcome: "success", rewardEarned: false };
     session.snapshot.runStatus = "completed";
     emit();
-    expect(view.element.querySelector('[data-field="provenance"]')!.textContent).toContain("Zone geometry edited");
+    expect(view.element.querySelector('[data-field="ending-provenance"]')!.textContent).toContain("Zone geometry edited");
     expect(view.element.querySelector('[data-field="ending-title"]')!.textContent).toContain("Sandbox");
     expect(view.element.querySelector('[data-field="ending-reward"]')!.textContent).toContain("excluded");
     expect(button("retry").disabled).toBe(false);
     session.snapshot.provenance = { kind: "standard-challenge", label: "Standard challenge", isModified: false,
       eligibleForStandardChallenge: true, reasons: [] };
     session.snapshot.runStatus = "paused"; emit();
-    expect(view.element.querySelector('[data-field="provenance"]')!.textContent).toBe("Standard challenge");
+    expect(view.element.querySelector('[data-field="ending-provenance"]')!.textContent).toBe("Standard challenge");
   });
 
   it("uses published controller reasons even when fills do not move", () => {
@@ -365,6 +368,7 @@ describe("Reactor Studio live interface", () => {
 
   it("renders authoritative movement plans and keeps confirmed identities on navigation", () => {
     const { session, view, emit } = harness();
+    session.snapshot.pacingMode = "daily-turn";
     const plan = { directionId: "toward-end-b" as const, shiftCount: 8 as const, incomingEnd: "A" as const, outgoingEnd: "B" as const,
       insertedPositions: [0,1,2,3,4,5,6,7], dischargedPositions: [4,5,6,7,8,9,10,11], retainedFromPositions: [0,1,2,3], retainedToPositions: [8,9,10,11] };
     session.snapshot.refuellingPlans = [plan];
@@ -372,18 +376,11 @@ describe("Reactor Studio live interface", () => {
       score: { policyId: "test", dischargeReward: 12, freshFuelCost: 6, netPoints: 6 },
       bundles: [{ bundleId: "old-identity", beforePosition: 8, afterPosition: null, burnupMwdPerKg: 8 },
         { bundleId: "fresh-identity", beforePosition: null, afterPosition: 0, burnupMwdPerKg: 0 }] };
-    const animate = vi.fn();
-    const original = HTMLElement.prototype.animate;
-    HTMLElement.prototype.animate = animate;
-    const response = { sequence: 1, accepted: true, message: "Moved", snapshot: session.snapshot,
-      command: { type: "commit-refuel", request: { channelIndex: 210, shiftCount: 8, directionId: "toward-end-b", fuelTypeId: "NAT-U-SYNTHETIC" } } } as CanduCommandResponse;
-    emit({ ...response, accepted: false });
-    expect(animate).not.toHaveBeenCalled();
-    emit({ ...response, sequence: 2 });
-    expect(animate).toHaveBeenCalledTimes(2);
-    emit({ ...response, sequence: 3 });
-    expect(animate).toHaveBeenCalledTimes(2);
-    HTMLElement.prototype.animate = original;
+    session.snapshot.lastDayResult = { requestedChannels: [210], executedChannels: [210], endReason: "", startSimulationTimeSeconds: 0, endSimulationTimeSeconds: 86400,
+      fuelUsed: 8, usefulBundlesDischarged: 1, scoreDelta: 1, thermalEnergyMwh: 1, electricalEnergyMwhEstimate: 1,
+      movements: [session.snapshot.lastFuelMovement], unexecutedChannels: [], averageLzcFillFraction: .5, axialTiltFraction: 0 } as CanduSnapshot["lastDayResult"];
+    session.snapshot.simulationTimeSeconds = 86400;
+    emit();
     expect(view.element.querySelector('[data-field="movement-plan"]')!.textContent).toContain("8 in / End A → 8 out / End B");
     expect(view.element.querySelector('[data-field="movement-plan"] > p')!.getAttribute("aria-label")).toContain("positions 5, 6, 7, 8, 9, 10, 11, 12 leave End B");
     expect(view.element.querySelectorAll('[data-movement="outgoing"]')).toHaveLength(8);
@@ -391,24 +388,23 @@ describe("Reactor Studio live interface", () => {
     session.snapshot.core.channels[0].bundles[4].currentBurnupMwdPerKg += .1;
     emit();
     expect(view.element.querySelector('[data-movement="outgoing"]')).toBe(outgoing);
-    expect(view.element.querySelector('[data-field="movement-result"]')!.textContent).toContain("old-identity: position 9 → discharged (8.00");
-    const details = view.element.querySelector<HTMLDetailsElement>('[data-field="movement-result"] details')!;
+    expect(view.element.querySelector('[data-day-moves]')!.textContent).toContain("old-identity: 9 → discharged · 8.00");
+    const details = view.element.querySelector<HTMLDetailsElement>('[data-day-moves] details')!;
     details.open = true;
     emit(null, 'status');
-    expect(view.element.querySelector('[data-field="movement-result"] details')).toBe(details);
+    expect(view.element.querySelector('[data-day-moves] details')).toBe(details);
     expect(details.open).toBe(true);
     view.destroy();
     const returned = new StudioView(session, document.body); views.push(returned);
-    expect(returned.element.querySelector('[data-field="movement-result"]')!.textContent).toContain("Confirmed move #1");
+    expect(returned.element.querySelector('[data-day-moves]')!.textContent).toContain("move #1");
   });
 
   it("shows supplied objective progress and cumulative report, then retries with the same or random seed", () => {
     const { session, view, emit, button } = harness();
     session.snapshot.shift = createShift();
     emit();
-    expect(view.element.querySelector('[data-field="objective-progress"]')!.textContent).toBe("3 / 8 useful bundles");
-    expect(view.element.querySelector('[data-field="remaining"]')!.textContent).toContain("20h 00m remaining");
-    expect(view.element.querySelector('[data-field="remaining"]')!.textContent).toContain("128 / 128");
+    expect(view.element.querySelector('[data-goal-progress]')!.textContent).toContain("3/8 useful");
+    expect(view.element.querySelector('[data-field="remaining"]')).toBeNull();
     expect(view.element.querySelector<HTMLElement>('[data-field="ending"]')!.hidden).toBe(true);
     session.snapshot.runStatus = "completed";
     session.snapshot.shift.outcome = "missed";
@@ -423,15 +419,14 @@ describe("Reactor Studio live interface", () => {
     const entropy = vi.spyOn(globalThis.crypto, 'getRandomValues').mockImplementation(array => { (array as Uint32Array)[0] = 987654321; return array; });
     button("new-seed").click();
     expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 987654321 });
-    button("reset").click();
-    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 987654321 });
     entropy.mockRestore();
     session.snapshot.runStatus = "running";
     session.snapshot.shift = createShift();
     emit();
     expect(view.element.querySelector<HTMLElement>('[data-field="ending"]')!.hidden).toBe(true);
-    button("challenge").click();
-    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: expect.any(Number), shiftId: "free-practice" });
+    view.element.querySelector<HTMLSelectElement>("[data-goal-select]")!.value = "free-practice";
+    button("start-goal").click();
+    expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 1001, shiftId: "free-practice" });
   });
 
   it("announces the earned badge supplied by the shared game", () => {
@@ -448,7 +443,7 @@ describe("Reactor Studio live interface", () => {
     session.snapshot.runEndReason = "Practice horizon completed";
     emit();
     for (const action of ["refuel", "pause", "step", "target"]) expect(button(action).disabled).toBe(true);
-    expect(button("reset").disabled).toBe(false);
+    expect(button("start-goal").disabled).toBe(false);
     expect(view.element.textContent).toContain("Practice horizon completed");
   });
   it("clears feedback on a sequence-reset and handles the first new fuel move once", () => {
@@ -549,9 +544,9 @@ describe("Reactor Studio live interface", () => {
     expect(view.element.textContent).toContain("Not enough fresh fuel");
     session.snapshot.freshBundlesAvailable = 128; session.snapshot.rrs.isGameOver = true; emit();
     expect(button("refuel").disabled).toBe(true);
-    expect(button("reset").disabled).toBe(false);
+    expect(button("start-goal").disabled).toBe(false);
     session.status.isWasmAvailable = false; emit();
-    expect(button("reset").disabled).toBe(true);
+    expect(button("start-goal").disabled).toBe(true);
   });
 
   it("shows accepted before/after impact once and retains focus through clock updates", () => {

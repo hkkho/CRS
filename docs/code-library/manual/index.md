@@ -7,7 +7,7 @@ that decision.
 
 | Chapter | Subject |
 | --- | --- |
-| [Quick start](start.md) | The daily loop, free practice and the one-day challenge |
+| [Quick start](start.md) | The daily loop and endless free practice |
 | [Fuelling](fuel.md) | Eight-bundle moves, flow direction, outgoing fuel and plan order |
 | [Reactor theory](physics.md) | A concise explanation of the physical readings |
 | [Maps and readings](maps.md) | Map modes, channel profiles, device geometry and history |

@@ -58,15 +58,11 @@ try {
   await page.keyboard.press('Escape');
   check(await launcher.locator('[data-manual-open]').evaluate(e => e === document.activeElement), 'Launcher manual did not restore focus.');
 
+  await activate(launcher.locator(".launcher-setup details > summary"));
   const seed = launcher.locator('[data-field="seed"]'); await tabTo(seed);
   await page.keyboard.press("Control+a"); await page.keyboard.type("1001");
-  const shift = launcher.locator('[data-field="shift"]'); await tabTo(shift);
-  await page.keyboard.press("ArrowDown");
-  check(await shift.inputValue() === "useful-fuel-day-v1", "Keyboard objective selection failed.");
-  await page.keyboard.press("ArrowUp");
-  check(await shift.inputValue() === "free-practice", "Keyboard objective selection did not return to practice.");
-  await activate(launcher.locator('[data-action="apply"]')); await idle(".reactor-launcher");
-  check((await launcher.locator('[data-field="objective"]').textContent()).includes("seed 1001"), "Seed choice was not applied.");
+  check(await launcher.locator("[data-goal]").count() === 1, "Removed challenges are still selectable.");
+  await activate(launcher.locator('[data-goal="free-practice"]'));
   await activate(begin);
   const studio = page.locator(".reactor-studio"); await studio.waitFor(); await idle(".reactor-studio");
   check(await studio.locator('.studio-brand h1').textContent() === 'CRS', 'Gameplay title is not CRS.');
@@ -93,12 +89,30 @@ try {
   await page.setViewportSize({ width: 1280, height: 1000 });
   await studio.evaluate(e => { e.scrollTop = 0; });
   const mapBounds = await studio.locator('[data-field="map"]').boundingBox();
+  const coreCard = await studio.locator('.studio-core').boundingBox();
+  const detailsCard = await studio.locator('.studio-inspection-dock').boundingBox();
+  check(Math.abs(coreCard.y + coreCard.height - detailsCard.y - detailsCard.height) < 1, 'Desktop core and details bottoms do not align.');
+  await capture('studio-zones-1280');
+  await tabTo(studio.locator('[data-inspection-tab="zones"]'));
+  await page.keyboard.press('End');
+  check(await studio.locator('[data-inspection-tab="profiles"]').getAttribute('aria-selected') === 'true', 'Keyboard did not select Profiles in the details dock.');
   const axialBounds = await studio.locator('[data-axial="power"]').boundingBox();
-  check(mapBounds.width >= 580 && axialBounds.width >= 480, 'Core or channel graphs did not expand at desktop width.');
+  check(mapBounds.width >= 580 && axialBounds.width >= 260, 'Core or channel graphs did not expand at desktop width.');
   check(mapBounds.y < 450, 'Stacked controls pushed the core below the desktop workspace.');
-  const fuelActionBounds = await studio.locator('[data-action="refuel"]').boundingBox();
-  check(fuelActionBounds.y >= 0 && fuelActionBounds.y + fuelActionBounds.height < 720, 'Channel action is buried below the initial desktop view.');
+  check(await studio.locator('[data-action="commit-day"]').isVisible(), 'Sheet action is not available.');
   await capture('studio-1280');
+  for (const width of [1100, 1024, 900]) {
+    await page.setViewportSize({ width, height: 900 });
+    await noOverflow(studio, `Studio at ${width}px`);
+    await noOverflow(studio.locator('.studio-inspection-dock'), `Details at ${width}px`);
+    await noOverflow(studio.locator('.studio-inspection-tabs'), `Details tabs at ${width}px`);
+    const core = await studio.locator('.studio-core').boundingBox();
+    const sheet = await studio.locator('.studio-daily-plan').boundingBox();
+    const dock = await studio.locator('.studio-inspection-dock').boundingBox();
+    check(width > 1050 ? Math.abs(core.y + core.height - dock.y - dock.height) < 1 : sheet.y >= core.y + core.height && dock.y >= sheet.y + sheet.height,
+      `Intermediate layout squeezed the sheet or details at ${width}px.`);
+    await studio.evaluate(e => { e.scrollTop = 0; }); await capture(`studio-${width}`);
+  }
   await page.setViewportSize({ width: 1280, height: 720 });
   await activate(studio.locator('.studio-map-menu > summary'));
   await activate(studio.locator('[data-map="power"]'));
@@ -157,7 +171,7 @@ try {
   await page.waitForTimeout(300);
   check(await page.locator("#session-announcements").textContent() === quietMessage, "Frozen planning changed the live announcement.");
   check(errors.length === 0, errors.join(" | "));
-  const result = { status: "passed", pacing: "daily-turn", keyboardOnly: "launcher/menus/manual/seed/objective/map/plan/day/result/graphs", desktopSizes: { core: mapBounds.width, channelGraph: axialBounds.width }, layouts: [1280, 640, 320], zoomEmulation: "200%: 640x360 CSS pixels at DPR 2", reducedMotion: "respected", manual: "focus trapped, chapters reachable, draft preserved", focus: "menus, dialog and return preserved", duplicateAnnouncements: 0, browserErrors: errors };
+  const result = { status: "passed", pacing: "daily-turn", keyboardOnly: "launcher/menus/manual/seed/objective/map/plan/day/result/graphs", desktopSizes: { core: mapBounds.width, channelGraph: axialBounds.width }, layouts: [1280, 1100, 1024, 900, 640, 320], zoomEmulation: "200%: 640x360 CSS pixels at DPR 2", reducedMotion: "respected", manual: "focus trapped, chapters reachable, draft preserved", focus: "menus, dialog and return preserved", duplicateAnnouncements: 0, browserErrors: errors };
   if (captures) await writeFile(`${captures}/accessibility-acceptance.json`, JSON.stringify(result, null, 2));
   console.log(JSON.stringify(result));
 } catch (error) { await capture("accessibility-failure"); throw error; }

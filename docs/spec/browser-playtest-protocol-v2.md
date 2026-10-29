@@ -1,5 +1,15 @@
 # Browser playtest protocol v2
 
+The optional `pacingMode` now also accepts `demo`. This temporary browser mode
+uses shared atomic `commit-day` updates (`completedDays` is published in full and
+compact snapshots), and accepts immediate `commit-refuel` between days. Its
+underlying simulation clock remains paused; the demo client schedules one day
+every five wall seconds, serializes commands and coalesces missed deadlines.
+`advance`, `resume` and legacy accelerated playback remain unsupported for this
+mode. Predictions are authoritative solved snapshots, never client-side physics.
+Daily sessions still reject direct refuelling. Reset retains the current pacing
+unless explicitly changed. Demo runs do not enter the public save/leaderboard path.
+
 `candu-playtest-v2` reports schema version 2 and keeps the v1 command and
 response envelope shape. It changes
 the live snapshot to carry `axialTiltFraction` and `rrsReserveFraction` from

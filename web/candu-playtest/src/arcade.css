@@ -29,8 +29,8 @@ header .arcade-kicker span { color: #a9c4da; font-size: 11px; }
 .reactor-arcade .arcade-map [aria-pressed="true"] { outline: 3px solid white; outline-offset: 0; z-index: 2; }
 .reactor-arcade .arcade-map [data-planned="true"]::after { content: ''; position: absolute; width: 35%; height: 35%; top: 32%; left: 32%; border-radius: 50%; background: #ffe18b; border: 1px solid #0b1c30; }
 .reactor-arcade .arcade-map button:focus-visible { outline: 3px dashed white; }
-.is-zoomed .arcade-map { width: max(200%, 1200px); }
-.reactor-arcade .is-zoomed .arcade-map button { font-size: 11px; font-weight: 800; }
+
+.reactor-arcade [data-zoomed="true"] .arcade-map button { font-size: 11px; font-weight: 800; }
 .arcade-inspector { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; align-items: center; margin-top: 12px; padding: 14px; background: #173047; border: 1px solid #4b748b; border-radius: 18px; }
 .arcade-inspector h2, .arcade-inspector p { margin: 2px 0; }
 .arcade-inspector [data-reading] { font-size: 13px; text-align: right; }
@@ -60,8 +60,9 @@ header .arcade-kicker span { color: #a9c4da; font-size: 11px; }
   .arcade-mission .arcade-kicker { display: none; }
   .arcade-mission h1 { font-size: 28px; margin: 0; }
   .arcade-mission > p { font-size: 13px; }
-  [data-picker] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 0 24px; grid-template-areas: "toolbar inspector" "caption inspector" "map inspector" "legend inspector"; }
+  [data-picker] { display: grid; grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr); gap: 0 24px; grid-template-areas: "toolbar inspector" "caption inspector" "zoom inspector" "map inspector" "legend inspector"; }
   .arcade-map-toolbar { grid-area: toolbar; }
+  [data-picker] > .core-map-zoom { grid-area: zoom; }
   [data-picker] > .arcade-caption { grid-area: caption; }
   .arcade-map-scroll { grid-area: map; width: min(100%, max(340px, calc(100dvh - 290px))); }
   .arcade-legend { grid-area: legend; }
@@ -69,3 +70,8 @@ header .arcade-kicker span { color: #a9c4da; font-size: 11px; }
   .reactor-arcade footer { position: fixed; right: max(28px, calc((100vw - 1064px) / 2)); bottom: 80px; width: min(346px, calc((100vw - 80px) / 3)); margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .reactor-arcade *, .reactor-arcade *::before { animation: none !important; transition: none !important; } }
+
+.reactor-arcade .arcade-map [data-alert="true"] { border: 2px dashed #fff; }
+
+.arcade-outgoing { grid-column: 1 / -1; font-size: 12px; color: #c6d7ed; }
+.reactor-arcade .arcade-outgoing summary { padding: 8px 0; font-size: 12px; }

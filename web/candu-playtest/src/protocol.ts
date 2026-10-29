@@ -1,4 +1,4 @@
-export const DAILY_INTEGRATION_ID = "practice-daily-one-step-v1" as const;
+export const DAILY_INTEGRATION_ID = "practice-daily-one-step-reference-zones-v2" as const;
 export const PROTOCOL_VERSION = "candu-playtest-v2" as const;
 
 export const CORE_CHANNEL_COUNT = 380 as const;
@@ -11,7 +11,7 @@ export const BASE_CLOCK_WALL_SECONDS_PER_SIMULATION_HOUR = 2 as const;
 export type ProtocolSource = "wasm" | "synthetic-fixture";
 export type BridgeAvailability = ProtocolSource | "loading" | "unavailable";
 export type BridgeModeId = "play";
-export type PacingMode = "daily-turn" | "real-time";
+export type PacingMode = "daily-turn" | "real-time" | "demo";
 export type PlaybackModeId = "pause" | "1x" | "10x" | "60x";
 export type RefuellingDirection = "toward-end-a" | "toward-end-b";
 export type CoreBoundaryFace = "north" | "east" | "south" | "west" | "end-a" | "end-b";
@@ -1295,10 +1295,10 @@ function isShiftProgress(value: unknown): value is ShiftProgress {
 
 function hasValidSnapshotStateFields(value: Record<string, unknown>): boolean {
   return hasOwnProperties(value, SNAPSHOT_STATE_FIELDS) &&
-    (value.pacingMode === undefined || ["daily-turn", "real-time"].includes(value.pacingMode as string)) &&
+    (value.pacingMode === undefined || ["daily-turn", "real-time", "demo"].includes(value.pacingMode as string)) &&
     (value.completedDays === undefined || isNonNegativeInteger(value.completedDays)) &&
     (value.lastDayResult == null || isDailyTurnResult(value.lastDayResult)) &&
-    (value.pacingMode !== "daily-turn" || value.isPaused === true && isNonNegativeInteger(value.completedDays)) &&
+    (!["daily-turn", "demo"].includes(value.pacingMode as string) || value.isPaused === true && isNonNegativeInteger(value.completedDays)) &&
     hasStringFields(value, ["scenarioId", "dataPackId"]) &&
     hasFiniteNumberFields(value, [
       "simulationTimeSeconds",
@@ -1366,7 +1366,7 @@ function isCanduCommand(value: unknown): value is CanduCommand {
     case "reset":
       return (value.seed === undefined || (isNonNegativeInteger(value.seed) && value.seed <= 4294967295)) &&
         (value.shiftId === undefined || isShiftId(value.shiftId)) &&
-        (value.pacingMode === undefined || ["daily-turn", "real-time"].includes(value.pacingMode as string));
+        (value.pacingMode === undefined || ["daily-turn", "real-time", "demo"].includes(value.pacingMode as string));
     case "queue-power-target":
       return hasOwn(value, "targetFraction") && isFiniteNumber(value.targetFraction);
     case "commit-refuel":

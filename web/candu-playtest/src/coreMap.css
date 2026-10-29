@@ -1,0 +1,12 @@
+.core-channel-tooltip { position: fixed; z-index: 1000; width: 290px; max-width: calc(100vw - 16px); box-sizing: border-box; padding: 14px 16px; border: 1px solid #f5a623; border-radius: 10px; background: #101a2b; color: #f3f7ff; box-shadow: 0 8px 28px #0009; white-space: pre-line; font: 13px/1.6 system-ui, sans-serif; }
+.core-channel-tooltip::first-line { font-weight: 800; font-size: 17px; color: #ffcd78; }
+.core-channel-tooltip[hidden] { display: none; }
+.core-map-zoom { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.core-map-zoom button { min-width: 44px; min-height: 44px; cursor: pointer; }
+.core-map-zoom output { min-width: 48px; text-align: center; font: bold 13px system-ui; }
+.core-map-zoom small { color: #c2caf2; font: 11px system-ui; }
+.core-map-viewport { display: block; width: 100%; aspect-ratio: 1; overflow: auto; overscroll-behavior: contain; }
+.core-map-viewport .core-map-canvas { display: block; height: auto; max-width: none; aspect-ratio: 1; }
+[data-channel][data-alert="true"] { animation: core-warning-shake 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; stroke-dasharray: 2 1; }
+@keyframes core-warning-shake { 0%, 65%, 100% { transform: translateX(0); } 72%, 86% { transform: translateX(-1px); } 79%, 93% { transform: translateX(1px); } }
+@media (prefers-reduced-motion: reduce) { [data-channel][data-alert="true"] { animation: none; } }

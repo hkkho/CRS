@@ -12,6 +12,7 @@ namespace ReactorSim.Game
     {
         private PracticeRunClock _runtime;
         private bool _dailyTurns;
+        private bool _demo;
         private bool _executingDay;
         private uint _completedDays;
         private DailyTurnResult? _lastDayResult;
@@ -96,10 +97,14 @@ namespace ReactorSim.Game
         }
 
         public PracticeXenonStateV1 CurrentXenonState => _xenon;
-        public string PacingMode => _dailyTurns ? "daily-turn" : "real-time";
-        public const string DailyIntegrationId = "practice-daily-one-step-v1";
+        public string PacingMode => _demo ? "demo" : _dailyTurns ? "daily-turn" : "real-time";
+        public const string DailyIntegrationId = "practice-daily-one-step-reference-zones-v2";
 
         internal void UseDailyTurns() { _dailyTurns = true; _runtime.TryPause(); }
+
+        // Demo uses the same atomic one-day integrator, with immediate fuel moves.
+        // Wall-time scheduling belongs to the browser; all physics remains here.
+        internal void UseDemo() { UseDailyTurns(); _demo = true; }
 
         private GameSessionCommandResult RejectDailyBypass() => Rejected(
             "GameSession.Day.Command.Unsupported", "Choose today's channels and advance one day.");
@@ -537,7 +542,7 @@ namespace ReactorSim.Game
             ushort shiftCount,
             string fuelTypeId)
         {
-            if (_dailyTurns && !_executingDay) return RejectDailyBypass();
+            if (_dailyTurns && !_executingDay && !_demo) return RejectDailyBypass();
             if (IsRunTerminal)
             {
                 return RejectGameOver();
@@ -719,7 +724,7 @@ namespace ReactorSim.Game
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
                 new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
                     CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude),
-                _dailyTurns ? "daily-turn" : "real-time", _completedDays, _lastDayResult);
+                PacingMode, _completedDays, _lastDayResult);
         }
 
         private bool IsRunTerminal => HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,

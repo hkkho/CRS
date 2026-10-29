@@ -1,0 +1,11 @@
+{
+  "guest": "passed",
+  "localSave": "passed",
+  "offlineReload": "passed",
+  "wasmReplayRestore": "passed",
+  "paused": true,
+  "score": 23.262172586347415,
+  "seconds": 86400,
+  "fuelConsumed": 8,
+  "narrowLayout": "passed"
+}

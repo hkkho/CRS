@@ -24,9 +24,9 @@ export class FirstShiftGuide {
     const headings = ["Start with one channel.", "Read what will leave.", "Your sheet is a draft. You choose when to run.", "Read the result. Make your next plan."];
     const copy = [
       "Switch to burnup and select a channel on the core. Higher burnup means more-used fuel; it does not promise a safe move. Take your time.",
-      "The workbench marks the outgoing positions OUT and retained positions KEEP. Each chosen channel uses eight fresh bundles when executed. Add a channel to fill the fuelling sheet.",
+      "Open the Fuel tab in the details block: OUT leaves and KEEP stays. Double-click a channel to add or remove it from the sheet, or use Add beside the selected channel. Keyboard: R or Enter on the core. Each order uses eight fresh bundles.",
       "The sheet shows the execution order and fuel needed. You can remove a channel or clear the sheet without spending fuel. When ready, use Refuel & advance on the sheet.",
-      "Open the Day report for fuel used, useful discharges and points. Inspect LZC, power and the changed core before choosing again. Survival and a challenge reward are separate outcomes.",
+      "Open the Day report for fuel used, useful discharges and points. Inspect LZC, power and the changed core before choosing again. Build score by keeping power close to the reference.",
     ];
     this.element.dataset.step = String(step);
     this.element.querySelector("[data-guide-step]")!.textContent = `FIRST SHIFT / ${step + 1} OF 4 · OPTIONAL`;

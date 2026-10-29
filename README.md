@@ -12,6 +12,8 @@ score by keeping channel powers close to their time-average reference. CRS consu
 one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
+**Live demo** is a separate temporary run launched with **Live demo · 5 sec / day**. A day starts every five seconds; double-click a channel (or press Enter/R, or select and tap Fuel) to request an immediate eight-bundle move. The full core shows channel power only. Shared WASM solves run in the background while the map stays interactive, displaying the latest solved values. Fuel requests are bounded and duplicate pending clicks are ignored. Slow solves reduce the achieved pace without a catch-up backlog. Pause and hidden tabs stop new work; an active solve may finish. Retry repeats the seed, New core draws another, and returning preserves the daily run. Demo runs are not saved or submitted to leaderboards.
+
 CRS defaults to **daily turns**. Time stays frozen while you inspect
 power/burnup maps, bundle profiles, the fuel watchlist and zone levels. The core
 opens on **Channel kW**; the map dropdown also offers burnup, ripple and bundle power. Use
@@ -28,37 +30,37 @@ score and ending reason. Limits are checked after each fuel move and at the day
 boundary. A violating fuel move stops remaining orders; a day-end loss commits
 the completed one-day update. Invalid plans or numerical failures consume no fuel or time.
 
-The default **Free practice** run is endless with unlimited fresh fuel. The
-launcher also offers **Play Arcade**, a phone-friendly presentation of the
-one-day challenge. Tap the full core map, inspect outgoing burnup, lock in a fuel
-plan, and retry the same core to improve your score. Planning is untimed;
-the shared simulation owns the fuel budget, score, limits and badge outcome.
-Arcade uses a large interactive 380-channel power/burnup map, with gold markings
-for planned channels. Zoom enlarges targets for phone selection; tap to inspect,
-then Add to plan. A pick → review → run flow keeps a persistent action button. Detailed readings
-expand on demand; a dedicated result screen offers replay. It supports 320px portrait screens.
-Open Studio preserves the current run and draft for detailed inspection.
-The optional **One-day challenge** uses the same daily controls and existing finite
-fuel budget: discharge at least eight bundles at 6 MWd/kg or above and finish
-the day within the operating limits to earn **Efficient refueller**.
-**New shift** draws a new aged-core seed; retry preserves the seed and objective.
+**Free practice** is endless with unlimited fresh fuel. Studio and Arcade are
+presentations of that same daily loop. The one-, three- and seven-day challenges
+are no longer selectable. Arcade provides touch zoom and a pick → review → run
+flow, then returns to planning the next day. Opening Studio preserves the run
+and draft. New run draws a new aged core; retry preserves its seed.
+
+LZC control uses the fixed time-average node-power reference derived with zones
+at 50% fill. The seeded aged core settles its own initial zone distribution
+against that reference before play, so the initial fills need not be uniform.
+The shared controller and equilibrium xenon settle together without using run
+time or fuel. Existing daily saves use an older run-model identity and require a
+new run; the stored save is retained.
 
 A run ends below 10% or above 90% average LZC level, beyond ±20% global tilt,
-above 7,300 kW/channel or above 935 kW/bundle. Exact equality is allowed. The
-power map runs from blue through yellow to red. Scoring measures RMS deviation
+above 7,100 kW/channel or above 900 kW/bundle. Exact equality is allowed. The
+power map uses discrete dark, bronze, orange, red and bright-red bands. Red begins
+at 90% of the power limit; bright red shakes at 97% (static with reduced motion).
+Burnup and ripple use their own tiered legends. Both Studio and Arcade support
+100–400% zoom, scrolling to pan, and hover/keyboard tooltips with current power
+and estimated average exit burnup from the eight published outgoing positions. Scoring measures RMS deviation
 from fixed channel references, earning up to one point per simulated hour.
 Refuelling affects later score through its power response. See the
 [scoring policy](docs/gameplay/score-balance.md),
 [reference derivation](docs/physics/channel-power-reference.md) and
 [daily-turn contract](docs/gameplay/daily-turn-mode.md).
 
-The compact blue-panel interface keeps operating readings and the fuel plan visible.
+The compact steel-panel interface keeps operating readings and the fuel plan visible.
 Open **Menu → Manual** (or press `F1`) for the daily workflow, fuelling theory, map guide,
 limits, scoring, shortcuts and saves. `Escape` closes it and restores focus;
-the plan stays frozen. Detailed mission, device, poison and day reports expand on demand.
-The status header and dropdowns for views, map modes, fuel candidates and devices
-leave the workspace to the enlarged core and channel profiles. History plots use
-the full available width.
+the plan stays frozen. Channel readings, fuel movement and axial profiles use tabs in the expanded LZC details block. Device and day reports expand on demand.
+The core map uses the full scene column. Map modes, fuel candidates, devices and compact zoom controls share its heading. History inspection stays visible above the map alongside Keff, tilt and the color legend. History plots use the full available width.
 
 The native launcher and Studio support keyboard operation, a 320px layout and
 quiet operation announcements. History records complete day-boundary observations;
@@ -68,8 +70,8 @@ real-time saves remain stored but require a new daily run.
 Apply the new [cloud save migration](supabase/migrations/20261009232415_daily_turn_saves.sql)
 to an existing Supabase deployment before uploading version-2 saves.
 
-The public game always uses daily turns, including old `?pacing=real-time` URLs.
-Its controller rejects real-time commands, saves and incompatible runtimes.
+Studio and Arcade use daily turns, including old `?pacing=real-time` URLs.
+Their controller rejects real-time commands, saves and incompatible runtimes.
 The loaded build and axial boundary version are shown on screen. A newer build
 offers **Save locally & update**; close other game tabs before applying it.
 Existing tabs from before this update need all game tabs closed and reopened

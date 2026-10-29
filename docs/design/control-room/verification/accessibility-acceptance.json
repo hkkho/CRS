@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "pacing": "daily-turn",
+  "keyboardOnly": "launcher/menus/manual/seed/objective/map/plan/day/result/graphs",
+  "desktopSizes": {
+    "core": 608,
+    "channelGraph": 366
+  },
+  "layouts": [
+    1280,
+    640,
+    320
+  ],
+  "zoomEmulation": "200%: 640x360 CSS pixels at DPR 2",
+  "reducedMotion": "respected",
+  "manual": "focus trapped, chapters reachable, draft preserved",
+  "focus": "menus, dialog and return preserved",
+  "duplicateAnnouncements": 0,
+  "browserErrors": []
+}

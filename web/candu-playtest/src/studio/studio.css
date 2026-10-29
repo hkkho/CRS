@@ -387,3 +387,16 @@
   .studio-channel-metrics span { font-size: 8px; }
   .studio-footer [data-field="guidance"] { max-width: 100%; }
 }
+
+/* Discrete map keys match the value bands; detailed numbers stay on demand. */
+.studio-map-wrap { display: block; }
+.studio-map-wrap .studio-map-tag { pointer-events: none; }
+.studio-map-viewport { border-radius: 8px; background: #0b1629; }
+.studio-channel-detail > summary { cursor: pointer; padding: 10px 0; }
+.reactor-studio .studio-legend-gradient { min-width: 80px; background: linear-gradient(90deg, #263346 0 20%, #587b9d 20% 40%, #d6aa49 40% 60%, #fff0a6 60% 80%, #fff 80%); }
+.reactor-studio[data-map-mode="power"] .studio-legend-gradient,
+.reactor-studio[data-map-mode="bundle-power"] .studio-legend-gradient { background: linear-gradient(90deg, #263346 0 20%, #98602f 20% 40%, #f5a623 40% 60%, #db3535 60% 80%, #ff6b6b 80%); }
+.reactor-studio[data-map-mode="ripple"] .studio-legend-gradient { background: linear-gradient(90deg, #263346 0 20%, #587b9d 20% 40%, #f5a623 40% 60%, #db3535 60% 80%, #ff6b6b 80%); }
+.studio-map-wrap [data-channel][data-alert="true"] { stroke: #fff; stroke-width: 1.5; }
+.studio-map-wrap [data-channel][aria-pressed="true"] { stroke: #fff; stroke-width: 3; }
+.studio-map-wrap [data-channel][data-planned="true"] { stroke: #ffce74; stroke-width: 3; }

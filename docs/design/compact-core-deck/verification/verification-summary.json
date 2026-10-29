@@ -1,0 +1,38 @@
+{
+  "status": "passed",
+  "baseRevision": "9ac573ef6d76b66fa4eda01848c985b3ed031b3d",
+  "branch": "design/control-room-game",
+  "shared": {
+    "core": 116,
+    "game": 86,
+    "browser": 45,
+    "tieredCompilation": false,
+    "serialMSBuild": true,
+    "sharedCompilation": false
+  },
+  "frontend": {
+    "files": 35,
+    "tests": 204,
+    "productionBuild": "passed",
+    "pagesBuild": "passed"
+  },
+  "browser": {
+    "runtime": "Release browser-WASM AOT",
+    "daily": "passed",
+    "arcade": "passed",
+    "accessibility": "passed",
+    "displayScales": "passed",
+    "localSaveOfflineReplay": "passed",
+    "layouts": [
+      1280,
+      1100,
+      1024,
+      900,
+      640,
+      320
+    ],
+    "browserErrors": []
+  },
+  "earlierFailure": "Windows native .NET test host crash; isolated regression and final suites passed with tiered compilation disabled",
+  "published": false
+}

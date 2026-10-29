@@ -1,0 +1,82 @@
+[
+  {
+    "repository": "Tencent/Game-Creation-Agents",
+    "url": "https://github.com/Tencent/Game-Creation-Agents",
+    "revision": "ac0f18b9e3a362f4171e2b7d48c3337a0bdcf824",
+    "branch": "main",
+    "pushed": "2026-10-17T13:00:14Z",
+    "license": "NOASSERTION",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "leigest519/OpenGame",
+    "url": "https://github.com/leigest519/OpenGame",
+    "revision": "c9bea37786af524bf3bbe802f2b67d23816fa5c0",
+    "branch": "main",
+    "pushed": "2026-09-03T17:11:09Z",
+    "license": "Apache-2.0",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "LeanEntropy/threejs-phaser-game-skills",
+    "url": "https://github.com/LeanEntropy/threejs-phaser-game-skills",
+    "revision": "93cd04634ef9990e20a56e8aa03c2da78931df6c",
+    "branch": "main",
+    "pushed": "2026-06-23T08:50:18Z",
+    "license": "MIT",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "Yakoub-ai/phaser4-gamedev",
+    "url": "https://github.com/Yakoub-ai/phaser4-gamedev",
+    "revision": "1c1bf45dec3f0acbe8b2a963cc6dab93be31253a",
+    "branch": "main",
+    "pushed": "2026-08-27T07:34:34Z",
+    "license": null,
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "phaserjs/template-vite-ts",
+    "url": "https://github.com/phaserjs/template-vite-ts",
+    "revision": "d1d7d58acfcf47f97642bcb8b4967071b85f8db9",
+    "branch": "main",
+    "pushed": "2026-04-21T08:31:29Z",
+    "license": "MIT",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "KilledByAPixel/LittleJS",
+    "url": "https://github.com/KilledByAPixel/LittleJS",
+    "revision": "b3fb970add30bc504cc5c9bb300c35be55a08bee",
+    "branch": "main",
+    "pushed": "2026-10-20T23:04:27Z",
+    "license": "MIT",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "kaplayjs/kaplay",
+    "url": "https://github.com/kaplayjs/kaplay",
+    "revision": "974a222c4552afd5b36318b82459f923910d3fc8",
+    "branch": "master",
+    "pushed": "2026-10-22T18:23:51Z",
+    "license": "MIT",
+    "archived": false,
+    "checked": "2026-10-24"
+  },
+  {
+    "repository": "pixijs/pixijs",
+    "url": "https://github.com/pixijs/pixijs",
+    "revision": "b78ff35152f9b28fdf0289b54bc2deacd62956b6",
+    "branch": "dev",
+    "pushed": "2026-10-22T15:05:59Z",
+    "license": "MIT",
+    "archived": false,
+    "checked": "2026-10-24"
+  }
+]

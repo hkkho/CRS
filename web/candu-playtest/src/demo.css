@@ -1,0 +1,32 @@
+.reactor-arcade.reactor-demo { max-width: none; padding: 20px clamp(12px, 3vw, 48px) 80px; background: #0b131c; }
+.reactor-demo header { flex-wrap: wrap; }
+.reactor-arcade.reactor-demo h1 { font-size: clamp(24px, 4vw, 40px); }
+.reactor-arcade.reactor-demo header .arcade-kicker { font: 800 12px/1.4 system-ui, sans-serif; letter-spacing: .12em; }
+body:has(.reactor-demo) .player-toggle { display: none; }
+.demo-hud { display: flex; flex-wrap: wrap; gap: 20px 40px; margin: 18px 0 10px; }
+.demo-hud span { display: block; color: #9cacb9; font-size: 10px; letter-spacing: .14em; }
+.demo-hud strong { font-size: clamp(18px, 2.4vw, 28px); font-variant-numeric: tabular-nums; }
+.demo-clock { width: 100%; height: 4px; display: block; accent-color: #80e5bc; margin-bottom: 12px; }
+.demo-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 28px; max-width: 1400px; margin: auto; }
+.demo-map-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.demo-map-heading h2 { font-size: 17px; }
+.demo-map-heading small, .demo-map-heading [data-live] { color: #a7b8c9; font-size: 12px; }
+.reactor-demo .arcade-map-scroll { width: min(100%, max(440px, calc(100dvh - 320px))); margin: auto; border-radius: 8px; }
+.reactor-demo .arcade-map { background: #101e2b; }
+.reactor-arcade.reactor-demo .arcade-map button { font-size: clamp(5px, .58vw, 9px); font-weight: 750; color: #fff; text-shadow: 0 1px 2px #000; border-radius: 15%; box-shadow: none; }
+.reactor-arcade.reactor-demo .arcade-map button::before { display: none; }
+.reactor-demo .arcade-map [data-planned=true]::after { width: 20%; height: 20%; top: 3%; left: 3%; }
+.demo-readout { align-self: start; padding-top: 40px; }
+.demo-readout > [data-power] { display: block; font-size: 64px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.demo-readout > p { font-size: 13px; color: #c1d0dd; margin-block: 12px; }
+.demo-readout > .demo-help { color: #8fa2b5; font-size: 12px; }
+.demo-retry { display: flex; gap: 8px; }
+.demo-readout [data-ended]:empty { display: none; }
+@media (max-width: 720px) {
+  .demo-workspace { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .demo-readout { padding-top: 0; }
+  .demo-readout > [data-power] { font-size: 40px; }
+  .demo-hud { gap: 12px 24px; }
+  .reactor-demo .arcade-map-scroll { width: 100%; }
+  .reactor-demo nav { flex-wrap: wrap; }
+}

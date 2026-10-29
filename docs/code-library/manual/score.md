@@ -6,8 +6,8 @@ Run limits — equality is allowed.
 | --- | --- |
 | Average LZC | 10–90% |
 | Global axial tilt | −20 to +20% |
-| Channel power | ≤ 7,300 kW |
-| Bundle power | ≤ 935 kW |
+| Channel power | ≤ 7,100 kW |
+| Bundle power | ≤ 900 kW |
 
 Limits are checked after each fuel move and at the day boundary. A violating move ends the run and stops remaining orders. A day-end loss retains the completed day. An invalid plan or numerical failure consumes no fuel or time; an interrupted calculation may have an unknown outcome, which is reported separately.
 

@@ -49,28 +49,36 @@ pacing, completed days and `lastDayResult`. See [daily semantics](gameplay/daily
 The scheduler never ticks daily sessions. The waiting dialog supports reduced
 motion and flashes survival/loss with day points and total score. Rejection and
 interrupted unknown outcomes are distinct from physical losses. Solver accuracy
-takes priority over real-time latency. The public controller requires daily pacing,
+takes priority over real-time latency. The Studio/Arcade controller requires daily pacing,
 rejects legacy real-time saves and commands, and refuses mismatched runtimes.
 Old URL options cannot enable the live clock. Direct comparison tools retain
-real-time contracts; new development targets daily turns.
+real-time contracts. Live demo uses explicit `demo` pacing, a separate ephemeral worker/session, the same atomic one-day integrator and immediate refuelling. `DemoLoop` starts days on five-second wall-time deadlines, permits at most one worker call, caps waiting fuel requests at eight distinct channels and coalesces missed deadlines. It never extrapolates physics in TypeScript. The power map remains interactive while the last authoritative reading is displayed. Hidden tabs and pause discard pending clock time and waiting input. Standard daily saves/drafts and leaderboard paths remain separate.
 
 ## Limits, score and fuel
 
-Free practice is endless with unlimited stock; consumption remains counted. The
-optional one-day challenge has finite stock and rewards discharging at least eight
-bundles at 6 MWd/kg HM or above while finishing within limits. Retry preserves seed
-and objective; new shift draws a new aged-core seed.
+Free practice is the only selectable run. Both Studio and Arcade use endless
+play with unlimited stock; consumption remains counted. Historical challenge
+contracts remain readable for compatibility, but launcher/new-run/retry controls
+never create them. Seeded retries retain the seed.
 
-`three-day-rhythm-v1` completes three days within limits; `seven-day-stewardship-v1`
-completes seven days and requires 48 useful discharged bundles at the same 6 MWd/kg
-threshold. Both share 128 fresh bundles across the entire run. `ShiftObjective`
-owns authored horizons and requirements; `ShiftProgress` owns published outcomes
-and badge eligibility. The existing ripple scoring and reactor physics are unchanged.
-The persistent fuelling sheet presents the sorted draft. Optional first-shift
-guidance follows actual input and results without issuing commands.
+The full-width core face has compact heading controls; decorative rails and
+on-map device text are removed. The right column combines the fuel sheet with
+an expanded details dock: LZC levels, channel readings, fuel movement and profiles.
+History inspection, Keff, tilt and map colors remain visible above the workspace.
+
+Startup uses the fixed time-average reference's node powers to derive the
+fourteen RRS target fractions. It verifies a bounded startup shape correction
+inside the ordinary event deadband, then settles equilibrium xenon with those
+fills. Later events retain their existing deadband and candidate acceptance
+rules. The nominal reference is still derived with 50% zones; the actual aged
+core's initial fills are calculated rather than set to 50% for display.
+
+The daily run-model identity is `practice-daily-one-step-reference-zones-v2`:
+old daily saves are retained but rejected before candidate restore. The day
+still uses one 86,400-second integration step.
 
 A run ends outside 10-90% average LZC, beyond 20% absolute global tilt, above
-7,300 kW/channel or above 935 kW/bundle. Equality is allowed. Game publishes status
+7,100 kW/channel or above 900 kW/bundle. Equality is allowed. Game publishes status
 and reason separately from numerical diagnostics/RRS exhaustion. Terminal runs
 freeze until reset. See [power limits](gameplay/power-limits.md).
 

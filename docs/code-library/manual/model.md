@@ -6,4 +6,4 @@ The current axial model uses zero incoming partial current at both reactor ends 
 
 These are project-authored approximations for plausible gameplay, rather than plant-grade operating predictions. The simulator focuses on on-power refuelling; shutdown, scram, accidents and full plant operations are outside its scope.
 
-Engineering edits mark a modified sandbox, excluding standard challenge rewards until a new standard run starts.
+Engineering edits mark a modified sandbox. Start a new standard run to restore its normal provenance.

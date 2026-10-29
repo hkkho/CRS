@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browser Game Studio"
+  short_description: "Research, prototype and polish browser games"
+  default_prompt: "Use $browser-game-studio to turn my idea into a playable browser game with a tested core loop and coherent art direction."

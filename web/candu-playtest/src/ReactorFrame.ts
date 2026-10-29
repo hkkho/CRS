@@ -1,9 +1,9 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 
-/** Original vector housing and locator. Published channels remain the input/state layer. */
+/** Original vector housing and selection frame. Published channels remain the input/state layer. */
 export class ReactorFrame {
-  private readonly locator: SVGGElement;
   private readonly confirmation: SVGCircleElement;
+  private readonly selection: SVGGElement;
   private lastOperation: number | undefined;
   private initialized = false;
   private animation: Animation | undefined;
@@ -11,19 +11,19 @@ export class ReactorFrame {
   constructor(private readonly svg: SVGSVGElement, private readonly arcade = false) {
     const ns = "http://www.w3.org/2000/svg", prefix = arcade ? "arcade-housing" : "studio-housing";
     const defs = document.createElementNS(ns, "defs");
-    defs.innerHTML = `<linearGradient id="${prefix}-metal" x2="1" y2="1"><stop stop-color="#a2b1a6"/><stop offset=".17" stop-color="#526b62"/><stop offset=".48" stop-color="#243d3d"/><stop offset=".73" stop-color="#789184"/><stop offset="1" stop-color="#172d32"/></linearGradient><pattern id="${prefix}-grain" width="5" height="5" patternUnits="userSpaceOnUse"><path d="M0 1H5M0 3H5" stroke="#9cb3a5" stroke-opacity=".06" stroke-width=".5"/></pattern><radialGradient id="${prefix}-well"><stop stop-color="#24433a"/><stop offset=".8" stop-color="#112a27"/><stop offset="1" stop-color="#081a20"/></radialGradient>`;
+    defs.innerHTML = `<linearGradient id="${prefix}-metal" x2=".7" y2="1"><stop stop-color="#d3d0ad"/><stop offset=".16" stop-color="#809385"/><stop offset=".4" stop-color="#344b4f"/><stop offset=".7" stop-color="#b2baa0"/><stop offset="1" stop-color="#385153"/></linearGradient><pattern id="${prefix}-grain" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 1H4" stroke="#e2e7ca" stroke-opacity=".1" stroke-width=".6"/></pattern><radialGradient id="${prefix}-well" cx=".4" cy=".3"><stop stop-color="#334b46"/><stop offset=".8" stop-color="#1b3437"/><stop offset="1" stop-color="#10262e"/></radialGradient>`;
     svg.prepend(defs);
     const housing = document.createElementNS(ns, "g"); housing.classList.add("reactor-housing");
     housing.setAttribute("aria-hidden", "true"); housing.setAttribute("pointer-events", "none");
-    housing.innerHTML = `<circle cx="280" cy="280" r="273" fill="#030d12"/><circle cx="280" cy="280" r="269" fill="url(#${prefix}-metal)" stroke="#86a291" stroke-width="1"/><circle cx="280" cy="280" r="254" fill="url(#${prefix}-well)" stroke="#0b2024" stroke-width="3"/><circle cx="280" cy="280" r="269" fill="url(#${prefix}-grain)"/><circle cx="280" cy="280" r="259" fill="none" stroke="#bdd0b0" stroke-opacity=".3" stroke-width=".7"/>
-      ${Array.from({ length: 24 }, (_, i) => { const a = i * Math.PI / 12, x = 280 + Math.cos(a) * 262, y = 280 + Math.sin(a) * 262; return `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${i * 15})"><circle r="3.7" fill="#102329" stroke="#a3b7a5" stroke-width=".8"/><path d="M-2 0H2" stroke="#9bb0a0" stroke-width=".7"/></g>`; }).join("")}<path d="M9 72V488M551 72V488" stroke="#81998a" stroke-opacity=".5" stroke-width="2"/>`;
+    housing.innerHTML = `      <circle cx="282" cy="284" r="273" fill="#04151d"/><circle cx="280" cy="280" r="269" fill="url(#${prefix}-metal)" stroke="#c3c9a4" stroke-width="1"/><circle cx="280" cy="280" r="254" fill="url(#${prefix}-well)" stroke="#0b2024" stroke-width="4"/><circle cx="280" cy="280" r="269" fill="url(#${prefix}-grain)"/><circle cx="280" cy="280" r="259" fill="none" stroke="#e6e2b3" stroke-opacity=".4" stroke-width=".8"/>
+      ${Array.from({ length: 24 }, (_, i) => { const a = i * Math.PI / 12, x = 280 + Math.cos(a) * 262, y = 280 + Math.sin(a) * 262; return `<g transform="translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${i * 15})"><path d="M-4-2l4-2 4 2v4l-4 2-4-2z" fill="#20353a" stroke="#c9cdae" stroke-width=".8"/><path d="M-2 0H2" stroke="#a4b396" stroke-width=".7"/></g>`; }).join("")}`;
     const channels = svg.querySelector('[data-field="channels"]');
     svg.insertBefore(housing, svg.querySelector(":scope > circle") ?? channels);
     svg.querySelector<SVGCircleElement>(":scope > circle")?.style.setProperty("fill", `url(#${prefix}-well)`);
-    this.locator = document.createElementNS(ns, "g"); this.locator.classList.add("reactor-locator");
-    this.locator.setAttribute("aria-hidden", "true"); this.locator.setAttribute("pointer-events", "none");
-    this.locator.innerHTML = '<rect x="0" y="-11" width="27" height="22" rx="4" fill="#1b3335" stroke="#d6bb83"/><path d="M7-6V6M12-6V6M17-6V6" stroke="#8b9b88"/><path d="M27-5l9 5-9 5" fill="#dfbd77"/>';
-    svg.append(this.locator);
+    this.selection = document.createElementNS(ns, "g"); this.selection.classList.add("reactor-selection");
+    this.selection.setAttribute("aria-hidden", "true"); this.selection.setAttribute("pointer-events", "none");
+    this.selection.innerHTML = '<path d="M-6-13h-7v7M6-13h7v7M13 6v7H6M-13 6v7h7" fill="none" stroke="#fff1be" stroke-width="1.8"/>';
+    svg.append(this.selection);
     this.confirmation = document.createElementNS(ns, "circle");
     this.confirmation.classList.add("reactor-confirmed-ring"); this.confirmation.setAttribute("r", arcade ? "14" : "11");
     this.confirmation.setAttribute("aria-hidden", "true"); this.confirmation.setAttribute("pointer-events", "none");
@@ -43,7 +43,11 @@ export class ReactorFrame {
     const position = (c: CanduChannelSnapshot) => this.arcade
       ? { x: (c.gridColumn + 1.468) / 24 * 560, y: (c.gridRow + 1.468) / 24 * 560 }
       : { x: 70 + c.gridColumn * 20, y: 70 + c.gridRow * 20 };
-    if (channel) this.locator.style.transform = `translate(2px, ${position(channel).y}px)`;
+    this.selection.style.display = channel ? "" : "none";
+    if (channel) {
+      const { x, y } = position(channel);
+      this.selection.setAttribute("transform", `translate(${x} ${y})`);
+    }
     const operation = snapshot.lastFuelMovement?.operationId;
     const moved = snapshot.core.channels.find(c => c.channelIndex === snapshot.lastFuelMovement?.channelIndex);
     this.confirmation.style.display = moved ? "" : "none";

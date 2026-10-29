@@ -8,6 +8,8 @@ import { GameUpdateView } from './GameUpdateView';
 import { createCanduPlaytestBridge } from "./bridge";
 import "./observatory.css";
 import "./reactorExperience.css";
+import "./interfaceSimplification.css";
+import "./controlRoom.css";
 
 const session = new BridgeSessionController(createCanduPlaytestBridge({
   initialPacingMode: "daily-turn",

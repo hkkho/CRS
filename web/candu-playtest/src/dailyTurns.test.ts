@@ -109,7 +109,7 @@ describe("daily browser decisions", () => {
   it("rejects daily saves from another integration model before creating a worker", async () => {
     const { session } = harness(); await session.dispatch({ type: "pause" });
     const save = session.captureRun(), factory = vi.fn(() => harness().bridge);
-    await expect(session.restoreRun({ ...save, dailyIntegrationId: "old-three-minute-model" }, undefined, factory)).rejects.toThrow("time-step model");
+    await expect(session.restoreRun({ ...save, dailyIntegrationId: "old-three-minute-model" }, undefined, factory)).rejects.toThrow("reactor model");
     expect(factory).not.toHaveBeenCalled();
   });
 

@@ -1,0 +1,46 @@
+[
+  {
+    "path": "web/candu-playtest/src/controlRoom.css",
+    "sha256": "305dc5effe5730f7ffa1fb5123469bd7f2839b3cfe85e09604c42277ffcb923e"
+  },
+  {
+    "path": "web/candu-playtest/src/ReactorIllustration.ts",
+    "sha256": "9c1442a2d6509927d3006ff4d1b0d9fe9def2f8e257b93e7a99f8fa6b4113702"
+  },
+  {
+    "path": "web/candu-playtest/src/ReactorFrame.ts",
+    "sha256": "a00cafe72583ca2321a0a7a0a77eef2b4d2ef03f785f4c42147eb1cf3e21f40c"
+  },
+  {
+    "path": "web/candu-playtest/src/LauncherView.ts",
+    "sha256": "3edd22f7f49afd43b82461b55234dd6b5a57eee8d02bc08b4b6df85a1cde6564"
+  },
+  {
+    "path": "web/candu-playtest/src/RunGoalView.ts",
+    "sha256": "aa4916a162b8021f9fc10e6060e1c262793df36a12b8f933489a590e48340f9b"
+  },
+  {
+    "path": "web/candu-playtest/src/ArcadeView.ts",
+    "sha256": "32f78a736da6ac9ea1e5cdf6fc2f1dbdc6e72127f77fb59be635d6b3de28829b"
+  },
+  {
+    "path": "web/candu-playtest/src/studio/StudioView.ts",
+    "sha256": "c222aef01185a52ddbcba7cf8978049c9c21e7a22b4ffcdd3c2ca749086a4397"
+  },
+  {
+    "path": "web/candu-playtest/src/main.ts",
+    "sha256": "a0e9ce9f1cc24bae63a5a7178343e65a47c5b6660ff7f754be3e649f11006185"
+  },
+  {
+    "path": "web/candu-playtest/public/favicon.svg",
+    "sha256": "96833f823146eb36663c2ee21597ad89fd4ab10b130d5118f8adfefe2fe57a35"
+  },
+  {
+    "path": "web/candu-playtest/index.html",
+    "sha256": "4daec242ac5db9634f1292d4a23e4047fdba6473c4df69dceb8c43a95fbbb510"
+  },
+  {
+    "path": "web/candu-playtest/scripts/daily-turn-smoke.mjs",
+    "sha256": "f16eb30efbee2668c7f272ca310ee4e7d4b31dff2070fcf0dca811ed99d6068d"
+  }
+]

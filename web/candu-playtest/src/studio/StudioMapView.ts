@@ -1,7 +1,8 @@
 import { ReactorFrame } from "../ReactorFrame";
+import { CoreMapTooltip, CoreMapZoom, channelTooltip } from "../CoreMapInteraction";
 import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
-import { CANDU6_ROW_LABELS, gridCoordinateLabel } from "../channelCoordinates";
-import { bundleLimit, channelLimit, channelColorMinimum, bundleColorMinimum, channelWatts, powerColor, rippleColor, type MapMode } from "./powerReadings";
+import { CANDU6_ROW_LABELS } from "../channelCoordinates";
+import { bundleLimit, channelLimit, channelColorMinimum, bundleColorMinimum, channelWatts, powerColor, rippleColor, burnupColor, powerBand, type MapMode } from "./powerReadings";
 import { setAttribute } from "./domPatch";
 import { patchMarkup } from "./domPatch";
 
@@ -12,6 +13,8 @@ export class StudioMapView {
   private readonly tubes = document.createElementNS("http://www.w3.org/2000/svg", "g");
   private tubeKey = "";
   private plane = 0;
+  private readonly tooltip: CoreMapTooltip;
+  private readonly zoom: CoreMapZoom;
   private readonly frame: ReactorFrame;
   setLiquidZonePlane(plane: number): void { this.plane = plane; }
   showAdjusters(visible: boolean): void { this.devices.style.display = visible ? "" : "none"; }
@@ -19,32 +22,36 @@ export class StudioMapView {
     this.build(channels);
     this.frame = new ReactorFrame(this.field("map") as unknown as SVGSVGElement);
     this.frame.sockets(channels);
+    this.tooltip = new CoreMapTooltip(this.field("map"));
+    this.zoom = new CoreMapZoom(this.field("map").parentElement!, this.field("map"));
   }
-  destroy(): void { this.frame.destroy(); }
+  destroy(): void { this.frame.destroy(); this.tooltip.destroy(); this.zoom.destroy(); }
   focus(index: number): void { this.channelCells.get(index)?.focus({ preventScroll: true }); }
   update(snapshot: CanduSnapshot, selected: number, mode: MapMode, planned: readonly number[] = []): void {
     this.frame.update(snapshot, selected);
     this.updateDevices(snapshot);
+    this.tooltip.update(snapshot);
     for (const current of snapshot.core.channels) {
       const circle = this.channelCells.get(current.channelIndex);
       if (!circle) continue;
       const watts = channelWatts(snapshot, current);
       const ratio = snapshot.ripple?.channelRippleFractions[current.channelIndex];
       const peak = Math.max(0, ...current.bundles.filter(b => b.hasFuel).map(b => b.powerWatts));
-      const amount = current.averageBurnupMwdPerKg / 10;
-      const fraction = Math.min(1, Math.max(0, amount));
       const color = mode === "power" ? powerColor(watts, channelColorMinimum(snapshot), channelLimit(snapshot))
         : mode === "bundle-power" ? powerColor(peak, bundleColorMinimum(snapshot), bundleLimit(snapshot))
         : mode === "ripple" ? ratio !== undefined ? rippleColor(ratio) : "#53665e"
-        : `hsl(${135 - fraction * 90} 72% ${32 + fraction * 30}%)`;
+        : burnupColor(current.averageBurnupMwdPerKg);
+      const band = mode === "power" ? powerBand(watts, channelColorMinimum(snapshot), channelLimit(snapshot)) : mode === "bundle-power" ? powerBand(peak, bundleColorMinimum(snapshot), bundleLimit(snapshot)) : undefined;
+      setAttribute(circle, "data-alert", String(band === "extreme"));
       setAttribute(circle, "fill", color);
       setAttribute(circle, "stroke", current.channelIndex === selected ? "#e1ffb0" : planned.includes(current.channelIndex) ? "#ffce74" : "#102a1c");
       setAttribute(circle, "stroke-width", current.channelIndex === selected || planned.includes(current.channelIndex) ? "3" : "0.7");
       setAttribute(circle, "tabindex", current.channelIndex === selected ? "0" : "-1");
       setAttribute(circle, "aria-pressed", String(current.channelIndex === selected));
       setAttribute(circle, "data-planned", String(planned.includes(current.channelIndex)));
-      const label = `${planned.includes(current.channelIndex) ? "Planned today. " : ""}Channel ${gridCoordinateLabel(current)}, burnup ${current.averageBurnupMwdPerKg.toFixed(1)} MWd/kg, power ${(watts / 1000).toFixed(0)} kW, ripple ${ratio === undefined ? "unavailable" : `${(ratio * 100).toFixed(2)}%`}, peak bundle ${(peak / 1000).toFixed(0)} kW`;
-      setAttribute(circle, "aria-label", label); if (circle.firstElementChild!.textContent !== label) circle.firstElementChild!.textContent = label;
+      const label = `${planned.includes(current.channelIndex) ? "Planned today. " : ""}${band === "extreme" ? "Very high power. " : ""}${channelTooltip(snapshot, current)}`;
+      setAttribute(circle, "aria-label", label);
+
     }
   }
   private updateDevices(snapshot: CanduSnapshot): void {
@@ -70,10 +77,7 @@ export class StudioMapView {
         water.setAttribute("class", "studio-lzc-water");
         const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
         title.textContent = `Z${tube.zoneId + 1}, ${(fill * 100).toFixed(1)}% water; axial bundle coordinate ${(tube.axialPosition + 1).toFixed(1)}`;
-        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-        label.setAttribute("x", String(x + 5)); label.setAttribute("y", String(y + 10));
-        label.setAttribute("class", "studio-lzc-label"); label.textContent = `Z${tube.zoneId + 1}`;
-        outline.append(title); this.tubes.append(outline, water, label);
+        outline.append(title); this.tubes.append(outline, water);
       }
     }
     const key = JSON.stringify([rods, tubes]);

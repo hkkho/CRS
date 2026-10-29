@@ -40,8 +40,8 @@ function chartsFor(tab: StudioTab): Chart[] {
           color: COLORS[zone], dashed: zone >= 7, read: (point: ReactorHistoryPoint) => point.zoneXenon[zone] })) },
     ];
     case "power": return [
-      { title: "Maximum channel power", unit: "MW thermal", domain: CHANNEL_PEAK_RANGE, limits: [{ value: 7.3, label: "Channel limit" }], series: [series("Hottest channel", "maxChannelMw")] },
-      { title: "Maximum bundle power", unit: "kW thermal", domain: BUNDLE_PEAK_RANGE, limits: [{ value: 935, label: "Bundle limit" }], series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
+      { title: "Maximum channel power", unit: "MW thermal", domain: CHANNEL_PEAK_RANGE, limits: [{ value: 7.1, label: "Channel limit" }], series: [series("Hottest channel", "maxChannelMw")] },
+      { title: "Maximum bundle power", unit: "kW thermal", domain: BUNDLE_PEAK_RANGE, limits: [{ value: 900, label: "Bundle limit" }], series: [series("Hottest bundle", "maxBundleKw", COLORS[1])] },
       { title: "Total reactor output", unit: "MW", zero: true, series: [series("Thermal", "thermalMw"), series("Electrical", "electricalMw", COLORS[2])] },
     ];
     case "burnup": return [
@@ -102,7 +102,7 @@ export class HistoryView {
     this.element.className = "studio-history";
     this.element.innerHTML = `<div class="studio-history-toolbar"><details class="studio-dropdown studio-view-menu"><summary data-history="view-title">Reactor</summary><div class="studio-tabs studio-dropdown-panel" role="tablist" aria-label="CRS views">${TABS.map(([id, label]) =>
       `<button id="studio-tab-${id}" role="tab" data-tab="${id}" aria-controls="${id === "reactor" ? "studio-reactor-panel" : "studio-history-panel"}" aria-selected="${id === "reactor"}" tabindex="${id === "reactor" ? 0 : -1}">${label}</button>`).join("")}</div></details>
-      <div class="studio-history-inspect"><label>View time <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Return to live</button></div></div>
+      <div class="studio-history-navigation"><span class="studio-eyebrow">HISTORY</span><div class="studio-history-inspect"><label>View time <input type="range" min="0" max="0" value="0" aria-label="Inspect history sample" data-history="inspector"></label><output data-history="readout"></output><button data-history="live">Return to current day</button></div></div></div>
       <section id="studio-history-panel" class="studio-history-panel" role="tabpanel" hidden>
         <div class="studio-history-heading"><div><p class="studio-eyebrow">SHIFT HISTORY / SIMULATION TIME</p><h2 data-history="title"></h2><p data-history="description"></p></div>
           <label>Time window <select data-history="window" aria-label="Graph time window"><option value="0">All recorded</option><option value="21600">Last 6 hours</option><option value="86400">Last 24 hours</option><option value="604800">Last 7 days</option></select></label></div>
@@ -166,7 +166,8 @@ export class HistoryView {
     this.element.dataset.viewTime = this.inspectionTime === null ? "live" : "history";
     const live = this.element.querySelector<HTMLButtonElement>('[data-history="live"]')!;
     live.disabled = this.inspectionTime === null;
-    live.textContent = this.inspectionTime === null ? "Following live" : "Return to live";
+    live.hidden = this.inspectionTime === null;
+    live.textContent = "Return to current day";
     this.text("readout", readout); this.inspector.setAttribute("aria-valuetext", readout);
     this.text("note", `${points.length} samples shown · ${all.length} / ${HISTORY_CAPACITY} trend samples retained · ${inspectable.length} complete snapshots available to inspect. History clears on New shift. Lines connect observed snapshots; time uses the simulation clock. Vertical axes zoom to the readings and expand for outliers; check the displayed bounds.`);
     this.charts.forEach((chart, chartIndex) => {

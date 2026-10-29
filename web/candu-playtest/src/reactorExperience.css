@@ -102,7 +102,6 @@
 .studio-map-viewport { background-image: repeating-linear-gradient(135deg, #76938204 0 1px, transparent 1px 5px), radial-gradient(circle, #1c3630, #08171d 72%); }
 .studio-map-wrap [data-channel] { filter: drop-shadow(1px 2px 1px #0009); }
 .studio-map-wrap [data-channel][aria-pressed="true"] { stroke: #ffedb2; stroke-width: 3; }
-.reactor-locator { transition: transform 220ms ease-out; }
 .reactor-confirmed-ring { fill: none; stroke: #d9efad; stroke-width: 1.5; opacity: .7; }
 .arcade-vessel-art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .reactor-arcade .arcade-map button { border-radius: 50%; border: 1px solid #b9be8d60; box-shadow: 1px 2px 2px #0008; }
@@ -148,5 +147,5 @@
   .arcade-fuel-sheet { padding: 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .reactor-locator, .fuel-order-list li { animation: none !important; transition: none !important; }
+  .fuel-order-list li { animation: none !important; transition: none !important; }
 }

@@ -1,0 +1,11 @@
+{
+  "name": "browser-game-pattern-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test model.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

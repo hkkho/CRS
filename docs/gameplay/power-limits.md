@@ -1,7 +1,7 @@
 # Channel and bundle power limits
 
-A run ends if any channel exceeds **7,300 kW thermal** or any individual bundle
-exceeds **935 kW thermal**. The two conditions are independent. Exact equality
+A run ends if any channel exceeds **7,100 kW thermal** or any individual bundle
+exceeds **900 kW thermal**. The two conditions are independent. Exact equality
 is allowed. These are authored gameplay rules, not a plant protection model.
 
 `PracticeOperatingLimits` owns the watt-valued thresholds in Game. `GameSession`
@@ -27,9 +27,10 @@ shifts, iodine/xenon evolution and no-adjuster reference derivation remain activ
 No limit exception or power clipping is used. See [calibration and seed results](../physics/power-limit-balance.md).
 
 Studio has distinct channel kW, reference-ripple %, and peak-bundle kW maps.
-Channel colors reach red at 7,300 kW; bundle colors reach red at 935 kW. Ripple
-is actual/reference, neutral at 100%, and reaches red at each channel's absolute
-cap divided by its own reference. There is no separate ripple game-over limit.
+Channel colors reach red at 90% of the cap (6,390 kW), and bright red at 97%
+(6,887 kW). Bundle colors use the same fractions: 810 and 873 kW. Ripple is
+actual/reference, neutral at 100%; its tiers are independent of the power cap.
+There is no separate ripple game-over limit.
 The inspector displays actual kW, target ripple, reference MW and both caps.
 The axial power graph and peak-history graphs mark the respective limits.
 

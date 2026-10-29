@@ -109,9 +109,19 @@ public sealed partial class PlaytestBridgeTests
             var full = Parse(PlaytestBridgeV2.GetSnapshotJson());
             Assert.Equal(target, patch.GetProperty("targetPowerFraction").GetDouble(), 10);
             Assert.Equal(target, full.GetProperty("targetPowerFraction").GetDouble(), 10);
-            Assert.Equal("running", patch.GetProperty("runStatus").GetString());
             Assert.Equal(full.GetProperty("runStatus").GetString(), patch.GetProperty("runStatus").GetString());
-            Assert.Equal(string.Empty, patch.GetProperty("runEndReason").GetString());
+            Assert.Equal(full.GetProperty("runEndReason").GetString(), patch.GetProperty("runEndReason").GetString());
+            if (target == 1.2)
+            {
+                // With the 7,100/900 kW caps, 120% is a real terminal target.
+                Assert.Equal("ended", patch.GetProperty("runStatus").GetString());
+                Assert.NotEmpty(patch.GetProperty("runEndReason").GetString()!);
+            }
+            else
+            {
+                Assert.Equal("running", patch.GetProperty("runStatus").GetString());
+                Assert.Equal(string.Empty, patch.GetProperty("runEndReason").GetString());
+            }
             Assert.Equal(target, full.GetProperty("physics").GetProperty("targetPowerWatts").GetDouble() /
                 full.GetProperty("physics").GetProperty("referencePowerWatts").GetDouble(), 10);
         }

@@ -50,7 +50,7 @@ namespace ReactorSim.Game
             return session;
         }
 
-        public static GameSession CreateBrowserPlaytest(ulong seed, string objectiveId, bool dailyTurns = true)
+        public static GameSession CreateBrowserPlaytest(ulong seed, string objectiveId, bool dailyTurns = true, bool demo = false)
         {
             var goal = ShiftObjective.ForId(objectiveId);
             var session = CreateSession(BrowserBaseSimulationSecondsPerWallSecond,
@@ -58,6 +58,7 @@ namespace ReactorSim.Game
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
                 goal.Days * 86_400.0, RealTimePlaybackModeId, seed, goal.IsChallenge, !goal.IsChallenge, goal.Id);
             if (dailyTurns) session.UseDailyTurns();
+            if (demo) session.UseDemo();
             return session;
         }
 
@@ -130,13 +131,14 @@ namespace ReactorSim.Game
                 PracticeLiquidZoneRrsV1.TryCreate(
                     rrsMapping,
                     equilibriumSolver.CurrentProjection,
-                    runtime.SimulationTimeSeconds));
+                    runtime.SimulationTimeSeconds,
+                    referenceNodePowerWatts: ReferenceChannelPower.NodePowerWatts));
             PracticeLiquidZoneRrsEquilibriumResultV1 acceptedRrs = Require(
                 PracticeLiquidZoneRrsV1.TryRunEquilibrium(
                     equilibriumSolver,
                     coreState.EnumerateBundles(),
                     initialRrs,
-                    runtime.SimulationTimeSeconds));
+                    runtime.SimulationTimeSeconds, settleReferenceShape: true));
             Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
             // Settle the assumed pre-run core without consuming run time/fuel.
             // Each controller pass retains its normal bounded movement contract.
@@ -154,14 +156,19 @@ namespace ReactorSim.Game
                 bool settled = false;
                 double lastPoisonError = double.PositiveInfinity;
                 double poisonTolerance = Math.Max(1e-7, 4 * dataPack.ConvergencePolicy.SourceShapeTolerance);
+                bool referenceShapeSettled = acceptedRrs.State.ZoneFills.Max() - acceptedRrs.State.ZoneFills.Min() >
+                    PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance;
                 for (int pass = 0; pass < 16; pass++)
                 {
                     settledXenon = PracticeXenonStateV1.CreateEquilibrium(coreState,
                         equilibriumSolver.CurrentProjection, runtime.SimulationTimeSeconds);
                     acceptedRrs = Require(PracticeLiquidZoneRrsV1.TryRunEquilibrium(
                         equilibriumSolver, coreState.EnumerateBundles(), acceptedRrs.State,
-                        runtime.SimulationTimeSeconds, backgroundOverlay: settledXenon.Overlay));
+                        runtime.SimulationTimeSeconds, backgroundOverlay: settledXenon.Overlay,
+                        settleReferenceShape: !referenceShapeSettled));
                     Require(equilibriumSolver.TryCommitCandidate(acceptedRrs.Projection));
+                    referenceShapeSettled |= acceptedRrs.State.ZoneFills.Max() - acceptedRrs.State.ZoneFills.Min() >
+                        PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance;
                     var next = PracticeXenonStateV1.CreateEquilibrium(coreState,
                         acceptedRrs.Projection, runtime.SimulationTimeSeconds);
                     double error = next.Xenon.Select((x, n) => Math.Abs(x - settledXenon.Xenon[n]) /

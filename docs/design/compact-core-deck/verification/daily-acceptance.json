@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:45386/CRS/",
+  "bridge": "authoritative-csharp-wasm",
+  "buildInfo": {
+    "gitCommitSha": "9ac573ef6d76b66fa4eda01848c985b3ed031b3d",
+    "configuration": "Release",
+    "targetFramework": "net10.0",
+    "runtimeIdentifier": "browser-wasm",
+    "runAotCompilation": true,
+    "enableRuntimeProfiling": false,
+    "wasmEnableSIMD": "default",
+    "researchExperiments": false,
+    "wasmEnableThreads": false,
+    "cpuOperatorPartitions": 1,
+    "omitPrecompressedAssets": true
+  },
+  "daily": {
+    "default": "daily-turn",
+    "multiChannelDay": "passed",
+    "emptyDay": "passed",
+    "frozenPlanning": "passed",
+    "narrowLayout": "passed",
+    "durationsMs": [
+      4899,
+      1722
+    ]
+  },
+  "loss": {
+    "outcome": "failure",
+    "reason": "Bundle power exceeds 900 kW",
+    "successScoreHidden": true,
+    "shiftReport": "visible",
+    "errors": []
+  },
+  "recovery": {
+    "status": "passed",
+    "action": "reload after unavailable WASM",
+    "pacing": "daily-turn"
+  },
+  "errors": []
+}

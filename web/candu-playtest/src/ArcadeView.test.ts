@@ -32,8 +32,9 @@ it("inspects any map channel, explicitly adds it, and submits the shared daily c
   button('[data-channel="0"]').click();
   button('[data-action="commit"]').click();
   expect(session.dispatch).not.toHaveBeenCalled();
-  expect((document.querySelector('[data-picker]') as HTMLElement).hidden).toBe(true);
+  expect((document.querySelector('[data-picker]') as HTMLElement).hidden).toBe(false);
   button('[data-action="back"]').click();
+  button('[data-action="remove-sheet-channel"][data-plan-channel="0"]').focus();
   expect(button('[data-channel="0"]').getAttribute("aria-pressed")).toBe("true");
   button('[data-action="commit"]').click();
   button('[data-action="confirm"]').click();
@@ -72,9 +73,12 @@ it("reviews a no-fuel day explicitly and keeps focus when removing a pick", () =
   button('[data-channel="0"]').click();
   button('[data-action="toggle-channel"]').click();
   button('[data-action="commit"]').click();
-  button('[data-remove="0"]').click();
-  expect(document.activeElement).toBe(button('[data-action="back"]'));
-  expect(document.querySelector('[data-plan]')!.textContent).toContain("No fuel selected");
+  button('[data-action="back"]').click();
+  button('[data-action="remove-sheet-channel"][data-plan-channel="0"]').focus();
+  button('[data-action="remove-sheet-channel"][data-plan-channel="0"]').click();
+  expect(document.activeElement).toBe(button('[data-action="commit"]'));
+  expect(document.querySelector('.fuel-sheet-empty')!.textContent).toContain("Your list is empty");
+  button('[data-action="commit"]').click();
   expect(session.dispatch).not.toHaveBeenCalled();
   button('[data-action="confirm"]').click();
   expect(session.dispatch).toHaveBeenCalledWith({ type: "commit-day", expectedCompletedDays: 0, channelIndices: [] });
@@ -83,6 +87,6 @@ it("reviews a no-fuel day explicitly and keeps focus when removing a pick", () =
 it("retries the exact seed and objective and releases its subscription", () => {
   const { session, unsubscribe } = setup();
   button('[data-action="retry"]').click();
-  expect(session.dispatch).toHaveBeenCalledWith({ type: "reset", seed: 42, shiftId: "useful-fuel-day-v1" });
+  expect(session.dispatch).toHaveBeenCalledWith({ type: "reset", seed: 42, shiftId: "free-practice" });
   view.destroy(); expect(unsubscribe).toHaveBeenCalledOnce();
 });

@@ -12,6 +12,7 @@ namespace ReactorSim.Core
         public const string ModelId = "cycle190-time-average-21-adjusters-axial-marshak-half-zones-v5";
         private PracticeChannelPowerReference(FullCoreDiffusionSolveResultV1 solve)
         {
+            NodePowerWatts = Array.AsReadOnly(solve.NodePowerWatts.ToArray());
             ChannelPowerWatts = Array.AsReadOnly(Enumerable.Range(0, 380)
                 .Select(c => solve.NodePowerWatts.Skip(c * 12).Take(12).Sum()).ToArray());
             ThermalPowerWatts = ChannelPowerWatts.Sum();
@@ -19,6 +20,7 @@ namespace ReactorSim.Core
             CoefficientBindingDigest = solve.CoefficientBindingDigest;
         }
         public IReadOnlyList<double> ChannelPowerWatts { get; }
+        public IReadOnlyList<double> NodePowerWatts { get; }
         public double ThermalPowerWatts { get; }
         public string DataPackVersion { get; }
         public Digest32 CoefficientBindingDigest { get; }

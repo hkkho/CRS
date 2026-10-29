@@ -196,7 +196,7 @@ export class BridgeSessionController {
     options?: CanduDispatchOptions,
   ): Promise<CanduCommandResponse> {
     const realTimeCommand = ["advance", "step", "resume", "set-playback-mode", "queue-power-target"].includes(command.type) ||
-      (command.type === "reset" && command.pacingMode === "real-time");
+      (command.type === "reset" && command.pacingMode !== undefined && command.pacingMode !== "daily-turn");
     if (this.requiredPacing === "daily-turn" && realTimeCommand)
       throw new Error("This game uses daily turns. Time advances only when you commit a day.");
     if (this.restoring) throw new Error('Please wait until the saved run finishes restoring.');
@@ -273,7 +273,7 @@ export class BridgeSessionController {
     if (save.dataPackId !== this.snapshotValue.dataPackId || save.scorePolicyId !== this.snapshotValue.scorePolicyId)
       throw new Error('This save uses a different simulation or scoring version.');
     if (save.version === 2 && save.pacingMode === "daily-turn" && save.dailyIntegrationId !== this.snapshotValue.physics.cadenceIdentity)
-      throw new Error("This saved daily run uses a different time-step model. Start a new daily run.");
+      throw new Error("This saved daily run uses a different reactor model. Start a new daily run.");
     if (this.pendingCount || this.restoring) throw new Error('Wait for the current command to finish.');
     this.restoring = true; this.modePending = true; this.syncScheduler(); this.emit();
     let candidate: CanduPlaytestBridgeLifecycle | null = null;

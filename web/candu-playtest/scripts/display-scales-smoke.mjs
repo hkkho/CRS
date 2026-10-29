@@ -15,24 +15,38 @@ page.on('console', message => { if (message.type() === 'error') errors.push(mess
 try {
   await page.goto(url);
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.textContent?.includes('live reactor online'), undefined, { timeout: 120_000 });
+  await page.locator('.launcher-setup details > summary').click();
   await page.locator('.reactor-launcher [data-field="seed"]').fill('1001');
-  await page.locator('.reactor-launcher [data-field="shift"]').selectOption('free-practice');
-  await page.getByRole('button', { name: 'Use seed & objective', exact: true }).click();
+  await page.locator('[data-goal="free-practice"]').click();
   await page.waitForFunction(() => document.querySelector('.reactor-launcher')?.getAttribute('aria-busy') === 'false', undefined, { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Begin shift', exact: true }).click();
+  await page.getByRole('button', { name: 'Start run', exact: true }).click();
   const daily = await verifyDailyTurns(page);
   const studio = page.locator('.reactor-studio');
+  await studio.getByRole('button', { name: 'Zoom in', exact: true }).click();
+  check(await studio.locator('.core-map-zoom output').textContent() === '150%', 'Map zoom did not advance.');
+  await studio.locator('rect[data-channel="210"]').hover();
+  const tooltip = page.getByRole('tooltip');
+  await tooltip.waitFor({ state: 'visible' });
+  check((await tooltip.textContent()).includes('Exit burnup'), 'Channel tooltip lost discharge preview.');
+  check(!(await tooltip.textContent()).includes('exit burnup: unavailable'), 'Real WASM exit preview is unavailable.');
+  await page.screenshot({ path: `${capture}/zoom-tooltip.png`, fullPage: true });
+  await page.keyboard.press('Escape');
+  check(!await tooltip.isVisible(), 'Escape did not dismiss the tooltip.');
+  await studio.getByRole('button', { name: 'Fit core', exact: true }).click();
+  await page.screenshot({ path: `${capture}/studio-map.png`, fullPage: true });
   const palettes = {};
   for (const [mode, floor] of [['power', '4500'], ['bundle-power', '400']]) {
     await studio.locator('.studio-map-menu > summary').click();
     await studio.locator(`[data-map="${mode}"]`).click();
-    check((await studio.locator('[data-field="legend"]').textContent()).includes(`Blue ≤${floor}`), `${mode} color floor is missing.`);
+    check((await studio.locator('[data-field="legend"]').textContent()).includes(`Dark ≤${floor}`), `${mode} color floor is missing.`);
     palettes[mode] = await studio.locator('rect[data-channel]').evaluateAll(cells => new Set(cells.map(cell => cell.getAttribute('fill'))).size);
-    check(palettes[mode] > 100, `${mode} map lost ordinary power detail.`);
+    const colors = await studio.locator('rect[data-channel]').evaluateAll(cells => [...new Set(cells.map(cell => cell.getAttribute('fill')))]);
+    check(colors.every(color => ['#263346', '#98602f', '#f5a623', '#db3535', '#ff6b6b'].includes(color)), `${mode} map must use the discrete value bands.`);
     await studio.locator('[data-field="map"]').screenshot({ path: `${capture}/${mode}-map.png` });
   }
   const ranges = {};
   await studio.locator('[data-channel="210"]').first().click();
+  await studio.locator('[data-inspection-tab="profiles"]').click();
   const axialPowers = await studio.locator('[data-axial="power"] [data-axial-position] title')
     .evaluateAll(titles => titles.map(title => Number(title.textContent.split(': ')[1].split(' ')[0])));
   check(axialPowers.length === 12, 'Selected channel lost its twelve bundle power readings.');
@@ -50,7 +64,7 @@ try {
     if (tab === 'power') {
       check(ranges[tab][0].low > 5 && ranges[tab][0].high < 6.5, 'Channel trend did not zoom to ordinary power.');
       check(ranges[tab][1].low >= 700 && ranges[tab][1].high <= 900, 'Bundle trend did not zoom to ordinary v8 power.');
-      check(ranges[tab][0].limits[0].includes('7.30 MW thermal ↑ above view'), 'Off-scale channel limit disappeared.');
+      check(ranges[tab][0].limits[0].includes('7.10 MW thermal ↑ above view'), 'Off-scale channel limit disappeared.');
     }
     if (tab === 'zones') check(ranges[tab][0].low <= 45 && ranges[tab][0].high >= 55 && ranges[tab][0].high - ranges[tab][0].low < 35, `Zone graph lost its useful benchmark view: ${JSON.stringify(ranges[tab][0])}`);
     if (tab === 'reactivity') check(ranges[tab][0].high - ranges[tab][0].low < .0001, 'Keff variation is flattened.');

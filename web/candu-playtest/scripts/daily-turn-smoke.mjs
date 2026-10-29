@@ -6,18 +6,47 @@ export async function verifyDailyTurns(page) {
   const mirror = page.locator('#status-mirror');
   const idle = () => page.waitForFunction(() => document.querySelector('.reactor-studio')?.getAttribute('aria-busy') === 'false', undefined, { timeout: 900_000 });
   await idle();
+  check((await studio.locator('[data-field="legend"]').textContent()).includes('7100 kW / channel'), 'Shared channel limit is not 7100 kW.');
+  const initialZones = await studio.locator('.studio-zone > span').allTextContents();
+  check(new Set(initialZones).size > 1, 'Aged-core zones were not settled against the fixed reference.');
+  check(await studio.locator('.reactor-locator, .studio-lzc-label').count() === 0, 'Decorative rails or device text remain on the map.');
+  check(await studio.locator('.studio-history-navigation').evaluate(e => e.tagName === 'DIV'), 'History inspection is still collapsed behind a disclosure.');
+  await studio.locator('[data-inspection-tab="profiles"]').click();
+  check((await studio.locator('[data-axial="power"]').textContent()).includes('900 kW limit'), 'Shared bundle limit is not 900 kW.');
+  await studio.locator('[data-inspection-tab="zones"]').click();
   check(await mirror.getAttribute('data-pacing') === 'daily-turn', 'New run did not default to daily turns.');
   check(!await studio.locator('[data-action="pause"]').isVisible(), 'Daily run exposed live playback controls.');
   const before = await mirror.getAttribute('data-time-seconds');
   // Short deliberate observation window checks that the scheduler stays asleep.
   await page.waitForTimeout(2000);
   check(await mirror.getAttribute('data-time-seconds') === before, 'Time advanced while choosing a plan.');
-  for (const index of [210, 211]) {
-    await studio.locator(`[data-channel="${index}"]`).first().click();
-    await studio.locator('[data-action="refuel"]').click();
-  }
+  const target = index => studio.locator(`.studio-map-wrap [data-channel="${index}"]`);
+  await target(210).click();
+  check(await studio.locator('[data-plan-list] li').count() === 0, 'Inspecting a channel changed the draft.');
+  await target(210).dblclick();
+  // Inspection must not move the board between the two clicks of a fuel order.
+  await target(211).scrollIntoViewIfNeeded();
+  const beforeInspect = await target(211).boundingBox();
+  const beforeScroll = await studio.evaluate(e => e.scrollTop);
+  await target(211).click();
+  const afterInspect = await target(211).boundingBox();
+  const afterScroll = await studio.evaluate(e => e.scrollTop);
+  // Focus scrolling and selection outlines may change viewport bounds. The
+  // channel's center in workspace coordinates must remain fixed.
+  check(beforeInspect && afterInspect && Math.abs(beforeInspect.y + beforeInspect.height / 2 + beforeScroll - afterInspect.y - afterInspect.height / 2 - afterScroll) < 1,
+    `Channel inspection moved the input target: ${JSON.stringify({ beforeInspect, afterInspect, beforeScroll, afterScroll })}`);
+  await target(211).dblclick();
   check(await studio.locator('[data-plan-list] li').count() === 2, 'Two-channel plan was not retained.');
+  await target(210).dblclick();
+  check(await studio.locator('[data-plan-list] li').count() === 1, 'Double-click did not remove exactly one order.');
+  await target(210).dblclick();
+  await studio.locator('.fuel-sheet-inspect[data-plan-channel="211"]').click();
+  check(await target(211).getAttribute('aria-pressed') === 'true', 'Sheet row did not inspect its core channel.');
   check(await mirror.getAttribute('data-fuel-consumed') === '0', 'Planning consumed fuel.');
+  if (process.env.PLAYTEST_CAPTURE_DIR) {
+    await studio.locator('[data-field="map"]').press('Escape');
+    await page.screenshot({ path: `${process.env.PLAYTEST_CAPTURE_DIR}/studio-fuel-plan.png` });
+  }
   const durations = [];
   for (let day = 1; day <= 2; day++) {
     const started = Date.now();

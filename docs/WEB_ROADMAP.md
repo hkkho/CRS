@@ -1,51 +1,41 @@
 # Web game roadmap
 
-The only developed product is `web/candu-playtest`, backed by Core/Game/Browser
-and published on GitHub Pages. Daily turns are the default acceptance path.
-Keep rules in the shared simulation and presentation in native DOM/SVG. Preserve
-deterministic replay, atomic numerical failures, units and inventory accounting.
+The active product is `web/candu-playtest`, backed by Core/Game/Browser and
+published on GitHub Pages. Daily turns are the acceptance path. Keep rules in
+shared simulation and presentation in native DOM/SVG.
 
-## Delivered loop
+## Current loop
 
-1. Inspect a frozen core, bundle profiles, burnup and fourteen LZC levels.
-2. Choose today's eight-bundle fuel plan and inspect discharge previews.
-3. Review or clear the plan without consuming fuel/time.
-4. Execute one large 24-hour exposure/poison update and final equilibrium solve.
-   The waiting dialog ends with survival/loss and score.
-5. Inspect the authoritative report and next decision, or retry after a loss.
+1. Inspect the frozen, enlarged core and the fixed-reference LZC distribution.
+2. Draft eight-bundle orders by double-click, keyboard or the details-dock button.
+3. Review the fuel sheet, then refuel and advance one day or advance without fuel.
+4. Read the authoritative result, inspect the changed core, and plan again.
 
-See [daily turns](gameplay/daily-turn-mode.md) and [v8 axial correction](physics/axial-marshak-v8.md),
-including its successful 100-day LZC-guided policy. Benchmark-based maps/charts
-reveal daily changes while retaining outliers. Endless practice, the optional
-one-day challenge, seeded retries, movements, ripple scoring, history, keyboard
-input, narrow layouts, guest saves and private cloud saves are implemented.
-The public client requires daily pacing; legacy real-time commands remain available
-only to direct physics comparison tools. Build identity and safe local-save updates
-are visible in the game.
+Studio and Arcade both offer endless free practice. The one-, three- and
+seven-day challenges are removed from current game controls. Existing historic
+contracts remain available to replay tooling.
 
-Arcade presents the shared one-day challenge with a large interactive core map,
-power/burnup views, touch zoom, a channel inspector, plan review and a replay screen.
-Detailed reactor readings expand on demand. All outcomes remain Game-owned.
+The details dock beneath the fuel sheet uses LZC, Channel, Fuel and Profiles
+tabs and fills the side column. History inspection is permanent, with Keff,
+tilt and the map legend above the workspace. Compact zoom controls share the
+map heading; decorative rails and device labels no longer cover the face.
 
-The Observatory branch adds three-day rhythm and seven-day stewardship goals,
-an optional guided first shift, a persistent ruled fuelling sheet, and original
-vector reactor materials with event-driven locator/movement feedback. Goal
-outcomes remain Game-owned; the guide never dispatches an order. See the
-[implementation and verification report](design/OBSERVATORY_PLAY_LOOP.md).
+LZC targets use the fixed time-average node-power reference; startup settles
+the aged core's real fills and equilibrium xenon. Limits are 7,100 kW/channel
+and 900 kW/bundle. The new daily model identity prevents replaying older saves
+under changed rules while retaining the stored files.
 
-## Next improvements
+## Live demo
 
-- Gather human feedback on channel selection and understanding the day report.
-- Refine fuelling demand and axial/radial shape against retained physics studies.
-  Record calibration changes, device worths, save identity and campaign effects.
-- Explain adjusters, LZC headroom and discharge burnup through existing observations.
-- Measure full-day latency on multiple devices while retaining solver fidelity.
-  Improve feedback/rendering before considering numerical changes.
-- Expand optional scenario configuration and challenges after playtest feedback.
-- Retain keyboard, layout, replay, cloud revision and published-worker checks.
+The launcher also offers an ephemeral power-only demo: five-second day deadlines, immediate double-click/keyboard/touch refuelling, background shared solves, pause and seeded retries. The map retains latest solved power while requests run; a bounded queue and coalesced deadlines prevent solver backlog. Slow hardware may reduce the achieved pace. Daily runs remain independent.
 
-[Implementation](IMPLEMENTATION_GUIDE.md), [architecture](architecture.md) and the
-[knowledge library](maintenance/knowledge-library.md) describe current behavior.
-Retired research engines, GPU experiments and alternate hosts are no longer
-development paths. Shutdown, scram, accidents, operator training and full plant
-operations remain outside scope.
+## Next work
+
+- Gather human feedback on channel selection, the details tabs and day results.
+- Check physical phone performance and full-day calculation latency.
+- Keep keyboard, reduced-motion, narrow-layout, save and Pages checks working.
+- Retain deterministic replay, atomic failures and shared inventory accounting.
+
+Shutdown, scram, accidents, operator training and full plant operations remain
+outside scope. See [implementation](IMPLEMENTATION_GUIDE.md),
+[architecture](architecture.md) and the [code library](code-library/index.md).

@@ -7,21 +7,24 @@ import type { SessionUpdate } from "./sessionController";
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).forEach(destroy => destroy()); document.body.replaceChildren(); });
 
-it.each(["three-day-rhythm-v1", "seven-day-stewardship-v1", "guided"])("launches %s only after a successful shared reset", async choice => {
+it.each(["free-practice", "guided"])("launches %s only after a successful shared reset", async choice => {
   const snapshot = createSnapshot(); snapshot.shift = createShift();
   const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };
   const dispatch = vi.fn().mockResolvedValueOnce({ accepted: false, message: "Reset rejected" }).mockResolvedValue({ accepted: true });
   const session = { snapshot, status, isPending: false, dispatch,
     subscribe: (callback: (update: SessionUpdate) => void) => { callback({ snapshot, status, pending: false, response: null, error: null }); return vi.fn(); } };
   const begin = vi.fn(); const view = new LauncherView(session, document.body, begin); cleanup.push(() => view.destroy());
-  const button = view.element.querySelector<HTMLButtonElement>(choice === "guided" ? '[data-action="guided"]' : `[data-goal="${choice}"]`)!;
+  if (choice === "guided") view.element.querySelector<HTMLInputElement>("[data-guided]")!.checked = true;
+  else view.element.querySelector<HTMLButtonElement>(`[data-goal="${choice}"]`)!.click();
+  expect(dispatch).not.toHaveBeenCalled();
+  const button = view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!;
   button.click(); await vi.waitFor(() => expect(view.element.querySelector('[data-field="error"]')!.textContent).toBe("Reset rejected"));
   expect(begin).not.toHaveBeenCalled(); button.click();
   await vi.waitFor(() => expect(begin).toHaveBeenCalledWith(choice === "guided"));
-  expect(dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: choice === "guided" ? 1001 : 42, shiftId: choice === "guided" ? "free-practice" : choice });
+  expect(dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: choice === "guided" ? 1001 : 42, shiftId: "free-practice" });
 });
 
-it("launches once, preserves seed drafts during notifications and sends the selected seed/objective", () => {
+it("launches once, preserves seed drafts during notifications and sends the selected seed/objective", async () => {
   const snapshot = createSnapshot(); snapshot.shift = createShift();
   const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };
   let listener: (update: SessionUpdate) => void = () => {};
@@ -30,17 +33,18 @@ it("launches once, preserves seed drafts during notifications and sends the sele
     subscribe: (callback: typeof listener) => { listener = callback; callback({ snapshot, status, pending: false, response: null, error: null }); return vi.fn(); } };
   const begin = vi.fn();
   const view = new LauncherView(session, document.body, begin); cleanup.push(() => view.destroy());
-  const seed = view.element.querySelector<HTMLInputElement>('input')!;
+  const seed = view.element.querySelector<HTMLInputElement>('[data-field=seed]')!;
   seed.value = "42";
   listener({ snapshot, status, pending: true, response: null, error: null });
   expect(seed.value).toBe("42");
   expect(view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!.getAttribute("aria-disabled")).toBe("true");
   listener({ snapshot, status, pending: false, response: null, error: null });
-  view.element.querySelector<HTMLSelectElement>('select')!.value = "useful-fuel-day-v1";
-  view.element.querySelector('form')!.dispatchEvent(new SubmitEvent("submit", { cancelable: true }));
-  expect(session.dispatch).toHaveBeenCalledWith({ type: "reset", seed: 42, shiftId: "useful-fuel-day-v1" });
+  view.element.querySelector<HTMLButtonElement>('[data-goal="free-practice"]')!.click();
   const button = view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!;
-  button.click(); button.click(); expect(begin).toHaveBeenCalledTimes(1);
+  button.click(); button.click();
+  await vi.waitFor(() => expect(begin).toHaveBeenCalledTimes(1));
+  expect(session.dispatch).toHaveBeenCalledWith({ type: "reset", seed: 42, shiftId: "free-practice" });
+
 });
 
 it("keeps launch unavailable without the authoritative core and rejects an invalid seed locally", () => {
@@ -52,7 +56,7 @@ it("keeps launch unavailable without the authoritative core and rejects an inval
   const view = new LauncherView(session, document.body, begin); cleanup.push(() => view.destroy());
   view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!.click();
   expect(begin).not.toHaveBeenCalled();
-  view.element.querySelector<HTMLInputElement>('input')!.value = "-1";
-  view.element.querySelector('form')!.dispatchEvent(new SubmitEvent("submit", { cancelable: true }));
+  view.element.querySelector<HTMLInputElement>('[data-field=seed]')!.value = "-1";
+  view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!.click();
   expect(dispatch).not.toHaveBeenCalled();
 });

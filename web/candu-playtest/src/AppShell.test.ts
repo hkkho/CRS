@@ -16,21 +16,23 @@ function session() {
 }
 function click(selector: string) { document.querySelector<HTMLButtonElement>(selector)!.click(); }
 
-it("starts Arcade only after the shared challenge reset is accepted", async () => {
+it("starts Arcade only after the shared free-practice reset is accepted", async () => {
   const shared = session();
   shared.dispatch.mockResolvedValue({ accepted: false, message: "Core unavailable" });
   shell = new AppShell(shared, document.body);
-  click('[data-action="arcade"]');
+  document.querySelector<HTMLSelectElement>('[data-presentation]')!.value = "arcade";
+  click('[data-action="begin"]');
   await vi.waitFor(() => expect(document.querySelector('[data-field="error"]')!.textContent).toBe("Core unavailable"));
   expect(document.querySelector('.reactor-arcade')).toBeNull();
   shared.dispatch.mockResolvedValue({ accepted: true });
-  click('[data-action="arcade"]');
+  click('[data-action="begin"]');
   await vi.waitFor(() => expect(document.querySelector('.reactor-arcade')).not.toBeNull());
-  expect(shared.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 42, shiftId: "useful-fuel-day-v1" });
+  expect(shared.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 42, shiftId: "free-practice" });
 });
 
 it("opens the native Studio over the existing session and cleans up its subscriber", () => {
   const base = session();
+  base.snapshot.shift = { ...base.snapshot.shift!, id: "free-practice", isEndless: true, unlimitedFreshFuel: true };
   const listeners = new Set<(update: SessionUpdate) => void>();
   const shared = { ...base, subscribe: (listener: (update: SessionUpdate) => void) => {
     listeners.add(listener);

@@ -1,3 +1,5 @@
+import { CoreMapZoom, exitBurnup } from "./CoreMapInteraction";
+import { mapLegend } from "./studio/powerReadings";
 import { randomCoreSeed } from "./coreSeed";
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { isRunTerminal, type CanduCommand } from "./protocol";
@@ -13,7 +15,7 @@ export class ArcadeView {
   private readonly unsubscribe: () => void;
   private plan: number[];
   private selected = 0;
-  private zoomed = false;
+  private readonly zoom: CoreMapZoom;
   private mapMode: "power" | "burnup" = "power";
   private readonly map: ArcadeMap;
   private readonly orders = new FuelOrderList("remove-sheet-channel");
@@ -26,25 +28,26 @@ export class ArcadeView {
     this.plan = [...session.dailyPlan ?? []];
     this.update = { snapshot: session.snapshot, status: session.status, pending: session.isPending, response: null, error: null };
     this.element.className = "reactor-arcade";
-    this.element.innerHTML = `<header><p class="arcade-kicker">CRS <span>/ ARCADE</span></p><span class="arcade-round">THE REACTOR OBSERVATORY</span></header>
-      <div class="arcade-hud"><p>POINTS<strong data-score></strong></p><p>FUEL LEFT<strong data-stock></strong></p></div>
-      <section class="arcade-mission"><p class="arcade-kicker" data-phase>01 / PICK YOUR CHANNELS</p><h1>Fuel the core.</h1><p data-mission></p></section>
+    this.element.innerHTML = `<header><p class="arcade-kicker">CRS <span>/ ARCADE</span></p><span class="arcade-round">ENDLESS FREE PRACTICE</span></header>
+      <div class="arcade-hud"><p>POINTS<strong data-score></strong></p></div>
+      <section class="arcade-mission"><p class="arcade-kicker" data-phase>01 / PICK YOUR CHANNELS</p><h1>Make your move.</h1><p data-mission></p></section>
       <ol class="arcade-journey" aria-label="Challenge stages"><li data-stage="pick"><span>01</span> Explore</li><li data-stage="review"><span>02</span> Plan</li><li data-stage="result"><span>03</span> Result</li></ol>
       <section class="arcade-result" aria-live="polite" hidden><span class="arcade-medal" aria-hidden="true">★</span><h2 data-outcome tabindex="-1"></h2><p data-result></p>
       <div class="arcade-retry"><button class="arcade-primary" data-action="retry">Play again</button><button data-action="new">New core</button></div></section>
-      <section data-picker aria-label="Choose fuel channels"><div class="arcade-map-toolbar"><label>Core map <select data-map-mode><option value="power">Power</option><option value="burnup">Burnup</option></select></label><button data-action="zoom" aria-pressed="false">Zoom in</button></div>
+      <section data-picker aria-label="Choose fuel channels"><div class="arcade-map-toolbar"><label>Core map <select data-map-mode><option value="power">Power</option><option value="burnup">Burnup</option></select></label></div>
       <p class="arcade-caption">Tap a channel to inspect. Gold border = in your plan.</p><div class="arcade-map-scroll" data-map-scroll></div><p class="arcade-legend" data-legend></p>
-      <section class="arcade-inspector" aria-label="Selected channel"><div><p class="arcade-kicker">SELECTED CHANNEL</p><h2 data-selected></h2></div><p data-reading></p><p data-outgoing></p><button class="arcade-primary" data-action="toggle-channel">Add to plan · 8 bundles</button><p data-eligibility role="status"></p></section></section>
-      <section class="arcade-plan" hidden><p class="arcade-kicker">02 / READY TO RUN?</p><h2 tabindex="-1" data-review-title>Your fuel plan</h2><p>Each pick replaces eight bundles. The core then runs for one day. More fuel is not always better.</p><div data-plan></div><button data-action="back">← Change picks</button><button data-action="clear">Clear all</button></section>
-      <details class="arcade-details"><summary>How to play & reactor details</summary><p data-objective></p><p>Replace used fuel and survive the day. Score rewards a smooth power distribution. Planning is untimed.</p><p>Zone level: <strong data-level></strong>. Keep it at 10–90%, global tilt within ±20%, channels at or below 7,300 kW and bundles at or below 935 kW.</p><p>The selected channel shows the range of burnup in the outgoing fuel. Higher burnup means more-used fuel, not a guarantee of a safe move.</p><p data-seed></p><button data-action="studio">Open detailed Studio</button></details>
-      <p data-message role="status"></p><footer><p data-total aria-live="polite"></p><button class="arcade-primary" data-action="commit">Review picks →</button><button class="arcade-primary" data-action="confirm" hidden>Run the day ▶</button></footer>`;
+      <section class="arcade-inspector" aria-label="Selected channel"><div><p class="arcade-kicker">SELECTED CHANNEL</p><h2 data-selected></h2></div><p data-reading></p><details class="arcade-outgoing"><summary data-exit-burnup></summary><p data-outgoing></p></details><button class="arcade-primary" data-action="toggle-channel">Add to plan · 8 bundles</button><p data-eligibility role="status"></p></section></section>
+      <details class="arcade-details"><summary>How to play & reactor details</summary><p data-objective></p><p>Replace used fuel and survive the day. Score rewards a smooth power distribution. Planning is untimed.</p><p>Zone level: <strong data-level></strong>. Keep it at 10–90%, global tilt within ±20%, channels at or below 7,100 kW and bundles at or below 900 kW.</p><p>The selected channel shows the range of burnup in the outgoing fuel. Higher burnup means more-used fuel, not a guarantee of a safe move.</p><p data-seed></p><button data-action="studio">Open detailed Studio</button></details>
+      <p data-message role="status"></p><footer><button class="arcade-primary" data-action="commit">Review picks →</button><button class="arcade-primary" data-action="confirm" hidden>Run the day ▶</button></footer>`;
     this.selected = session.snapshot.core.channels[0]?.channelIndex ?? 0;
-    this.map = new ArcadeMap(session.snapshot, index => { this.selected = index; this.render(); });
+    this.map = new ArcadeMap(session.snapshot, index => { this.selected = index; this.render(); }, index => this.toggleChannel(index));
     this.field("[data-map-scroll]").append(this.map.element);
     const sheet = document.createElement("aside"); sheet.className = "fuel-sheet arcade-fuel-sheet";
     sheet.setAttribute("aria-label", "Draft fuelling list");
-    sheet.innerHTML = `<header class="fuel-sheet-header"><span>CORE SERVICES / F-08</span><span>DRAFT</span></header><h2>Fuelling list</h2><p class="fuel-sheet-reference">Eight fresh bundles per channel · with flow</p><div data-arcade-orders></div><p class="fuel-sheet-total"><span>FRESH BUNDLES REQUIRED</span><strong data-arcade-fuel-total></strong></p>`;
+    sheet.innerHTML = `<header class="fuel-sheet-header"><span>CORE SERVICES / F-08</span><span>DRAFT</span></header><h2 tabindex="-1" data-review-title>Fuelling list</h2><p class="fuel-sheet-reference">Eight fresh bundles per channel · with flow</p><div data-arcade-orders></div><p class="fuel-sheet-total"><span>FRESH BUNDLES REQUIRED</span><strong data-arcade-fuel-total></strong></p><p data-stock class="fuel-sheet-stock"></p><div class="arcade-sheet-actions"><button data-action="back" hidden>← Change picks</button><button data-action="clear">Clear all</button></div>`;
     sheet.querySelector("[data-arcade-orders]")!.append(this.orders.element); this.field("[data-picker]").append(sheet);
+    sheet.append(this.element.querySelector("footer")!);
+    this.zoom = new CoreMapZoom(this.field("[data-map-scroll]"), this.map.element);
     this.element.querySelector("[data-map-mode]")!.addEventListener("change", this.onMapMode);
     parent.append(this.element);
     this.element.addEventListener("click", this.onClick);
@@ -65,92 +68,86 @@ export class ArcadeView {
       else stage.removeAttribute("aria-current");
     });
     this.field("[data-phase]").textContent = locked ? "RUNNING YOUR CORE…" : terminal ? "ROUND COMPLETE" : this.reviewing ? "02 / LOCK IN YOUR PLAN" : "01 / PICK YOUR CHANNELS";
-    this.field("[data-mission]").textContent = `Recover ${shift?.usefulBundlesRequired ?? 8} well-used bundles. Keep the core running.`;
+    this.field("[data-mission]").textContent = shift?.isEndless ? "Keep power close to its reference. Build score, one day at a time." : shift?.objective ?? "Keep the core balanced.";
+    this.field(".arcade-round").textContent = `FREE PRACTICE / DAY ${(s.completedDays ?? 0) + 1}`;
     this.field("[data-seed]").textContent = `Core seed ${shift?.seed ?? "—"}`;
-    this.field("[data-picker]").hidden = terminal || this.reviewing;
-    this.field(".arcade-plan").hidden = terminal || !this.reviewing;
+    this.field("[data-picker]").hidden = terminal;
+    this.field("[data-action=back]").hidden = !this.reviewing;
+    this.field("[data-action=clear]").hidden = this.reviewing;
+    this.field("[data-review-title]").textContent = this.reviewing ? "Review today's sheet" : "Fuelling list";
+    this.field(".fuel-sheet-header > span:last-child").textContent = locked ? "SUBMITTED" : this.reviewing ? "REVIEW" : "DRAFT";
     this.field("footer").hidden = terminal;
     this.field('[data-action="commit"]').hidden = this.reviewing;
     this.field('[data-action="confirm"]').hidden = !this.reviewing;
     this.field("[data-objective]").textContent = shift?.objective ?? "Waiting for the challenge…";
     this.field("[data-score]").textContent = s.scoreTotal.toFixed(2);
     this.field("[data-level]").textContent = `${(s.rrs.averageFillFraction * 100).toFixed(1)}%`;
-    this.field("[data-stock]").textContent = String(s.freshBundlesAvailable);
+    this.field("[data-stock]").textContent = s.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${s.freshBundlesAvailable} fresh bundles available`;
     this.orders.update(s, this.plan, locked || terminal || this.reviewing);
     this.field("[data-arcade-fuel-total]").textContent = String(this.plan.length * 8);
     this.field(".arcade-result").hidden = !terminal;
     this.field("[data-outcome]").textContent = shift?.rewardEarned ? "Challenge cleared!" : shift?.outcome === "missed" ? "Goal missed — try another plan" : "Run ended";
-    this.field("[data-result]").textContent = `${shift?.usefulBundlesDischarged ?? 0} / ${shift?.usefulBundlesRequired ?? 8} useful bundles discharged · ${s.scoreTotal.toFixed(2)} points. ${s.runEndReason ?? ""}${shift?.rewardEarned ? ` · ${shift.reward}` : ""}`;
+    this.field("[data-result]").textContent = shift?.isEndless ? `${s.completedDays ?? 0} days completed · ${s.scoreTotal.toFixed(2)} points. ${s.runEndReason ?? ""}` : `${shift?.usefulBundlesDischarged ?? 0} / ${shift?.usefulBundlesRequired ?? 8} useful bundles discharged · ${s.scoreTotal.toFixed(2)} points. ${s.runEndReason ?? ""}${shift?.rewardEarned ? ` · ${shift.reward}` : ""}`;
     this.map.update(s, this.selected, this.plan, this.mapMode, locked || terminal || this.reviewing);
-    this.field("[data-map-scroll]").classList.toggle("is-zoomed", this.zoomed);
-    this.field('[data-action="zoom"]').setAttribute("aria-pressed", String(this.zoomed));
-    this.field('[data-action="zoom"]').textContent = this.zoomed ? "Fit core" : "Zoom in";
-    this.field("[data-legend]").textContent = this.mapMode === "power" ? "POWER · Blue = lower · Red = higher" : "BURNUP · Green = less used · Yellow = more used";
+    this.field("[data-legend]").textContent = mapLegend(s, this.mapMode);
     const channel = s.core.channels.find(c => c.channelIndex === this.selected);
     const included = this.plan.includes(this.selected);
     this.field("[data-selected]").textContent = channel ? gridCoordinateLabel(channel) : "Select a channel";
     this.field("[data-reading]").textContent = channel ? `${(channel.powerWatts / 1000).toFixed(0)} kW · ${channel.averageBurnupMwdPerKg.toFixed(1)} MWd/kg average` : "";
+    const exit = channel ? exitBurnup(s, channel) : null;
+    this.field("[data-exit-burnup]").textContent = `Estimated average exit burnup: ${exit === null ? "unavailable" : `${exit.toFixed(2)} MWd/kg`}`;
     const movement = s.refuellingPlans?.find(p => p.shiftCount === 8 && p.directionId === channel?.flowDirection);
     const outgoing = movement?.dischargedPositions.map(position => channel?.bundles.find(b => b.position === position)?.currentBurnupMwdPerKg);
     this.field("[data-outgoing]").textContent = `Outgoing fuel: ${outgoing?.map(v => v?.toFixed(1) ?? "?").join(" · ") ?? "unavailable"} MWd/kg`;
     this.field('[data-action="toggle-channel"]').textContent = included ? "Remove from plan" : "Add to plan · 8 bundles";
-    const cannotAdd = !channel || channel.canRefuel === false || (!included && (this.plan.length + 1) * 8 > s.freshBundlesAvailable);
+    const cannotAdd = !channel || channel.canRefuel === false || (!included && !s.shift?.unlimitedFreshFuel && (this.plan.length + 1) * 8 > s.freshBundlesAvailable);
     this.field("[data-eligibility]").textContent = channel?.canRefuel === false ? channel.refuellingIneligibilityReason || "This channel cannot be refuelled." : cannotAdd ? "Not enough fresh fuel for another channel." : included ? "Queued for today. Pick another channel on the map." : "";
-    this.field("[data-plan]").replaceChildren(...this.plan.map(index => {
-      const button = document.createElement("button"); button.dataset.remove = String(index);
-      const channel = s.core.channels.find(c => c.channelIndex === index);
-      button.textContent = `Remove ${channel ? gridCoordinateLabel(channel) : index}`; button.disabled = locked || terminal; return button;
-    }));
-    if (!this.plan.length) this.field("[data-plan]").textContent = "No fuel selected. Run the day using the existing fuel.";
-    this.field("[data-total]").textContent = this.plan.length ? `${this.plan.length} picked · ${this.plan.length * 8} bundles` : "No channels picked";
     this.element.querySelectorAll<HTMLButtonElement>("[data-action]").forEach(button => {
       const action = button.dataset.action;
-      button.disabled = locked || (action === "toggle-channel" && (terminal || this.reviewing || cannotAdd)) ||
-        (action === "clear" && (terminal || !this.plan.length)) || (["commit", "confirm"].includes(action ?? "") && (terminal || this.plan.length * 8 > s.freshBundlesAvailable));
+      button.disabled = locked || (action === "remove-sheet-channel" && (terminal || this.reviewing)) || (action === "toggle-channel" && (terminal || this.reviewing || cannotAdd)) ||
+        (action === "clear" && (terminal || !this.plan.length)) || (["commit", "confirm"].includes(action ?? "") && (terminal || !s.shift?.unlimitedFreshFuel && this.plan.length * 8 > s.freshBundlesAvailable));
     });
     this.field('[data-action="commit"]').textContent = locked ? "Running…" : this.plan.length ? "Review picks →" : "Review no-fuel day →";
     this.field('[data-action="confirm"]').textContent = locked ? "Running…" : "Run the day ▶";
     if (this.update.error) this.field("[data-message]").textContent = this.update.error;
   }
 
+  private toggleChannel(index: number): void {
+    const s = this.update.snapshot, included = this.plan.includes(index), channel = s.core.channels.find(c => c.channelIndex === index);
+    if (this.busy || this.session.isPending || !this.update.status.isWasmAvailable || isRunTerminal(s) || this.reviewing) return;
+    if (!included && (!channel || channel.canRefuel === false || !s.shift?.unlimitedFreshFuel && (this.plan.length + 1) * 8 > s.freshBundlesAvailable)) return;
+    this.selected = index; this.setPlan(included ? this.plan.filter(i => i !== index) : [...this.plan, index]);
+    this.field("[data-eligibility]").textContent = `${channel ? gridCoordinateLabel(channel) : index} ${included ? "removed from" : "added to"} today's sheet.`;
+  }
   private setPlan(plan: number[]): void { this.plan = plan.sort((a, b) => a - b); this.session.setDailyPlan?.(this.plan); this.render(); }
   private async send(command: CanduCommand): Promise<void> {
     this.busy = true; this.field("[data-message]").textContent = command.type === "reset" ? "Preparing your core…" : "Running your fuel plan. Hang tight…"; this.render();
     try {
       const response = await this.session.dispatch(command);
       if (this.disposed) return;
-      if (response.accepted) { this.reviewing = false; this.setPlan([]); this.zoomed = false; }
-      this.field("[data-message]").textContent = response.message;
+      if (response.accepted) { this.reviewing = false; this.setPlan([]); }
+      this.field("[data-message]").textContent = command.type === "commit-day" && response.accepted && !isRunTerminal(response.snapshot)
+        ? `Day ${response.snapshot.completedDays} complete · +${(response.snapshot.lastDayResult?.scoreDelta ?? 0).toFixed(2)} points · ${response.snapshot.lastDayResult?.fuelUsed ?? 0} bundles used. Plan your next day.` : response.message;
     } catch (error) { if (!this.disposed) this.field("[data-message]").textContent = `Unable to complete the order: ${String(error)}`; }
     finally { this.busy = false; this.render(); if (!this.disposed && isRunTerminal(this.update.snapshot)) this.field("[data-outcome]").focus(); }
   }
   private readonly onClick = (event: MouseEvent): void => {
     const button = (event.target as Element).closest<HTMLButtonElement>("button");
     if (!button || button.disabled || this.busy || this.session.isPending) return;
-    if (button.dataset.action === "remove-sheet-channel") { this.setPlan(this.plan.filter(i => i !== Number(button.dataset.planChannel))); this.field('[data-action="toggle-channel"]').focus({ preventScroll: true }); return; }
-    if (button.dataset.remove !== undefined) {
-      this.setPlan(this.plan.filter(i => i !== Number(button.dataset.remove)));
-      this.field('[data-action="back"]').focus(); return;
-    }
+    if (button.dataset.action === "inspect-plan") { this.selected = Number(button.dataset.planChannel); this.render(); this.map.focusSelected(); return; }
+    if (button.dataset.action === "remove-sheet-channel") { this.setPlan(this.plan.filter(i => i !== Number(button.dataset.planChannel))); return; }
     switch (button.dataset.action) {
       case "studio": this.studio(); break;
-      case "zoom": {
-        this.zoomed = !this.zoomed; this.render();
-        const scroll = this.field("[data-map-scroll]");
-        const cell = this.map.element.querySelector<HTMLElement>(`[data-channel="${this.selected}"]`);
-        if (cell) { scroll.scrollLeft = cell.offsetLeft - scroll.clientWidth / 2 + cell.offsetWidth / 2; scroll.scrollTop = cell.offsetTop - scroll.clientHeight / 2 + cell.offsetHeight / 2; }
-        break;
-      }
-      case "toggle-channel": this.setPlan(this.plan.includes(this.selected) ? this.plan.filter(i => i !== this.selected) : [...this.plan, this.selected]); break;
+      case "toggle-channel": this.toggleChannel(this.selected); break;
       case "clear": this.setPlan([]); break;
       case "back": this.reviewing = false; this.render(); this.map.focusSelected(); break;
       case "commit": this.reviewing = true; this.render(); this.field('[data-review-title]').focus(); break;
       case "confirm": if (this.reviewing) void this.send({ type: "commit-day", expectedCompletedDays: this.update.snapshot.completedDays ?? 0, channelIndices: [...this.plan] }); break;
-      case "retry": case "new": void this.send({ type: "reset", shiftId: "useful-fuel-day-v1", seed: button.dataset.action === "new" ? randomCoreSeed(this.update.snapshot.shift?.seed) : this.update.snapshot.shift?.seed }); break;
+      case "retry": case "new": void this.send({ type: "reset", shiftId: "free-practice", seed: button.dataset.action === "new" ? randomCoreSeed(this.update.snapshot.shift?.seed) : this.update.snapshot.shift?.seed }); break;
     }
   };
   private readonly onMapMode = (event: Event): void => {
     this.mapMode = (event.target as HTMLSelectElement).value === "burnup" ? "burnup" : "power"; this.render();
   };
-  destroy(): void { this.map.destroy(); this.element.querySelector("[data-map-mode]")!.removeEventListener("change", this.onMapMode); this.disposed = true; this.unsubscribe(); this.element.removeEventListener("click", this.onClick); this.element.remove(); }
+  destroy(): void { this.zoom.destroy(); this.map.destroy(); this.element.querySelector("[data-map-mode]")!.removeEventListener("change", this.onMapMode); this.disposed = true; this.unsubscribe(); this.element.removeEventListener("click", this.onClick); this.element.remove(); }
 }

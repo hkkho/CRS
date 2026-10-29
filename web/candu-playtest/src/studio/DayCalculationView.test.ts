@@ -41,17 +41,15 @@ describe("next-day waiting and outcome", () => {
     expect(view.element.textContent).toContain("+1.25"); expect(view.element.textContent).toContain("Total score 9.75");
     expect((view.element.querySelector("[data-calculation-progress]") as HTMLElement).hidden).toBe(true);
   });
-  it("reports an accepted operating loss as failure, including power-limit losses without RRS exhaustion", () => {
-    const { view, response } = harness();
+  it("hands an accepted operating loss directly to the final report", () => {
+    const { view, response, focus } = harness();
     view.finish({ ...response, snapshot: { ...response.snapshot, runStatus: "ended", runEndReason: "Channel power limit exceeded" } });
-    expect(view.element.dataset.phase).toBe("failure"); expect(view.element.textContent).toContain("Core lost");
-    expect(view.element.textContent).toContain("Channel power limit exceeded");
-    expect((view.element.querySelector("[data-calculation-score]") as HTMLElement).hidden).toBe(true);
+    expect(view.element.hidden).toBe(true); expect(focus).toHaveBeenCalledOnce();
   });
   it("separates surviving the challenge day from meeting its fuel objective", () => {
-    const { view, response } = harness();
+    const { view, response, focus } = harness();
     view.finish({ ...response, snapshot: { ...response.snapshot, runStatus: "completed", shift: { ...createShift(), outcome: "missed" } } });
-    expect(view.element.dataset.phase).toBe("success"); expect(view.element.textContent).toContain("Challenge objective missed");
+    expect(view.element.hidden).toBe(true); expect(focus).toHaveBeenCalledOnce();
   });
   it("does not call a rejected plan a lost core or invent an outcome after interruption", () => {
     const { view, response } = harness(); view.finish({ ...response, accepted: false, message: "Insufficient fuel" });

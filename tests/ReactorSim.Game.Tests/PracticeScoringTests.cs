@@ -50,7 +50,7 @@ public sealed class PracticeScoringTests
         Assert.Equal(2_064_000_000, initial.Ripple.ReferenceChannelPowerWatts.Sum(), 3);
         Assert.All(initial.Ripple.ReferenceChannelPowerWatts, p => Assert.True(p > 0));
         Assert.True(initial.Ripple.ReferenceChannelPowerWatts.Max() > initial.Ripple.ReferenceChannelPowerWatts.Min());
-        Assert.All(initial.Ripple.ReferenceChannelPowerWatts, p => Assert.InRange(p, 0, 7_300_000));
+        Assert.All(initial.Ripple.ReferenceChannelPowerWatts, p => Assert.InRange(p, 0, 7_100_000));
         var moved = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         Assert.True(moved.Accepted, moved.DiagnosticMessage);
         Assert.Equal(0, moved.Snapshot.ScoreTotal);

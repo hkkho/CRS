@@ -54,8 +54,11 @@ public sealed class AgedPracticeSessionTests
         var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, dailyTurns: false);
         while (session.Snapshot.SimulationTimeSeconds < 14 * 3600)
         {
+            double beforeTime = session.Snapshot.SimulationTimeSeconds;
             var advance = session.AdvanceWallMilliseconds(1000);
             Assert.True(advance.Accepted, advance.DiagnosticMessage);
+            Assert.True(session.Snapshot.SimulationTimeSeconds > beforeTime,
+                "The real-time fixture must advance rather than spin on a terminal or paused run.");
         }
         var energyBefore = session.CoreState.EnumerateBundles().ToDictionary(b => b.BundleId, b => b.CumulativeFissionEnergyJ);
         double beforeFill = session.CurrentLiquidZoneRrs.AverageFillFraction;
@@ -113,10 +116,20 @@ public sealed class AgedPracticeSessionTests
         Assert.Equal(seed, session.Snapshot.Seed);
         Assert.True(session.Snapshot.RrsReserveFraction > 0);
         Assert.False(session.Snapshot.IsGameOver);
+        var rrs = session.CurrentLiquidZoneRrs;
+        var reference = PracticeGameSessionFactory.ReferenceChannelPower;
+        for (int zone = 0; zone < 14; zone++)
+        {
+            double expected = rrs.Mapping.NodeIndicesByZone[zone].Sum(n => reference.NodePowerWatts[n]) / reference.ThermalPowerWatts;
+            Assert.Equal(expected, rrs.TargetZonalPowerFractions[zone], 12);
+            Assert.Equal(expected, rrs.ReferenceZonalPowerFractions[zone], 12);
+        }
+        Assert.True(rrs.ZoneFills.Max() - rrs.ZoneFills.Min() > 1e-5,
+            "Seeded aged fuel should settle nonuniform fills against the fixed power reference.");
         Assert.All(session.Snapshot.Core.Channels, channel =>
         {
-            Assert.InRange(channel.PowerWatts, 0, 7_300_000);
-            Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 935_000));
+            Assert.InRange(channel.PowerWatts, 0, 7_100_000);
+            Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 900_000));
         });
         Assert.InRange(System.Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0, 0.002);
         Assert.True(double.IsFinite(session.Snapshot.AxialTiltFraction));

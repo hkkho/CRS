@@ -1,4 +1,4 @@
-import type { CanduCommand, CanduCommandResponse, CanduSnapshot, DayProgress } from "../protocol";
+import { isRunTerminal, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type DayProgress } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
 import { gridCoordinateLabel } from "../channelCoordinates";
 
@@ -87,6 +87,7 @@ export class DayCalculationView {
     if (response === this.lastResult || response.command.type !== "commit-day") return;
     this.lastResult = response;
     const snapshot = response.snapshot, day = snapshot.lastDayResult;
+    if (response.accepted && isRunTerminal(snapshot)) { this.phase = "idle"; this.dismiss(); return; }
     const lost = snapshot.runStatus === "ended" || snapshot.shift?.outcome === "ended" || snapshot.rrs.isGameOver;
     this.phase = !response.accepted ? "rejected" : lost ? "failure" : "success";
     this.element.dataset.phase = this.phase; this.element.setAttribute("aria-busy", "false");

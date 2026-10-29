@@ -19,7 +19,7 @@ public sealed partial class PlaytestBridgeTests
         PrepareOverpowerFixture(runtime);
         Assert.True(Parse(runtime.Dispatch(CompactCommand(0, "queue-power-target", "\"targetFraction\":1.2"))).GetProperty("accepted").GetBoolean());
         var ending = Parse(runtime.Dispatch(CompactCommand(1, "advance", "\"wallMilliseconds\":100"))).GetProperty("snapshotPatch");
-        Assert.Equal("Channel power exceeds 7,300 kW", ending.GetProperty("runEndReason").GetString());
+        Assert.Equal("Channel power exceeds 7,100 kW", ending.GetProperty("runEndReason").GetString());
         var rejected = Parse(runtime.Dispatch(CompactCommand(2, "advance", "\"wallMilliseconds\":100")));
         Assert.False(rejected.GetProperty("accepted").GetBoolean());
         var patch = rejected.GetProperty("snapshotPatch");
@@ -35,7 +35,7 @@ public sealed partial class PlaytestBridgeTests
         var bridge = typeof(PlaytestRuntime).GetField("_runtimeInstance", BindingFlags.NonPublic | BindingFlags.Instance)!
             .GetValue(runtime)!;
         var session = (GameSession)bridge.GetType().GetProperty("PlaySession")!.GetValue(bridge)!;
-        double scale = 1.01 * 7_300_000 / (1.2 * session.CurrentEquilibriumProjection.ShapeChannelPowerWatts.Max());
+        double scale = 1.01 * 7_100_000 / (1.2 * session.CurrentEquilibriumProjection.ShapeChannelPowerWatts.Max());
         var model = FullCoreDiffusionModelV1.TryCreateCandu6(
             FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6().Value).Value;
         var solver = EquilibriumCoreSolverV1.TryCreate(model, session.CoreState.EnumerateBundles(),

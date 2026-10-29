@@ -2,14 +2,12 @@ import type { CanduChannelSnapshot, CanduSnapshot } from "../protocol";
 import type { RefuelDraft } from "../commandState";
 import { patchMarkup } from "./domPatch";
 import { bundleLimit } from "./powerReadings";
-import { gridCoordinateLabel } from "../channelCoordinates";
 import { adjusterPowerMarkers, liquidZonePowerMarkers, channelDeviceNote } from "./devicePresentation";
 import { readingRange, AXIAL_POWER_RANGE } from "./displayScales";
 
 export class StudioOrderView {
   private bundlesKey = "";
   private movementKey = "";
-  private resultKey = "";
   constructor(private readonly field: (name: string) => HTMLElement) {}
   update(snapshot: CanduSnapshot, draft: RefuelDraft | null, channel: CanduChannelSnapshot | undefined): void {
     this.renderBundles(snapshot, channel); this.renderMovement(snapshot, draft, channel);
@@ -55,32 +53,6 @@ export class StudioOrderView {
         });
       } else box.replaceChildren();
     }
-    const move = snapshot.lastFuelMovement;
-    const resultKey = JSON.stringify(move);
-    if (resultKey === this.resultKey) return;
-    this.resultKey = resultKey;
-    const result = this.field("movement-result"); result.replaceChildren();
-    if (!move) return;
-    const label = document.createElement("p");
-    const discharged = move.bundles.filter(b => b.afterPosition == null);
-    const movedChannel = snapshot.core.channels.find(value => value.channelIndex === move.channelIndex);
-    label.textContent = `Confirmed move #${move.operationId} · ${movedChannel ? gridCoordinateLabel(movedChannel) : "Channel unavailable"} · ${move.plan.shiftCount} fresh in End ${move.plan.incomingEnd}, ${discharged.length} out End ${move.plan.outgoingEnd} · score follows channel ripple as time advances.`;
-    const details = document.createElement("details"); const title = document.createElement("summary"); title.textContent = "Bundle identities and movement";
-    details.append(title);
-    move.bundles.forEach(bundle => {
-      const row = document.createElement("p");
-      row.textContent = `${bundle.bundleId}: ${bundle.beforePosition == null ? "fresh" : `position ${bundle.beforePosition + 1}`} → ${bundle.afterPosition == null ? `discharged (${bundle.burnupMwdPerKg.toFixed(2)} MWd/kg HM)` : `position ${bundle.afterPosition + 1}`}`;
-      details.append(row);
-    });
-    const strip = document.createElement("div"); strip.className = "studio-fuel-strip";
-    move.bundles.filter(b => b.beforePosition == null || b.afterPosition == null).forEach(bundle => {
-      const cell = document.createElement("span");
-      cell.dataset.confirmed = bundle.afterPosition == null ? "discharged" : "inserted";
-      cell.textContent = bundle.afterPosition == null ? `Out ${bundle.beforePosition! + 1}` : `New ${bundle.afterPosition + 1}`;
-      cell.title = bundle.bundleId;
-      strip.append(cell);
-    });
-    result.append(label, strip, details);
   }
 
 }

@@ -1,11 +1,11 @@
 import { randomCoreSeed } from "../coreSeed";
 import { isRunTerminal, type CanduCommandResponse } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
-import type { CanduChannelSnapshot, CanduCommand, CanduSnapshot, PlaybackModeId, ShiftId } from "../protocol";
+import type { CanduChannelSnapshot, CanduCommand, CanduSnapshot, PlaybackModeId } from "../protocol";
 import { canIssueRefuel, createRefuelDraft, formatRefuelDirection, toRefuelRequest, type RefuelDraft } from "../commandState";
-import { highestBurnupChannel, isChannelRefuellable, channelHeadroom, operationGuidance } from "../gameplayPresentation";
+import { highestBurnupChannel, isChannelRefuellable, channelHeadroom } from "../gameplayPresentation";
 import { findAdjacentChannelIndex, gridCoordinateLabel } from "../channelCoordinates";
-import { formatEffectiveK, formatLiquidZoneRegion, formatSimulationTime, formatClockDuration, getOverallStatus, getPowerLabel, getTiltLabel } from "../visuals";
+import { formatEffectiveK, formatLiquidZoneRegion, formatSimulationTime, getOverallStatus, getPowerLabel, getTiltLabel } from "../visuals";
 import "./studio.css";
 import type { PaceReading } from '../observedPace';
 import { HistoryView } from "./HistoryView";
@@ -18,9 +18,10 @@ import { DailyPlanView } from "./DailyPlanView";
 import { StudioOrderView } from "./StudioOrderView";
 import { StudioStatusView } from "./StudioStatusView";
 import { SessionPresentation } from "../SessionPresentation";
-import { channelWatts, channelLimit, bundleLimit, channelColorMinimum, bundleColorMinimum, type MapMode } from "./powerReadings";
+import { channelWatts, channelLimit, bundleLimit, mapLegend, type MapMode } from "./powerReadings";
 import { adjusterSummary } from "./devicePresentation";
 import { SimulatorManual } from "../SimulatorManual";
+import { exitBurnup } from "../CoreMapInteraction";
 import { RunGoalView } from "../RunGoalView";
 import { FirstShiftGuide } from "../FirstShiftGuide";
 
@@ -35,7 +36,7 @@ export class StudioView {
   private localDailyPlan: number[] = [];
   private get dailyPlan(): readonly number[] { return this.session.dailyPlan ?? this.localDailyPlan; }
   private setDailyPlan(channels: readonly number[]): void {
-    if (this.session.isPending || this.inspectionSnapshot || isRunTerminal(this.snapshot)) return;
+    if (!this.session.status.isWasmAvailable || this.session.isPending || this.inspectionSnapshot || isRunTerminal(this.snapshot)) return;
     this.localDailyPlan = [...new Set(channels)].sort((a, b) => a - b);
     this.session.setDailyPlan?.(this.localDailyPlan); this.render();
   }
@@ -70,13 +71,9 @@ export class StudioView {
     this.element.innerHTML = `
       <div class="studio-shell">
         <header class="studio-header">
-          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">THE REACTOR OBSERVATORY</p><h1>CRS</h1></div></div>
-          <nav aria-label="Game controls"><details class="studio-dropdown studio-game-menu"><summary>Menu</summary><div class="studio-dropdown-panel"><button data-manual-open title="Fuelling theory, instructions and controls (F1)">Manual</button><button data-action="challenge" class="studio-quiet" data-field="challenge-button">One-day challenge</button><button data-action="reset" class="studio-quiet">New shift</button></div></details></nav>
+          <div class="studio-brand"><span class="studio-emblem">C<span>06</span></span><div><p class="studio-eyebrow">REACTOR STRATEGY</p><h1>CRS</h1></div></div>
+          <nav aria-label="Game controls"><details class="studio-dropdown studio-game-menu"><summary>Menu</summary><div class="studio-dropdown-panel"><button data-manual-open title="Fuelling theory, instructions and controls (F1)">Manual</button></div></details></nav>
         </header>
-        <section class="studio-objective studio-card" aria-label="Shift objective" data-field="objective-card">
-          <div><p class="studio-eyebrow" data-field="objective-title"></p><details><summary>Mission details</summary><p data-field="objective"></p><small data-field="objective-reward"></small><p data-field="provenance" class="studio-provenance"></p></details></div>
-          <div class="studio-objective-progress"><strong data-field="objective-progress"></strong><small data-field="remaining"></small></div>
-        </section>
         <section class="studio-ending studio-card" data-field="ending" hidden aria-labelledby="studio-ending-title">
           <p class="studio-eyebrow">SHIFT REPORT</p><h2 id="studio-ending-title" data-field="ending-title" tabindex="-1"></h2>
           <p data-field="ending-provenance" class="studio-provenance"></p><p data-field="ending-reason"></p><p data-field="ending-reward"></p>
@@ -86,25 +83,24 @@ export class StudioView {
         <section class="studio-metrics" aria-label="Live reactor status">
           <article title="Average liquid-zone water level · allowed 10–90%"><span class="studio-eyebrow">LZC / %</span><strong data-field="reserve"></strong><small data-field="status"></small></article>
           <article><span class="studio-eyebrow">SCORE</span><strong data-field="score"></strong><small data-field="ripple-score"></small><small><span data-field="operations"></span> moves</small></article>
-          <article title="Eight fresh bundles per channel"><span class="studio-eyebrow">FUEL / BUNDLES</span><strong data-field="stock"></strong></article>
-          <article class="studio-clock"><span class="studio-eyebrow">SIMULATION CLOCK</span><strong data-field="time"></strong><div class="studio-segments" aria-label="Playback speed"><button data-action="pause" aria-label="Pause simulation" data-field="pause">Ⅱ</button><button data-action="speed" data-speed="1x">1×</button><button data-action="speed" data-speed="10x">10×</button><button data-action="speed" data-speed="60x">60×</button></div><small data-field="pace" title="Observed simulation minutes per real second includes time spent solving. Requested speed is a target; no catch-up work is queued."></small></article>
+          <article class="studio-clock"><span class="studio-eyebrow">YOUR SHIFT</span><strong data-field="time"></strong><div class="studio-segments" aria-label="Playback speed"><button data-action="pause" aria-label="Pause simulation" data-field="pause">Ⅱ</button><button data-action="speed" data-speed="1x">1×</button><button data-action="speed" data-speed="10x">10×</button><button data-action="speed" data-speed="60x">60×</button></div><small data-field="pace" title="Observed simulation minutes per real second includes time spent solving. Requested speed is a target; no catch-up work is queued."></small></article>
         </section>
         <div data-field="history"></div>
         <div id="studio-reactor-panel" role="tabpanel" aria-labelledby="studio-tab-reactor" data-field="reactor-panel">
         <main class="studio-workspace">
           <section class="studio-card studio-core">
-            <div class="studio-card-heading"><div><p class="studio-eyebrow">01 / EXPLORE</p><h2>Core</h2></div><div class="studio-core-tools">
+            <div class="studio-card-heading"><div><p class="studio-eyebrow">01 / THE REACTOR</p><h2>Core deck</h2></div><div class="studio-core-tools">
               <details class="studio-dropdown studio-map-menu"><summary data-field="map-mode-title">Channel kW</summary><div class="studio-dropdown-panel studio-map-modes"><button data-action="map" data-map="burnup">Burnup</button><button data-action="map" data-map="power">Channel kW</button><button data-action="map" data-map="ripple">Ripple %</button><button data-action="map" data-map="bundle-power">Bundle kW</button></div></details>
               <details class="studio-dropdown studio-watchlist"><summary>Fuel</summary><div class="studio-dropdown-panel"><h2 title="Eligible channels ranked by average burnup">Fuel watchlist</h2><button data-action="oldest" class="studio-outline">◎ Highest burnup</button><div data-field="watchlist" class="studio-candidates"></div></div></details>
               <details class="studio-dropdown studio-device-menu"><summary>Devices</summary><div class="studio-dropdown-panel studio-devices"><button data-action="devices" aria-pressed="true">Adjusters</button><span class="studio-lzc-planes" aria-label="Liquid-zone face plane"><button data-action="lzc-plane" data-plane="0" aria-pressed="true">End A LZC</button><button data-action="lzc-plane" data-plane="1" aria-pressed="false">End B LZC</button></span><details><summary>Device geometry</summary><p data-field="device-note"></p><p data-field="lzc-device-note">Cyan: LZC tube compartments and current water levels. The face shows one axial plane at a time.</p><div data-field="device-plan"></div></details></div></details>
             </div></div>
-            <div class="studio-map-wrap"><svg data-field="map" viewBox="0 0 560 560" aria-label="Core channel map" role="group"><defs><radialGradient id="studio-vessel"><stop stop-color="#2d4945"/><stop offset="1" stop-color="#142421"/></radialGradient></defs><circle cx="280" cy="280" r="256" fill="url(#studio-vessel)"/><circle cx="280" cy="280" r="249" fill="none" stroke="#58716a" stroke-width="1"/><circle cx="280" cy="280" r="238" fill="none" stroke="#58716a" stroke-dasharray="2 8"/><path d="M280 10v32 M280 518v32 M10 280h32 M518 280h32" stroke="#a9c4b2" stroke-width="1"/><g data-field="map-labels" fill="#becbc1" font-size="10" font-family="monospace"></g><g data-field="channels"></g></svg><span class="studio-map-tag" data-field="map-tag"></span></div>
+            <div class="studio-map-wrap"><div class="studio-map-viewport"><svg data-field="map" viewBox="0 0 560 560" aria-label="Core channel map" role="group"><defs><radialGradient id="studio-vessel"><stop stop-color="#2d4945"/><stop offset="1" stop-color="#142421"/></radialGradient></defs><circle cx="280" cy="280" r="256" fill="url(#studio-vessel)"/><circle cx="280" cy="280" r="249" fill="none" stroke="#58716a" stroke-width="1"/><circle cx="280" cy="280" r="238" fill="none" stroke="#58716a" stroke-dasharray="2 8"/><path d="M280 10v32 M280 518v32 M10 280h32 M518 280h32" stroke="#a9c4b2" stroke-width="1"/><g data-field="map-labels" fill="#becbc1" font-size="10" font-family="monospace"></g><g data-field="channels"></g></svg></div><span class="studio-map-tag" data-field="map-tag"></span></div>
             <div class="studio-map-legend"><span class="studio-legend-gradient"></span><span data-field="legend">Channel power / kW thermal</span><span>Arrows select</span></div>
             <span data-field="tilt" class="studio-core-readings"></span>
           </section>
           <section class="studio-card studio-inspector">
             <p class="studio-eyebrow">02 / CHANNEL WORKBENCH</p><div class="studio-channel-title"><h2 data-field="channel"></h2><span data-field="coordinate"></span></div>
-            <div class="studio-channel-metrics"><div><span>CHANNEL / kW</span><strong data-field="local-power"></strong></div><div><span>RIPPLE / %</span><strong data-field="local-ripple"></strong></div><div><span>PEAK BUNDLE / kW</span><strong data-field="bundle-peak"></strong></div><div><span>TILT / B+</span><strong data-field="local-tilt"></strong></div></div><details class="studio-reference"><summary>Power reference</summary><p data-field="channel-reference"></p></details>
+            <details class="studio-channel-detail"><summary>Channel readings</summary><div class="studio-channel-metrics"><div><span>CHANNEL / kW</span><strong data-field="local-power"></strong></div><div><span>RIPPLE / %</span><strong data-field="local-ripple"></strong></div><div><span>PEAK BUNDLE / kW</span><strong data-field="bundle-peak"></strong></div><div><span>TILT / B+</span><strong data-field="local-tilt"></strong></div></div></details><details class="studio-reference"><summary>Power reference</summary><p data-field="channel-reference"></p></details>
             <div class="studio-rack-heading"><span class="studio-eyebrow">12 BUNDLE POSITIONS</span><span data-field="burnup"></span></div>
             <div data-field="bundles" class="studio-axial-profile" aria-label="Selected channel axial power, burnup, iodine and xenon profiles"></div><div class="studio-rack-ends"><span>END A / 01</span><span>AXIAL BUNDLE POSITION</span><span>12 / END B</span></div>
             <div class="studio-order"><p class="studio-order-size"><span>Fuel with flow</span><strong data-field="direction"></strong></p>
@@ -122,11 +118,11 @@ export class StudioView {
     this.element.querySelectorAll<HTMLElement>("[data-field]").forEach(field => this.fields.set(field.dataset.field!, field));
     const header = this.element.querySelector(".studio-header")!;
     header.querySelector("nav")!.before(this.element.querySelector(".studio-metrics")!);
-    this.element.querySelector(".studio-game-menu > .studio-dropdown-panel")!.prepend(this.field("objective-card"));
     const menuExtras = document.createElement("div");
     menuExtras.className = "studio-goal-controls";
-    menuExtras.innerHTML = `<button data-action="guide">First-shift guide</button><label>Run objective<select data-goal-select><option value="free-practice">Free practice</option><option value="useful-fuel-day-v1">One-day challenge</option><option value="three-day-rhythm-v1">Three-day rhythm</option><option value="seven-day-stewardship-v1">Seven-day stewardship</option></select></label><button data-action="start-goal">Start selected goal · same seed</button>`;
-    menuExtras.querySelector("select")!.value = this.snapshot.shift?.id ?? "free-practice";
+    menuExtras.innerHTML = `<button data-action="guide">First-shift guide</button><details class="studio-new-run"><summary>New run</summary><label>Core seed<input data-run-seed type="number" min="0" max="4294967295" step="1" required></label><input type="hidden" data-goal-select value="free-practice"><button data-action="start-goal">Start new run</button></details>`;
+    menuExtras.querySelector<HTMLInputElement>("[data-goal-select]")!.value = "free-practice";
+    menuExtras.querySelector<HTMLInputElement>("[data-run-seed]")!.value = String(this.snapshot.shift?.seed ?? 1001);
     this.element.querySelector(".studio-game-menu > .studio-dropdown-panel")!.append(menuExtras);
     parent.append(this.element);
     this.manual = new SimulatorManual(this.element);
@@ -148,32 +144,68 @@ export class StudioView {
       this.render();
     });
     this.field("history").append(this.historyView.element);
-    header.after(this.goalView.element);
+    header.querySelector("nav")!.before(this.goalView.element);
     this.guide = new FirstShiftGuide(() => { this.mapMode = "burnup"; this.render(); }, () => this.element.querySelector<HTMLElement>('.studio-game-menu > summary')?.focus({ preventScroll: true }));
-    this.goalView.element.after(this.guide.element);
+    header.after(this.guide.element);
     if (initial.guided) this.guide.start(this.snapshot);
-    // Keep the next action and its fuel preview above the supporting axial plots.
     const inspector = this.element.querySelector(".studio-inspector")!;
-    inspector.querySelector(".studio-rack-heading")!.before(inspector.querySelector(".studio-order")!);
-    const fuelDetail = document.createElement("details"); fuelDetail.className = "studio-inspection-details";
-    fuelDetail.innerHTML = "<summary>Inspect fuel & readings</summary>";
-    fuelDetail.append((inspector.querySelector(".studio-channel-detail") ?? inspector.querySelector(".studio-channel-metrics"))!, inspector.querySelector(".studio-reference")!, inspector.querySelector(".studio-fuel-status")!, this.field("movement-plan"));
-    inspector.querySelector(".studio-order")!.after(fuelDetail);
+    const core = this.element.querySelector(".studio-core")!;
+    const selected = document.createElement("div"); selected.className = "studio-selected-channel";
+    selected.append(this.field("channel"));
+    const reading = document.createElement("span"); reading.dataset.selectedReading = "";
+    const toggle = this.field("refuel"); toggle.className = "studio-outline";
+    const note = document.createElement("p"); note.className = "studio-selection-note"; note.setAttribute("role", "status");
+    selected.append(reading, toggle);
+    const dock = this.element.querySelector<HTMLElement>(".studio-zones")!;
+    dock.classList.add("studio-inspection-dock");
+    const zonePanel = document.createElement("div");
+    zonePanel.className = "studio-dock-panel"; zonePanel.dataset.inspectionPanel = "zones";
+    zonePanel.append(...Array.from(dock.children));
+    const readingsPanel = document.createElement("div");
+    readingsPanel.className = "studio-dock-panel"; readingsPanel.dataset.inspectionPanel = "channel";
+    readingsPanel.append(inspector.querySelector(".studio-channel-metrics")!, inspector.querySelector(".studio-reference")!, inspector.querySelector(".studio-controls")!);
+    const fuelPanel = document.createElement("div");
+    fuelPanel.className = "studio-dock-panel"; fuelPanel.dataset.inspectionPanel = "fuel";
+    fuelPanel.append(inspector.querySelector(".studio-order-size")!, inspector.querySelector(".studio-fuel-status")!, this.field("movement-plan"));
+    const profilesPanel = document.createElement("div");
+    profilesPanel.className = "studio-dock-panel"; profilesPanel.dataset.inspectionPanel = "profiles";
+    profilesPanel.append(inspector.querySelector(".studio-rack-heading")!, this.field("bundles"), inspector.querySelector(".studio-rack-ends")!);
+    const tabs = document.createElement("div"); tabs.className = "studio-inspection-tabs";
+    tabs.setAttribute("role", "tablist"); tabs.setAttribute("aria-label", "Core and selected channel details");
+    tabs.innerHTML = [["zones", "LZC levels"], ["channel", "Channel"], ["fuel", "Fuel"], ["profiles", "Profiles"]].map(([id, label]) => `<button type="button" role="tab" id="inspection-tab-${id}" data-action="inspect-tab" data-inspection-tab="${id}" aria-controls="inspection-panel-${id}" aria-selected="${id === "zones"}" tabindex="${id === "zones" ? 0 : -1}">${label}</button>`).join("");
+    for (const panel of [zonePanel, readingsPanel, fuelPanel, profilesPanel]) {
+      panel.id = `inspection-panel-${panel.dataset.inspectionPanel}`;
+      panel.setAttribute("role", "tabpanel"); panel.setAttribute("aria-labelledby", `inspection-tab-${panel.dataset.inspectionPanel}`);
+      panel.hidden = panel !== zonePanel;
+    }
+    dock.append(selected, note, tabs, zonePanel, readingsPanel, fuelPanel, profilesPanel);
+    inspector.remove();
     const workspace = this.element.querySelector(".studio-workspace")!;
     const scene = document.createElement("div"), side = document.createElement("div");
     scene.className = "studio-scene-column"; side.className = "studio-side-column";
-    scene.append(this.element.querySelector(".studio-core")!);
-    const profiles = document.createElement("section"); profiles.className = "studio-card studio-profiles";
-    profiles.setAttribute("aria-label", "Selected channel profiles");
-    profiles.append(inspector.querySelector(".studio-rack-heading")!, this.field("bundles"), inspector.querySelector(".studio-rack-ends")!);
-    side.append(inspector, this.dailyView.element); workspace.append(scene, side); workspace.after(profiles);
+    scene.append(core); side.append(this.dailyView.element, this.element.querySelector(".studio-zones")!);
+    workspace.append(scene, side);
+    const receipt = document.createElement("section"); receipt.className = "studio-day-receipt studio-card";
+    receipt.setAttribute("aria-label", "Day record");
+    receipt.append(this.dailyView.element.querySelector("[data-day-report]")!);
+    const impact = document.createElement("details"); impact.className = "studio-operation-impact";
+    impact.innerHTML = "<summary>Last operation response</summary>";
+    impact.append(this.field("impact")); receipt.append(impact, this.field("feedback"));
+    workspace.after(receipt); this.element.querySelector(".studio-bottom")!.remove();
+    this.element.querySelector(".studio-footer")!.remove();
+    const hint = document.createElement("p"); hint.className = "studio-input-hint";
+    hint.textContent = "Click to inspect · Double-click to queue/remove · R or Enter on core · N highest burnup";
+    dock.append(hint);
+    const toolbar = this.element.querySelector(".studio-history-toolbar")!;
+    toolbar.append(this.field("tilt"), core.querySelector(".studio-map-legend")!);
+    this.element.addEventListener("dblclick", this.onDoubleClick);
     this.historyView.setTab(initial.selectedTab ?? "reactor");
     this.mapMode = initial.mapMode ?? "power";
     this.mapView = new StudioMapView(name => this.field(name), this.snapshot.core.channels);
+    core.querySelector(".studio-core-tools")!.append(core.querySelector(".core-map-zoom")!);
     this.orderView = new StudioOrderView(name => this.field(name));
     this.statusView = new StudioStatusView(this.element, name => this.field(name));
     this.presentation = session.presentation ?? new SessionPresentation();
-    this.animatedOperation = this.snapshot.lastFuelMovement?.operationId;
     this.buildZones();
     this.select(initial.selectedChannelIndex ?? 210);
     this.element.addEventListener("click", this.onClick);
@@ -193,6 +225,7 @@ export class StudioView {
     this.manual.destroy();
     this.guide.destroy();
     this.element.removeEventListener("click", this.onClick);
+    this.element.removeEventListener("dblclick", this.onDoubleClick);
     this.element.removeEventListener("keydown", this.onKeyDown);
     this.field("target-input").removeEventListener("input", this.onTargetInput);
     this.element.remove();
@@ -226,11 +259,12 @@ export class StudioView {
       if (response.accepted && ["commit-day", "reset"].includes(response.command.type)) this.localDailyPlan = [];
       if (this.hasReceivedUpdate && response !== this.lastHandledResponse && response.accepted && response.command.type === "reset") {
         this.guide.stop(); this.lastGuideStep = undefined;
-        this.element.querySelector<HTMLSelectElement>("[data-goal-select]")!.value = response.snapshot.shift?.id ?? "free-practice";
+        this.element.querySelector<HTMLInputElement>("[data-goal-select]")!.value = response.snapshot.shift?.id ?? "free-practice";
+        this.element.querySelector<HTMLInputElement>("[data-run-seed]")!.value = String(response.snapshot.shift?.seed ?? 1001);
       }
       this.lastHandledResponse = response;
     }
-    if (update.error) this.presentation.fail(update.error);
+    if (update.error) { this.presentation.fail(update.error); this.presentation.result = "rejected"; }
     if (this.presentation.result) this.element.dataset.result = this.presentation.result;
     else delete this.element.dataset.result;
     this.pace = update.pace;
@@ -243,23 +277,8 @@ export class StudioView {
     this.hasReceivedUpdate = true;
     this.render(update.changeKind === "status");
     this.calculationView.update(update, this.dailyPlan);
-    if (response?.accepted && response.command.type === "commit-refuel" && response === this.lastHandledResponse &&
-        response.snapshot.lastFuelMovement?.operationId !== this.animatedOperation) {
-      this.animatedOperation = response.snapshot.lastFuelMovement?.operationId;
-      if (!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-        const towardB = response.snapshot.lastFuelMovement?.plan.outgoingEnd === "B";
-        this.field("movement-result").querySelectorAll<HTMLElement>("[data-confirmed]").forEach(cell => {
-          const outgoing = cell.dataset.confirmed === "discharged";
-          const offset = (towardB ? 24 : -24) * (outgoing ? 1 : -1);
-          cell.animate?.(outgoing
-            ? [{ opacity: 1, transform: "translateX(0)" }, { opacity: 0.5, transform: `translateX(${offset}px)` }]
-            : [{ opacity: 0.3, transform: `translateX(${offset}px)` }, { opacity: 1, transform: "translateX(0)" }], { duration: 450 });
-        });
-      }
-    }
   }
 
-  private animatedOperation: number | undefined;
   private watchKey = "";
   private watched: CanduChannelSnapshot[] = [];
 
@@ -288,19 +307,18 @@ export class StudioView {
       this.text("score", snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 }));
       this.text("operations", String(snapshot.refuellingOperationCount));
       this.text("ripple-score", snapshot.ripple ? `RMS ripple ${(snapshot.ripple.rmsDeviationFraction * 100).toFixed(2)}% · ${snapshot.ripple.pointsPerHour.toFixed(3)} points/h` : "Reference unavailable from this host");
-      this.text("stock", snapshot.shift?.unlimitedFreshFuel ? "∞" : String(snapshot.freshBundlesAvailable));
       this.text("time", snapshot.pacingMode === "daily-turn" ? `Day ${(snapshot.completedDays ?? 0) + 1}` : formatSimulationTime(snapshot.simulationTimeSeconds));
       (this.element.querySelector('.studio-clock .studio-segments') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
       (this.element.querySelector('.studio-controls') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
-      this.element.querySelector(".studio-footer > span:last-child")!.textContent = snapshot.pacingMode === "daily-turn" ? "F1 Manual · N Highest burnup · R Fuel plan" : "F1 Manual · SPACE pause / resume · R refuel";
       this.text("status", isRunTerminal(snapshot) ? "Shift complete" : getOverallStatus(snapshot));
       this.text("tilt", `Keff ${formatEffectiveK(snapshot.physics.effectiveK)}\nTilt ${getTiltLabel(snapshot.axialTiltFraction)}`);
       this.field("tilt").title = "Global axial tilt · Limit ±20% · End B positive";
-      this.text("guidance", operationGuidance(snapshot));
 
       this.text("pause", snapshot.isPaused ? "▶" : "Ⅱ");
       this.field("pause").setAttribute("aria-label", snapshot.isPaused ? "Resume simulation" : "Pause simulation");
       this.text("channel", channel ? gridCoordinateLabel(channel) : "No channel");
+      const exit = channel ? exitBurnup(snapshot, channel) : null;
+      this.element.querySelector("[data-selected-reading]")!.textContent = channel ? `${(channelWatts(snapshot, channel) / 1000).toFixed(0)} kW · exit ${exit === null ? "unavailable" : exit.toFixed(2) + " MWd/kg"}` : "";
       this.text("coordinate", channel ? "CORE CHANNEL" : "—");
       this.text("local-power", channel ? `${(channelWatts(snapshot, channel) / 1000).toFixed(0)} / ${(channelLimit(snapshot) / 1000).toFixed(0)}` : "—");
       const ripple = channel ? snapshot.ripple?.channelRippleFractions[channel.channelIndex] : undefined;
@@ -317,17 +335,14 @@ export class StudioView {
       this.text("map-tag", `${this.inspectionSnapshot ? `HISTORY ${formatSimulationTime(snapshot.simulationTimeSeconds)}` : "LIVE"} / ${this.mapMode.toUpperCase()}`);
       this.element.dataset.mapMode = this.mapMode;
       this.text("map-mode-title", ({ burnup: "Burnup", power: "Channel kW", ripple: "Ripple %", "bundle-power": "Bundle kW" })[this.mapMode]);
-      this.text("legend", this.mapMode === "burnup" ? "Fresh → higher burnup · MWd/kg HM"
-        : this.mapMode === "power" ? `Blue ≤${(channelColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(channelLimit(snapshot) / 1000).toFixed(0)} kW / channel · red = limit`
-        : this.mapMode === "bundle-power" ? `Blue ≤${(bundleColorMinimum(snapshot) / 1000).toFixed(0)} → red ≥${(bundleLimit(snapshot) / 1000).toFixed(0)} kW / hottest bundle · red = limit`
-        : "Blue ≤85% · pale = 100% reference · red ≥115%");
+      this.text("legend", mapLegend(snapshot, this.mapMode));
       this.mapView.update(snapshot, this.selected, this.mapMode, this.dailyPlan);
       this.renderWatchlist();
       this.orderView.update(snapshot, this.draft, channel);
       snapshot.rrs.zones.forEach((zone, index) => {
         const element = this.field("zones").children[index] as HTMLElement | undefined;
         if (!element) return;
-        element.children[0].textContent = `${(zone.fillFraction * 100).toFixed(0)}%`;
+        element.children[0].textContent = `${(zone.fillFraction * 100).toFixed(1)}%`;
         (element.querySelector("i") as HTMLElement).style.height = `${Math.min(100, Math.max(0, zone.fillFraction * 100))}%`;
         element.querySelector("small")!.textContent = `Z${zone.logicalZoneId + 1}`;
         element.dataset.limiting = String(zone.logicalZoneId === snapshot.rrs.limitingZoneId);
@@ -349,11 +364,17 @@ export class StudioView {
       button.disabled = !ready || pending || !!this.inspectionSnapshot || isRunTerminal(snapshot) || (!included && !isChannelRefuellable(snapshot.core.channels.find(c => c.channelIndex === this.selected)));
     }
     this.dailyView.update(snapshot, this.dailyPlan, pending, this.inspectionSnapshot !== null, this.dayProgress, ready);
+    const channel = snapshot.core.channels.find(c => c.channelIndex === this.selected);
+    this.element.querySelector(".studio-selection-note")!.textContent = this.inspectionSnapshot ? "Recorded day · Return to current day to edit orders." : !ready ? this.session.status.detail : pending ? "Calculating the submitted day · Orders are locked." : this.presentation.result === "rejected" ? this.presentation.message : isRunTerminal(snapshot) ? "Run complete · Start another run to plan." : channel?.canRefuel === false ? channel.refuellingIneligibilityReason || "This channel cannot be refuelled." : this.dailyPlan.includes(this.selected) ? "On today's sheet" : !snapshot.shift?.unlimitedFreshFuel && (this.dailyPlan.length + 1) * 8 > snapshot.freshBundlesAvailable ? "Not enough fresh fuel for another channel." : "";
+    this.element.querySelector<HTMLElement>(".studio-day-receipt")!.hidden = !snapshot.lastDayResult;
+    this.element.querySelector<HTMLElement>(".studio-operation-impact")!.hidden = snapshot.pacingMode === "daily-turn" || !snapshot.lastFuelMovement;
+    this.element.querySelector<HTMLButtonElement>('[data-action="start-goal"]')!.disabled = !ready || pending;
+    this.field<HTMLButtonElement>("refuel").disabled ||= !this.dailyPlan.includes(this.selected) && !snapshot.shift?.unlimitedFreshFuel && (this.dailyPlan.length + 1) * 8 > snapshot.freshBundlesAvailable;
     this.goalView.update(snapshot);
     this.guide.update(snapshot, this.dailyPlan, pending, this.inspectionSnapshot !== null);
     if (!this.guide.element.hidden && this.guide.element.dataset.step !== this.lastGuideStep) {
       this.lastGuideStep = this.guide.element.dataset.step;
-      this.element.querySelector<HTMLDetailsElement>(".studio-inspection-details")!.open = this.lastGuideStep === "1";
+      if (this.lastGuideStep === "1") this.showInspectionTab("fuel");
     }
   }
 
@@ -363,21 +384,12 @@ export class StudioView {
     const shift = this.snapshot.shift;
     const provenance = this.snapshot.provenance;
     const provenanceText = provenance ? `${provenance.label}${provenance.isModified ? ` · ${provenance.reasons.join("; ")} · Excluded from standard challenge results.` : ""}` : "";
-    this.text("provenance", provenanceText);
     this.text("ending-provenance", provenanceText);
     this.element.dataset.runKind = provenance?.kind ?? "unknown";
 
-    this.field("objective-card").hidden = !shift;
-    this.text("challenge-button", shift?.id === "useful-fuel-day-v1" ? "Free practice" : "One-day challenge");
     const terminal = isRunTerminal(this.snapshot);
     this.field("ending").hidden = !terminal;
     if (shift) {
-      this.text("objective-title", `${shift.title} / SEED ${shift.seed}`);
-      this.text("objective", shift.objective);
-      this.text("objective-reward", provenance?.isModified ? "Explore freely; start a new shift to begin a standard run." : shift.reward ? `Reward: ${shift.reward} · Inspect both ends of the burnup graph before refuelling.` : "No scripted moves. Choose your own refuelling strategy.");
-      this.text("objective-progress", shift.usefulBundlesRequired > 0 ?
-        `${shift.usefulBundlesDischarged} / ${shift.usefulBundlesRequired} useful bundles` : `${shift.usefulBundlesDischarged} useful bundles discharged`);
-      this.text("remaining", shift.isEndless ? "Endless run · Unlimited fresh fuel" : `${formatClockDuration(shift.remainingSeconds)} remaining · ${this.snapshot.freshBundlesAvailable} / ${shift.fuelBudget} fresh bundles left`);
       this.text("ending-title", `${provenance?.isModified ? "Sandbox · " : ""}${shift.outcome === "missed" ? "Objective missed" : shift.outcome === "ended" ? "Shift ended early" : "Shift completed"}`);
       this.text("ending-reward", provenance?.isModified ? "Sandbox result: excluded from the standard challenge badge and score comparisons." : shift.rewardEarned ? `Earned: ${shift.reward}` : shift.outcome === "missed" ?
         `Discharged ${shift.usefulBundlesDischarged} of ${shift.usefulBundlesRequired} required useful bundles. Compare burnup at both ends and try again.` : "");
@@ -425,11 +437,35 @@ export class StudioView {
     if (this.inspectionSnapshot && command.type !== "reset") return;
     if (command.type === "commit-day") this.calculationView.begin(this.snapshot, this.dailyPlan, command);
     try { const response = await this.session.dispatch(command); if (command.type === "commit-day") this.calculationView.finish(response); }
-    catch (error) { const message = error instanceof Error ? error.message : String(error); this.presentation.fail(message); this.calculationView.interrupted(message); this.render(); }
+    catch (error) { const message = error instanceof Error ? error.message : String(error); this.presentation.fail(message); this.presentation.result = "rejected"; this.calculationView.interrupted(message); this.render(); }
   }
 
   private readonly onTargetInput = (): void => {
     this.text("target-output", `${this.field<HTMLInputElement>("target-input").value}%`);
+  };
+
+  private showInspectionTab(id: string, focus = false): void {
+    this.element.querySelectorAll<HTMLButtonElement>("[data-inspection-tab]").forEach(button => {
+      const active = button.dataset.inspectionTab === id;
+      button.setAttribute("aria-selected", String(active)); button.tabIndex = active ? 0 : -1;
+      if (active && focus) button.focus({ preventScroll: true });
+    });
+    this.element.querySelectorAll<HTMLElement>("[data-inspection-panel]").forEach(panel => { panel.hidden = panel.dataset.inspectionPanel !== id; });
+  }
+
+  private toggleChannel(index: number): void {
+    if (!this.session.status.isWasmAvailable || this.session.isPending || this.inspectionSnapshot || isRunTerminal(this.snapshot)) return;
+    const included = this.dailyPlan.includes(index), channel = this.snapshot.core.channels.find(c => c.channelIndex === index);
+    if (!included && (!isChannelRefuellable(channel) || !this.snapshot.shift?.unlimitedFreshFuel && (this.dailyPlan.length + 1) * 8 > this.snapshot.freshBundlesAvailable)) return;
+    this.select(index);
+    this.setDailyPlan(included ? this.dailyPlan.filter(c => c !== index) : [...this.dailyPlan, index]);
+    this.element.querySelector(".studio-selection-note")!.textContent = `${channel ? gridCoordinateLabel(channel) : index} ${included ? "removed from" : "added to"} today's sheet.`;
+  }
+
+  private readonly onDoubleClick = (event: MouseEvent): void => {
+    const cell = (event.target as Element).closest<HTMLElement>(".studio-map-wrap [data-channel]");
+    if (!cell) return;
+    event.preventDefault(); this.select(Number(cell.dataset.channel)); this.toggleChannel(this.selected);
   };
 
   private readonly onClick = (event: MouseEvent): void => {
@@ -440,6 +476,7 @@ export class StudioView {
     });
     const target = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action], [data-channel]") : null;
     if (!target || target instanceof HTMLButtonElement && target.disabled) return;
+    if (target.dataset.action === "inspect-plan") { this.guide.inspect(); this.select(Number(target.dataset.planChannel)); this.render(); this.mapView.focus(this.selected); return; }
     if (target.dataset.action === "remove-plan") { this.setDailyPlan(this.dailyPlan.filter(c => c !== Number(target.dataset.planChannel))); return; }
     const menu = target.closest<HTMLDetailsElement>(".studio-dropdown");
     if (menu && ["map", "channel", "oldest", "reset", "challenge", "guide", "start-goal"].includes(target.dataset.action ?? "")) {
@@ -447,6 +484,7 @@ export class StudioView {
     }
     if (target.dataset.channel) { this.guide.inspect(); this.select(Number(target.dataset.channel)); this.render(); return; }
     switch (target.dataset.action) {
+      case "inspect-tab": this.showInspectionTab(target.dataset.inspectionTab!); break;
       case "lzc-plane":
         this.element.querySelectorAll<HTMLElement>('[data-action="lzc-plane"]').forEach(b => b.setAttribute("aria-pressed", String(b === target)));
         this.mapView.setLiquidZonePlane(Number(target.dataset.plane));
@@ -460,12 +498,16 @@ export class StudioView {
       }
       case "map": this.mapMode = target.dataset.map as MapMode; this.render(); break;
       case "guide": this.guide.start(this.snapshot); this.render(); break;
-      case "start-goal": void this.send({ type: "reset", seed: this.snapshot.shift?.seed, shiftId: this.element.querySelector<HTMLSelectElement>("[data-goal-select]")!.value as ShiftId }); break;
+      case "start-goal": {
+        const seed = this.element.querySelector<HTMLInputElement>("[data-run-seed]")!;
+        if (seed.reportValidity()) void this.send({ type: "reset", seed: Number(seed.value), shiftId: "free-practice" });
+        break;
+      }
       case "oldest": this.guide.inspect(); this.select(highestBurnupChannel(this.snapshot.core.channels) ?? this.selected); this.render(); break;
       case "commit-day": void this.send({ type: "commit-day", expectedCompletedDays: this.snapshot.completedDays ?? 0, channelIndices: [...this.dailyPlan] }); break;
       case "clear-plan": this.setDailyPlan([]); break;
       case "refuel": if (this.snapshot.pacingMode === "daily-turn") {
-        this.setDailyPlan(this.dailyPlan.includes(this.selected) ? this.dailyPlan.filter(c => c !== this.selected) : [...this.dailyPlan, this.selected]); break;
+        this.toggleChannel(this.selected); break;
       }
       if (isChannelRefuellable(this.snapshot.core.channels.find(c => c.channelIndex === this.selected)) && canIssueRefuel(this.draft, this.snapshot.freshBundlesAvailable, this.session.isPending, this.snapshot.shift?.unlimitedFreshFuel) && !isRunTerminal(this.snapshot)) void this.send({ type: "commit-refuel", request: toRefuelRequest(this.draft) }); break;
       case "pause": void this.send({ type: this.snapshot.isPaused ? "resume" : "pause" }); break;
@@ -473,7 +515,6 @@ export class StudioView {
       case "retry": void this.send({ type: "reset" }); break;
       case "reset":
       case "new-seed": void this.send({ type: "reset", seed: randomCoreSeed(this.snapshot.shift?.seed) }); break;
-      case "challenge": void this.send({ type: "reset", seed: randomCoreSeed(this.snapshot.shift?.seed), shiftId: this.snapshot.shift?.id === "useful-fuel-day-v1" ? "free-practice" : "useful-fuel-day-v1" }); break;
       case "step": void this.send({ type: "step", simulationSeconds: 3600 }); break;
       case "target": void this.send({ type: "queue-power-target", targetFraction: Number(this.field<HTMLInputElement>("target-input").value) / 100 }); break;
     }
@@ -488,6 +529,13 @@ export class StudioView {
       if (menu) { event.preventDefault(); menu.open = false; menu.querySelector<HTMLElement>(":scope > summary")!.focus({ preventScroll: true }); }
       return;
     }
+    if (target.closest(".studio-inspection-tabs")) {
+      const ids = ["zones", "channel", "fuel", "profiles"];
+      const current = ids.indexOf((target as HTMLElement).dataset.inspectionTab ?? "zones");
+      const next = event.key === "Home" ? 0 : event.key === "End" ? 3 : event.key === "ArrowRight" ? (current + 1) % 4 : event.key === "ArrowLeft" ? (current + 3) % 4 : -1;
+      if (next >= 0) { event.preventDefault(); this.showInspectionTab(ids[next], true); }
+      return;
+    }
     if (target.closest(".studio-history")) return;
     if (target.matches("input, select, textarea")) return;
     const key = event.key.toLowerCase();
@@ -496,6 +544,7 @@ export class StudioView {
       event.preventDefault(); this.guide.inspect(); this.select(findAdjacentChannelIndex(this.snapshot.core.channels, this.selected, ...moves[key])); this.render();
       this.mapView.focus(this.selected); return;
     }
+    if ((key === "enter" || key === " ") && target.closest(".studio-map-wrap [data-channel]")) { event.preventDefault(); this.toggleChannel(Number(target.closest<HTMLElement>("[data-channel]")!.dataset.channel)); return; }
     // Let native buttons retain Space/Enter activation and focus behavior.
     if ((key === " " || key === "enter") && target.closest("button, summary")) return;
     if ((key === "enter" || key === " ") && target.hasAttribute("data-channel")) { event.preventDefault(); return; }

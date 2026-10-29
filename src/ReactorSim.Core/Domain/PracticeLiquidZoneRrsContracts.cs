@@ -1239,7 +1239,8 @@ namespace ReactorSim.Core
             PracticeLiquidZoneRrsMappingV1 mapping,
             EquilibriumCoreProjectionV1 initialEquilibrium,
             double simulationTimeSeconds = 0.0,
-            IReadOnlyList<double>? initialFills = null)
+            IReadOnlyList<double>? initialFills = null,
+            IReadOnlyList<double>? referenceNodePowerWatts = null)
         {
             if (mapping == null)
             {
@@ -1265,8 +1266,11 @@ namespace ReactorSim.Core
                     "Practice RRS time must be finite, nonnegative, and canonical.");
             }
 
+            var reference = MeasureZonalPower(mapping, referenceNodePowerWatts ?? initialEquilibrium.ShapeNodePowerWatts);
+            if (!reference.IsValid)
+                return Invalid(reference.FirstDiagnostic.Code, reference.FirstDiagnostic.Path, reference.FirstDiagnostic.Message);
             ContractValidationResult<ZonalPowerMeasurement> measurement =
-                MeasureZonalPower(mapping, initialEquilibrium.ShapeNodePowerWatts);
+                MeasureZonalPower(mapping, initialEquilibrium.ShapeNodePowerWatts, reference.Value.Fractions);
             if (!measurement.IsValid)
             {
                 return Invalid(
@@ -1309,10 +1313,10 @@ namespace ReactorSim.Core
                 new PracticeLiquidZoneRrsV1(
                     mapping,
                     fills,
+                    reference.Value.Fractions,
+                    reference.Value.Fractions,
                     measurement.Value.Fractions,
-                    measurement.Value.Fractions,
-                    measurement.Value.Fractions,
-                    Enumerable.Repeat(0.0, fills.Length),
+                    measurement.Value.Errors,
                     overlay.Value,
                     initialEquilibrium.ShapePowerWatts,
                     initialEquilibrium.ShapePowerWatts,
@@ -1402,7 +1406,8 @@ namespace ReactorSim.Core
             PracticeLiquidZoneRrsV1 previousState,
             double simulationTimeSeconds,
             FullCoreDiffusionSolveResultV1? warmStart = null,
-            StaticAbsorptionOverlayV1? backgroundOverlay = null)
+            StaticAbsorptionOverlayV1? backgroundOverlay = null,
+            bool settleReferenceShape = false)
         {
 #if RUNTIME_PROFILE
             using var profileScope = ReactorSim.Core.RuntimeProfile.Measure("rrs-event");
@@ -1555,7 +1560,9 @@ namespace ReactorSim.Core
             bool baselineConverged = IsControllerConverged(baselineMeasurement.Value.Errors,
                 controlledBaseline.Value.RelativeReactivity);
             bool commandAccepted = false;
-            if (!baselineConverged)
+            // Startup may settle against a fixed reference inside the normal event deadband.
+            // Candidate verification and bounded movement still apply; later events retain their deadband.
+            if (!baselineConverged || settleReferenceShape)
             {
                 ContractValidationResult<double[]> command = TrySolveBoundedFillCommand(
                     responseModel.Value,

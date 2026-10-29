@@ -13,6 +13,7 @@
     "smoke": "node scripts/daily-acceptance-smoke.mjs",
     "smoke:daily": "node scripts/daily-acceptance-smoke.mjs",
     "smoke:arcade": "node scripts/arcade-smoke.mjs",
+    "smoke:demo": "node scripts/demo-smoke.mjs",
     "smoke:scales": "node scripts/display-scales-smoke.mjs",
     "smoke:saves": "node scripts/saves-smoke.mjs",
     "smoke:docs": "node scripts/docs-smoke.mjs",

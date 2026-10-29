@@ -296,6 +296,7 @@ export type WorkerProtocolWorkerFactory = () => WorkerProtocolWorker;
 
 export interface WorkerProtocolBridgeOptions {
   initialPacingMode?: PacingMode;
+  initialSeed?: number;
   onProgress?: () => void;
   createWorker?: WorkerProtocolWorkerFactory;
   onFatalError?: (error: Error) => void;
@@ -703,12 +704,13 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     }
 
     this.settled = this.wasm.ready
-      .then(() => this.wasm!.initialize(this.selectedMode, undefined, options.initialPacingMode ?? "daily-turn"))
+      .then(() => this.wasm!.initialize(this.selectedMode, options.initialSeed, options.initialPacingMode ?? "daily-turn"))
       .then((snapshot) => {
         if (this.disposed || this.failedClosed) {
           return;
         }
         if ((options.initialPacingMode ?? "daily-turn") === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns. Reload the updated game.");
+        if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support the demo. Reload the updated game.");
         this.active = this.wasm!;
         this.activeStatus = this.wasm!.status;
         this.notify(snapshot);

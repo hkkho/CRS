@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Original playable studies of ten simulation-game patterns, with research and a reusable design brief."
+    />
+    <title>Browser Game Studio · Pattern Lab</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23293b35'/%3E%3Cpath d='M8 8h17v4H13v4h10v4H13v7H8z' fill='%23f5e8c9'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#game">Skip to the game</a>
+    <header class="masthead">
+      <a class="wordmark" href="./"
+        >FIELD<span>WORK</span><small>Browser Game Studio / 01</small></a
+      >
+      <p>Small games.<br /><strong>Meaningful decisions.</strong></p>
+      <div class="research-mark">
+        A playable research notebook <span>24 October 2026</span>
+      </div>
+    </header>
+    <div class="studio-layout">
+      <aside class="library-nav" aria-label="Pattern library">
+        <p class="eyebrow">Ten original experiments</p>
+        <h1>Find the fun<br />in the system.</h1>
+        <p class="nav-intro">
+          Study a pattern. Make a choice. See what changes.
+        </p>
+        <nav id="patterns" aria-label="Choose a play pattern"></nav>
+        <a class="research-link" href="../../references/case-studies.md"
+          >Read the twelve game studies ↗</a
+        >
+        <p class="fine">
+          Original code & art. Inspired by design patterns; no game assets
+          copied.
+        </p>
+      </aside>
+      <main id="game">
+        <div class="chapter-heading">
+          <span class="eyebrow" id="pattern-number"></span
+          ><span id="genre"></span>
+        </div>
+        <div class="game-heading">
+          <div>
+            <h2 id="title">Loading the studio…</h2>
+            <p id="premise"></p>
+          </div>
+          <button class="quiet" id="restart">↺ Restart</button>
+        </div>
+        <section class="play-surface" aria-label="Playable pattern">
+          <div class="scene-wrap">
+            <canvas
+              id="scene"
+              width="960"
+              height="540"
+              tabindex="0"
+              aria-label="Game scene. Use the buttons below; spatial games also support arrow keys and Enter."
+            ></canvas>
+            <div class="scene-badge" id="scene-badge">ORIGINAL PLAY STUDY</div>
+            <div class="outcome" id="outcome" hidden></div>
+          </div>
+          <div class="control-panel">
+            <dl
+              class="readings"
+              id="readings"
+              aria-label="Current game state"
+            ></dl>
+            <p class="instruction" id="instruction"></p>
+            <div class="actions" id="actions" aria-label="Game actions"></div>
+          </div>
+          <p class="feedback" id="feedback" role="status" aria-live="polite">
+            Choose an action to begin.
+          </p>
+        </section>
+        <div class="utilities">
+          <span>Seed <strong id="seed-label">42</strong></span
+          ><button id="pause" class="quiet" aria-pressed="false">Pause</button
+          ><button id="motion" class="quiet" aria-pressed="false">
+            Reduce motion</button
+          ><button id="sound" class="quiet" aria-pressed="false">
+            Sound off</button
+          ><button id="save" class="quiet">Save locally</button
+          ><button id="restore" class="quiet">Restore</button>
+        </div>
+        <button id="export-scene" class="quiet">Download scene.png</button>
+        <section class="notebook" id="notebook">
+          <div class="margin-label">
+            DESIGN NOTE<br /><span id="note-number">01</span>
+          </div>
+          <div>
+            <h3>What this experiment isolates</h3>
+            <p id="lesson"></p>
+            <div class="note-columns">
+              <div>
+                <h4>World & graphics</h4>
+                <p id="art-note"></p>
+              </div>
+              <div>
+                <h4>Animation as information</h4>
+                <p id="motion-note"></p>
+              </div>
+            </div>
+            <p class="study-link">
+              Reference: <a id="source" target="_blank" rel="noopener"></a>
+              <span
+                >· Small original demonstration, not a complete
+                recreation.</span
+              >
+            </p>
+            <details>
+              <summary>A question for the next playtest</summary>
+              <p id="test-note"></p>
+            </details>
+          </div>
+        </section>
+        <section class="brief-builder" id="brief-builder">
+          <div>
+            <p class="eyebrow">Try another idea</p>
+            <h3>Build a playable brief.</h3>
+            <p>
+              Turn a setting into an action, constraint and consequence. This
+              local form makes a design seed; it does not generate a finished
+              game.
+            </p>
+          </div>
+          <form id="brief-form">
+            <label
+              >Your idea<input
+                id="idea"
+                value="A repair shop on a floating island"
+                maxlength="180"
+                required
+            /></label>
+            <div class="form-row">
+              <label
+                >Player role<input
+                  id="role"
+                  value="repair keeper"
+                  maxlength="80"
+                  required /></label
+              ><label
+                >Repeated action<input
+                  id="verb"
+                  value="repair a neighbour’s tool"
+                  maxlength="100"
+                  required
+              /></label>
+            </div>
+            <label
+              >Scarce resource or creative constraint<input
+                id="constraint"
+                value="only three spare parts arrive each morning"
+                maxlength="160"
+                required /></label
+            ><button type="submit" class="primary">
+              Create a brief using this pattern →
+            </button>
+          </form>
+          <div id="brief-result" hidden>
+            <pre id="brief-text"></pre>
+            <button id="download-brief" class="quiet">Download brief.md</button>
+          </div>
+        </section>
+        <footer>
+          Research informs the design. Real playtesting decides what is
+          fun.<span id="storage-note"></span>
+        </footer>
+      </main>
+    </div>
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

@@ -1,0 +1,63 @@
+{
+  "baseRevision": "9ac573ef6d76b66fa4eda01848c985b3ed031b3d",
+  "branch": "design/control-room-game",
+  "state": "uncommitted local development",
+  "files": [
+    {
+      "path": "src/ReactorSim.Core/Domain/PracticeChannelPowerReference.cs",
+      "sha256": "5e69a2e16fdf897122e95d9cdc6c423d7c515631113d7d8042cdffbe3a124819"
+    },
+    {
+      "path": "src/ReactorSim.Core/Domain/PracticeLiquidZoneRrsContracts.cs",
+      "sha256": "2c7e10818498f4bc400149125222b70da11fc06aea21df2cd10c83417f3e12ef"
+    },
+    {
+      "path": "src/ReactorSim.Game/PracticeGameSessionFactory.cs",
+      "sha256": "6212832a7533990e8eddca9830fa6f2273c96076f85bda7392795460ad762f46"
+    },
+    {
+      "path": "src/ReactorSim.Game/PracticeOperatingLimits.cs",
+      "sha256": "e0d9b5df44e35084b2bc2e0f7ef1e8be216d93141c5eccca2b722dbb81e617f1"
+    },
+    {
+      "path": "src/ReactorSim.Game/GameSession.cs",
+      "sha256": "1e247e03912a47656b99e882e960efde5e9243cb53f0267437bc2be094014e22"
+    },
+    {
+      "path": "web/candu-playtest/src/protocol.ts",
+      "sha256": "c39b012d0fb80e2036dd3d03acd58053ddc58d3ebd73399a8cb119c030a1eaa2"
+    },
+    {
+      "path": "web/candu-playtest/src/LauncherView.ts",
+      "sha256": "bf5cc92605f3a44a0d7072adeda7982d6d24ba3e4d83a2d73f1d354462777901"
+    },
+    {
+      "path": "web/candu-playtest/src/studio/StudioView.ts",
+      "sha256": "0e98cba17e85af5285d8a1397790f4cf21fc7f593f37b7358b64bf24e96bd67e"
+    },
+    {
+      "path": "web/candu-playtest/src/studio/HistoryView.ts",
+      "sha256": "87ec35355e696e93a1e568f44c3f15b42cc4d61d24b3f2de304a95844407deab"
+    },
+    {
+      "path": "web/candu-playtest/src/studio/StudioMapView.ts",
+      "sha256": "840f19610c8b0345804a9b9f7b5a9e2b62e6a75a83390e4055b848848af60809"
+    },
+    {
+      "path": "web/candu-playtest/src/controlRoom.css",
+      "sha256": "45fe876ced4562136a63aba817acd8d2687d325ba1f88bd76fb15256d10f586f"
+    },
+    {
+      "path": "web/candu-playtest/src/ReactorFrame.ts",
+      "sha256": "58c652720350edce9a4fd6af2022e36be6f487f079db7bc4e3684d4c80700a7a"
+    },
+    {
+      "path": "tests/Fixtures/playtest-v2.json.gz",
+      "sha256": "148d472f8771f730a2d8e24ebe69f2fb0755d9b8c36b9aa27ef9624efe76fbc4"
+    },
+    {
+      "path": "web/candu-playtest/dist-pages/index.html",
+      "sha256": "fe2c244b417ee9f734cd46b4f2d87a22a4d4808ee86bd88103b4d38b1b286ba2"
+    }
+  ]
+}

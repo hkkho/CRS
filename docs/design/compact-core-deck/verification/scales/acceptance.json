@@ -1,0 +1,96 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:45386/CRS/",
+  "seed": 1001,
+  "daily": {
+    "default": "daily-turn",
+    "multiChannelDay": "passed",
+    "emptyDay": "passed",
+    "frozenPlanning": "passed",
+    "narrowLayout": "passed",
+    "durationsMs": [
+      4988,
+      1774
+    ]
+  },
+  "palettes": {
+    "power": 2,
+    "bundle-power": 1
+  },
+  "ranges": {
+    "power": [
+      {
+        "title": "Maximum channel power",
+        "low": 5.7,
+        "high": 6.2,
+        "limits": [
+          "Channel limit: 7.10 MW thermal ↑ above view"
+        ]
+      },
+      {
+        "title": "Maximum bundle power",
+        "low": 730,
+        "high": 830,
+        "limits": [
+          "Bundle limit: 900.00 kW thermal ↑ above view"
+        ]
+      },
+      {
+        "title": "Total reactor output",
+        "low": 0,
+        "high": 2311.680000000004,
+        "limits": []
+      }
+    ],
+    "zones": [
+      {
+        "title": "Fourteen liquid-zone levels",
+        "low": 29.773502569050112,
+        "high": 61.00717468673897,
+        "limits": [
+          "Lower limit: 10.00 % full ↓ below view",
+          "Upper limit: 90.00 % full ↑ above view"
+        ]
+      }
+    ],
+    "reactivity": [
+      {
+        "title": "Effective multiplication factor",
+        "low": 0.9999686933890976,
+        "high": 1.000019976954937,
+        "limits": []
+      },
+      {
+        "title": "Reactivity",
+        "low": -0.45149125447676247,
+        "high": 3.9937453713168223,
+        "limits": []
+      },
+      {
+        "title": "LZC average level",
+        "low": 39.6640877947588,
+        "high": 55,
+        "limits": [
+          "Lower limit: 10.00 % full ↓ below view",
+          "Upper limit: 90.00 % full ↑ above view"
+        ]
+      }
+    ]
+  },
+  "axialPowers": [
+    113.85,
+    292.4,
+    449.2,
+    576.5,
+    681.02,
+    728.23,
+    726.12,
+    674.47,
+    577.11,
+    447.51,
+    290.85,
+    113.37
+  ],
+  "narrowLayout": "passed",
+  "errors": []
+}
