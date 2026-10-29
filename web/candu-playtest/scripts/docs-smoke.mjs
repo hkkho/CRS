@@ -73,7 +73,7 @@ try {
 
   // The game link keeps the current reactor in its original tab; F1 stays local.
   await page.goto(gameUrl);
-  await page.getByRole('button', { name: 'Simulator manual', exact: true }).click();
+  await page.getByRole('button', { name: 'Manual', exact: true }).click();
   const manual = page.locator('dialog.simulator-manual[open]');
   await manual.getByRole('heading', { name: 'One day at a time', exact: true }).waitFor();
   const library = manual.getByRole('link', { name: /Manual, theory & code library/ });
