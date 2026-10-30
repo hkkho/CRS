@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { readingRange, CHANNEL_PEAK_RANGE, ZONE_LEVEL_RANGE } from './displayScales';
 
 it('reveals the benchmark variation without forcing zero or power limits into the view', () => {
-  expect(readingRange([5.796388, 6.078733], CHANNEL_PEAK_RANGE)).toEqual([5.7, 6.2]);
+  expect(readingRange([6.526, 6.8595], CHANNEL_PEAK_RANGE)).toEqual([6.2, 6.9]);
   expect(readingRange([46.959, 51.131], ZONE_LEVEL_RANGE)).toEqual([45, 55]);
   const [low, high] = readingRange([1.000001, 1.000005], undefined, false, .00002);
   expect(high - low).toBeLessThan(.0001);

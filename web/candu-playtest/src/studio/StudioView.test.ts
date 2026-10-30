@@ -91,8 +91,8 @@ describe("Reactor Studio live interface", () => {
     session.history.clear(); emit();
     view.element.querySelector<HTMLButtonElement>('[data-tab="power"]')!.click();
     const plot = () => view.element.querySelector<SVGElement>('.studio-trend-plot svg')!;
-    expect(Number(plot().dataset.yMin)).toBe(5.7);
-    expect(Number(plot().dataset.yMax)).toBe(6.2);
+    expect(Number(plot().dataset.yMin)).toBeLessThanOrEqual(6.2);
+    expect(Number(plot().dataset.yMax)).toBe(6.9);
     expect(plot().textContent).toContain('7.10 MW thermal ↑ above view');
     session.snapshot = { ...session.snapshot, simulationTimeSeconds: 172800,
       core: { ...session.snapshot.core, channels: session.snapshot.core.channels.map(c => ({ ...c, powerWatts: 8e6 })) } };

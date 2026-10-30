@@ -1,9 +1,9 @@
-// Presentation ranges from the seed-1001 daily benchmarks; v8 axial Marshak.
+// Presentation ranges from the seed-1001 daily benchmarks; v9 circular radial boundary.
 // These affect visual contrast only; operating limits come from the snapshot.
 export const CHANNEL_COLOR_MIN_WATTS = 4_500_000;
 export const BUNDLE_COLOR_MIN_WATTS = 400_000;
-export const CHANNEL_PEAK_RANGE: [number, number] = [5.7, 6.2]; // MW
-export const BUNDLE_PEAK_RANGE: [number, number] = [730, 830]; // kW
+export const CHANNEL_PEAK_RANGE: [number, number] = [6.2, 6.9]; // MW
+export const BUNDLE_PEAK_RANGE: [number, number] = [730, 870]; // kW
 export const ZONE_LEVEL_RANGE: [number, number] = [45, 55]; // percent
 export const AXIAL_POWER_RANGE: [number, number] = [100, 800]; // kW
 

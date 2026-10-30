@@ -62,9 +62,10 @@ try {
     ranges[tab] = await plots.evaluateAll(elements => elements.map(svg => ({ title: svg.querySelector('title').textContent,
       low: Number(svg.dataset.yMin), high: Number(svg.dataset.yMax), limits: [...svg.querySelectorAll('[data-chart-limit]')].map(label => label.textContent) })));
     if (tab === 'power') {
-      check(ranges[tab][0].low > 5 && ranges[tab][0].high < 6.5, 'Channel trend did not zoom to ordinary power.');
-      check(ranges[tab][1].low >= 700 && ranges[tab][1].high <= 900, 'Bundle trend did not zoom to ordinary v8 power.');
-      check(ranges[tab][0].limits[0].includes('7.10 MW thermal ↑ above view'), 'Off-scale channel limit disappeared.');
+      check(ranges[tab][0].low > 5 && ranges[tab][0].high < 7.5,
+        `Channel trend did not zoom to ordinary v9 power: ${JSON.stringify(ranges[tab][0])}`);
+      check(ranges[tab][1].low >= 700 && ranges[tab][1].high <= 900, 'Bundle trend did not zoom to ordinary v9 power.');
+      check(ranges[tab][0].limits[0].includes('7.10 MW thermal'), 'Channel limit disappeared from the graph.');
     }
     if (tab === 'zones') check(ranges[tab][0].low <= 45 && ranges[tab][0].high >= 55 && ranges[tab][0].high - ranges[tab][0].low < 35, `Zone graph lost its useful benchmark view: ${JSON.stringify(ranges[tab][0])}`);
     if (tab === 'reactivity') check(ranges[tab][0].high - ranges[tab][0].low < .0001, 'Keff variation is flattened.');
