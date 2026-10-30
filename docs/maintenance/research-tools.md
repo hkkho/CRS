@@ -5,7 +5,7 @@ comparison, fixtures and replay. They are not alternate game products.
 
 | Tool | Purpose |
 | --- | --- |
-| `AgedCoreBenchmark` | Aged-core checks, fuelling capability, bundle absorption/adjuster audits and axial calibration; see `Program.cs` flags and benchmark reports. |
+| `AgedCoreBenchmark` | Aged-core checks, fuelling capability, bundle absorption/adjuster audits and axial/radial calibration; see `Program.cs` flags and benchmark reports. |
 | `ChannelReferenceBenchmark` | Derive and compare fixed scoring references. |
 | `LongRunPlaytest` | Authoritative bridge campaigns, including 100 daily turns and LZC-guided fuelling. |
 | `CpuSpatialBenchmark` | Exact serial/parallel numerical row comparisons and native timings. Threaded browser hosting is not supported. |
@@ -14,6 +14,8 @@ comparison, fixtures and replay. They are not alternate game products.
 
 Run native tools with `dotnet run --project tools/<directory> -c Release -- <arguments>`.
 Use a report's recorded command; old-pack results are historical comparisons.
+The current [circular-boundary 100-day comparison](../../benchmarks/radial-circle-v9-2026-10-30/README.md)
+retains both baseline and final physics results and regenerated channel references.
 
 ```powershell
 ./tools/Sync-PhysicsPacks.ps1

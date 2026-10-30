@@ -1,0 +1,52 @@
+{
+  "baseline": {
+    "status": "completed",
+    "days": 100,
+    "thermalEnergyMwh": 4953600.000000001,
+    "electricalEnergyMwh": 1560000.0000000002,
+    "fuelBundles": 1808,
+    "score": 2302.8085910807226,
+    "lzcMinPercent": 44.11875953919886,
+    "lzcMaxPercent": 50.04125754045508,
+    "lzcFinalPercent": 46.08570063850282,
+    "maxAbsoluteTiltPercent": 0.5525653706238641,
+    "maximumChannelKw": 6135.083232437422,
+    "maximumBundleKw": 790.2238414792367,
+    "meanDischargeBurnupMwdPerKg": 6.1537242624160005
+  },
+  "circular": {
+    "status": "completed",
+    "days": 100,
+    "thermalEnergyMwh": 4953600.000000001,
+    "electricalEnergyMwh": 1560000.0000000002,
+    "fuelBundles": 1816,
+    "score": 2304.4332558234064,
+    "lzcMinPercent": 43.37070173780044,
+    "lzcMaxPercent": 49.98535520376418,
+    "lzcFinalPercent": 48.31674623088686,
+    "maxAbsoluteTiltPercent": 0.5454228596701644,
+    "maximumChannelKw": 6859.5320498963365,
+    "maximumBundleKw": 853.6662694167275,
+    "meanDischargeBurnupMwdPerKg": 6.159627511327621
+  },
+  "baselineReference": {
+    "minimumKw": 4931.5413520211705,
+    "maximumKw": 5787.488988359275,
+    "outermost20MeanKw": 5094.096994695814,
+    "middleMeanKw": 5510.511728159688,
+    "thermalPowerMw": 2063.9999999999914
+  },
+  "circularReference": {
+    "minimumKw": 4123.037826187108,
+    "maximumKw": 6525.960153827942,
+    "outermost20MeanKw": 4215.708709210335,
+    "middleMeanKw": 6395.141319239382,
+    "thermalPowerMw": 2063.999999999998
+  },
+  "rimDefinition": "20 channel centres farther than 10.7 lattice pitches from centre",
+  "middleDefinition": "channel centres within 4 lattice pitches of centre",
+  "circularKeffRange": [
+    0.9999875855856907,
+    1.000032667484544
+  ]
+}

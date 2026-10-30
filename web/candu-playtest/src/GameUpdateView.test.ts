@@ -7,7 +7,7 @@ import type { BridgeSessionController } from "./sessionController";
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); document.body.replaceChildren(); });
 
 it("shows the actual loaded build, daily pacing and axial boundary model", async () => {
-  const snapshot = { ...createSnapshot(), pacingMode: "daily-turn", dataPackId: "candu6-two-group-diffusion-v1-axial-marshak-v8" };
+  const snapshot = { ...createSnapshot(), pacingMode: "daily-turn", dataPackId: "candu6-two-group-diffusion-v1-radial-circle-v9" };
   const session = { snapshot, subscribe: (fn: () => void) => { fn(); return () => {}; } } as unknown as BridgeSessionController;
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ gitCommitSha: "b0a4c5738c37532fcea29b965c49e00050f65fba" }) })));
   const view = new GameUpdateView(session, vi.fn());
@@ -15,6 +15,7 @@ it("shows the actual loaded build, daily pacing and axial boundary model", async
   expect(view.element.textContent).toContain("Build b0a4c57");
   expect(view.element.textContent).toContain("Daily turns");
   expect(view.element.textContent).toContain("Axial incoming current = 0");
+  expect(view.element.textContent).toContain("Circular radial boundary");
   expect(view.element.querySelector("button")?.hidden).toBe(true);
   view.destroy();
 });

@@ -5,7 +5,7 @@ indices projected by Game from Core. The presentation fields alone do not
 alter simulation or replay digests. Older hosts can omit the geometry; the client
 then reports locations unavailable rather than drawing an assumed layout.
 
-The current fixtures were regenerated for the axial-marshak-v8 physics
+The current fixtures were regenerated for the radial-circle-v9 physics
 pack. The wire schema is unchanged; physical values, pack identity and digests
 intentionally change with the calibration.
 
@@ -37,6 +37,6 @@ zero numeric sentinels, and fuel-consumption accounting.
 The retained v2 corpus runs with an explicit `PlaytestRuntime("real-time")`
 constructor default so its original response bytes and digests remain covered.
 Daily fields are omitted on legacy responses. The exact response bytes were
-intentionally regenerated for the v8 axial Marshak pack and its new reference;
+intentionally regenerated for the v9 circular radial pack and its new reference;
 the real-time protocol shape remains covered. Daily default and full/compact
 reports have separate focused bridge tests.

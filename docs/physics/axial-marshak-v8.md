@@ -1,6 +1,8 @@
 # Axial zero incoming current, v8
 
-The default browser pack is `candu6-two-group-diffusion-v1-axial-marshak-v8`.
+The v8 browser pack was `candu6-two-group-diffusion-v1-axial-marshak-v8`.
+The current [v9 radial pack](radial-circle-v9.md) preserves this axial boundary
+and its conductances while replacing the radial reflector treatment.
 Core applies the diffusion Marshak condition at non-reflective End A/B faces:
 `phi + 2 D_g d(phi)/dn = 0`, equivalent to zero incoming partial current.
 

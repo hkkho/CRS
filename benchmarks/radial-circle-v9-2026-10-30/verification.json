@@ -1,0 +1,20 @@
+{
+  "schema": "radial-circle-v9-verification-v1",
+  "gitHead": "1f54111d56837ff504287790b3e85394f5a10557",
+  "uncommittedWorkingTree": true,
+  "packSha256": "d9b6d1e926b0c54637862620a04903ca922a6e96d6a5fdbd28fc06e7c9df216d",
+  "checks": {
+    "coreTests": 124,
+    "gameTests": 86,
+    "browserTests": 46,
+    "frontendTests": 214,
+    "productionBuild": "passed",
+    "pagesSubpathBuild": "passed",
+    "pagesDailySmoke": "passed",
+    "coldWarmReproduction": "matched",
+    "hundredDayBaseline": "completed",
+    "hundredDayCircular": "completed"
+  },
+  "browserBuild": "Release browser-WASM, single-threaded, non-AOT; local /CRS/ preview, not a published deployment",
+  "testExecution": "Repository Test-DotNet.ps1 and Test-Browser.ps1 in Release; cached restore and serial MSBuild; process sandbox escalation for test-host pipes and WASM tools"
+}

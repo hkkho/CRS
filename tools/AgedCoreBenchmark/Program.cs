@@ -7,6 +7,12 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && (args[0] == "--fit-radial-circle" || args[0] == "--probe-radial-circle"))
+{
+    if (args.Length != 4) throw new ArgumentException("Usage: --fit-radial-circle SOURCE_PACK OUTPUT_DIRECTORY EXTRAPOLATION_METRES");
+    RadialCircleCalibration.Run(args[1], args[2], double.Parse(args[3], CultureInfo.InvariantCulture), args[0] == "--probe-radial-circle");
+    return;
+}
 if (args.Length > 0 && args[0] == "--channel-reference")
 {
     string path = Path.GetFullPath(args.Length > 1 ? args[1] : "artifacts/channel-reference.json");

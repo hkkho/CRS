@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "url": "http://127.0.0.1:4177/CRS/",
+  "bridge": "authoritative-csharp-wasm",
+  "buildInfo": {
+    "gitCommitSha": "1f54111d56837ff504287790b3e85394f5a10557",
+    "configuration": "Release",
+    "targetFramework": "net10.0",
+    "runtimeIdentifier": "browser-wasm",
+    "runAotCompilation": false,
+    "enableRuntimeProfiling": false,
+    "wasmEnableSIMD": "default",
+    "researchExperiments": false,
+    "wasmEnableThreads": false,
+    "cpuOperatorPartitions": 1,
+    "omitPrecompressedAssets": false
+  },
+  "daily": {
+    "default": "daily-turn",
+    "multiChannelDay": "passed",
+    "emptyDay": "passed",
+    "frozenPlanning": "passed",
+    "narrowLayout": "passed",
+    "durationsMs": [
+      23869,
+      8494
+    ]
+  },
+  "loss": {
+    "outcome": "failure",
+    "reason": "LZC average level above 90%",
+    "successScoreHidden": true,
+    "shiftReport": "visible",
+    "errors": []
+  },
+  "recovery": {
+    "status": "passed",
+    "action": "reload after unavailable WASM",
+    "pacing": "daily-turn"
+  },
+  "errors": []
+}

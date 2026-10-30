@@ -64,6 +64,7 @@ namespace ReactorSim.Core
             TwoGroupConductanceV1 axialVacuumBoundaryConductance,
             string axialBoundaryConditionId,
             double axialCellLengthM,
+            CircularRadialBoundary? radialBoundary,
             SpatialLinearSolvePolicy linearSolvePolicy,
             SpatialConvergencePolicy convergencePolicy,
             IEnumerable<BurnupCoefficientTableV1> coefficientTables,
@@ -89,6 +90,7 @@ namespace ReactorSim.Core
             AxialVacuumBoundaryConductance = axialVacuumBoundaryConductance;
             AxialBoundaryConditionId = axialBoundaryConditionId;
             AxialCellLengthM = axialCellLengthM;
+            RadialBoundary = radialBoundary;
             LinearSolvePolicy = linearSolvePolicy;
             ConvergencePolicy = convergencePolicy;
             _coefficientTables = new ReadOnlyCollection<BurnupCoefficientTableV1>(
@@ -128,7 +130,9 @@ namespace ReactorSim.Core
 
         public TwoGroupConductanceV1 VacuumBoundaryConductance { get; }
 
-        /// <summary>End-face leakage; radial faces retain the effective reflector conductance.</summary>
+        public CircularRadialBoundary? RadialBoundary { get; }
+
+        /// <summary>End-face leakage, independent of the radial boundary.</summary>
         public TwoGroupConductanceV1 AxialVacuumBoundaryConductance { get; }
         public string AxialBoundaryConditionId { get; }
         public double AxialCellLengthM { get; }
@@ -296,6 +300,29 @@ namespace ReactorSim.Core
                 if (!ContractValidation.IsFinite(fast) || !ContractValidation.IsFinite(thermal) || fast <= 0 || thermal <= 0)
                     return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Derived axial boundary conductance must be finite and positive.");
                 axialVacuum = new TwoGroupConductanceV1(fast, thermal);
+            }
+
+            CircularRadialBoundary? radialBoundary = null;
+            if (geometry.TryGetValue("radial_boundary", StringComparison.Ordinal, out JToken? radialToken))
+            {
+                if (!(radialToken is JObject radial) ||
+                    !TryReadString(radial, "condition_id", "geometry.radial_boundary.condition_id", out string radialId, out failure) ||
+                    !TryReadDouble(radial, "pitch_m", "geometry.radial_boundary.pitch_m", out double pitch, out failure) ||
+                    !TryReadDouble(radial, "core_radius_m", "geometry.radial_boundary.core_radius_m", out double radius, out failure) ||
+                    !TryReadDouble(radial, "extrapolation_distance_m", "geometry.radial_boundary.extrapolation_distance_m", out double distance, out failure) ||
+                    radialId != CircularRadialBoundary.ConditionId || pitch <= 0 || radius <= 0 || distance <= 0 ||
+                    !ContractValidation.IsFinite(radius + distance) || !ContractValidation.IsFinite((radius + distance) * (radius + distance)))
+                    return Invalid("FullCoreDiffusionDataPack.RadialBoundary.Invalid", "geometry.radial_boundary", "Supply a circular zero-flux boundary with finite positive SI geometry.");
+                // Enclose every physical cell corner, including staircase corners.
+                var topology = Candu6CoreTopologyFactoryV1.TryCreate().Value;
+                foreach (var channel in topology.Channels)
+                {
+                    double x = (Math.Abs(channel.CoordinateX - 10.5) + .5) * pitch;
+                    double y = (Math.Abs(channel.CoordinateY - 10.5) + .5) * pitch;
+                    if (radius <= Math.Sqrt(x * x + y * y))
+                        return Invalid("FullCoreDiffusionDataPack.RadialBoundary.Invalid", "geometry.radial_boundary", "The physical circle must enclose the canonical lattice cells.");
+                }
+                radialBoundary = new CircularRadialBoundary(pitch, radius, distance);
             }
 
             if (!TryReadObject(root, "solver", "solver", out JObject solver, out failure) ||
@@ -487,6 +514,7 @@ namespace ReactorSim.Core
                     axialVacuum,
                     axialBoundaryId,
                     axialCellLength,
+                    radialBoundary,
                     linearPolicyResult.Value,
                     convergencePolicyResult.Value,
                     tables,

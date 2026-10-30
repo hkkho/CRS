@@ -7,6 +7,23 @@ namespace ReactorSim.Core.Tests;
 public sealed class PracticeChannelPowerReferenceTests
 {
     [Fact]
+    public void CircularReferenceHasFourMwRimAndHigherMiddleAtUnchangedTotalPower()
+    {
+        var pack = FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6().Value;
+        var reference = PracticeChannelPowerReference.Create(pack, 2_064_000_000);
+        Assert.NotNull(pack.RadialBoundary);
+        Assert.InRange(reference.ChannelPowerWatts.Min() / 1000, 4000, 4300);
+        Assert.InRange(reference.ChannelPowerWatts.Max() / 1000, 6300, 6700);
+        Assert.InRange(Math.Abs(reference.ChannelPowerWatts.Sum() - 2_064_000_000), 0, .001);
+        var middle = reference.ChannelPowerWatts.Where((p, i) =>
+        {
+            var position = Candu6CoreTopologyFactoryV1.GetPosition((uint)i);
+            return Math.Pow(position.Column - 10.5, 2) + Math.Pow(position.CartesianY - 10.5, 2) < 16;
+        });
+        Assert.InRange(middle.Average() / 1000, 6200, 6600);
+    }
+
+    [Fact]
     public void CycleAverageIntegratesAcrossKnotsRatherThanLookingUpMeanBurnup()
     {
         var table = FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6().Value.CoefficientTables[0];

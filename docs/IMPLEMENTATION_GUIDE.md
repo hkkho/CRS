@@ -94,10 +94,11 @@ sandbox provenance and exclude standard challenge rewards until reset.
 
 ## Physics and presentation
 
-V8 uses zero incoming partial current at axial ends with Marshak conductance,
-separately from fitted radial leakage. Reflecting boundaries retain zero conductance.
+V9 uses a circular extrapolated zero-flux boundary in X/Y and retains the v8
+zero incoming partial current at axial ends with unchanged Marshak conductance.
+Reflecting boundaries retain zero conductance.
 Criticality, 17/7 mk device refits, references and save identity are documented in
-[axial v8](physics/axial-marshak-v8.md). Preserve [active equations](physics/active-two-group-solver.md)
+[radial v9](physics/radial-circle-v9.md). Preserve [active equations](physics/active-two-group-solver.md)
 and useful [physics knowledge](maintenance/knowledge-library.md). Packs are authored
 approximations for plausible gameplay, not validated plant data.
 

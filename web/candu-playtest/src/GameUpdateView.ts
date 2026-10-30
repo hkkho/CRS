@@ -68,7 +68,9 @@ export class GameUpdateView {
 
   private render(): void {
     const snapshot = this.session.snapshot;
-    const physics = snapshot.dataPackId.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : snapshot.dataPackId;
+    const physics = snapshot.dataPackId.includes("radial-circle-v9")
+      ? "Circular radial boundary · Axial incoming current = 0 · v9"
+      : snapshot.dataPackId.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : snapshot.dataPackId;
     this.version.textContent = `Build ${this.build} · ${snapshot.pacingMode === "daily-turn" ? "Daily turns" : "Update required"} · ${physics}`;
     this.version.title = `${snapshot.dataPackId} · Time stays frozen until you advance one day.`;
     this.button.hidden = !this.waiting;

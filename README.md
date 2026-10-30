@@ -112,11 +112,13 @@ per-bundle iodine and xenon in End A to End B order. Fresh bundles enter with
 zero of both; retained bundles carry their existing inventories. Daily planning freezes
 these values; advancing a day builds poison in fresh fuel.
 
-The current [v8 axial boundary](docs/physics/axial-marshak-v8.md) uses zero incoming
+The current [v9 circular radial boundary](docs/physics/radial-circle-v9.md) lowers
+the outer-rim time-average target to about 4,200 kW and raises the middle to about
+6,400 kW while retaining 2,064 MW thermal. The axial boundary still uses zero incoming
 partial current at both reactor ends, with refitted criticality and device worths.
 End-bundle power falls sharply; daily operation still uses one large 24-hour step.
-The [100-day verification](benchmarks/axial-marshak-v8-2026-10-10/README.md) records
-the changed fuelling demand and a successful LZC-guided player policy.
+The [100-day before/after verification](benchmarks/radial-circle-v9-2026-10-30/README.md)
+records nearly unchanged fuel demand, discharge burnup, score and control range.
 The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
 The [literature-guided fuel calibration](docs/physics/literature-geometry-v4.md) uses

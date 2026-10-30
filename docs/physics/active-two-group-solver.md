@@ -12,7 +12,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-axial-marshak-v8`, units profile
+`candu6-two-group-diffusion-v1-radial-circle-v9`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -27,8 +27,8 @@ group 2 is thermal.
 | `Sigma_a2` | `0.16` | m^-1 | Thermal absorption |
 | `Sigma_f1` | `0.035` | m^-1 | Fast fission rate for power |
 | `Sigma_f2` | `0.1545382857142857` | m^-1 | Thermal fission rate for power |
-| `nuSigma_f1` | `0.08866224431312562` | m^-1 | Fast neutron production |
-| `nuSigma_f2` | `0.3914774641066174` | m^-1 | Thermal neutron production |
+| `nuSigma_f1` | `0.09045720044578462` | m^-1 | Fast neutron production |
+| `nuSigma_f2` | `0.39940287678300207` | m^-1 | Thermal neutron production |
 | `Sigma_s12` | `0.200` | m^-1 | Fast-to-thermal downscatter |
 | `chi1` | `1.0` | dimensionless | Fast fission spectrum fraction |
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
@@ -41,10 +41,10 @@ conductances used by the 380-channel by 12-position model:
 | --- | ---: | ---: | --- |
 | Axial interior edge | `0.00659423076923077` | `0.003297115384615385` | m^2 |
 | Transverse interior edge | `0.019812` | `0.009906` | m^2 |
-| Radial effective outer boundary face | `0.0007875467350470583` | `0.0003937733675235292` | m^2 |
+| Radial circle face at distance d (m) | `0.019812 * 0.28575 / d` | `0.009906 * 0.28575 / d` | m^2 |
 | Axial zero-incoming-current face | `0.009968327483595302` | `0.005677250999478533` | m^2 |
 
-The [v8 axial fit](axial-marshak-v8.md) refits production and device strengths.
+The [v9 circular radial fit](radial-circle-v9.md) refits production and device strengths while retaining the v8 axial Marshak conductance. The radial circle radius is 5.55 m; each exposed face uses the distance from its node centre to the circle along the outward X/Y ray.
 See [xenon reference v6](xenon-reference-v6.md) for the included-reference replacement
 and [localized LZC tubes](lzc-tubes-v7.md) for tube geometry,
 and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption,
@@ -222,8 +222,8 @@ Substitution into the fast equation gives the infinite-medium eigenvalue
 ```text
 k_inf = (nuSigma_f1 + nuSigma_f2 * (phi_2 / phi_1)) /
         (Sigma_a1 + Sigma_s12)
-      = (0.08866224431312562 + 0.3914774641066174 * 1.25) / 0.50
-      = 1.1560181488927948
+      = (0.09045720044578462 + 0.39940287678300207 * 1.25) / 0.50
+      = 1.1794215928490743
 ```
 
 The one-watt normalization is computed from the actual `Sigma_f`, energy, and
@@ -247,7 +247,7 @@ The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 | Result | Value |
 | --- | ---: |
 | Status | `Converged` |
-| Effective `k` | `1.1560181488927948` (10 decimal places) |
+| Effective `k` | `1.1794215928490743` (10 decimal places) |
 | Fast flux | Within `1e-11` relative of the analytic value |
 | Thermal flux | Within `1e-11` relative of the analytic value |
 | Total power | `1 W` |

@@ -11,10 +11,17 @@ public sealed class AxialVacuumBoundaryTests
     public void RefitRetainsHeatingAndBurnupKnotsAndAppliesOnlyTheRecordedProductionNormalization()
     {
         var source = Require(FullCoreDiffusionDataPackV1.TryLoadJson(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
-            "data/calibration/axial-marshak-v8/source-pack.json"))));
+            "data/calibration/radial-circle-v9/source-pack.json"))));
         var active = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
         Assert.Equal("zero-incoming-current-v1", active.AxialBoundaryConditionId);
-        Assert.Equal(source.VacuumBoundaryConductance.Group1M2, active.VacuumBoundaryConductance.Group1M2);
+        Assert.Equal(source.AxialVacuumBoundaryConductance.Group1M2, active.AxialVacuumBoundaryConductance.Group1M2);
+        Assert.Equal(source.AxialVacuumBoundaryConductance.Group2M2, active.AxialVacuumBoundaryConductance.Group2M2);
+        Assert.Equal(source.AxialConductance.Group1M2, active.AxialConductance.Group1M2);
+        Assert.Equal(source.AxialConductance.Group2M2, active.AxialConductance.Group2M2);
+        Assert.Equal(source.TransverseConductance.Group1M2, active.TransverseConductance.Group1M2);
+        Assert.Equal(source.TransverseConductance.Group2M2, active.TransverseConductance.Group2M2);
+        double multiplier = JObject.Parse(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
+            "data/calibration/radial-circle-v9/fit/fit.json")))["productionMultiplier"]!.Value<double>();
         var before = Assert.Single(source.CoefficientTables).Rows;
         var after = Assert.Single(active.CoefficientTables).Rows;
         Assert.Equal(before.Count, after.Count);
@@ -25,8 +32,8 @@ public sealed class AxialVacuumBoundaryTests
             Assert.Equal(before[i].Coefficients.FissionGroup2PerM, after[i].Coefficients.FissionGroup2PerM);
             Assert.Equal(before[i].Coefficients.AbsorptionGroup2PerM, after[i].Coefficients.AbsorptionGroup2PerM);
             Assert.Equal(before[i].Coefficients.EnergyPerFissionJ, after[i].Coefficients.EnergyPerFissionJ);
-            Assert.Equal(1.0339620328061294, after[i].Coefficients.NuFissionGroup1PerM / before[i].Coefficients.NuFissionGroup1PerM, 13);
-            Assert.Equal(1.0339620328061294, after[i].Coefficients.NuFissionGroup2PerM / before[i].Coefficients.NuFissionGroup2PerM, 13);
+            Assert.Equal(multiplier, after[i].Coefficients.NuFissionGroup1PerM / before[i].Coefficients.NuFissionGroup1PerM, 13);
+            Assert.Equal(multiplier, after[i].Coefficients.NuFissionGroup2PerM / before[i].Coefficients.NuFissionGroup2PerM, 13);
         }
     }
     [Fact]
@@ -75,6 +82,7 @@ public sealed class AxialVacuumBoundaryTests
     public void OnlyVacuumEndFacesUseMarshakAndReflectiveFacesStillHaveZeroLeakage()
     {
         var json = EmbeddedJson();
+        ((JObject)json["geometry"]!).Remove("radial_boundary");
         json["geometry"]!["axial_boundary"] = new JObject { ["condition_id"] = "zero-incoming-current-v1", ["cell_length_m"] = .4953 };
         var pack = Require(FullCoreDiffusionDataPackV1.TryLoadJson(json.ToString()));
         var end = new NodeKey(new ChannelId(200), new BundlePosition(0));

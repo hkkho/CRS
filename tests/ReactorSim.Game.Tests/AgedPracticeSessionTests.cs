@@ -42,9 +42,9 @@ public sealed class AgedPracticeSessionTests
         var burned = initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray());
         Assert.True(burned.IsValid);
         var after = Solve(burned.Value, .5);
-        // Independent tight v8 axial-Marshak audit, actual Xe frozen: 0.439384 mk/FPD.
+        // Independent tight v9 circular-radial audit, actual Xe frozen: 0.456183 mk/FPD.
         // Production tolerances allow a small source-iteration difference.
-        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .43, .45);
+        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .45, .47);
         Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.97, 7.03);
     }
 
