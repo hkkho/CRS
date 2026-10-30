@@ -158,7 +158,10 @@ namespace ReactorSim.Game
                 double poisonTolerance = Math.Max(1e-7, 4 * dataPack.ConvergencePolicy.SourceShapeTolerance);
                 bool referenceShapeSettled = acceptedRrs.State.ZoneFills.Max() - acceptedRrs.State.ZoneFills.Min() >
                     PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance;
-                for (int pass = 0; pass < 16; pass++)
+                // Circular radial leakage changes the coupling between the
+                // reference shape and poison equilibrium; retain the same
+                // strict tolerance but allow additional bounded passes.
+                for (int pass = 0; pass < 32; pass++)
                 {
                     settledXenon = PracticeXenonStateV1.CreateEquilibrium(coreState,
                         equilibriumSolver.CurrentProjection, runtime.SimulationTimeSeconds);
