@@ -27,7 +27,7 @@ under changed rules while retaining the stored files.
 
 ## Live demo
 
-The launcher also offers an ephemeral power-only demo: five-second day deadlines, immediate double-click/keyboard/touch refuelling, background shared solves, pause and seeded retries. The map retains latest solved power while requests run; a bounded queue and coalesced deadlines prevent solver backlog. Slow hardware may reduce the achieved pace. Daily runs remain independent.
+The launcher also offers an ephemeral live demo: five-second interpolated day playback, double-click/keyboard/touch fuel queuing, pause and seeded retries. One shared solved endpoint is buffered ahead while the next atomic day/fuel batch runs. No calculating screen or status interrupts play; slow solves hold an endpoint without extrapolation or backlog. The vivid 5,000–6,500 kW map pulses above 6,500 and shakes above 7,000. The core uses color-only cells without zoom controls; selected power and fuel input share the top strip. Live power and average-zone line plots use the space left of the core on wide screens. All fourteen zone fills and average loss-limit headroom remain visible, with reduced-motion alternatives. Daily runs remain independent.
 
 ## Next work
 

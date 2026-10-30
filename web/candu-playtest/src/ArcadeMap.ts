@@ -2,6 +2,7 @@ import { ReactorFrame } from "./ReactorFrame";
 import { CoreMapTooltip, channelTooltip } from "./CoreMapInteraction";
 import type { CanduSnapshot } from "./protocol";
 import { gridCoordinateLabel } from "./channelCoordinates";
+import { demoPowerAlert, demoPowerColor } from "./demoPresentation";
 import { channelColorMinimum, channelLimit, channelWatts, powerColor, powerBand, burnupColor } from "./studio/powerReadings";
 
 /** Spatial input only. Measurements and eligibility come from the shared snapshot. */
@@ -21,7 +22,7 @@ export class ArcadeMap {
     this.element.className = "arcade-map";
     this.element.setAttribute("role", "group");
     this.element.setAttribute("aria-label", "Core channels. Use arrow keys to inspect, Enter or R queues/removes. Double-click a channel to queue/remove.");
-    if (instantFuel) this.element.setAttribute("aria-label", "Channel power map. Arrow keys select; Enter, Space, R or double-click fuels immediately.");
+    if (instantFuel) this.element.setAttribute("aria-label", "Channel power map. Arrow keys select; Enter, Space, R or double-click queues fuel for the next day.");
     const housing = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     housing.setAttribute("viewBox", "0 0 560 560"); housing.setAttribute("aria-hidden", "true"); housing.classList.add("arcade-vessel-art");
     this.element.append(housing); this.frame = new ReactorFrame(housing, true);
@@ -30,7 +31,7 @@ export class ArcadeMap {
       cell.type = "button"; cell.dataset.channel = String(channel.channelIndex);
       cell.style.left = `${(channel.gridColumn + 1) / 24 * 100}%`;
       cell.style.top = `${(channel.gridRow + 1) / 24 * 100}%`;
-      cell.textContent = gridCoordinateLabel(channel);
+      cell.textContent = instantFuel ? "" : gridCoordinateLabel(channel);
       this.cells.set(channel.channelIndex, cell); this.element.append(cell);
     }
     this.element.addEventListener("click", this.onClick);
@@ -50,13 +51,17 @@ export class ArcadeMap {
       cell.tabIndex = selected === channel.channelIndex ? 0 : -1;
       cell.disabled = locked;
       const power = channelWatts(snapshot, channel);
-      cell.style.background = mode === "power" ? powerColor(power, channelColorMinimum(snapshot), channelLimit(snapshot))
+      cell.style.background = this.instantFuel ? demoPowerColor(power) : mode === "power" ? powerColor(power, channelColorMinimum(snapshot), channelLimit(snapshot))
         : burnupColor(channel.averageBurnupMwdPerKg);
-      cell.dataset.alert = String(mode === "power" && powerBand(power, channelColorMinimum(snapshot), channelLimit(snapshot)) === "extreme");
-      cell.setAttribute("aria-label", `${queued ? "In fuel plan. " : ""}${cell.dataset.alert === "true" ? "Very high power. " : ""}${channelTooltip(snapshot, channel)}`);
       if (this.instantFuel) {
-        cell.textContent = (power / 1000).toFixed(0);
-        cell.setAttribute("aria-label", `${gridCoordinateLabel(channel)} · ${(power / 1000).toFixed(0)} kW. ${queued ? "Fuel requested. " : ""}${channel.canRefuel === false ? "Cannot refuel." : "Double-click or press Enter to fuel."}`);
+        cell.dataset.alert = "false";
+        cell.dataset.demoAlert = demoPowerAlert(power);
+        const reading = (power / 1000).toFixed(0);
+        cell.setAttribute("aria-label", `${gridCoordinateLabel(channel)} · ${reading} kW. ${power > 7_000_000 ? "Critical power. " : power > 6_500_000 ? "High power. " : ""}${queued ? "Fuel queued. " : ""}${channel.canRefuel === false ? "Cannot refuel." : "Double-click or press Enter to queue fuel."}`);
+      } else {
+        // Detailed bundle/burnup tooltips are unnecessary on every demo frame.
+        cell.dataset.alert = String(mode === "power" && powerBand(power, channelColorMinimum(snapshot), channelLimit(snapshot)) === "extreme");
+        cell.setAttribute("aria-label", `${queued ? "In fuel plan. " : ""}${cell.dataset.alert === "true" ? "Very high power. " : ""}${channelTooltip(snapshot, channel)}`);
       }
     }
   }

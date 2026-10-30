@@ -3,10 +3,13 @@
 The optional `pacingMode` now also accepts `demo`. This temporary browser mode
 uses shared atomic `commit-day` updates (`completedDays` is published in full and
 compact snapshots), and accepts immediate `commit-refuel` between days. Its
-underlying simulation clock remains paused; the demo client schedules one day
-every five wall seconds, serializes commands and coalesces missed deadlines.
+underlying simulation clock remains paused. The demo UI queues fuel into atomic
+`commit-day` batches and buffers solved snapshots for five-second interpolated
+playback, keeping at most one command in flight and one upcoming endpoint.
+The display holds on slow solves; it does not extrapolate or replay missed time.
 `advance`, `resume` and legacy accelerated playback remain unsupported for this
-mode. Predictions are authoritative solved snapshots, never client-side physics.
+mode. Endpoint predictions are authoritative solved snapshots. Interpolation is
+display-only; discrete outcomes are revealed at their endpoint, never blended.
 Daily sessions still reject direct refuelling. Reset retains the current pacing
 unless explicitly changed. Demo runs do not enter the public save/leaderboard path.
 
