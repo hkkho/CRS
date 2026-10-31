@@ -22,7 +22,7 @@ try {
   if (await page.locator('.arcade-map [data-channel]').count() !== 380) throw new Error('Full core map is missing');
   await page.locator('.arcade-map [data-channel="210"]').tap();
   for (let i = 0; i < 4; i++) await page.getByRole("button", { name: "Zoom in", exact: true }).tap();
-  await page.locator('[data-map-mode]').selectOption('burnup');
+  await page.locator('select[data-map-mode]').selectOption('burnup');
   if (!(await page.locator('[data-legend]').innerText()).includes('Burnup bands:')) throw new Error('Map mode did not change');
   const zoomedCell = await page.locator('.arcade-map [data-channel="210"]').boundingBox();
   if (!zoomedCell || zoomedCell.width < 44) throw new Error('Zoom targets are too small for touch');
