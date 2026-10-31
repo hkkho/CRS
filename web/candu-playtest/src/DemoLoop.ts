@@ -2,12 +2,12 @@ import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import { interpolateDemo } from "./demoPresentation";
 
-export const DEMO_DAY_MS = 5_000;
+export const DEMO_STEP_MS = 5_000;
 const MAX_WAITING_FUEL = 8;
 type Step = { snapshot: CanduSnapshot; fuel: number[] };
 
 /** One solved endpoint ahead of the display, at most one worker operation.
- * Interpolation is presentation only; every day/fuel batch belongs to Game.
+ * Interpolation is presentation only; every time step and fuel move belongs to Game.
  */
 export class DemoLoop {
   snapshot: CanduSnapshot;
@@ -30,7 +30,8 @@ export class DemoLoop {
   private readonly unsubscribe: () => void;
   private readonly timer: ReturnType<typeof setInterval>;
 
-  constructor(private readonly bridge: CanduPlaytestBridgeLifecycle, private readonly now = () => performance.now()) {
+  constructor(private readonly bridge: CanduPlaytestBridgeLifecycle, private readonly now = () => performance.now(), startPaused = false) {
+    this.running = !startPaused;
     this.snapshot = this.solved = this.from = bridge.getSnapshot();
     this.lastTime = now();
     this.unsubscribe = bridge.subscribe((status, snapshot) => {
@@ -49,13 +50,14 @@ export class DemoLoop {
   private initialize(snapshot: CanduSnapshot): void {
     this.snapshot = this.solved = this.from = snapshot;
     this.active = this.buffered = undefined; this.elapsed = 0; this.lastTime = this.now();
-    this.ready = true; this.faulted = false; this.message = "Double-click to queue fuel for the next day.";
+    this.ready = true; this.faulted = false; this.message = "Double-click to queue fuel at the first opportunity.";
   }
   get isReady(): boolean { return this.ready; }
-  get dayProgress(): number { return this.elapsed / DEMO_DAY_MS; }
+  get loadError(): string | undefined { return this.faulted ? this.message : undefined; }
+  get dayProgress(): number { return this.elapsed / DEMO_STEP_MS; }
   get playbackDay(): number {
-    const start = this.from.completedDays ?? 0;
-    return this.active ? start + ((this.active.snapshot.completedDays ?? start) - start) * this.dayProgress : this.snapshot.completedDays ?? 0;
+    const start = this.from.simulationTimeSeconds / 86400;
+    return this.active ? start + (this.active.snapshot.simulationTimeSeconds / 86400 - start) * this.dayProgress : this.snapshot.simulationTimeSeconds / 86400;
   }
   get pendingFuel(): number[] { return [...this.pending]; }
   get canTogglePause(): boolean { return this.ready && !this.faulted && !isRunTerminal(this.snapshot); }
@@ -67,16 +69,17 @@ export class DemoLoop {
     const channel = this.solved.core.channels.find(c => c.channelIndex === index);
     if (!channel || channel.canRefuel === false) { this.message = channel?.refuellingIneligibilityReason || "This channel cannot be fuelled."; this.emit(); return; }
     if (this.pending.has(index)) return;
-    if (this.waitingFuel.size >= MAX_WAITING_FUEL) { this.message = "Next day's fuel queue is full (8 channels)."; this.emit(); return; }
+    if (this.waitingFuel.size >= MAX_WAITING_FUEL) { this.message = "Fuel queue is full (8 channels)."; this.emit(); return; }
     this.waitingFuel.add(index); this.pending.add(index);
-    this.message = `${this.waitingFuel.size} channel${this.waitingFuel.size === 1 ? "" : "s"} queued for the next day.`;
+    this.message = `${this.waitingFuel.size} channel${this.waitingFuel.size === 1 ? "" : "s"} queued at the first opportunity.`;
     this.emit();
+    this.startWaitingFuel();
   }
 
   togglePause(): void {
     if (!this.canTogglePause) return;
     this.running = !this.running; this.lastTime = this.now();
-    this.message = this.running ? "Double-click to queue fuel for the next day." : "Paused · fuel queue retained.";
+    this.message = this.running ? "Double-click to queue fuel at the first opportunity." : "Paused · fuel queue retained.";
     this.emit();
   }
   setVisible(visible: boolean): void { this.visible = visible; this.lastTime = this.now(); this.emit(); }
@@ -92,18 +95,18 @@ export class DemoLoop {
         this.running = !isRunTerminal(result.snapshot);
       } else this.message = result.message;
     } catch (error) { if (!this.disposed) this.message = String(error); }
-    finally { this.busy = false; if (!this.disposed) this.emit(); }
+    finally { this.busy = false; if (!this.disposed) { this.emit(); this.startWaitingFuel(); } }
   }
 
   private pump(): void {
     const now = this.now(), delta = Math.max(0, now - this.lastTime); this.lastTime = now;
     if (this.disposed || !this.ready || !this.running || !this.visible) return;
     if (this.active) {
-      this.elapsed = Math.min(DEMO_DAY_MS, this.elapsed + delta);
+      this.elapsed = Math.min(DEMO_STEP_MS, this.elapsed + delta);
       this.snapshot = interpolateDemo(this.from, this.active.snapshot, this.dayProgress);
-      if (this.elapsed === DEMO_DAY_MS) {
+      if (this.elapsed === DEMO_STEP_MS) {
         for (const index of this.active.fuel) this.pending.delete(index);
-        this.message = this.pending.size ? `${this.pending.size} fuel requests queued for a coming day.` : "Double-click to queue fuel for the next day.";
+        this.message = this.pending.size ? `${this.pending.size} fuel requests queued at the first opportunity.` : "Double-click to queue fuel at the first opportunity.";
         this.from = this.snapshot; this.active = undefined;
         if (isRunTerminal(this.snapshot)) {
           this.running = false; this.waitingFuel.clear(); this.pending.clear();
@@ -114,27 +117,63 @@ export class DemoLoop {
     if (!this.active && this.buffered) {
       this.active = this.buffered; this.buffered = undefined; this.elapsed = 0;
     }
-    // Compute the next batch while the current solved pair is being displayed.
+    // Compute the next time step while the current solved pair is displayed.
     // A slow solve holds the endpoint; no extrapolation or catch-up burst.
-    if (!this.busy && !this.buffered && !isRunTerminal(this.solved)) void this.advance();
+    if (!this.busy && !isRunTerminal(this.solved)) {
+      if (this.waitingFuel.size) void this.refuel();
+      else if (!this.buffered) void this.advance();
+    }
     this.emit();
   }
 
-  private async advance(): Promise<void> {
-    const fuel = [...this.waitingFuel]; this.waitingFuel.clear();
+  private startWaitingFuel(): void {
+    if (this.disposed || !this.ready || !this.running || !this.visible || this.busy || isRunTerminal(this.solved)) return;
+    if (this.waitingFuel.size) void this.refuel();
+  }
+
+  // Fuel has priority even when the next time endpoint is already buffered.
+  private async refuel(): Promise<void> {
+    const index = this.waitingFuel.values().next().value!;
+    this.waitingFuel.delete(index);
+    const channel = this.solved.core.channels.find(c => c.channelIndex === index);
+    if (!channel) {
+      this.pending.delete(index);
+      this.message = "This channel is no longer available.";
+      this.emit();
+      this.startWaitingFuel();
+      return;
+    }
     this.busy = true;
     try {
-      const result = await this.bridge.dispatch({ type: "commit-day", expectedCompletedDays: this.solved.completedDays ?? 0, channelIndices: fuel }, { responseMode: "compact" });
+      const result = await this.bridge.dispatch({ type: "commit-refuel", request: { channelIndex: index, directionId: channel.flowDirection, shiftCount: 8, fuelTypeId: "NAT-U-SYNTHETIC" } }, { responseMode: "compact" });
       if (this.disposed) return;
       if (result.accepted) {
-        this.solved = result.snapshot; this.buffered = { snapshot: result.snapshot, fuel };
+        this.solved = result.snapshot;
+        if (this.buffered) { this.buffered.snapshot = result.snapshot; this.buffered.fuel.push(index); }
+        else if (this.active) { this.active.snapshot = result.snapshot; this.active.fuel.push(index); }
+        else {
+          this.snapshot = this.from = result.snapshot; this.pending.delete(index);
+          if (isRunTerminal(result.snapshot)) { this.running = false; this.waitingFuel.clear(); this.pending.clear(); }
+        }
+      } else { this.pending.delete(index); this.message = result.message; }
+    } catch (error) {
+      if (!this.disposed) { this.running = false; this.faulted = true; this.message = `Connection interrupted. Retry the core to continue. ${String(error)}`; }
+    } finally { this.busy = false; if (!this.disposed) { this.emit(); this.startWaitingFuel(); } }
+  }
+
+  private async advance(): Promise<void> {
+    this.busy = true;
+    try {
+      const result = await this.bridge.dispatch({ type: "commit-day", expectedCompletedDays: this.solved.completedDays ?? 0, channelIndices: [] }, { responseMode: "compact" });
+      if (this.disposed) return;
+      if (result.accepted) {
+        this.solved = result.snapshot; this.buffered = { snapshot: result.snapshot, fuel: [] };
       } else {
         this.running = false; this.faulted = true; this.message = result.message;
-        for (const index of fuel) this.pending.delete(index);
       }
     } catch (error) {
       if (!this.disposed) { this.running = false; this.faulted = true; this.message = `Connection interrupted. Retry the core to continue. ${String(error)}`; }
-    } finally { this.busy = false; if (!this.disposed) this.emit(); }
+    } finally { this.busy = false; if (!this.disposed) { this.emit(); this.startWaitingFuel(); } }
   }
 
   private emit(): void { for (const listener of this.listeners) listener(); }

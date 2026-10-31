@@ -102,7 +102,7 @@ namespace ReactorSim.Game
 
         internal void UseDailyTurns() { _dailyTurns = true; _runtime.TryPause(); }
 
-        // Demo uses the same atomic one-day integrator, with immediate fuel moves.
+        // Time-based play uses atomic half-day steps, with immediate fuel moves.
         // Wall-time scheduling belongs to the browser; all physics remains here.
         internal void UseDemo() { UseDailyTurns(); _demo = true; }
 
@@ -174,8 +174,10 @@ namespace ReactorSim.Game
             internal DailyTurnOperation(GameSession owner, GameSession candidate, uint[] channels, List<RefuellingMovement> movements)
             {
                 this.owner = owner; this.candidate = candidate; this.channels = channels; this.movements = movements;
-                start = owner._runtime.SimulationTimeSeconds; end = start + 86_400;
-                RequestedSimulationSeconds = owner._runtime.ScenarioHorizonSeconds > 0 ? Math.Min(86_400, owner._runtime.ScenarioHorizonSeconds - start) : 86_400;
+                start = owner._runtime.SimulationTimeSeconds;
+                double interval = owner._demo ? 43_200 : 86_400;
+                end = start + interval;
+                RequestedSimulationSeconds = owner._runtime.ScenarioHorizonSeconds > 0 ? Math.Min(interval, owner._runtime.ScenarioHorizonSeconds - start) : interval;
                 originalGeneration = owner._runtime.Generation; originalClock = owner._runtime; originalCore = owner._coreState; originalProjection = owner.CurrentSpatialCandidate;
             }
             public void CalculateDay()
@@ -197,7 +199,7 @@ namespace ReactorSim.Game
                     if (!committed.IsValid) { Result = live.Rejected(committed.FirstDiagnostic.Code, committed.FirstDiagnostic.Message); return; }
                     next.ApplyPracticeCandidate(transaction.Value);
                 }
-                if (next._runtime.SimulationTimeSeconds == end) next._completedDays++;
+                if (next._runtime.SimulationTimeSeconds == end) next._completedDays = (uint)(end / 86_400);
                 next._lastDayResult = new DailyTurnResult(start, next.Snapshot, channels, movements,
                     live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0);
                 live.AdoptDailyCandidate(next);

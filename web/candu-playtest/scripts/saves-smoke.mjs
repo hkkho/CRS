@@ -28,7 +28,8 @@ try {
   await page.locator('.player-toggle').click(); await panelIdle();
   check(await page.getByRole('button', { name: 'Continue without login', exact: true }).isVisible(), 'Guest option is missing.');
   await page.getByRole('button', { name: 'Continue without login', exact: true }).click();
-  await page.getByRole('button', { name: 'Start run', exact: true }).click(); await idle();
+  await page.getByRole('button', { name: 'Turn based', exact: true }).click();
+  await page.locator('[data-game-start]').click({ timeout: 180000 }); await idle();
   const studio = page.locator('.reactor-studio');
   await studio.locator('.studio-watchlist > summary').click();
   await studio.locator('[data-action="oldest"]').click();

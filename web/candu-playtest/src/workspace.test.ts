@@ -7,6 +7,22 @@ import type { SessionUpdate } from "./sessionController";
 const cleanup: Array<() => void> = [];
 afterEach(() => { cleanup.splice(0).forEach(destroy => destroy()); document.body.replaceChildren(); });
 
+it("can leave a loading run without launching when its late reset completes", async () => {
+  const snapshot = createSnapshot(); snapshot.shift = createShift();
+  const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };
+  let finish: (response: CanduCommandResponse) => void = () => {};
+  const session = { snapshot, status, isPending: false,
+    dispatch: vi.fn(() => new Promise<CanduCommandResponse>(resolve => { finish = resolve; })),
+    subscribe: (listener: (update: SessionUpdate) => void) => { listener({ snapshot, status, pending: false, response: null, error: null }); return vi.fn(); } };
+  const begin = vi.fn(); const view = new LauncherView(session, document.body, begin);
+  cleanup.push(() => view.destroy());
+  view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!.click();
+  expect(view.element.querySelector<HTMLButtonElement>('[data-game-start]')!.hidden).toBe(true);
+  view.element.querySelector<HTMLButtonElement>('.game-loading-dialog button:last-child')!.click();
+  finish({ protocol: "candu-playtest-v2", accepted: true, sequence: 1, command: { type: "reset" }, message: "Ready", diagnostics: [], stateDigest: "test", snapshot }); await Promise.resolve();
+  expect(begin).not.toHaveBeenCalled(); expect(view.element.querySelector('dialog[open]')).toBeNull();
+});
+
 it.each(["free-practice", "guided"])("launches %s only after a successful shared reset", async choice => {
   const snapshot = createSnapshot(); snapshot.shift = createShift();
   const status: BridgeStatus = { source: "wasm", isWasmAvailable: true, title: "Ready", detail: "Ready", capabilities: [] };
@@ -19,7 +35,11 @@ it.each(["free-practice", "guided"])("launches %s only after a successful shared
   expect(dispatch).not.toHaveBeenCalled();
   const button = view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!;
   button.click(); await vi.waitFor(() => expect(view.element.querySelector('[data-field="error"]')!.textContent).toBe("Reset rejected"));
-  expect(begin).not.toHaveBeenCalled(); button.click();
+  expect(begin).not.toHaveBeenCalled();
+  view.element.querySelector<HTMLButtonElement>('.game-loading-dialog button:last-child')!.click();
+  button.click();
+  await vi.waitFor(() => expect(view.element.querySelector<HTMLButtonElement>('[data-game-start]')!.hidden).toBe(false));
+  view.element.querySelector<HTMLButtonElement>('[data-game-start]')!.click();
   await vi.waitFor(() => expect(begin).toHaveBeenCalledWith(choice === "guided"));
   expect(dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: choice === "guided" ? 1001 : 42, shiftId: "free-practice" });
 });
@@ -42,6 +62,9 @@ it("launches once, preserves seed drafts during notifications and sends the sele
   view.element.querySelector<HTMLButtonElement>('[data-goal="free-practice"]')!.click();
   const button = view.element.querySelector<HTMLButtonElement>('[data-action="begin"]')!;
   button.click(); button.click();
+  await vi.waitFor(() => expect(view.element.querySelector<HTMLButtonElement>('[data-game-start]')!.hidden).toBe(false));
+  expect(begin).not.toHaveBeenCalled();
+  view.element.querySelector<HTMLButtonElement>('[data-game-start]')!.click();
   await vi.waitFor(() => expect(begin).toHaveBeenCalledTimes(1));
   expect(session.dispatch).toHaveBeenCalledWith({ type: "reset", seed: 42, shiftId: "free-practice" });
 

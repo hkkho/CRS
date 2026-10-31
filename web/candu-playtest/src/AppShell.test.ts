@@ -24,8 +24,11 @@ it("starts Arcade only after the shared free-practice reset is accepted", async 
   click('[data-action="begin"]');
   await vi.waitFor(() => expect(document.querySelector('[data-field="error"]')!.textContent).toBe("Core unavailable"));
   expect(document.querySelector('.reactor-arcade')).toBeNull();
+  click('.game-loading-dialog button:last-child');
   shared.dispatch.mockResolvedValue({ accepted: true });
   click('[data-action="begin"]');
+  await vi.waitFor(() => expect(document.querySelector<HTMLButtonElement>('[data-game-start]')!.hidden).toBe(false));
+  click('[data-game-start]');
   await vi.waitFor(() => expect(document.querySelector('.reactor-arcade')).not.toBeNull());
   expect(shared.dispatch).toHaveBeenLastCalledWith({ type: "reset", seed: 42, shiftId: "free-practice" });
 });
@@ -41,8 +44,13 @@ it("opens the native Studio over the existing session and cleans up its subscrib
   } };
   shell = new AppShell(shared, document.body);
   expect(document.querySelector('.reactor-launcher h1')!.textContent).toBe("CRS");
+  expect(document.querySelector('[data-action="begin"]')!.textContent).toContain("Turn based");
+  expect(document.querySelector('[data-action="demo"]')!.textContent).toBe("Time based");
+  expect(document.querySelector('.launcher-actions button')!.getAttribute('data-action')).toBe("demo");
   expect(listeners.size).toBe(1);
   click('[data-action="begin"]');
+  expect(document.querySelector('.reactor-studio')).toBeNull();
+  click('[data-game-start]');
   expect(document.querySelector('.reactor-studio')).not.toBeNull();
   expect(document.querySelector('.studio-brand h1')!.textContent).toBe("CRS");
   expect((document.querySelector('.reactor-studio') as HTMLElement).dataset.mapMode).toBe("power");

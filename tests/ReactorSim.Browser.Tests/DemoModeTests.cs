@@ -7,7 +7,7 @@ namespace ReactorSim.Browser.Tests;
 public sealed class DemoModeTests
 {
     [Fact]
-    public void DemoRefuelsImmediatelyAndAdvancesAtomicDaysWithCompactSnapshots()
+    public void TimeBasedRefuelsImmediatelyAndAdvancesAtomicHalfDaysWithCompactSnapshots()
     {
         var runtime = new PlaytestRuntime();
         var initial = Parse(runtime.Initialize("{\"protocol\":\"candu-playtest-v2\",\"pacingMode\":\"demo\",\"seed\":1001}"));
@@ -24,9 +24,13 @@ public sealed class DemoModeTests
         Assert.True(day.GetProperty("accepted").GetBoolean());
         var patch = day.GetProperty("snapshotPatch");
         Assert.Equal("demo", patch.GetProperty("pacingMode").GetString());
-        Assert.Equal(1, patch.GetProperty("completedDays").GetInt32());
-        Assert.Equal(86400, patch.GetProperty("simulationTimeSeconds").GetDouble());
+        Assert.Equal(0, patch.GetProperty("completedDays").GetInt32());
+        Assert.Equal(43200, patch.GetProperty("simulationTimeSeconds").GetDouble());
         Assert.Equal(8, patch.GetProperty("shift").GetProperty("fuelConsumed").GetInt32());
+        var second = Send(runtime, "\"type\":\"commit-day\",\"expectedCompletedDays\":0,\"channelIndices\":[]");
+        Assert.True(second.GetProperty("accepted").GetBoolean());
+        Assert.Equal(86400, second.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
+        Assert.Equal(1, second.GetProperty("snapshot").GetProperty("completedDays").GetInt32());
         Assert.False(Send(runtime, "\"type\":\"commit-day\",\"expectedCompletedDays\":0,\"channelIndices\":[]").GetProperty("accepted").GetBoolean());
         var reset = Send(runtime, "\"type\":\"reset\"");
         Assert.Equal("demo", reset.GetProperty("snapshot").GetProperty("pacingMode").GetString());

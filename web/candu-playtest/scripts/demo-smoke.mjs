@@ -14,9 +14,31 @@ try {
   console.log('Launcher ready.');
   await page.locator('.launcher-setup details > summary').click();
   await page.locator('[data-field=seed]').fill('1001');
+  if (!(await page.locator('[data-action=begin]').innerText()).includes('Turn based')) throw new Error('Turn based choice missing');
+  if ((await page.locator('[data-action=demo]').innerText()) !== 'Time based') throw new Error('Time based choice missing');
+  if (await page.locator('.launcher-actions button').first().getAttribute('data-action') !== 'demo') throw new Error('Time based is not first');
   await page.locator('[data-action=demo]').click();
+  await page.locator('.game-loading-dialog').waitFor();
+  await mkdir('artifacts/demo', { recursive: true });
+  await page.screenshot({ path: 'artifacts/demo/loading.png', fullPage: true });
+  await page.locator('[data-game-start]').waitFor({ state: 'visible', ...waitOptions });
+  if (await page.locator('.reactor-demo').getAttribute('data-running') !== 'false') throw new Error('Game started before Start');
+  await page.screenshot({ path: 'artifacts/demo/ready.png', fullPage: true });
+  await page.locator('[data-game-start]').click();
   await page.locator('.reactor-demo .arcade-map [data-channel="210"]').waitFor(waitOptions);
-  console.log('Demo core ready.');
+  console.log('Time based core ready.');
+  for (const mode of ['ripple', 'burnup', 'paired-zones', 'power']) {
+    await page.locator('select[data-map-mode]').selectOption(mode);
+    if (await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
+    if (mode === 'paired-zones') {
+      const label = await page.locator('.arcade-map [data-channel="210"]').getAttribute('aria-label');
+      if (!label.includes('End A Z') || !label.includes('End B Z')) throw new Error('Published zone pair missing');
+      await page.screenshot({ path: 'artifacts/demo/paired-map.png', fullPage: true });
+    }
+  }
+  if ((await page.locator('.reactor-demo header').innerText()).includes('DEMO')) throw new Error('Old demo label');
+  if ((await page.locator('.demo-hud').innerText()).includes('sec')) throw new Error('Speed value is still visible');
+  if (!(await page.locator('[data-day]').innerText()).includes(':')) throw new Error('Simulation clock missing');
   if (await page.locator('.demo-zone-grid [data-zone]').count() !== 14) throw new Error('Missing liquid zones');
   if (await page.locator('.reactor-demo .core-map-zoom').count()) throw new Error('Demo retained zoom controls');
   if ((await page.locator('.reactor-demo .arcade-map [data-channel="210"]').innerText()) !== '') throw new Error('Demo channel still contains a power label');
@@ -32,6 +54,12 @@ try {
   if (await page.locator('.reactor-demo [data-selected-channel]').innerText() === '—') throw new Error('Selected channel label is missing');
   if (await page.locator('dialog[open]').count()) throw new Error('Demo opened a calculation screen');
   if ((await page.locator('.reactor-demo [data-live]').innerText()) !== 'Live power') throw new Error('Solver status leaked into live play');
+  // Startup and the first shared solve may exceed a playback interval on non-AOT builds.
+  await page.locator('.reactor-demo .arcade-map [data-channel="210"]').click();
+  await page.waitForFunction(() => {
+    const progress = document.querySelector('.demo-clock');
+    return progress && progress.value > .05 && progress.value < .6;
+  }, undefined, waitOptions);
   const powerFrames = new Set();
   for (let i = 0; i < 30; i++) {
     powerFrames.add(await page.locator('.demo-hud [data-power]').innerText());
@@ -53,6 +81,7 @@ try {
   await page.waitForTimeout(5500);
   if (await page.locator('.reactor-demo').getAttribute('data-days') !== pausedDay) throw new Error('Paused demo advanced');
   await mkdir('artifacts/demo', { recursive: true });
+  await page.locator('.reactor-demo').evaluate(element => { element.scrollTop = 0; });
   await page.screenshot({ path: 'artifacts/demo/desktop.png', fullPage: true });
   for (const width of [320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });

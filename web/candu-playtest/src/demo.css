@@ -92,3 +92,6 @@ body:has(.reactor-demo) .player-toggle { display: none; }
   .reactor-demo .arcade-map-scroll { width: 100%; }
   .reactor-demo nav { flex-wrap: wrap; }
 }
+
+.demo-map-heading select { max-width: 100%; min-height: 44px; padding: 8px 30px 8px 12px; border: 1px solid #58788f; border-radius: 5px; background: #101f2c; color: #eff4dd; font: 700 16px system-ui, sans-serif; }
+.reactor-demo:not([data-map-mode="power"]) .arcade-legend { border-image: none; border-top-color: #58788f; }

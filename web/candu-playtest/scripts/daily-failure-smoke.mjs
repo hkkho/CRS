@@ -9,7 +9,8 @@ export async function verifyDailyFailure(browser, url) {
   await page.locator('.reactor-launcher [data-field="seed"]').fill('1001');
     await page.locator('[data-goal="free-practice"]').click();
       await page.waitForFunction(() => document.querySelector('.reactor-launcher')?.getAttribute('aria-busy') === 'false', undefined, { timeout: 120_000 });
-    await page.getByRole('button', { name: 'Start run', exact: true }).click();
+    await page.getByRole('button', { name: 'Turn based', exact: true }).click();
+    await page.locator('[data-game-start]').click({ timeout: 180000 });
     await page.waitForFunction(() => document.querySelector('.reactor-studio')?.getAttribute('aria-busy') === 'false', undefined, { timeout: 120_000 });
     await page.locator('.reactor-studio').evaluate(studio => {
       const add = studio.querySelector('[data-action="refuel"]');

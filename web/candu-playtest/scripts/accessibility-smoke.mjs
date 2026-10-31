@@ -64,6 +64,8 @@ try {
   check(await launcher.locator("[data-goal]").count() === 1, "Removed challenges are still selectable.");
   await activate(launcher.locator('[data-goal="free-practice"]'));
   await activate(begin);
+  await page.locator("[data-game-start]").waitFor({ state: "visible", timeout: 180000 });
+  await activate(page.locator("[data-game-start]"));
   const studio = page.locator(".reactor-studio"); await studio.waitFor(); await idle(".reactor-studio");
   check(await studio.locator('.studio-brand h1').textContent() === 'CRS', 'Gameplay title is not CRS.');
   check(await studio.getAttribute('data-map-mode') === 'power', 'Initial core map is not channel power.');

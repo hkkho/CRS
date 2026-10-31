@@ -42,7 +42,8 @@ try {
   console.log('Loading first production build');
   await page.waitForFunction(() => document.querySelector('#status-mirror')?.getAttribute('data-pacing') === 'daily-turn' && document.querySelector('#status-mirror')?.textContent?.includes('live reactor online'), undefined, { timeout: 120_000 });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout: 120_000 });
-  await page.getByRole('button', { name: 'Start run', exact: true }).click(); await idle();
+  await page.getByRole('button', { name: 'Turn based', exact: true }).click();
+  await page.locator('[data-game-start]').click({ timeout: 180000 }); await idle();
   await page.locator('[data-action="commit-day"]').click(); await idle();
   await page.locator('.studio-day-dialog').getByRole('button', { name: 'Continue', exact: true }).click();
   await page.locator('[data-action="refuel"]').click();

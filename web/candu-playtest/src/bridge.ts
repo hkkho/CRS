@@ -710,7 +710,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
           return;
         }
         if ((options.initialPacingMode ?? "daily-turn") === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns. Reload the updated game.");
-        if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support the demo. Reload the updated game.");
+        if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support time based play. Reload the updated game.");
         this.active = this.wasm!;
         this.activeStatus = this.wasm!.status;
         this.notify(snapshot);

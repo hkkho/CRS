@@ -11,6 +11,7 @@ try {
   await page.locator('[data-presentation]').selectOption('arcade');
   await page.waitForFunction(() => document.querySelector('.reactor-launcher')?.getAttribute('aria-busy') === 'false', undefined, { timeout: 180000 });
   await page.locator('[data-action="begin"]').tap();
+  await page.locator("[data-game-start]").tap({ timeout: 180000 });
   await page.locator('.reactor-arcade').waitFor({ timeout: 180000 });
   for (const width of [320, 390, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });

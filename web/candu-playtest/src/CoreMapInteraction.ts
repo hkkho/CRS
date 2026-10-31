@@ -32,6 +32,7 @@ export class CoreMapTooltip {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private touchInput = false;
   private snapshot: CanduSnapshot | undefined;
+  private readings?: ReadonlyMap<number, string>;
   constructor(private readonly map: Element, private readonly instantFuel = false) {
     this.tip.className = "core-channel-tooltip";
     this.tip.id = `core-channel-tooltip-${++tooltipId}`;
@@ -48,7 +49,7 @@ export class CoreMapTooltip {
     window.addEventListener("scroll", this.hide, true);
     window.addEventListener("resize", this.hide);
   }
-  update(snapshot: CanduSnapshot): void { this.snapshot = snapshot; if (this.active) this.render(); }
+  update(snapshot: CanduSnapshot, readings?: ReadonlyMap<number, string>): void { this.snapshot = snapshot; this.readings = readings; if (this.active) this.render(); }
   private readonly keep = (): void => { clearTimeout(this.timer); };
   private readonly show = (event: Event): void => {
     if (event.type === "pointerover") this.touchInput = (event as PointerEvent).pointerType === "touch";
@@ -63,7 +64,7 @@ export class CoreMapTooltip {
     if (!channel || !this.snapshot || !this.active) { this.hide(); return; }
     const outgoing = exitBurnup(this.snapshot, channel);
     this.tip.textContent = this.instantFuel
-      ? `${gridCoordinateLabel(channel)} · ${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW\nDouble-click to queue fuel for the next day`
+      ? `${gridCoordinateLabel(channel)} · ${this.readings?.get(channel.channelIndex) ?? `${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW`}\nDouble-click to queue fuel at the first opportunity`
       : `${gridCoordinateLabel(channel)} · ${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW\nExit burnup ${outgoing === null ? "unavailable" : `${outgoing.toFixed(2)} MWd/kg`}\nClick to inspect · Double-click to queue/remove`;
     this.active.setAttribute("aria-describedby", this.tip.id);
     this.tip.hidden = false;

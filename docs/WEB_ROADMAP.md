@@ -25,9 +25,9 @@ the aged core's real fills and equilibrium xenon. Limits are 7,100 kW/channel
 and 900 kW/bundle. The new daily model identity prevents replaying older saves
 under changed rules while retaining the stored files.
 
-## Live demo
+## Time based play
 
-The launcher also offers an ephemeral live demo: five-second interpolated day playback, double-click/keyboard/touch fuel queuing, pause and seeded retries. One shared solved endpoint is buffered ahead while the next atomic day/fuel batch runs. No calculating screen or status interrupts play; slow solves hold an endpoint without extrapolation or backlog. The vivid 5,000–6,500 kW map pulses above 6,500 and shakes above 7,000. The core uses color-only cells without zoom controls; selected power and fuel input share the top strip. Live power and average-zone line plots use the space left of the core on wide screens. All fourteen zone fills and average loss-limit headroom remain visible, with reduced-motion alternatives. Daily runs remain independent.
+The launcher lists Time based first, followed by Turn based. Entering either mode shows a loading pop-up, then an explicit Start button when setup is ready; the clock stays frozen until Start. Time based uses an ephemeral session with five-second interpolated half-day playback, a ticking simulation clock, double-click/keyboard/touch fuel queuing at the first free worker opportunity, pause and seeded retries. One shared solved endpoint is buffered ahead while the next atomic half-day step runs; fuel commands have priority whenever the worker is free. No calculating screen or status interrupts play; slow solves hold an endpoint without extrapolation or backlog. The vivid 5,000–6,500 kW map pulses above 6,500 and shakes above 7,000. The map dropdown offers channel power, ripple, burnup and paired zone fills (left End A / right End B). The core uses color-only cells without zoom controls; selected power and fuel input share the top strip. Live power and average-zone line plots use the space left of the core on wide screens. All fourteen zone fills and average loss-limit headroom remain visible, with reduced-motion alternatives. Daily runs remain independent.
 
 ## Next work
 
