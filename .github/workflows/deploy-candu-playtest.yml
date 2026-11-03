@@ -174,6 +174,7 @@ jobs:
           npm run smoke:accessibility 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/accessibility-smoke.log"
           npm run smoke:saves 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/saves-smoke.log"
           npm run smoke:docs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/docs-smoke.log"
+          npm run smoke:demo -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/demo-smoke.log"
           npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
           npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 --expected-commit-sha=${{ github.sha }} 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
       - name: Upload Pages site

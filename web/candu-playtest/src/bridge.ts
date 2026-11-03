@@ -733,6 +733,12 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     return await this.active.dispatch(command, options);
   }
 
+  async whenReady(): Promise<CanduSnapshot> {
+    await this.settled;
+    if (!this.status.isWasmAvailable) throw new Error(this.status.detail);
+    return this.getSnapshot();
+  }
+
   getTransportMetrics(): readonly TransportMetric[] {
     return this.wasm?.getTransportMetrics() ?? [];
   }
@@ -911,7 +917,7 @@ function createUnavailableSnapshot(): CanduSnapshot {
 
 export function createCanduPlaytestBridge(
   options: Omit<WorkerProtocolBridgeOptions, "onFatalError"> = {},
-): CanduPlaytestBridgeLifecycle {
+): CanduPlaytestBridgeLifecycle & { whenReady(): Promise<CanduSnapshot> } {
   return new AuthoritativeProtocolBridge(options);
 }
 

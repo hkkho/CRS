@@ -23,7 +23,7 @@ export class ArcadeMap {
     this.element.className = "arcade-map";
     this.element.setAttribute("role", "group");
     this.element.setAttribute("aria-label", "Core channels. Use arrow keys to inspect, Enter or R queues/removes. Double-click a channel to queue/remove.");
-    if (instantFuel) this.element.setAttribute("aria-label", "Channel power map. Arrow keys select; Enter, Space, R or double-click queues fuel at the first opportunity.");
+    if (instantFuel) this.element.setAttribute("aria-label", "Channel power map. Arrow keys select; Enter, Space, R or double-click queues fuel for the next step.");
     const housing = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     housing.setAttribute("viewBox", "0 0 560 560"); housing.setAttribute("aria-hidden", "true"); housing.classList.add("arcade-vessel-art");
     this.element.append(housing); this.frame = new ReactorFrame(housing, true);
@@ -43,7 +43,7 @@ export class ArcadeMap {
     this.frame.update(snapshot, selected);
     const readings = new Map<number, string>();
     this.element.dataset.mapMode = mode;
-    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", ripple: "Ripple", burnup: "Burnup", "paired-zones": "Paired zone fills" })[mode]} map. Arrow keys select; Enter, Space, R or double-click queues fuel at the first opportunity.`);
+    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", ripple: "Ripple", burnup: "Burnup", "paired-zones": "Paired zone fills" })[mode]} map. Arrow keys select; Enter, Space, R or double-click queues fuel for the next step.`);
     this.snapshot = snapshot; this.selected = selected; this.locked = locked;
     for (const channel of snapshot.core.channels) {
       const cell = this.cells.get(channel.channelIndex);

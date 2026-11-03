@@ -45,9 +45,20 @@ try {
   if (await page.locator('.demo-trends svg').count() !== 2) throw new Error('Missing live plots');
   if (!await page.evaluate(() => document.querySelector('.reactor-demo [data-map]').clientWidth >= document.querySelector('.demo-core').clientWidth * .98)) throw new Error('Core map does not fill its available panel');
   if (!await page.evaluate(() => document.querySelector('.demo-selected-hud').getBoundingClientRect().height < 100)) throw new Error('Selected channel header is wrapping excessively');
+  // Queue several channels early in playback, while its successor is solving or buffered.
+  await page.waitForFunction(() => {
+    const clock = document.querySelector('.demo-clock');
+    return clock?.value > .05 && clock.value < .3;
+  }, undefined, waitOptions);
   const initialDay = Number(await page.locator('.reactor-demo').getAttribute('data-days'));
   const start = Date.now();
   await page.locator('.reactor-demo .arcade-map [data-channel="210"]').dblclick();
+  await page.locator('.reactor-demo .arcade-map [data-channel="211"]').dblclick();
+  if (await page.locator('.reactor-demo [data-planned=true]').count() !== 2) throw new Error('Both queued outlines must remain visible');
+  const queuedStyle = await page.locator('.reactor-demo [data-channel="210"]').evaluate(cell => ({ ring: getComputedStyle(cell).boxShadow, dot: getComputedStyle(cell, '::after').display }));
+  if (!queuedStyle.ring.includes('inset') || !queuedStyle.ring.includes('3px') || queuedStyle.dot !== 'none') throw new Error('Queued channel is missing its full inset outline');
+  await page.screenshot({ path: 'artifacts/demo/queued-batch.png', fullPage: true });
+  const fuelReadings = [];
   // Selection remains interactive while a shared solver operation is in flight.
   await page.locator('.reactor-demo .arcade-map [data-channel="211"]').click();
   if (await page.locator('.reactor-demo [data-channel="211"]').getAttribute('aria-pressed') !== 'true') throw new Error('Map blocked during fuel solve');
@@ -63,11 +74,16 @@ try {
   const powerFrames = new Set();
   for (let i = 0; i < 30; i++) {
     powerFrames.add(await page.locator('.demo-hud [data-power]').innerText());
+    fuelReadings.push(Number(await page.locator('.reactor-demo').getAttribute('data-fuel-consumed')));
     await page.waitForTimeout(150);
   }
   if (powerFrames.size < 3) throw new Error('Power display did not interpolate intermediate readings');
   if (Number(await page.locator('.demo-trends').getAttribute('data-samples')) < 3) throw new Error('Live plots did not accumulate displayed history');
-  await page.waitForFunction(() => Number(document.querySelector('.reactor-demo')?.getAttribute('data-fuel-consumed')) === 8, undefined, waitOptions);
+  await page.waitForFunction(() => Number(document.querySelector('.reactor-demo')?.getAttribute('data-fuel-consumed')) > 0, undefined, waitOptions);
+  fuelReadings.push(Number(await page.locator('.reactor-demo').getAttribute('data-fuel-consumed')));
+  if (fuelReadings.some(value => value !== 0 && value !== 16)) throw new Error(`Fuel batch was split across displayed steps: ${fuelReadings}`);
+  if (fuelReadings.at(-1) !== 16) throw new Error('Both channels were not fuelled together');
+  if (await page.locator('.reactor-demo [data-planned=true]').count()) throw new Error('Delivered batch retained queue outlines');
   const fuelMs = Date.now() - start;
   console.log(`Fuel response: ${fuelMs}ms.`);
   await page.waitForFunction(day => Number(document.querySelector('.reactor-demo')?.getAttribute('data-days')) > day, initialDay, waitOptions);
@@ -103,7 +119,7 @@ try {
   if (!await page.locator('.reactor-launcher').isVisible()) throw new Error('Return to launcher failed');
   if (await page.locator('#status-mirror').getAttribute('data-completed-days') !== '0') throw new Error('Demo changed the daily run');
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log(JSON.stringify({ result: 'Demo Pages-path smoke passed', fuelMs, firstDayMs: dayMs, dayIntervalMs, distinctPowerFrames: powerFrames.size, zones: 14, viewports: [1440, 768, 390, 320], keyboard: true, pause: true, retry: true, preservedDailyRun: true }));
+  console.log(JSON.stringify({ result: 'Demo Pages-path smoke passed', fuelMs, firstDayMs: dayMs, dayIntervalMs, distinctPowerFrames: powerFrames.size, zones: 14, batchedChannels: 2, queueOutline: true, viewports: [1440, 768, 390, 320], keyboard: true, pause: true, retry: true, preservedDailyRun: true }));
 } catch (error) {
   await mkdir('artifacts/demo', { recursive: true });
   await page.screenshot({ path: 'artifacts/demo/failure.png', fullPage: true });

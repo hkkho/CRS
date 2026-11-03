@@ -39,3 +39,22 @@ it('does not reuse another account revision or publish implicitly while saving',
   await cloud.publish(save);
   expect(mocks.rpc).toHaveBeenLastCalledWith('publish_endless_score', { run_id: save.id });
 });
+
+it('reports unreadable cloud rows while retaining valid saves and their revisions', async () => {
+  const valid: RunSave = {
+    id: '00000000-0000-4000-8000-000000000001', version: 1, savedAt: '2026-01-01T00:00:00Z',
+    dataPackId: 'pack', scorePolicyId: 'score', seed: 1001, shiftId: 'free-practice', score: 0,
+    seconds: 0, fuelConsumed: 0, ended: false, stateDigest: 'digest',
+    commands: [{ command: { type: 'pause' }, accepted: true, responseMode: 'compact' }],
+  };
+  const order = vi.fn().mockReturnValue({ limit: vi.fn().mockResolvedValue({ data: [
+    { id: 'bad-id', revision: 1, run: { version: 99 } },
+    { id: valid.id, revision: 4, run: valid },
+  ], error: null }) });
+  mocks.createClient.mockReturnValueOnce({ from: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ order }) }) });
+
+  await expect(player().list()).resolves.toEqual({
+    runs: [{ ...valid, cloudRevision: 4, cloudOwnerId: 'alice' }],
+    unreadableIds: ['bad-id'],
+  });
+});

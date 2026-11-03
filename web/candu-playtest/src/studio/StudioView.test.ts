@@ -367,7 +367,7 @@ describe("Reactor Studio live interface", () => {
   });
 
   it("renders authoritative movement plans and keeps confirmed identities on navigation", () => {
-    const { session, view, emit } = harness();
+    const { session, view, emit, button } = harness();
     session.snapshot.pacingMode = "daily-turn";
     const plan = { directionId: "toward-end-b" as const, shiftCount: 8 as const, incomingEnd: "A" as const, outgoingEnd: "B" as const,
       insertedPositions: [0,1,2,3,4,5,6,7], dischargedPositions: [4,5,6,7,8,9,10,11], retainedFromPositions: [0,1,2,3], retainedToPositions: [8,9,10,11] };
@@ -392,6 +392,10 @@ describe("Reactor Studio live interface", () => {
     const details = view.element.querySelector<HTMLDetailsElement>('[data-day-moves] details')!;
     details.open = true;
     emit(null, 'status');
+    expect(view.element.querySelector('[data-day-moves] details')).toBe(details);
+    expect(details.open).toBe(true);
+    button("refuel").click();
+    expect(view.element.querySelector('[data-plan-total]')!.textContent).toBe("1 channel");
     expect(view.element.querySelector('[data-day-moves] details')).toBe(details);
     expect(details.open).toBe(true);
     view.destroy();

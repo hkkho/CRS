@@ -14,8 +14,8 @@ it("waits through initialization and readiness until Start, then begins the cloc
   const snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", simulationTimeSeconds: 0, completedDays: 0 };
   let notify: Parameters<CanduPlaytestBridgeLifecycle["subscribe"]>[0] = () => {};
   const status: BridgeStatus = { source: "loading", title: "Loading", detail: "Loading reactor", isWasmAvailable: false, capabilities: [] };
-  const bridge: CanduPlaytestBridgeLifecycle = {
-    status, getSnapshot: () => snapshot, initializeMode: async () => snapshot,
+  const bridge: ReturnType<typeof createCanduPlaytestBridge> = {
+    status, getSnapshot: () => snapshot, initializeMode: async () => snapshot, whenReady: async () => snapshot,
     subscribe: listener => { notify = listener; return () => {}; }, dispose: vi.fn(),
     dispatch: vi.fn(() => new Promise<CanduCommandResponse>(() => {})),
   };
@@ -43,8 +43,8 @@ it("waits through initialization and readiness until Start, then begins the cloc
 
 it("shows setup failure and lets Escape return without starting", () => {
   const status: BridgeStatus = { source: "unavailable", title: "Unavailable", detail: "Reactor could not load", isWasmAvailable: false, capabilities: [] };
-  const bridge: CanduPlaytestBridgeLifecycle = {
-    status, getSnapshot: createSnapshot, initializeMode: async () => createSnapshot(),
+  const bridge: ReturnType<typeof createCanduPlaytestBridge> = {
+    status, getSnapshot: createSnapshot, initializeMode: async () => createSnapshot(), whenReady: async () => createSnapshot(),
     subscribe: listener => { listener(status, createSnapshot()); return () => {}; }, dispose: vi.fn(), dispatch: vi.fn(),
   };
   vi.mocked(createCanduPlaytestBridge).mockReturnValue(bridge);
@@ -67,9 +67,9 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
     targetPowerFraction: 1 / 14, measuredPowerFraction: 1 / 14, shapeError: 0,
   }));
   let finish: () => void = () => {};
-  const bridge: CanduPlaytestBridgeLifecycle = {
+  const bridge: ReturnType<typeof createCanduPlaytestBridge> = {
     status: { source: "wasm", title: "", detail: "", isWasmAvailable: true, capabilities: [] },
-    getSnapshot: () => snapshot, subscribe: () => () => {}, initializeMode: async () => snapshot, dispose: vi.fn(),
+    getSnapshot: () => snapshot, subscribe: () => () => {}, initializeMode: async () => snapshot, whenReady: async () => snapshot, dispose: vi.fn(),
     dispatch: vi.fn(command => new Promise<CanduCommandResponse>(resolve => { finish = () => resolve({ protocol: "candu-playtest-v2", command, accepted: true, message: "", diagnostics: [], sequence: 1, stateDigest: "test", snapshot }); })),
   };
   vi.mocked(createCanduPlaytestBridge).mockReturnValue(bridge);
@@ -90,9 +90,12 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(view.element.querySelectorAll(".demo-trends svg")).toHaveLength(2);
   cell.click(); cell.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
   expect(view.element.querySelector('.demo-hud [data-power]')?.textContent).toBe("6600");
-  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-refuel" }), { responseMode: "compact" });
+  const second = view.element.querySelector<HTMLButtonElement>('[data-channel="211"]')!;
+  second.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  expect(second.dataset.planned).toBe("true");
+  expect(bridge.dispatch).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(50);
-  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-refuel", request: expect.objectContaining({ channelIndex: 210 }) }), { responseMode: "compact" });
+  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-day", channelIndices: [210, 211] }), { responseMode: "compact" });
   expect(cell.disabled).toBe(false);
   expect(cell.textContent).toBe(text); // No fabricated power response while solving.
   expect(cell.dataset.planned).toBe("true");
@@ -111,8 +114,8 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(view.element.querySelector('[data-selected-channel]')?.textContent).not.toBe("—");
   expect(cell.textContent).toBe(text);
   finish(); await vi.advanceTimersByTimeAsync(0);
-  expect(cell.dataset.planned).toBe("false");
-  // With no time step in playback, the accepted immediate move is visible now.
+  expect(cell.dataset.planned).toBe("true"); // Remains queued until the displayed endpoint.
+  expect(second.dataset.planned).toBe("true");
   expect(view.element.querySelector('[data-message]')?.textContent).not.toContain("Power updated");
   const mode = view.element.querySelector<HTMLSelectElement>('[data-map-mode]')!;
   expect([...mode.options].map(o => o.value)).toEqual(["power", "ripple", "burnup", "paired-zones"]);

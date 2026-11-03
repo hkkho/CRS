@@ -2,14 +2,14 @@ import { afterEach, expect, it, vi } from "vitest";
 import { DemoLoop } from "./DemoLoop";
 import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import type { CanduCommand, CanduCommandResponse, CanduSnapshot } from "./protocol";
-import { createSnapshot } from "./testSnapshot";
+import { createSnapshot, createShift } from "./testSnapshot";
 import { channelWatts } from "./studio/powerReadings";
 
 let loop: DemoLoop;
 afterEach(() => { loop?.destroy(); vi.useRealTimers(); });
-function setup() {
+function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3]) {
   vi.useFakeTimers();
-  let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", completedDays: 0, simulationTimeSeconds: 0, ripple: undefined };
+  let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", completedDays: 0, simulationTimeSeconds: 0, shift: { ...createShift(), fuelConsumed: 0 }, ripple: undefined };
   snapshot.core.channels[211].flowDirection = "toward-end-b";
   const calls: CanduCommand[] = [];
   let complete: (accepted?: boolean, terminal?: boolean) => void = () => {};
@@ -23,11 +23,11 @@ function setup() {
         complete = (accepted = true, terminal = false) => {
           if (accepted && command.type === "commit-day") snapshot = { ...snapshot,
             completedDays: Math.floor((snapshot.simulationTimeSeconds + 43200) / 86400), simulationTimeSeconds: snapshot.simulationTimeSeconds + 43200,
+            shift: snapshot.shift ? { ...snapshot.shift, fuelConsumed: snapshot.shift.fuelConsumed + command.channelIndices.length * 8 } : undefined,
             core: { ...snapshot.core, channels: snapshot.core.channels.map(c => ({ ...c, powerWatts: c.powerWatts + 100000 })) },
             rrs: { ...snapshot.rrs, averageFillFraction: snapshot.rrs.averageFillFraction + .1 },
             runStatus: terminal ? "ended" : "running", runEndReason: terminal ? "Channel power" : "",
           };
-          if (accepted && command.type === "commit-refuel") snapshot = { ...snapshot, shift: snapshot.shift ? { ...snapshot.shift, fuelConsumed: snapshot.shift.fuelConsumed + 8 } : undefined };
           if (accepted && command.type === "reset") snapshot = { ...createSnapshot(), pacingMode: "demo", completedDays: 0, simulationTimeSeconds: 0 };
           notify(bridge.status, snapshot); // A real bridge publishes before dispatch resolves.
           resolve({ protocol: "candu-playtest-v2", accepted, sequence: 1, command, message: "Rejected", diagnostics: [], stateDigest: "test", snapshot });
@@ -35,9 +35,47 @@ function setup() {
       });
     },
   };
-  loop = new DemoLoop(bridge, () => Date.now());
-  return { calls, bridge, complete: (accepted = true, terminal = false) => complete(accepted, terminal) };
+  loop = new DemoLoop(bridge, () => Date.now(), false, createRecoveryBridge);
+  return { calls, bridge, complete: (accepted = true, terminal = false) => complete(accepted, terminal),
+    fail: () => {
+      Object.assign(bridge.status, { source: "unavailable", isWasmAvailable: false });
+      notify(bridge.status, snapshot);
+    } };
 }
+
+it("blocks playback and fuel input while a healthy bridge resets", async () => {
+  const h = setup();
+  const restart = loop.restart(1001);
+  loop.togglePause();
+  loop.fuel(211);
+  await vi.advanceTimersByTimeAsync(100);
+  expect(loop.running).toBe(false);
+  expect(loop.pendingFuel).toEqual([]);
+  expect(h.calls.map(command => command.type)).toEqual(["reset"]);
+  h.complete();
+  await restart;
+  expect(loop.running).toBe(true);
+});
+
+it("retries on a fresh seeded bridge without replaying queued fuel", async () => {
+  const replacementSnapshot = { ...createSnapshot(), pacingMode: "demo" as const, shift: { ...createShift(), seed: 1001 } };
+  const factory = vi.fn();
+  const h = setup(factory);
+  const replacement = { ...h.bridge, dispatch: vi.fn(), dispose: vi.fn(), whenReady: async () => replacementSnapshot };
+  factory.mockReturnValue(replacement);
+  loop.fuel(211);
+  h.fail();
+
+  await loop.restart(1001);
+
+  expect(factory).toHaveBeenCalledWith(1001);
+  expect(h.bridge.dispose).toHaveBeenCalledOnce();
+  expect(h.calls).toEqual([]);
+  expect(replacement.dispatch).not.toHaveBeenCalled();
+  expect(loop.snapshot).toBe(replacementSnapshot);
+  expect(loop.pendingFuel).toEqual([]);
+  expect(loop.running).toBe(true);
+});
 
 it("buffers solved endpoints, blends for five seconds, and never leaks subscription results", async () => {
   const h = setup(), start = loop.snapshot;
@@ -57,35 +95,50 @@ it("buffers solved endpoints, blends for five seconds, and never leaks subscript
   expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [] });
 });
 
-it("prioritizes immediate fuel even with a buffered time step, deduplicates and bounds input", async () => {
+it("submits the entire waiting queue in one step and keeps the markers until its displayed endpoint", async () => {
   const h = setup();
   await vi.advanceTimersByTimeAsync(50); h.complete(); await vi.advanceTimersByTimeAsync(50);
-  h.complete(); await vi.advanceTimersByTimeAsync(0); // Both active and buffered endpoints exist.
-  loop.fuel(210); loop.fuel(210);
+  h.complete(); await vi.advanceTimersByTimeAsync(0); // Active and buffered endpoints exist.
+  loop.fuel(210); loop.fuel(211); loop.fuel(210);
+  await vi.advanceTimersByTimeAsync(4950);
+  expect(h.calls).toHaveLength(2); // Never mutate an endpoint already solved.
+  expect(loop.pendingFuel).toEqual([210, 211]);
   await vi.advanceTimersByTimeAsync(50);
-  expect(h.calls[2]).toEqual({ type: "commit-refuel", request: { channelIndex: 210, directionId: "toward-end-a", shiftCount: 8, fuelTypeId: "NAT-U-SYNTHETIC" } });
-  for (let i = 0; i < 20; i++) loop.fuel(i);
-  expect(loop.waitingFuel.size).toBe(8);
-  loop.fuel(210);
-  h.complete(); await vi.advanceTimersByTimeAsync(50);
-  expect(h.calls[3].type).toBe("commit-refuel");
-  expect(h.calls[3]).toMatchObject({ request: { channelIndex: 0, directionId: "toward-end-a" } });
-  expect(loop.pendingFuel).toContain(210);
-  expect(h.calls.filter(c => c.type === "commit-day")).toHaveLength(2);
+  expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [210, 211] });
+  expect(loop.waitingFuel.size).toBe(0);
+  loop.fuel(210); // A submitted channel is still pending, not a new request.
+  h.complete(); await vi.advanceTimersByTimeAsync(5000);
+  expect(loop.snapshot.shift?.fuelConsumed).toBe(0);
+  expect(loop.pendingFuel).toEqual([210, 211]);
+  await vi.advanceTimersByTimeAsync(4950);
+  expect(loop.snapshot.shift?.fuelConsumed).toBe(0);
+  await vi.advanceTimersByTimeAsync(50);
+  expect(loop.snapshot.shift?.fuelConsumed).toBe(16);
+  expect(loop.pendingFuel).toEqual([]);
+  expect(h.calls.every(c => c.type === "commit-day")).toBe(true);
 });
 
-it("starts queued fuel immediately after the in-flight calculation, before another time step", async () => {
+it("batches input arriving during a solve and separates only input arriving after submission", async () => {
   const h = setup();
   await vi.advanceTimersByTimeAsync(50);
   loop.fuel(210); loop.fuel(211);
   expect(h.calls).toHaveLength(1);
-  h.complete(); await vi.advanceTimersByTimeAsync(0);
-  expect(h.calls[1]).toMatchObject({ type: "commit-refuel", request: { channelIndex: 210 } });
-  h.complete(); await vi.advanceTimersByTimeAsync(0);
-  expect(h.calls[2]).toMatchObject({ type: "commit-refuel", request: { channelIndex: 211 } });
-  h.complete(); await vi.advanceTimersByTimeAsync(0);
-  expect(h.calls).toHaveLength(3);
-  expect(h.calls.filter(c => c.type === "commit-day")).toHaveLength(1);
+  h.complete(); await vi.advanceTimersByTimeAsync(50);
+  expect(h.calls[1]).toEqual({ type: "commit-day", expectedCompletedDays: 0, channelIndices: [210, 211] });
+  loop.fuel(212); loop.fuel(213);
+  h.complete(); await vi.advanceTimersByTimeAsync(5000);
+  expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [212, 213] });
+  expect(loop.pendingFuel).toEqual([210, 211, 212, 213]);
+});
+
+it("deduplicates and bounds each waiting batch to eight channels", async () => {
+  const h = setup();
+  for (let i = 0; i < 20; i++) { loop.fuel(i); loop.fuel(i); }
+  expect(loop.waitingFuel.size).toBe(8);
+  expect(loop.pendingFuel).toHaveLength(8);
+  expect(loop.message).toContain("queue is full");
+  await vi.advanceTimersByTimeAsync(50);
+  expect(h.calls[0]).toMatchObject({ type: "commit-day", channelIndices: [0, 1, 2, 3, 4, 5, 6, 7] });
 });
 
 it("holds at a slow endpoint without extrapolating or replaying missed days", async () => {
@@ -110,7 +163,6 @@ it("freezes playback and retains queued input on pause/hidden tabs, then resets 
   expect(loop.snapshot).toBe(frozen);
   loop.setVisible(true); await vi.advanceTimersByTimeAsync(50);
   expect(loop.snapshot).not.toBe(frozen); expect(loop.dayProgress).toBeCloseTo(.21);
-  h.complete(); await vi.advanceTimersByTimeAsync(0); // Finish priority fuel before retry.
   const reset = loop.restart(1001); h.complete(); await reset;
   expect(loop.pendingFuel).toHaveLength(0); expect(loop.snapshot.completedDays).toBe(0);
   expect(loop.dayProgress).toBe(0); expect(loop.running).toBe(true);
@@ -126,9 +178,10 @@ it("reveals terminal state only at the displayed endpoint and stops future comma
   await vi.advanceTimersByTimeAsync(60000); expect(h.calls).toHaveLength(1);
 });
 
-it("rejects invalid fuel without claiming delivery or stopping time", async () => {
+it("stops on a rejected batch without claiming any fuel delivery", async () => {
   const h = setup(); loop.fuel(210); await vi.advanceTimersByTimeAsync(50); h.complete(false);
   await vi.advanceTimersByTimeAsync(100);
-  expect(loop.running).toBe(true); expect(loop.message).toBe("Rejected");
+  expect(loop.running).toBe(false); expect(loop.message).toBe("Rejected");
+  expect(h.calls).toHaveLength(1);
   expect(loop.snapshot.completedDays).toBe(0); expect(loop.pendingFuel).not.toContain(210);
 });

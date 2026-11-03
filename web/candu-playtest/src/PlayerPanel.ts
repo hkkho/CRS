@@ -147,7 +147,11 @@ export class PlayerPanel {
     const guest = owner === 'guest' ? [] : await this.store.list('guest');
     let remote: RunSave[] = [];
     if (this.cloud.user && navigator.onLine) {
-      try { remote = await this.cloud.list(); }
+      try {
+        const { runs, unreadableIds } = await this.cloud.list();
+        remote = runs;
+        if (unreadableIds.length) this.message(`Could not read cloud saves: ${unreadableIds.join(', ')}.`);
+      }
       catch (error) { this.message(`Local saves loaded. Cloud unavailable: ${errorText(error)}`); }
     }
     const list = this.dialog.querySelector('[data-runs]')!; list.replaceChildren();

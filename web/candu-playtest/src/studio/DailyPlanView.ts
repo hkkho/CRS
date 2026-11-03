@@ -34,10 +34,10 @@ export class DailyPlanView {
       : `${snapshot.freshBundlesAvailable} fresh bundles available for this run`);
     this.orders.update(snapshot, channels, !ready || pending || historical || isRunTerminal(snapshot));
     text("[data-day-pending]", pending ? `Advancing day…${progress && progress.simulationSecondsAdvanced > 0 ? ` ${(100 * progress.simulationSecondsAdvanced / progress.requestedSimulationSeconds).toFixed(0)}% calculated` : ""}` : historical ? "Return to live to edit or advance today's plan." : "");
-    const key = `${snapshot.simulationTimeSeconds}:${snapshot.refuellingOperationCount}:${channels.join(",")}`;
+    const result = snapshot.lastDayResult;
+    const key = JSON.stringify([snapshot.shift?.seed, result]);
     if (key !== this.key) {
       this.key = key;
-      const result = snapshot.lastDayResult;
       this.report.hidden = !result;
       if (result) {
         const hours = (result.endSimulationTimeSeconds - result.startSimulationTimeSeconds) / 3600;

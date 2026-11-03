@@ -37,15 +37,22 @@ export class CloudPlayer {
     if (result?.error) throw result.error;
     this.user = null;
   }
-  async list(): Promise<RunSave[]> {
-    if (!this.client || !this.user) return [];
+  async list(): Promise<{ runs: RunSave[]; unreadableIds: string[] }> {
+    const runs: RunSave[] = [];
+    const unreadableIds: string[] = [];
+    if (!this.client || !this.user) return { runs, unreadableIds };
     const user = this.user;
     const { data, error } = await this.client.from('player_runs').select('id,revision,run').order('updated_at', { ascending: false }).limit(100);
     if (error) throw error;
-    return (data as CloudRun[]).map(row => {
-      const run = parseRunSave(row.run);
-      return { ...run, cloudRevision: row.revision, cloudOwnerId: user.id };
-    });
+    for (const row of data as CloudRun[]) {
+      try {
+        const run = parseRunSave(row.run);
+        runs.push({ ...run, cloudRevision: row.revision, cloudOwnerId: user.id });
+      } catch {
+        unreadableIds.push(row.id);
+      }
+    }
+    return { runs, unreadableIds };
   }
   async save(run: RunSave): Promise<void> {
     if (!this.client || !this.user) throw new Error('Sign in to save to the cloud.');
