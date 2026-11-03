@@ -29,6 +29,11 @@ under changed rules while retaining the stored files.
 
 The launcher lists Time based first, followed by Turn based. Entering either mode shows a loading pop-up, then an explicit Start button when setup is ready; the clock stays frozen until Start. Time based uses an ephemeral session with five-second interpolated half-day playback, a ticking simulation clock, double-click/keyboard/touch fuel queuing as one batch for the next unsolved step, pause and seeded retries. One shared solved endpoint is buffered ahead while the next atomic half-day step runs; every waiting channel is included in that next step together. Yellow inset outlines persist until the fuel batch is displayed, with a white outline for the inspected channel. No calculating screen or status interrupts play; slow solves hold an endpoint without extrapolation or backlog. The vivid 5,000–6,500 kW map pulses above 6,500 and shakes above 7,000. The map dropdown offers channel power, ripple, burnup and paired zone fills (left End A / right End B). The core uses color-only cells without zoom controls; selected power and fuel input share the top strip. Live power and average-zone line plots use the space left of the core on wide screens. All fourteen zone fills and average loss-limit headroom remain visible, with reduced-motion alternatives. Daily runs remain independent.
 
+Time based play shows waiting orders, submitted orders and the latest delivered
+fuel batch beside the board. Standard-mapped controllers can start from the
+ready screen, inspect channels with the D-pad, queue fuel with the bottom face
+button, change the map with the shoulder buttons and pause with Start.
+
 ## Next work
 
 - Gather human feedback on channel selection, the details tabs and day results.

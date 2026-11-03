@@ -86,15 +86,19 @@ export class ArcadeMap {
     }
     if (this.locked || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
     event.preventDefault();
+    this.moveSelection(event.key);
+  };
+  moveSelection(direction: string): void {
+    if (this.locked) return;
     const current = this.snapshot.core.channels.find(c => c.channelIndex === this.selected);
     if (!current) return;
-    const horizontal = event.key === "ArrowLeft" || event.key === "ArrowRight";
-    const sign = event.key === "ArrowLeft" || event.key === "ArrowUp" ? -1 : 1;
+    const horizontal = direction === "ArrowLeft" || direction === "ArrowRight";
+    const sign = direction === "ArrowLeft" || direction === "ArrowUp" ? -1 : 1;
     const candidates = this.snapshot.core.channels.filter(c => horizontal ? c.gridRow === current.gridRow && (c.gridColumn - current.gridColumn) * sign > 0
       : c.gridColumn === current.gridColumn && (c.gridRow - current.gridRow) * sign > 0);
     candidates.sort((a, b) => horizontal ? Math.abs(a.gridColumn - current.gridColumn) - Math.abs(b.gridColumn - current.gridColumn)
       : Math.abs(a.gridRow - current.gridRow) - Math.abs(b.gridRow - current.gridRow));
     if (candidates[0]) { this.select(candidates[0].channelIndex); this.cells.get(candidates[0].channelIndex)?.focus(); }
-  };
+  }
   destroy(): void { this.frame.destroy(); this.tooltip.destroy(); this.element.removeEventListener("click", this.onClick); this.element.removeEventListener("dblclick", this.onDoubleClick); this.element.removeEventListener("keydown", this.onKey); }
 }

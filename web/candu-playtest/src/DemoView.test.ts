@@ -99,6 +99,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(cell.disabled).toBe(false);
   expect(cell.textContent).toBe(text); // No fabricated power response while solving.
   expect(cell.dataset.planned).toBe("true");
+  expect(view.element.querySelector("[data-fuel-queue]")?.textContent).toBe("0 waiting · 2 submitted");
   expect(view.element.querySelector("dialog")).toBeNull();
   expect(view.element.querySelector("[data-live]")?.textContent).toBe("Live power");
   expect(view.element.querySelectorAll("[data-zone]")).toHaveLength(14);
@@ -123,5 +124,44 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
     mode.value = value; mode.dispatchEvent(new Event("change", { bubbles: true }));
     expect(view.element.querySelector('.arcade-map')?.getAttribute('data-map-mode')).toBe(value);
     expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "5,000 kW" : value === "paired-zones" ? "left half = End A" : value === "ripple" ? "Ripple:" : "Burnup bands:");
+  }
+});
+
+it("routes standard controller presses through the same map, fuel, and pause controls", async () => {
+  vi.useFakeTimers();
+  const hasFocus = vi.spyOn(document, "hasFocus").mockReturnValue(true);
+  const buttons = Array.from({ length: 16 }, () => ({ pressed: false, touched: false, value: 0 }));
+  vi.stubGlobal("navigator", { getGamepads: () => [
+    { index: 0, connected: true, mapping: "standard", buttons },
+  ] });
+  try {
+    const snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo" };
+    vi.mocked(createCanduPlaytestBridge).mockReturnValue({
+      status: { source: "wasm", title: "", detail: "", isWasmAvailable: true, capabilities: [] },
+      getSnapshot: () => snapshot, subscribe: () => () => {}, initializeMode: async () => snapshot, whenReady: async () => snapshot,
+      dispatch: vi.fn(() => new Promise<CanduCommandResponse>(() => {})),
+    });
+    view = new DemoView(document.body, 1001, vi.fn());
+    await vi.advanceTimersByTimeAsync(40);
+    buttons[9].pressed = true;
+    await vi.advanceTimersByTimeAsync(40);
+    expect(view.element.dataset.running).toBe("true");
+    expect(view.element.querySelector("[data-fuel-queue]")?.textContent).toBe("Queue empty");
+    view.element.querySelector<HTMLButtonElement>('[data-channel="210"]')!.click();
+    buttons[9].pressed = false;
+    buttons[15].pressed = true;
+    buttons[5].pressed = true;
+    await vi.advanceTimersByTimeAsync(40);
+    expect(view.element.querySelector('[data-channel="211"]')?.getAttribute("aria-pressed")).toBe("true");
+    expect(view.element.dataset.mapMode).toBe("ripple");
+    buttons[0].pressed = true;
+    await vi.advanceTimersByTimeAsync(40);
+    expect(view.element.querySelector('[data-channel="211"]')?.getAttribute("data-planned")).toBe("true");
+    buttons[9].pressed = true;
+    await vi.advanceTimersByTimeAsync(120);
+    expect(view.element.dataset.running).toBe("false");
+  } finally {
+    vi.unstubAllGlobals();
+    hasFocus.mockRestore();
   }
 });
