@@ -56,7 +56,7 @@ steps:
   explanation: '**Load the program entry.** A module script enables imports. Vite transforms `/src/main.ts` into the deployed JavaScript bundle. The closing tags finish the page; application construction proceeds in that module.'
 ```
 
-### main.ts constructs and connects the application
+### main.ts constructs the browser run
 
 The complete entry file follows. Its job is to give all views the same controller
 and to attach lifecycle listeners. A **subscription** is a callback registered to
@@ -64,37 +64,29 @@ receive later updates; it is not a one-time read of the current reactor.
 
 ```annotated-source
 path: web/candu-playtest/src/main.ts
-title: The complete browser composition root
+title: The launcher, run and update lifecycle
 language: typescript
-start: import { AppShell } from "./AppShell";
-end: '});
-
-  window.addEventListener("beforeunload", () => { updates.destroy(); player.destroy(); shell.destroy(); session.dispose(); }, { once: true });'
+start: import { DemoView } from "./DemoView";
+end: 'window.addEventListener("beforeunload", () => { updates.destroy(); closeGame(); }, { once: true });'
 steps:
-- through: import { createCanduPlaytestBridge } from "./bridge";
-  explanation: '**Import the building blocks.** `AppShell` owns the active view; the controller owns browser session coordination. Recovery, announcements, player controls and update handling are separate components. Imports identify dependencies; they do not create a reactor.'
-- through: '}), {}, "daily-turn");'
-  explanation: '**Construct one shared session.** The inner call creates the authoritative bridge with daily pacing. The controller wraps that bridge; `{}` supplies default controller options. The final `"daily-turn"` makes daily pacing a client requirement as well. Keeping one controller means switching views preserves the same run and draft.'
-- through: 'const announcements = liveRegion ? new SessionAnnouncements(liveRegion) : null;'
-  explanation: '**Locate the feedback targets.** `document.getElementById` can return `null`. The conditional expression constructs announcements only if the live-region element exists. Recovery is mounted on `document.body` so loading failures can be shown before a game view is ready.'
-- through: announcements?.update(update);
-  explanation: '**Subscribe to session changes.** Each callback updates recovery status and, when present, announcements. The `?.` operator skips the method call if `announcements` is `null`. The rest of the callback maintains diagnostics.'
-- through: statusMirror.dataset.fuelConsumed = String(snapshot.shift?.fuelConsumed ?? 0);
-  explanation: '**Publish machine-readable observations.** The guard checks that the diagnostic element exists. `snapshot` is the observation supplied by the controller. `dataset` writes `data-*` attributes; `String` converts numeric readings to attribute text. `??` supplies a fallback only for `null` or `undefined`. These assignments display state; they do not advance it.'
-- through: ': `${update.status.title}. ${update.status.detail}`;
-
-    }
-
-    });'
-  explanation: '**Choose the diagnostic message.** The ternary expression displays reactor measurements when WASM is available, otherwise the loading/error title and detail. Template strings insert readings; `toFixed(1)` formats score for display. The nested conditionals choose paused/running, unlimited/finite fuel and a response message. The braces close the guard and subscription callback.'
-- through: const updates = new GameUpdateView(session, () => player.saveBeforeUpdate());
-  explanation: '**Connect the views to that session.** The non-null assertion `!` tells TypeScript that `game-root` must exist. `() => shell.showStudio()` is a callback for navigation; `() => player.saveBeforeUpdate()` is a callback invoked later during updating. Neither callback runs merely because it is passed to a constructor.'
+- through: const root = document.getElementById("game-root")!;
+  explanation: '**Find the mount point and storage.** The non-null assertion records that the page provides `game-root`. `PlayerStore` persists player data, while the keys identify a saved run checkpoint in browser storage.'
+- through: launcher.innerHTML = `<div class="launcher-shell">
+  explanation: '**Build the launcher.** The launcher contains the time-based play action, a resume action and the optional starting seed. The reactor illustration is inserted into the page as presentation.'
+- through: function readCheckpoint(): { seed: number; id?: string } | undefined {
+  explanation: '**Read a saved run safely.** The function tolerates disabled or invalid session storage and accepts only a valid unsigned 32-bit seed. It returns no checkpoint when the saved data cannot be used.'
+- through: function showLauncher(): void {
+  explanation: '**Return to the launcher.** Closing the run releases its subscription and view, shows the launcher again and exposes Resume only when a checkpoint can be read.'
+- through: function openGame(coreSeed: number, id?: string, restored = false): void {
+  explanation: '**Open or restore a run.** A checkpoint ID loads saved run data from `PlayerStore`. `DemoView` owns the playable view; its subscription updates version information when the run changes.'
+- through: play.addEventListener("click", () => { if (seed.reportValidity()) openGame(Number(seed.value)); });
+  explanation: '**Handle launcher actions.** The seed is validated before starting a new run. Resume reads the saved seed and checkpoint ID, and page startup resumes automatically when a checkpoint exists.'
+- through: const updates = new GameUpdateView({
+  explanation: '**Connect update handling to the current run.** The adapter exposes the active snapshot and subscription, and checkpoints the run through persistent storage before an update is applied.'
 - through: void updates.initialize(import.meta.env.BASE_URL, import.meta.env.PROD);
-  explanation: '**Start update discovery.** Vite supplies the deployment base path and production flag. `initialize` is asynchronous; `void` explicitly discards its returned promise at this call site. Initialization of the UI can continue while update discovery runs.'
-- through: '});
-
-    window.addEventListener("beforeunload", () => { updates.destroy(); player.destroy(); shell.destroy(); session.dispose(); }, { once: true });'
-  explanation: '**Follow browser lifecycle events.** Visibility changes inform the scheduler when the tab is hidden or visible. Before unloading, cleanup destroys view resources and disposes the session/worker. `{ once: true }` makes that unload listener run at most once. Daily turns still advance only through a committed command.'
+  explanation: '**Start update discovery.** Vite supplies the deployment base path and production flag. Initialization runs asynchronously while the launcher or game remains available.'
+- through: window.addEventListener("beforeunload", () => { updates.destroy(); closeGame(); }, { once: true });
+  explanation: '**Clean up on page exit.** The listener runs once, stops update handling and releases the active game view and its subscription.'
 ```
 
 ## There are three entry points
