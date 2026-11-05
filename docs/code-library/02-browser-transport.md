@@ -49,11 +49,7 @@ steps:
 
     }'
   explanation: '**Release pending bookkeeping.** `finally` decrements counters even if dispatch threw. `Math.max` prevents negative counts. When the last foreground operation finishes, its label is cleared and scheduler suppression is released.'
-- through: 'this.syncScheduler();
-
-    this.emit();
-
-    }'
+- through: "this.syncScheduler();"
   explanation: '**Refresh lifecycle and controls.** Recompute scheduler activity and notify listeners after cleanup. The interface can now leave its waiting state. The enclosing dispatch method returns or rethrows the outcome selected above.'
 ```
 
@@ -75,9 +71,7 @@ steps:
 
     });'
   explanation: '**Append one operation.** `then(operation, operation)` schedules it after either resolution or rejection of the previous tail. Processing failures call `failReady` to mark the bridge unavailable, then remain rejected for this caller. `T` is the generic result type.'
-- through: 'return result;
-
-    }'
+- through: "return result;"
   explanation: '**Separate queue continuity from the result.** The stored queue tail catches rejection so the promise chain itself is reusable. The returned `result` still rejects; this catch does not declare a failed command successful or resend it.'
 ```
 
@@ -107,13 +101,7 @@ steps:
 
     });'
   explanation: '**Return the matching result.** The response carries the original request ID, JSON and measurements. The bridge resolves the promise registered for that ID.'
-- through: 'scope.postMessage({ type: "error", id: event.data.id, error: formatError(error) });
-
-    }
-
-    });
-
-    });'
+- through: "scope.postMessage({ type: \"error\", id: event.data.id, error: formatError(error) });"
   explanation: '**Return failure without breaking the queue.** Exceptions become an error message tied to the same ID. Because the catch finishes normally, this queue item resolves and later messages can be considered. Bridge lifecycle checks still determine whether the client remains usable.'
 ```
 
@@ -337,10 +325,7 @@ steps:
     explanation: '**Return progress if incomplete.** A null result produces a serialized progress object containing advanced and requested simulation seconds. The default completed flag remains false; JavaScript can yield and call again. This branch describes pending work, not an adopted intermediate observation.'
   - through: _pendingDay = null; _pendingDayCommand = null;
     explanation: '**Prepare exactly one final dispatch.** Retain the completed Game result and original command, then clear the pending-operation fields. The normal dispatcher will consume the prepared result rather than execute the day again.'
-  - through: |
-      finally { _preparedDayResult = null; }
-      }
-      }
+  - through: "finally { _preparedDayResult = null; }"
     explanation: '**Use the shared protocol response path, then clear temporary state.** Dispatch performs ordinary response mapping, sequence and replay processing. The wrapper marks the returned response completed. The finally block clears the prepared result even if response construction throws; the closing braces release the lock and end the method.'
 ```
 

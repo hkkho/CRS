@@ -164,9 +164,7 @@ steps:
   explanation: '**Name the movement and its ends.** The enum becomes a stable wire/display ID. `towardB` controls the ternary expressions: movement toward B enters at A and exits at B; movement toward A does the reverse.'
 - through: 'DischargedPositions = Array.AsReadOnly(Enumerable.Range(towardB ? 12 - shiftCount : 0, shiftCount).Select(i => (uint)i).ToArray());'
   explanation: '**Choose fresh and outgoing slots.** `Enumerable.Range(start, count)` constructs consecutive positions. Insertion uses the incoming end, discharge uses the outgoing end. The integer values become unsigned positions and read-only arrays so consumers share a fixed map.'
-- through: 'RetainedToPositions = Array.AsReadOnly(RetainedFromPositions.Select(i => towardB ? i + shiftCount : i - shiftCount).ToArray());
-
-    }'
+- through: "RetainedToPositions = Array.AsReadOnly(RetainedFromPositions.Select(i => towardB ? i + shiftCount : i - shiftCount).ToArray());"
   explanation: '**Map surviving bundle positions.** The remaining `12 - shiftCount` bundles move by exactly the shift length. Adding shifts toward B; subtracting shifts toward A. Identity follows the retained bundle even though its slot changes.'
 ```
 
@@ -262,9 +260,7 @@ steps:
 
     }'
   explanation: '**Retain or replace each bundle state.** A zero increment reuses the old value. Otherwise `WithEnergy` creates its updated energy/burnup state while preserving bundle identity. The conditional avoids unnecessary replacement for unchanged fuel.'
-- through: 'nextChannels[channelIndex] = target;
-
-    }'
+- through: "nextChannels[channelIndex] = target;"
   explanation: '**Store the completed replacement channel.** Once its twelve positions are valid, place the channel array in the new outer array. The following return wraps this inventory with unchanged stock and refuelling metadata.'
 ```
 
@@ -428,9 +424,11 @@ steps:
 
     }'
   explanation: '**Normalize the residual.** If both terms have zero scale, relative error is defined as zero. Otherwise divide worst absolute residual by the scale and require a finite result. This makes a relative tolerance meaningful across different source magnitudes.'
-- through: 'Array.Copy(candidate, solution, solution.Length);
+- through: |
+    return true;
+                }
 
-    }'
+                Array.Copy(candidate, solution, solution.Length);
   explanation: '**Accept convergence or continue.** Meeting either the absolute or relative policy tolerance copies the candidate into the output, clears the diagnostic and returns success. Otherwise copy it as the next starting guess and repeat. If the bounded loop exhausts, the following code reports nonconvergence rather than accepting an unconverged answer.'
 ```
 

@@ -48,11 +48,7 @@ steps:
   explanation: '**Expose a diagnostic target.** Smoke checks read this element and its data attributes. `aria-hidden="true"` prevents these frequent diagnostic updates from becoming screen-reader announcements.'
 - through: <div id="session-announcements" role="status" aria-live="polite" aria-atomic="true"></div>
   explanation: '**Create the accessible announcement region.** `polite` asks assistive technology to announce updates when convenient; `atomic` requests the whole message. This is separate from the hidden diagnostic target.'
-- through: '<script type="module" src="/src/main.ts"></script>
-
-    </body>
-
-    </html>'
+- through: '    <script type="module" src="/src/main.ts"></script>'
   explanation: '**Load the program entry.** A module script enables imports. Vite transforms `/src/main.ts` into the deployed JavaScript bundle. The closing tags finish the page; application construction proceeds in that module.'
 ```
 
@@ -229,11 +225,7 @@ steps:
   explanation: '**Check the actual API.** Loading a file successfully does not prove it exposed the required functions. `findWasmExports` validates the facade; a missing facade becomes an explicit startup failure.'
 - through: return wasmExports;
   explanation: '**Signal transport readiness.** The `ready` message means exported functions are available. Returning them resolves the promise used by queued requests. A reactor is created later by the initialization request.'
-- through: 'throw error;
-
-    }
-
-    }'
+- through: '    throw error;'
   explanation: '**Report and propagate failure.** The main thread receives a readable `load-error`. Rethrowing also rejects the export promise so queued requests cannot accidentally proceed with an unavailable runtime.'
 ```
 
