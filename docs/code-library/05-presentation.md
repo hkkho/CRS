@@ -92,7 +92,7 @@ steps:
 
     GameCorePresentationConstants.ChannelCount;'
   explanation: '**Scale the accepted power shape.** Amplitude is bounded to the supported range and multiplied into total shape power. Divide by the reference watts for the operating fraction and by channel count for mean channel power. These are derived readings, not new solves.'
-- through: "projection.ShapeNodePowerWatts[index] * physicalShapeScale;"
+- through: "            }"
   explanation: '**Aggregate node powers by channel.** Allocate one total per channel. Integer division by twelve maps the flat node index back to its channel; `+=` sums all twelve scaled bundle powers into that channel. The result stays in watts until a view formats it.'
 ```
 
@@ -116,7 +116,7 @@ steps:
   explanation: '**Read corresponding power and thermal flux.** Scale the node power by amplitude. Group 2 is the thermal neutron group. Post-increment advances the flat node cursor once per bundle, keeping fuel and numerical observations aligned.'
 - through: (GameCorePresentationConstants.BundlePositionCount - 1) - 1.0);
   explanation: '**Accumulate channel summaries.** Add burnup and thermal flux. The axial coordinate maps positions 0–11 to -1 through +1, so its flux-weighted moment describes which end has more thermal flux. It is a spatial observation, not fuel-flow direction.'
-- through: "bundle.StateVersion));"
+- through: "                }"
   explanation: '**Freeze the bundle reading.** Construct a snapshot with physical position, stable bundle ID, material ID, converted burnup, watts, insertion time and state version. These values let views label the bundle and inspect changes while ownership of accepted state remains in the shared simulation.'
 ```
 
@@ -171,7 +171,7 @@ steps:
   explanation: '**Record the observation and assemble the update.** History sees the same snapshot reference as the views. A supplied response is preferred; otherwise the most recent response provides context. History applies its own duplicate/boundary rules.'
 - through: this.lastEmittedSnapshot = this.snapshotValue;
   explanation: '**Distinguish a new snapshot from a status change.** Reference equality identifies whether the snapshot object changed. Loading, pending-state or visibility updates can therefore be labelled `status` even when the reactor observation is unchanged.'
-- through: "listener(update);"
+- through: "    }\n  }"
   explanation: '**Notify every subscriber.** The launcher, active view, announcements and other consumers receive the same update object. They render or record it; they do not each advance an independent reactor.'
 ```
 

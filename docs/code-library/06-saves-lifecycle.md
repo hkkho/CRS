@@ -63,7 +63,7 @@ steps:
   explanation: '**Make implicit reset choices explicit.** Copy the resulting seed and objective into the recorded command. A later replay in a new worker must reproduce this run, rather than draw another seed. The spread includes daily pacing when appropriate.'
 - through: if (this.commands.length >= MAX_SAVE_COMMANDS) { this.invalid = true; return; }
   explanation: '**Protect the supported replay contract.** Geometry modification invalidates standard saves, and the command limit bounds log growth. Reaching the limit marks the journal invalid and stops appending.'
-- through: "this.digest = response.stateDigest ?? '';"
+- through: "  }"
   explanation: '**Store a stable replay record.** `structuredClone` prevents later UI changes from mutating the recorded command. Retain acceptance and response representation, then remember the latest state digest. Capture later requires a verified, nonempty digest.'
 ```
 
@@ -189,7 +189,7 @@ steps:
   explanation: '**Replace the bridge after verification.** Unsubscribe and dispose the old worker, transfer candidate ownership, then subscribe to the replacement. Setting `candidate = null` prevents the cleanup block from disposing the newly adopted live bridge.'
 - through: this.lastResponse = paused; this.lastError = null; this.presentation.clear(); this.history.clear();
   explanation: '**Restore local session context.** Copy the draft, adopt the command journal and record the final pause. Reset old-run feedback and observations so the interface starts from the verified restored state.'
-- through: "candidate?.dispose?.(); this.restoring = false; this.modePending = false; this.syncScheduler(); this.emit();"
+- through: "    }\n  }"
   explanation: '**Clean up on both success and failure.** An unadopted candidate is disposed. Restore flags are cleared and subscribers are notified even when a check throws. Failed replay or endpoint verification occurs before bridge replacement, preserving the live reactor.'
 ```
 

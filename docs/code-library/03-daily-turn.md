@@ -72,7 +72,7 @@ steps:
   explanation: '**Canonicalize order and check eligibility.** Sorting makes execution independent of click order. The loop asks the shared session whether each channel can be fuelled; a nonempty reason rejects the plan.'
 - through: if (_completedDays == uint.MaxValue) return Rejected("GameSession.Day.Count.Overflow", "The day count cannot advance.");
   explanation: '**Check stock and counter capacity.** Each selected channel requires eight fresh bundles. Finite stock must cover the entire plan. The overflow guard prevents wrapping the unsigned day counter back to zero.'
-- through: "return null;"
+- through: "        }"
   explanation: '**Allow preparation to proceed.** Returning `null` means all plan checks passed. It does not mean the fuel movements or physics solve have already succeeded.'
 ```
 
@@ -147,7 +147,7 @@ steps:
 
     }'
   explanation: '**Execute and retain each move.** The active Game method enforces actual channel flow, so the supplied direction is a placeholder. A numerical or validation rejection returns a failed operation without adopting the candidate. Successful moves retain their bundle movement report.'
-- through: "return new DailyTurnOperation(this, candidate, ordered, movements);"
+- through: "        }"
   explanation: '**Package the provisional day.** Clear the internal execution flag and return an operation containing owner, candidate, plan and completed fuel movements. This method has not adopted replacement state into the live owner.'
 ```
 
@@ -245,7 +245,7 @@ steps:
   explanation: '**Accumulate operating points.** The score policy compares the accepted power shape, scaled by amplitude, to fixed channel references. The rate is integrated over this same duration; this call does not award a direct fuel-move bonus.'
 - through: transaction.PowerProjectionVersion = version.Value;
   explanation: '**Advance control time and observation identity.** The RRS timestamp moves to the interval end, and the projection version increments with overflow validation. These metadata changes are still provisional.'
-- through: "return ContractValidationResult<PracticeCandidate>.Valid(transaction.Freeze(advance, amplitude));"
+- through: "        }"
   explanation: '**Solve the day boundary and freeze the result.** Updated burnup and poison feed the scheduled equilibrium/RRS calculation. Only a valid solution produces an immutable `PracticeCandidate`. The caller can then commit it to the detached session and eventually adopt the full day.'
 ```
 
@@ -294,7 +294,7 @@ steps:
   explanation: '**Commit inside the detached session.** Commit its spatial projection and clock, checking both results, then apply the remaining candidate values. These writes affect `next`; the live owner has not yet adopted them.'
 - through: live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0);
   explanation: '**Count completed time and build the report.** A full 86400-second advance increments completed days; an early fuel-move loss does not. The report receives final candidate observations and original totals so it can describe differences. Dividing joules by 3.6 billion expresses thermal energy in MWh.'
-- through: "\"Day \" + live._completedDays + \" complete. \" + movements.Count + \" channels refuelled; choose the next day's plan.\");"
+- through: "            }"
   explanation: '**Adopt once and return an accepted outcome.** `AdoptDailyCandidate` replaces the owner fields with the completed candidate. An accepted result can describe a physical loss: acceptance means the transaction committed, while `RunEndReason` describes its operating outcome.'
 ```
 

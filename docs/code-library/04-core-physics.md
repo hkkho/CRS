@@ -164,7 +164,7 @@ steps:
   explanation: '**Name the movement and its ends.** The enum becomes a stable wire/display ID. `towardB` controls the ternary expressions: movement toward B enters at A and exits at B; movement toward A does the reverse.'
 - through: 'DischargedPositions = Array.AsReadOnly(Enumerable.Range(towardB ? 12 - shiftCount : 0, shiftCount).Select(i => (uint)i).ToArray());'
   explanation: '**Choose fresh and outgoing slots.** `Enumerable.Range(start, count)` constructs consecutive positions. Insertion uses the incoming end, discharge uses the outgoing end. The integer values become unsigned positions and read-only arrays so consumers share a fixed map.'
-- through: "RetainedToPositions = Array.AsReadOnly(RetainedFromPositions.Select(i => towardB ? i + shiftCount : i - shiftCount).ToArray());"
+- through: "        }"
   explanation: '**Map surviving bundle positions.** The remaining `12 - shiftCount` bundles move by exactly the shift length. Adding shifts toward B; subtracting shifts toward A. Identity follows the retained bundle even though its slot changes.'
 ```
 
@@ -260,7 +260,7 @@ steps:
 
     }'
   explanation: '**Retain or replace each bundle state.** A zero increment reuses the old value. Otherwise `WithEnergy` creates its updated energy/burnup state while preserving bundle identity. The conditional avoids unnecessary replacement for unchanged fuel.'
-- through: "nextChannels[channelIndex] = target;"
+- through: "            }"
   explanation: '**Store the completed replacement channel.** Once its twelve positions are valid, place the channel array in the new outer array. The following return wraps this inventory with unchanged stock and refuelling metadata.'
 ```
 
@@ -395,41 +395,50 @@ end: 'Array.Copy(candidate, solution, solution.Length);
   }'
 steps:
 - through: double next = solution[nodeIndex] + correction;
-  explanation: '**Form a Jacobi correction.** The outer loop is bounded by numerical policy. For each node, subtract the current operator result from the required source, divide by the diagonal coefficient and add that correction to the current flux. Each node reads the previous iteration''s `applied` values.'
+  explanation: '**Form a Jacobi correction.** The outer loop is bounded by numerical policy. For each node, subtract the current
+    operator result from the required source, divide by the diagonal coefficient and add that correction to the current flux.
+    Each node reads the previous iteration''s `applied` values.'
 - through: '"The deterministic Jacobi update produced a non-finite flux.");
 
     return false;
 
     }'
-  explanation: '**Reject numerical overflow or invalid arithmetic.** Both the correction and proposed flux must be finite. The diagnostic identifies the affected node; returning `false` prevents this inner result from being treated as a converged solution.'
+  explanation: '**Reject numerical overflow or invalid arithmetic.** Both the correction and proposed flux must be finite.
+    The diagnostic identifies the affected node; returning `false` prevents this inner result from being treated as a converged
+    solution.'
 - through: 'candidate[nodeIndex] = next;
 
     }'
-  explanation: '**Enforce nonnegative neutron flux.** A negative proposal is invalid. Valid proposals go into a separate `candidate` buffer, so later nodes do not accidentally use partially updated values from this same iteration.'
+  explanation: '**Enforce nonnegative neutron flux.** A negative proposal is invalid. Valid proposals go into a separate `candidate`
+    buffer, so later nodes do not accidentally use partially updated values from this same iteration.'
 - through: 'diagnostic = operatorDiagnostic;
 
     return false;
 
     }'
-  explanation: '**Evaluate the candidate with the spatial operator.** `TryApply` writes `A × candidate` into `applied`. If that calculation fails, its diagnostic is propagated. This reevaluation is needed to measure how well the proposed flux satisfies the equation.'
+  explanation: '**Evaluate the candidate with the spatial operator.** `TryApply` writes `A × candidate` into `applied`. If
+    that calculation fails, its diagnostic is propagated. This reevaluation is needed to measure how well the proposed flux
+    satisfies the equation.'
 - through: double rowScale = Math.Abs(applied[nodeIndex]) + Math.Abs(source[nodeIndex]);
-  explanation: '**Measure equation mismatch.** The residual at a node is `applied - source`. Absolute difference measures error magnitude; row scale measures the magnitudes of the compared terms. Both are evaluated over every spatial node.'
+  explanation: '**Measure equation mismatch.** The residual at a node is `applied - source`. Absolute difference measures
+    error magnitude; row scale measures the magnitudes of the compared terms. Both are evaluated over every spatial node.'
 - through: 'scale = Math.Max(scale, rowScale);
 
     }'
-  explanation: '**Validate and collect the worst mismatch.** Reject non-finite residual calculations. Taking maxima yields an infinity-norm error and a scale over all nodes, preventing a small average from hiding a large local mismatch.'
+  explanation: '**Validate and collect the worst mismatch.** Reject non-finite residual calculations. Taking maxima yields
+    an infinity-norm error and a scale over all nodes, preventing a small average from hiding a large local mismatch.'
 - through: '"The deterministic inner relative residual became non-finite.");
 
     return false;
 
     }'
-  explanation: '**Normalize the residual.** If both terms have zero scale, relative error is defined as zero. Otherwise divide worst absolute residual by the scale and require a finite result. This makes a relative tolerance meaningful across different source magnitudes.'
-- through: |
-    return true;
-                }
-
-                Array.Copy(candidate, solution, solution.Length);
-  explanation: '**Accept convergence or continue.** Meeting either the absolute or relative policy tolerance copies the candidate into the output, clears the diagnostic and returns success. Otherwise copy it as the next starting guess and repeat. If the bounded loop exhausts, the following code reports nonconvergence rather than accepting an unconverged answer.'
+  explanation: '**Normalize the residual.** If both terms have zero scale, relative error is defined as zero. Otherwise divide
+    worst absolute residual by the scale and require a finite result. This makes a relative tolerance meaningful across different
+    source magnitudes.'
+- through: "Array.Copy(candidate, solution, solution.Length);\n            }"
+  explanation: '**Accept convergence or continue.** Meeting either the absolute or relative policy tolerance copies the candidate
+    into the output, clears the diagnostic and returns success. Otherwise copy it as the next starting guess and repeat. If
+    the bounded loop exhausts, the following code reports nonconvergence rather than accepting an unconverged answer.'
 ```
 
 ## 4.6 Poison follows bundle identity
