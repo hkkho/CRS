@@ -9,7 +9,7 @@ namespace ReactorSim.Core
     /// half-filled liquid zones, and pack-bound nominal adjusters. Not a converged plant model.</summary>
     public sealed class PracticeChannelPowerReference
     {
-        public const string ModelId = "cycle190-time-average-21-adjusters-radial-circle-half-zones-v6";
+        public const string ModelId = "cycle190-time-average-21-adjusters-diffusion-half-zones-v7";
         private PracticeChannelPowerReference(FullCoreDiffusionSolveResultV1 solve)
         {
             NodePowerWatts = Array.AsReadOnly(solve.NodePowerWatts.ToArray());

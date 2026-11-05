@@ -1,6 +1,6 @@
 # Circular radial extrapolation, v9
 
-The active pack is `candu6-two-group-diffusion-v1-radial-circle-v9`.
+The v9 pack was `candu6-two-group-diffusion-v1-radial-circle-v9`.
 The shared Core loss operator now extrapolates each exposed X/Y face to zero
 flux on one concentric circle. Previously every exposed radial face used the
 same small fitted leakage conductance, giving an almost flat radial reference.

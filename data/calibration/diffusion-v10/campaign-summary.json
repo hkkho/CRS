@@ -1,0 +1,74 @@
+[
+  {
+    "seed": 1001,
+    "pack": "candu6-two-group-diffusion-v1-radial-circle-v9",
+    "policy": "oldest-lzc",
+    "days": 100,
+    "status": "completed",
+    "freshBundles": 1816,
+    "meanDischargeBurnupMwdKg": 6.159627511327621,
+    "score": 2304.4332558234064,
+    "thermalEnergyMwh": 4953600.000000001,
+    "lzcRangePercent": [
+      43.37070173780044,
+      49.98535520376418
+    ],
+    "peakEndpointChannelKw": 6859.5320498963365,
+    "peakEndpointBundleKw": 853.6662694167275,
+    "maxAbsTiltPercent": 0.5454228596701644
+  },
+  {
+    "seed": 1001,
+    "pack": "candu6-two-group-diffusion-v1-diffusion-v10",
+    "policy": "oldest-lzc",
+    "days": 100,
+    "status": "completed",
+    "freshBundles": 1736,
+    "meanDischargeBurnupMwdKg": 6.183315749625306,
+    "score": 2150.0051670879066,
+    "thermalEnergyMwh": 4953600.000000001,
+    "lzcRangePercent": [
+      44.01133329948905,
+      50.13136730489525
+    ],
+    "peakEndpointChannelKw": 6623.874244240642,
+    "peakEndpointBundleKw": 844.0599992963176,
+    "maxAbsTiltPercent": 1.501731890173747
+  },
+  {
+    "seed": 1002,
+    "pack": "candu6-two-group-diffusion-v1-diffusion-v10",
+    "policy": "oldest-lzc",
+    "days": 100,
+    "status": "completed",
+    "freshBundles": 1728,
+    "meanDischargeBurnupMwdKg": 6.179633667843078,
+    "score": 2168.6118924220023,
+    "thermalEnergyMwh": 4953599.999999999,
+    "lzcRangePercent": [
+      43.894019705939385,
+      50.97567837220115
+    ],
+    "peakEndpointChannelKw": 6760.440617544991,
+    "peakEndpointBundleKw": 852.3019228890417,
+    "maxAbsTiltPercent": 0.5925038016114883
+  },
+  {
+    "seed": 1003,
+    "pack": "candu6-two-group-diffusion-v1-diffusion-v10",
+    "policy": "oldest-lzc",
+    "days": 100,
+    "status": "completed",
+    "freshBundles": 1736,
+    "meanDischargeBurnupMwdKg": 6.180539360852523,
+    "score": 2130.2771982800186,
+    "thermalEnergyMwh": 4953600.000000002,
+    "lzcRangePercent": [
+      43.9976196534068,
+      50.07591813773524
+    ],
+    "peakEndpointChannelKw": 6664.864407590432,
+    "peakEndpointBundleKw": 832.7365539296871,
+    "maxAbsTiltPercent": 0.6079323986362951
+  }
+]

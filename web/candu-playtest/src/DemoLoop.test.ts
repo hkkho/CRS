@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { DemoLoop } from "./DemoLoop";
 import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import type { CanduCommand, CanduCommandResponse, CanduSnapshot } from "./protocol";
+import type { RunSave } from "./runSave";
 import { createSnapshot, createShift } from "./testSnapshot";
 import { channelWatts } from "./studio/powerReadings";
 
@@ -219,4 +220,22 @@ it("checkpoints a fuel order queued before the first time step", async () => {
   expect(write).toHaveBeenCalledWith(loop.snapshot.shift!.seed, expect.objectContaining({
     seconds: 0, draftChannels: [210], stateDigest: "test",
   }));
+});
+
+it("retains a v9 checkpoint and skips replay on v10 physics", async () => {
+  const h = setup();
+  loop.fuel(210);
+  const write = vi.fn<(seed: number, save?: RunSave) => Promise<void>>();
+  const checkpoint = loop.checkpoint(write);
+  h.complete();
+  (await checkpoint)();
+  const oldSave = { ...write.mock.calls[0][1]!, dataPackId: "candu6-two-group-diffusion-v1-radial-circle-v9" };
+  const initial = { ...h.bridge.getSnapshot(), dataPackId: "candu6-two-group-diffusion-v1-diffusion-v10" };
+  const bridge = { ...h.bridge, getSnapshot: () => initial, whenReady: async () => initial, dispatch: vi.fn() };
+  loop.destroy();
+  loop = new DemoLoop(bridge, () => Date.now(), true, undefined, Promise.resolve(oldSave));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(loop.message).toContain("different reactor model");
+  expect(loop.message).toContain("checkpoint is still stored");
+  expect(bridge.dispatch).not.toHaveBeenCalled();
 });

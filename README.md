@@ -56,13 +56,11 @@ The live charts show channel power and average liquid-zone level. The
 fourteen zone readouts show individual fill and available control room. The
 loaded build and reactor model are shown on screen.
 
-The current [v9 circular radial boundary](docs/physics/radial-circle-v9.md) lowers
-the outer-rim time-average target to about 4,200 kW and raises the middle to about
-6,400 kW while retaining 2,064 MW thermal. The axial boundary still uses zero incoming
-partial current at both reactor ends, with refitted criticality and device worths.
-End-bundle power falls sharply; daily operation still uses one large 24-hour step.
-The [100-day before/after verification](benchmarks/radial-circle-v9-2026-10-30/README.md)
-records nearly unchanged fuel demand, discharge burnup, score and control range.
+The [v10 physics pack](data/calibration/diffusion-v10/README.md) uses effective
+diffusion coefficients of 1.5 cm fast and 0.75 cm thermal. It retains the
+circular radial boundary and extrapolates axial flux to zero 0.22 m beyond
+each end face. The fuel-cycle reference remains 190 full-power days between
+channel visits at 2,064 MW thermal.
 The physics packs are project-authored approximations for plausible gameplay.
 Formal source validation is not required to develop or play the game.
 The [literature-guided fuel calibration](docs/physics/literature-geometry-v4.md) uses

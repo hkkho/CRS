@@ -325,7 +325,8 @@ public sealed class PracticeLiquidZoneRrsTests
             solver, fuelled.EnumerateBundles(), settled.State, 0.0, backgroundOverlay: fuelPoison.Overlay));
 
         Assert.True(Math.Abs(regulated.Projection.RelativeReactivity) < Math.Abs(retained.RelativeReactivity));
-        Assert.InRange(Math.Abs(regulated.Projection.RelativeReactivity), 0, 2.0e-5);
+        Assert.InRange(Math.Abs(regulated.Projection.RelativeReactivity), 0,
+            PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
         Assert.True(regulated.State.AverageFillFraction > settled.State.AverageFillFraction);
         Assert.Equal(0, regulated.State.SimulationTimeSeconds);
     }

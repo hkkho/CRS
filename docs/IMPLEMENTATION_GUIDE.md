@@ -101,12 +101,12 @@ sandbox provenance and exclude standard challenge rewards until reset.
 
 ## Physics and presentation
 
-V9 uses a circular extrapolated zero-flux boundary in X/Y and retains the v8
-zero incoming partial current at axial ends with unchanged Marshak conductance.
-Reflecting boundaries retain zero conductance.
-Criticality, 17/7 mk device refits, references and save identity are documented in
-[radial v9](physics/radial-circle-v9.md). Preserve [active equations](physics/active-two-group-solver.md)
-and useful [physics knowledge](maintenance/knowledge-library.md). Packs are authored
+V10 uses a circular extrapolated zero-flux boundary in X/Y and a symmetric
+axial zero-flux extrapolation of 0.22 m beyond each end face. Reflecting
+boundaries retain zero conductance. Criticality, the 17/7 mk device fits and
+fuel-cycle checks are documented in the [diffusion v10 calibration](../data/calibration/diffusion-v10/README.md).
+Preserve [active equations](physics/active-two-group-solver.md) and useful
+[physics knowledge](maintenance/knowledge-library.md). Packs are authored
 approximations for plausible gameplay, not validated plant data.
 
 Poison follows bundle identity. Fresh fuel enters with zero iodine/xenon; retained

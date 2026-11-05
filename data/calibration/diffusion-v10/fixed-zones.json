@@ -1,0 +1,128 @@
+[
+  {
+    "seed": 1001,
+    "pack": "baseline-pack",
+    "channel": 75,
+    "halfFillK": 0.9999999936268267,
+    "fullFillK": 0.9966228870828177,
+    "zoneWorthMk": 6.999999433451919,
+    "fuelLossMkPerDay": 0.4561759429730194,
+    "coreMw": 2064.0000000000023,
+    "minChannelKw": 4013.9734611982594,
+    "peakChannelKw": 6628.710363244349,
+    "peakBundleKw": 836.2583752878486,
+    "fuelledPercent": 9.602421921820792,
+    "adjacent": [
+      1.3193564270475244,
+      1.2123354833148303,
+      1.2292713060838123,
+      1.1270841418911548
+    ],
+    "secondRing": 0.967997666319198
+  },
+  {
+    "seed": 1001,
+    "pack": "candidate",
+    "channel": 75,
+    "halfFillK": 1.055392227192752,
+    "fullFillK": 1.0519785956291337,
+    "zoneWorthMk": 6.411119667232651,
+    "fuelLossMkPerDay": 0.4308306807018908,
+    "coreMw": 2063.999999999993,
+    "minChannelKw": 4326.738709581957,
+    "peakChannelKw": 6486.928267621671,
+    "peakBundleKw": 881.8110479243269,
+    "fuelledPercent": 13.425751016087961,
+    "adjacent": [
+      3.6790950826286917,
+      3.5018982147340783,
+      3.5272544675808426,
+      3.3612278981802968
+    ],
+    "secondRing": 2.7441471265264115
+  },
+  {
+    "seed": 1002,
+    "pack": "baseline-pack",
+    "channel": 39,
+    "halfFillK": 1.000099661318503,
+    "fullFillK": 0.9967352775627908,
+    "zoneWorthMk": 6.988475442651328,
+    "fuelLossMkPerDay": 0.44697554718519167,
+    "coreMw": 2064.000000000001,
+    "minChannelKw": 4036.157512140048,
+    "peakChannelKw": 6607.7000269632845,
+    "peakBundleKw": 831.1212532079013,
+    "fuelledPercent": 9.971002784722716,
+    "adjacent": [
+      1.6901660426507759,
+      1.5363315240461306,
+      1.5179000408296561,
+      1.3891014241934174
+    ],
+    "secondRing": 1.2780020978969686
+  },
+  {
+    "seed": 1002,
+    "pack": "candidate",
+    "channel": 39,
+    "halfFillK": 1.0554767813477344,
+    "fullFillK": 1.0521069268181023,
+    "zoneWorthMk": 6.382795033440692,
+    "fuelLossMkPerDay": 0.42267319224498917,
+    "coreMw": 2064.000000000008,
+    "minChannelKw": 4259.989475208667,
+    "peakChannelKw": 6279.910737887152,
+    "peakBundleKw": 849.9214909368732,
+    "fuelledPercent": 15.00671884728504,
+    "adjacent": [
+      5.238085039155083,
+      4.883143142747159,
+      4.835511146358007,
+      4.567744756470504
+    ],
+    "secondRing": 4.0646727665293785
+  },
+  {
+    "seed": 1003,
+    "pack": "baseline-pack",
+    "channel": 10,
+    "halfFillK": 0.9999588631482749,
+    "fullFillK": 0.9965757309662143,
+    "zoneWorthMk": 7.004424932722909,
+    "fuelLossMkPerDay": 0.4364162018854875,
+    "coreMw": 2064,
+    "minChannelKw": 4064.8329969266624,
+    "peakChannelKw": 6759.833996668526,
+    "peakBundleKw": 850.24939827319,
+    "fuelledPercent": 10.335094057061433,
+    "adjacent": [
+      2.1985534544560092,
+      1.8843822207960326,
+      1.799061636999011,
+      1.6218676301188006
+    ],
+    "secondRing": 1.544702134748748
+  },
+  {
+    "seed": 1003,
+    "pack": "candidate",
+    "channel": 10,
+    "halfFillK": 1.055412679292535,
+    "fullFillK": 1.0519996664125422,
+    "zoneWorthMk": 6.4063917722334,
+    "fuelLossMkPerDay": 0.41903160016565355,
+    "coreMw": 2064.0000000000045,
+    "minChannelKw": 4296.551484690034,
+    "peakChannelKw": 6532.343629754183,
+    "peakBundleKw": 882.3239979927621,
+    "fuelledPercent": 16.37708385215455,
+    "adjacent": [
+      7.0750330199397915,
+      6.196023356408209,
+      5.90880434840324,
+      5.471811417203654
+    ],
+    "secondRing": 5.126797367697754
+  }
+]

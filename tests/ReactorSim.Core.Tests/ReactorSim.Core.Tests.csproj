@@ -25,7 +25,8 @@
 
   <ItemGroup>
     <None Include="..\..\data\calibration\radial-circle-v9\source-pack.json" Link="TestData\data\calibration\radial-circle-v9\source-pack.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <None Include="..\..\data\calibration\radial-circle-v9\fit\fit.json" Link="TestData\data\calibration\radial-circle-v9\fit\fit.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\data\calibration\radial-circle-v9\fit\proposal.json" Link="TestData\data\calibration\radial-circle-v9\fit\proposal.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\data\calibration\diffusion-v10\fit.json" Link="TestData\data\calibration\diffusion-v10\fit.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="..\..\data\packs\candu6-two-group-diffusion-pack-v1.json" Link="TestData\data\packs\candu6-two-group-diffusion-pack-v1.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

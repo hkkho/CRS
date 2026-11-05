@@ -81,9 +81,11 @@ export class GameUpdateView {
   private render(): void {
     const snapshot = this.session.snapshot;
     const pack = snapshot?.dataPackId ?? "";
-    const physics = pack.includes("radial-circle-v9")
-      ? "Circular radial boundary · Axial incoming current = 0 · v9"
-      : pack.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : pack;
+    const physics = pack.includes("diffusion-v10")
+      ? "Reduced diffusion · Axial extrapolation · v10"
+      : pack.includes("radial-circle-v9")
+        ? "Circular radial boundary · Axial incoming current = 0 · v9"
+        : pack.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : pack;
     const mode = snapshot?.pacingMode === "daily-turn" ? "Daily turns" : "Time based";
     const label = [`Build ${this.build}`, mode, physics].filter(Boolean).join(" · ");
     if (this.version.textContent !== label) this.version.textContent = label;

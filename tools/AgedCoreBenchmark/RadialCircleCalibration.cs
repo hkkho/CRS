@@ -5,14 +5,30 @@ using ReactorSim.Core;
 internal static class RadialCircleCalibration
 {
     private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true };
-    public static void Run(string sourcePath, string directory, double distance, bool probe = false)
+    public static void Run(string sourcePath, string directory, double distance, bool probe = false, double? axialExtrapolation = null)
     {
         Directory.CreateDirectory(directory);
         var source = JsonNode.Parse(File.ReadAllText(sourcePath))!;
-        if (source["data_pack_version"]!.GetValue<string>() != "candu6-two-group-diffusion-v1-axial-marshak-v8")
-            throw new ArgumentException("Supply the archived v8 pack.", nameof(sourcePath));
+        bool fitDiffusion = axialExtrapolation.HasValue;
+        string sourceVersion = fitDiffusion
+            ? "candu6-two-group-diffusion-v1-diffusion-v10"
+            : "candu6-two-group-diffusion-v1-axial-marshak-v8";
+        if (source["data_pack_version"]!.GetValue<string>() != sourceVersion)
+            throw new ArgumentException($"Supply the {sourceVersion} source pack.", nameof(sourcePath));
         var proposal = source.DeepClone();
-        proposal["data_pack_version"] = "candu6-two-group-diffusion-v1-radial-circle-v9";
+        if (fitDiffusion)
+        {
+            proposal["geometry"]!["axial_boundary"] = new JsonObject
+            {
+                ["condition_id"] = "extrapolated-zero-flux-v1",
+                ["cell_length_m"] = source["geometry"]!["axial_boundary"]!["cell_length_m"]!.GetValue<double>(),
+                ["extrapolation_distance_m"] = axialExtrapolation!.Value
+            };
+        }
+        else
+        {
+            proposal["data_pack_version"] = "candu6-two-group-diffusion-v1-radial-circle-v9";
+        }
         proposal["geometry"]!["radial_boundary"] = new JsonObject
         {
             ["condition_id"] = CircularRadialBoundary.ConditionId,
@@ -44,7 +60,7 @@ internal static class RadialCircleCalibration
         double rod = source["adjusters"]!["inner_absorption_group2_per_m"]!.GetValue<double>();
         // Archived v8 starting strength makes the offline fit independent of
         // whichever calibrated pack is currently embedded in this checkout.
-        double water = 0.05934480366805991;
+        double water = fitDiffusion ? 0.05711305057785501 : 0.05934480366805991;
         PracticeXenonStateV1? poison = null;
         var trials = new List<object>();
         JsonNode Candidate(bool tight, bool noRods = false)
@@ -129,12 +145,14 @@ internal static class RadialCircleCalibration
         if (Math.Abs(finalK - 1) > 5e-5 || Math.Abs(finalRodWorth - 17) > .03 || Math.Abs(finalZoneWorth - 7) > .03)
             throw new InvalidOperationException("Independent tight circular calibration failed.");
         proposal = Candidate(false);
-        string note = $"; circular radial v9: physical radius 3.35m plus authored effective reflector distance {distance:R}m; C_face=C_xy*pitch/distance-to-circle; axial Marshak and interior coupling unchanged; seed1001 half-fill critical production normalization {production:R}; unchanged fission heating and burnup curve; frozen equilibrium Xe device worths refit to 17mk/7mk";
+        string note = fitDiffusion
+            ? $"; diffusion v10: axial zero flux extrapolated {axialExtrapolation:R} m beyond each end face; radial extrapolation {distance:R} m; seed1001 half-fill critical production normalization {production:R}; unchanged fission heating and burnup knots; frozen equilibrium Xe device worths refit to 17mk/7mk"
+            : $"; circular radial v9: physical radius 3.35m plus authored effective reflector distance {distance:R}m; C_face=C_xy*pitch/distance-to-circle; axial Marshak and interior coupling unchanged; seed1001 half-fill critical production normalization {production:R}; unchanged fission heating and burnup curve; frozen equilibrium Xe device worths refit to 17mk/7mk";
         proposal["source_provenance"] = source["source_provenance"]!.GetValue<string>() + note;
-        proposal["source_toolchain"] = source["source_toolchain"]!.GetValue<string>() + "; tools/AgedCoreBenchmark --fit-radial-circle";
+        proposal["source_toolchain"] = source["source_toolchain"]!.GetValue<string>() + (fitDiffusion ? "; tools/AgedCoreBenchmark --fit-diffusion" : "; tools/AgedCoreBenchmark --fit-radial-circle");
         foreach (var table in proposal["coefficient_tables"]!.AsArray())
         {
-            table!["data_version"] = table["data_version"]!.GetValue<string>() + "-radial-circle-v9";
+            table!["data_version"] = table["data_version"]!.GetValue<string>() + (fitDiffusion ? "-diffusion-v10" : "-radial-circle-v9");
             table["source_provenance"] = table["source_provenance"]!.GetValue<string>() + note;
         }
         File.WriteAllText(Path.Combine(directory, "proposal.json"), proposal.ToJsonString(Pretty));
@@ -145,6 +163,7 @@ internal static class RadialCircleCalibration
         {
             sourceVersion = source["data_pack_version"]!.GetValue<string>(),
             radialExtrapolationDistanceM = distance,
+            axialExtrapolationDistanceM = axialExtrapolation,
             seed = 1001,
             halfFillK = finalK,
             measuredAdjusterWorthMk = finalRodWorth,

@@ -11,17 +11,16 @@ public sealed class AxialVacuumBoundaryTests
     public void RefitRetainsHeatingAndBurnupKnotsAndAppliesOnlyTheRecordedProductionNormalization()
     {
         var source = Require(FullCoreDiffusionDataPackV1.TryLoadJson(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
-            "data/calibration/radial-circle-v9/source-pack.json"))));
+            "data/calibration/radial-circle-v9/fit/proposal.json"))));
         var active = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
-        Assert.Equal("zero-incoming-current-v1", active.AxialBoundaryConditionId);
-        Assert.Equal(source.AxialVacuumBoundaryConductance.Group1M2, active.AxialVacuumBoundaryConductance.Group1M2);
-        Assert.Equal(source.AxialVacuumBoundaryConductance.Group2M2, active.AxialVacuumBoundaryConductance.Group2M2);
-        Assert.Equal(source.AxialConductance.Group1M2, active.AxialConductance.Group1M2);
-        Assert.Equal(source.AxialConductance.Group2M2, active.AxialConductance.Group2M2);
-        Assert.Equal(source.TransverseConductance.Group1M2, active.TransverseConductance.Group1M2);
-        Assert.Equal(source.TransverseConductance.Group2M2, active.TransverseConductance.Group2M2);
-        double multiplier = JObject.Parse(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
-            "data/calibration/radial-circle-v9/fit/fit.json")))["productionMultiplier"]!.Value<double>();
+        var calibration = JObject.Parse(File.ReadAllText(TestDataLocator.RequireRepositoryFile(
+            "data/calibration/diffusion-v10/fit.json")));
+        Assert.Equal("extrapolated-zero-flux-v1", active.AxialBoundaryConditionId);
+        double distance = calibration["axialExtrapolationDistanceM"]!.Value<double>();
+        double h = active.AxialCellLengthM;
+        Assert.Equal(active.AxialConductance.Group1M2 * h / (h / 2 + distance), active.AxialVacuumBoundaryConductance.Group1M2, 14);
+        Assert.Equal(active.AxialConductance.Group2M2 * h / (h / 2 + distance), active.AxialVacuumBoundaryConductance.Group2M2, 14);
+        double multiplier = calibration["productionMultiplier"]!.Value<double>();
         var before = Assert.Single(source.CoefficientTables).Rows;
         var after = Assert.Single(active.CoefficientTables).Rows;
         Assert.Equal(before.Count, after.Count);
@@ -30,6 +29,8 @@ public sealed class AxialVacuumBoundaryTests
             Assert.Equal(before[i].BurnupJPerKgHm, after[i].BurnupJPerKgHm);
             Assert.Equal(before[i].Coefficients.FissionGroup1PerM, after[i].Coefficients.FissionGroup1PerM);
             Assert.Equal(before[i].Coefficients.FissionGroup2PerM, after[i].Coefficients.FissionGroup2PerM);
+            Assert.Equal(before[i].Coefficients.AbsorptionGroup1PerM, after[i].Coefficients.AbsorptionGroup1PerM);
+            Assert.Equal(before[i].Coefficients.DownscatterGroup1To2PerM, after[i].Coefficients.DownscatterGroup1To2PerM);
             Assert.Equal(before[i].Coefficients.AbsorptionGroup2PerM, after[i].Coefficients.AbsorptionGroup2PerM);
             Assert.Equal(before[i].Coefficients.EnergyPerFissionJ, after[i].Coefficients.EnergyPerFissionJ);
             Assert.Equal(multiplier, after[i].Coefficients.NuFissionGroup1PerM / before[i].Coefficients.NuFissionGroup1PerM, 13);
@@ -103,6 +104,24 @@ public sealed class AxialVacuumBoundaryTests
         Assert.True(reflectedCoefficients.TryGetBoundary(new SpatialBoundaryKey(end, TopologyFace.EndA), out var mirror));
         Assert.Equal(0, mirror.Group1); Assert.Equal(0, mirror.Group2);
         Assert.Equal(coefficients.Nodes.Select(n => n.AbsorptionGroup2PerM), reflectedCoefficients.Nodes.Select(n => n.AbsorptionGroup2PerM));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0.0)]
+    [InlineData(-.1)]
+    public void AxialExtrapolationRequiresPositiveDistance(double? distance)
+    {
+        var json = EmbeddedJson();
+        json["geometry"]!["axial_boundary"] = new JObject
+        {
+            ["condition_id"] = "extrapolated-zero-flux-v1",
+            ["cell_length_m"] = .4953,
+            ["extrapolation_distance_m"] = distance.HasValue ? new JValue(distance.Value) : JValue.CreateNull()
+        };
+        var result = FullCoreDiffusionDataPackV1.TryLoadJson(json.ToString());
+        Assert.False(result.IsValid);
+        Assert.Equal("FullCoreDiffusionDataPack.AxialBoundary.Invalid", result.FirstDiagnostic.Code);
     }
 
     private static JObject EmbeddedJson()

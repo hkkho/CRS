@@ -7,15 +7,15 @@ namespace ReactorSim.Core.Tests;
 public sealed class DiffusionDataPackAuditTests
 {
     [Fact]
-    public void LiteratureGeometryUsesMetricCellVolumeAndConsistentInteriorDiffusion()
+    public void ActivePackUsesMetricCellVolumeAndConsistentInteriorDiffusion()
     {
         var pack = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
         const double pitch = .28575, length = .4953;
         Assert.Equal(pitch * pitch * length, pack.NodeVolumeM3, 14);
-        Assert.Equal(.04, pack.AxialConductance.Group1M2 * length / (pitch * pitch), 12);
-        Assert.Equal(.04, pack.TransverseConductance.Group1M2 / length, 12);
-        Assert.Equal(.02, pack.AxialConductance.Group2M2 * length / (pitch * pitch), 12);
-        Assert.Equal(.02, pack.TransverseConductance.Group2M2 / length, 12);
+        Assert.Equal(.015, pack.AxialConductance.Group1M2 * length / (pitch * pitch), 12);
+        Assert.Equal(.015, pack.TransverseConductance.Group1M2 / length, 12);
+        Assert.Equal(.0075, pack.AxialConductance.Group2M2 * length / (pitch * pitch), 12);
+        Assert.Equal(.0075, pack.TransverseConductance.Group2M2 / length, 12);
     }
 
     private static readonly double[] ExpectedBurnupKnotsMwDayPerKgHm =

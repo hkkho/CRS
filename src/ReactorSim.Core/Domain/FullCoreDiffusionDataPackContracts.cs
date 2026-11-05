@@ -287,14 +287,20 @@ namespace ReactorSim.Core
                     !TryReadString(axialBoundary, "condition_id", "geometry.axial_boundary.condition_id", out axialBoundaryId, out failure) ||
                     !TryReadDouble(axialBoundary, "cell_length_m", "geometry.axial_boundary.cell_length_m", out axialCellLength, out failure))
                     return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Supply a valid axial boundary condition and cell length.");
-                if (axialBoundaryId != "zero-incoming-current-v1" || axialCellLength <= 0 || nodeVolumeM3 <= 0)
-                    return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Only zero-incoming-current-v1 with positive SI geometry is supported.");
-                // Marshak: phi + 2D*d(phi)/dn = 0. Node-centred C = DA/(h/2+2D).
-                // D = C_interior*h^2/V, A = V/h. No material absorption is added.
+                bool marshak = axialBoundaryId == "zero-incoming-current-v1";
+                double extrapolationDistance = 0;
+                if (axialCellLength <= 0 || nodeVolumeM3 <= 0 ||
+                    (!marshak && (axialBoundaryId != "extrapolated-zero-flux-v1" ||
+                        !TryReadDouble(axialBoundary, "extrapolation_distance_m", "geometry.axial_boundary.extrapolation_distance_m", out extrapolationDistance, out failure) ||
+                        extrapolationDistance <= 0)))
+                    return Invalid("FullCoreDiffusionDataPack.AxialBoundary.Invalid", "geometry.axial_boundary", "Supply positive SI geometry for Marshak or extrapolated zero flux.");
+                // C = DA/(h/2 + extrapolation). Marshak extrapolates by 2D.
+                // D = C_interior*h^2/V and A = V/h.
                 double Boundary(double interior)
                 {
                     double diffusion = interior * axialCellLength * axialCellLength / nodeVolumeM3;
-                    return interior * axialCellLength / (axialCellLength / 2 + 2 * diffusion);
+                    double distance = marshak ? 2 * diffusion : extrapolationDistance;
+                    return interior * axialCellLength / (axialCellLength / 2 + distance);
                 }
                 double fast = Boundary(axial.Group1M2), thermal = Boundary(axial.Group2M2);
                 if (!ContractValidation.IsFinite(fast) || !ContractValidation.IsFinite(thermal) || fast <= 0 || thermal <= 0)
