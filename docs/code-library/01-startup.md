@@ -73,11 +73,11 @@ steps:
   explanation: '**Find the mount point and storage.** The non-null assertion records that the page provides `game-root`. `PlayerStore` persists player data, while the keys identify a saved run checkpoint in browser storage.'
 - through: launcher.innerHTML = `<div class="launcher-shell">
   explanation: '**Build the launcher.** The launcher contains the time-based play action, a resume action and the optional starting seed. The reactor illustration is inserted into the page as presentation.'
-- through: function readCheckpoint(): { seed: number; id?: string } | undefined {
+- through: function readCheckpoint()
   explanation: '**Read a saved run safely.** The function tolerates disabled or invalid session storage and accepts only a valid unsigned 32-bit seed. It returns no checkpoint when the saved data cannot be used.'
 - through: function showLauncher(): void {
   explanation: '**Return to the launcher.** Closing the run releases its subscription and view, shows the launcher again and exposes Resume only when a checkpoint can be read.'
-- through: function openGame(coreSeed: number, id?: string, restored = false): void {
+- through: function openGame(
   explanation: '**Open or restore a run.** A checkpoint ID loads saved run data from `PlayerStore`. `DemoView` owns the playable view; its subscription updates version information when the run changes.'
 - through: play.addEventListener("click", () => { if (seed.reportValidity()) openGame(Number(seed.value)); });
   explanation: '**Handle launcher actions.** The seed is validated before starting a new run. Resume reads the saved seed and checkpoint ID, and page startup resumes automatically when a checkpoint exists.'
