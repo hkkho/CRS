@@ -26,7 +26,7 @@ The six walkthrough chapters now include actual source excerpts in two columns:
 consecutive group of numbered lines and explains its inputs, operations, purpose
 and consequences. On phones the explanation follows immediately below its code.
 
-Start with [the complete browser entry file](01-startup.md#maints-constructs-and-connects-the-application),
+Start with [the complete browser entry file](01-startup.md#maints-constructs-the-browser-run),
 then follow [command dispatch](02-browser-transport.md#read-the-command-path-beside-the-code),
 [the daily transaction](03-daily-turn.md#prepare-fuel-moves-on-a-detached-session),
 [Core's movement and numerical loops](04-core-physics.md#read-the-position-mapping-itself),
