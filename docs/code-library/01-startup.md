@@ -85,7 +85,7 @@ steps:
   explanation: '**Connect update handling to the current run.** The adapter exposes the active snapshot and subscription, and checkpoints the run through persistent storage before an update is applied.'
 - through: void updates.initialize(import.meta.env.BASE_URL, import.meta.env.PROD);
   explanation: '**Start update discovery.** Vite supplies the deployment base path and production flag. Initialization runs asynchronously while the launcher or game remains available.'
-- through: window.addEventListener("beforeunload", () => { updates.destroy(); closeGame(); }, { once: true });
+- through: 'window.addEventListener("beforeunload", () => { updates.destroy(); closeGame(); }, { once: true });'
   explanation: '**Clean up on page exit.** The listener runs once, stops update handling and releases the active game view and its subscription.'
 ```
 
