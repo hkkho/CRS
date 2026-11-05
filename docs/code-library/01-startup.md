@@ -75,7 +75,7 @@ steps:
   explanation: '**Build the launcher.** The launcher contains the time-based play action, a resume action and the optional starting seed. The reactor illustration is inserted into the page as presentation.'
 - through: function readCheckpoint()
   explanation: '**Read a saved run safely.** The function tolerates disabled or invalid session storage and accepts only a valid unsigned 32-bit seed. It returns no checkpoint when the saved data cannot be used.'
-- through: function showLauncher(): void {
+- through: function showLauncher()
   explanation: '**Return to the launcher.** Closing the run releases its subscription and view, shows the launcher again and exposes Resume only when a checkpoint can be read.'
 - through: function openGame(
   explanation: '**Open or restore a run.** A checkpoint ID loads saved run data from `PlayerStore`. `DemoView` owns the playable view; its subscription updates version information when the run changes.'
