@@ -1,19 +1,19 @@
-.reactor-arcade.reactor-demo { max-width: none; padding: 20px clamp(12px, 3vw, 48px) 80px; background: #0b131c; }
-.reactor-demo header { flex-wrap: wrap; }
+.reactor-arcade.reactor-demo { max-width: none; padding: 20px max(12px, calc((100% - 520px) / 2)) 80px; background: #0b131c; }
+.reactor-demo header, .reactor-demo nav { flex-wrap: wrap; }
 .reactor-arcade.reactor-demo h1 { font-size: clamp(24px, 4vw, 40px); }
 .reactor-arcade.reactor-demo header .arcade-kicker { font: 800 12px/1.4 system-ui, sans-serif; letter-spacing: .12em; }
 body:has(.reactor-demo) .player-toggle { display: none; }
-.demo-hud { display: flex; flex-wrap: wrap; gap: 20px 40px; margin: 18px 0 10px; }
+.demo-hud { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 18px 0 10px; }
 .demo-hud > div > span, .demo-selected-hud span { display: block; color: #b6c8d8; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 .demo-hud strong { font-size: clamp(18px, 2.4vw, 28px); font-variant-numeric: tabular-nums; }
-.demo-selected-hud { display: flex; align-items: center; gap: 20px; margin-left: auto; padding-left: 24px; border-left: 1px solid #38546b; }
+.demo-selected-hud { display: flex; flex-basis: 100%; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #38546b; padding-top: 10px; }
 .demo-selected-hud [data-selected-channel] { color: #68ddff; }
 .demo-selected-hud strong, .demo-selected-hud span { white-space: nowrap; }
 .demo-selected-hud strong { display: block; }
 .reactor-demo .demo-selected-hud .arcade-primary { width: auto; flex: 0 0 auto; min-height: 44px; }
 .demo-selected-hud strong small { font-size: 14px; color: #9cacb9; }
 .demo-clock { width: 100%; height: 4px; display: block; accent-color: #80e5bc; margin-bottom: 12px; }
-.demo-workspace { display: grid; grid-template-columns: minmax(190px, .8fr) minmax(0, 2.5fr) 250px; gap: 22px; max-width: 1700px; margin: auto; align-items: start; }
+.demo-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
 .demo-core { min-width: 0; }
 .demo-map-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .demo-map-heading h2 { font-size: 17px; }
@@ -28,7 +28,6 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 .reactor-arcade.reactor-demo .arcade-map button[aria-pressed=true] { outline: 3px solid #fff; outline-offset: 1px; z-index: 3; }
 .demo-queue-key { color: #d3dfe8; font-size: 12px; }
 .demo-queue-key span { color: #ffe45e; }
-.demo-readout { align-self: start; padding-top: 40px; }
 .demo-readout > p { font-size: 13px; color: #c1d0dd; margin-block: 12px; }
 .demo-readout > .demo-help { color: #8fa2b5; font-size: 12px; }
 .demo-retry { display: flex; gap: 8px; }
@@ -45,6 +44,9 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 .demo-trend-key { display: flex; gap: 12px; flex-wrap: wrap; }
 .trend-selected { color: #68ddff; }
 .trend-peak { color: #ffc262; }
+.trend-mean { color: #52efbc; }
+.trend-end-a { color: #68ddff; }
+.trend-end-b { color: #ffc262; }
 .trend-grid { stroke: #304657; stroke-width: 1; fill: none; }
 .trend-limit { stroke: #d78b6d; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
 .trend-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -87,22 +89,6 @@ body:has(.reactor-demo) .player-toggle { display: none; }
   .reactor-demo [data-demo-alert=shake] { outline: 2px solid #fff; }
   .reactor-arcade.reactor-demo .arcade-map button { transition: none; }
 }
-@media (max-width: 1100px) {
-  .demo-workspace { grid-template-columns: minmax(0, 1fr) 250px; }
-  .demo-trends { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; order: 3; }
-  .demo-trends > h2, .demo-trends > p { grid-column: 1 / -1; }
-  .demo-selected-hud { margin-left: 0; }
-}
-@media (max-width: 720px) {
-  .demo-workspace { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .demo-readout { padding-top: 0; }
-  .demo-hud { gap: 12px 24px; }
-  .demo-selected-hud { flex-basis: 100%; justify-content: space-between; border-left: 0; border-top: 1px solid #38546b; padding: 10px 0 0; }
-  .demo-trends { display: block; }
-  .reactor-demo .arcade-map-scroll { width: 100%; }
-  .reactor-demo nav { flex-wrap: wrap; }
-}
-
 .demo-map-heading select { max-width: 100%; min-height: 44px; padding: 8px 30px 8px 12px; border: 1px solid #58788f; border-radius: 5px; background: #101f2c; color: #eff4dd; font: 700 16px system-ui, sans-serif; }
 
 /* The order deck stays next to the board on TV and handheld layouts. */
@@ -135,3 +121,10 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 }
 .demo-controls kbd:first-child { margin-left: 0; }
 .demo-controls [data-gamepad-hint]:not([hidden]) { display: block; }
+
+@media (min-width: 960px) {
+  .reactor-arcade.reactor-demo { padding-inline: max(24px, calc((100% - 1040px) / 2)); }
+  .demo-selected-hud { flex-basis: auto; margin-left: auto; padding: 0 0 0 24px; border-top: 0; border-left: 1px solid #38546b; }
+  .demo-workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 20px; }
+  .demo-core { grid-row: span 2; }
+}

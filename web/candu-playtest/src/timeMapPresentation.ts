@@ -56,6 +56,14 @@ export function renderTimeMapScale(element: HTMLElement, mode: TimeMapMode): voi
   element.replaceChildren(...ticks);
 }
 
+export function channelZonePair(channel: CanduChannelSnapshot): [number | undefined, number | undefined] {
+  // Use published measurement regions from the shared snapshot.
+  const ids = [...new Set(channel.bundles.map(b => b.logicalZoneId).filter((id): id is number => id !== undefined))];
+  const endA = ids.filter(id => id < 7);
+  const endB = ids.filter(id => id >= 7);
+  return [endA.length === 1 ? endA[0] : undefined, endB.length === 1 ? endB[0] : undefined];
+}
+
 export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapshot, mode: TimeMapMode): { background: string; reading: string } {
   if (mode === "power") {
     const kw = channelWatts(snapshot, channel) / 1000;
@@ -69,17 +77,15 @@ export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapsh
     const percent = (snapshot.ripple?.channelRippleFractions[channel.channelIndex] ?? NaN) * 100;
     return { background: color(mode, percent), reading: Number.isFinite(percent) ? `Ripple ${percent.toFixed(1)}% of reference` : "Ripple unavailable" };
   }
-  // Published measurement regions, not the localized absorber footprint or grid guesses.
-  const ids = [...new Set(channel.bundles.map(b => b.logicalZoneId).filter((id): id is number => id !== undefined))];
-  const half = (endA: boolean) => {
-    const matches = ids.filter(id => endA ? id < 7 : id >= 7);
-    const zone = matches.length === 1 ? snapshot.rrs.zones.find(z => z.logicalZoneId === matches[0]) : undefined;
+  const [endA, endB] = channelZonePair(channel);
+  const half = (end: string, id: number | undefined) => {
+    const zone = snapshot.rrs.zones.find(z => z.logicalZoneId === id);
     const fill = zone?.fillFraction ?? NaN;
     return !Number.isFinite(fill)
-      ? { color: unavailable, reading: `End ${endA ? "A" : "B"} fill unavailable` }
-      : { color: color(mode, fill * 100), reading: `End ${endA ? "A" : "B"} Z${zone!.logicalZoneId + 1}: ${(fill * 100).toFixed(1)}% filled` };
+      ? { color: unavailable, reading: `End ${end} fill unavailable` }
+      : { color: color(mode, fill * 100), reading: `End ${end} Z${zone!.logicalZoneId + 1}: ${(fill * 100).toFixed(1)}% filled` };
   };
-  const a = half(true), b = half(false);
+  const a = half("A", endA), b = half("B", endB);
   return { background: `linear-gradient(to right, ${a.color} 0%, ${a.color} 50%, ${b.color} 50%, ${b.color} 100%)`, reading: `${a.reading} · ${b.reading}` };
 }
 

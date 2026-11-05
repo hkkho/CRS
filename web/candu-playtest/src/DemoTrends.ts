@@ -1,8 +1,9 @@
 import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelWatts } from "./studio/powerReadings";
 import { gridCoordinateLabel } from "./channelCoordinates";
+import { channelZonePair } from "./timeMapPresentation";
 
-type Sample = { day: number; peak: number; powers: number[]; mean: number };
+type Sample = { day: number; peak: number; powers: number[]; mean: number; zoneFills: number[] };
 const MAX_SAMPLES = 241;
 const SAMPLE_DAYS = .05;
 
@@ -18,7 +19,7 @@ export class DemoTrends {
     this.element.setAttribute("aria-label", "Live trend plots");
     this.element.innerHTML = `<h2>Live trends</h2><p class="demo-trend-note">Recent displayed days</p>
       <section class="demo-trend-card"><h3>Channel power <small>kW</small></h3><p class="demo-trend-key"><span class="trend-selected" data-trend-channel>Selected</span><span class="trend-peak">Core peak</span></p><svg data-chart="power" viewBox="0 0 260 180" role="img" aria-label="Selected channel and peak power history"></svg><p data-power-trend-reading></p></section>
-      <section class="demo-trend-card"><h3>Average zone level <small>%</small></h3><svg data-chart="zones" viewBox="0 0 260 180" role="img" aria-label="Average liquid zone level history with 10 and 90 percent limits"></svg><p data-zone-trend-reading></p><p class="demo-trend-note">Dashed lines: 10% / 90% limits</p></section>`;
+      <section class="demo-trend-card"><h3>Average zone level <small>%</small></h3><p class="demo-trend-key"><span class="trend-mean">Core average</span><span class="trend-end-a" data-trend-end-a></span><span class="trend-end-b" data-trend-end-b></span></p><svg data-chart="zones" viewBox="0 0 260 180" role="img" aria-label="Core average and selected channel End A and End B liquid zone history, with 10 and 90 percent limits"></svg><p data-zone-trend-reading></p><p class="demo-trend-note">Dashed lines: 10% / 90% limits</p></section>`;
   }
 
   update(snapshot: CanduSnapshot, day: number, selected: number, paused = false): void {
@@ -31,7 +32,9 @@ export class DemoTrends {
     if (!last || day - last.day >= SAMPLE_DAYS - 1e-6 || isRunTerminal(snapshot) || paused) {
       const powers: number[] = [];
       for (const c of snapshot.core.channels) powers[c.channelIndex] = channelWatts(snapshot, c) / 1000;
-      const sample = { day, powers, peak: Math.max(...powers.filter(Number.isFinite)), mean: snapshot.rrs.averageFillFraction * 100 };
+      const zoneFills: number[] = [];
+      for (const zone of snapshot.rrs.zones) zoneFills[zone.logicalZoneId] = zone.fillFraction * 100;
+      const sample = { day, powers, peak: Math.max(...powers.filter(Number.isFinite)), mean: snapshot.rrs.averageFillFraction * 100, zoneFills };
       // A fuel-limit loss can happen without advancing a whole day. Retain its
       // final reading at the same timestamp rather than leaving a stale graph.
       if (last && day === last.day) this.samples[this.samples.length - 1] = sample;
@@ -44,11 +47,21 @@ export class DemoTrends {
     const latest = this.samples.at(-1)!;
     const selectedPower = latest.powers[selected];
     this.element.querySelector("[data-power-trend-reading]")!.textContent = `${label}: ${selectedPower?.toFixed(0) ?? "—"} · Peak: ${latest.peak.toFixed(0)} kW`;
-    this.element.querySelector("[data-zone-trend-reading]")!.textContent = `${latest.mean.toFixed(1)}% core average`;
+    const [endA, endB] = channel ? channelZonePair(channel) : [];
+    this.element.querySelector("[data-trend-end-a]")!.textContent = endA === undefined ? "End A" : `End A · Z${endA + 1}`;
+    this.element.querySelector("[data-trend-end-b]")!.textContent = endB === undefined ? "End B" : `End B · Z${endB + 1}`;
+    const zoneReading = (id: number | undefined) => {
+      const fill = id === undefined ? NaN : latest.zoneFills[id];
+      return Number.isFinite(fill) ? `${fill.toFixed(1)}%` : "—";
+    };
+    this.element.querySelector("[data-zone-trend-reading]")!.textContent = `${latest.mean.toFixed(1)}% core average · ${label} End A: ${zoneReading(endA)} · End B: ${zoneReading(endB)}`;
     const powerValues = this.samples.flatMap(s => [s.peak, s.powers[selected]]).filter(Number.isFinite);
     this.draw("power", Math.floor(Math.min(5000, ...powerValues) / 100) * 100, Math.ceil(Math.max(7100, ...powerValues) / 100) * 100,
       [{ values: this.samples.map(s => s.peak), color: "#ffc262" }, { values: this.samples.map(s => s.powers[selected]), color: "#68ddff" }], [6500, 7100]);
-    this.draw("zones", 0, 100, [{ values: this.samples.map(s => s.mean), color: "#52efbc" }], [10, 90]);
+    const zoneLines = [{ values: this.samples.map(s => s.mean), color: "#52efbc" }];
+    if (endA !== undefined) zoneLines.push({ values: this.samples.map(s => s.zoneFills[endA]), color: "#68ddff" });
+    if (endB !== undefined) zoneLines.push({ values: this.samples.map(s => s.zoneFills[endB]), color: "#ffc262" });
+    this.draw("zones", 0, 100, zoneLines, [10, 90]);
     this.element.dataset.samples = String(this.samples.length);
   }
 

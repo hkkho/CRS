@@ -31,8 +31,16 @@ try {
     await page.locator('select[data-map-mode]').selectOption(mode);
     if (await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
     if (mode === 'paired-zones') {
-      const label = await page.locator('.arcade-map [data-channel="210"]').getAttribute('aria-label');
-      if (!label.includes('End A Z') || !label.includes('End B Z')) throw new Error('Published zone pair missing');
+      const channel = page.locator('.arcade-map [data-channel="210"]');
+      const label = await channel.getAttribute('aria-label');
+      const pair = label.match(/End A (Z\d+).*End B (Z\d+)/);
+      if (!pair) throw new Error('Published zone pair missing');
+      await channel.click();
+      if (await page.locator('[data-trend-end-a]').innerText() !== `End A · ${pair[1]}` ||
+          await page.locator('[data-trend-end-b]').innerText() !== `End B · ${pair[2]}` ||
+          await page.locator('[data-chart=zones] .trend-line').count() !== 3) {
+        throw new Error('Zone chart does not show the selected channel pair');
+      }
       await page.screenshot({ path: 'artifacts/demo/paired-map.png', fullPage: true });
     }
   }
@@ -99,9 +107,18 @@ try {
   await mkdir('artifacts/demo', { recursive: true });
   await page.locator('.reactor-demo').evaluate(element => { element.scrollTop = 0; });
   await page.screenshot({ path: 'artifacts/demo/desktop.png', fullPage: true });
-  for (const width of [320, 390, 768]) {
+  for (const width of [1440, 320, 390, 768]) {
     await page.setViewportSize({ width, height: 844 });
     if (!await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.reactor-demo').scrollWidth <= innerWidth)) throw new Error(`Overflow at ${width}px`);
+    const layout = await page.evaluate(() => {
+      const [map, readout, trends] = [...document.querySelector('.demo-workspace').children].map(panel => panel.getBoundingClientRect());
+      const scale = document.querySelector('[data-scale]');
+      const expectedColumns = innerWidth >= 960 ? readout.left >= map.right && trends.left === readout.left : readout.top >= map.bottom;
+      return expectedColumns && trends.top >= readout.bottom && readout.height > 0 && trends.height > 0 &&
+        scale.clientWidth >= map.width * .98 &&
+        getComputedStyle(scale, '::before').backgroundImage.startsWith('linear-gradient');
+    });
+    if (!layout) throw new Error(`Workspace panels or full-width heat bar missing at ${width}px`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.reactor-demo').evaluate(element => { element.scrollTop = 0; });
