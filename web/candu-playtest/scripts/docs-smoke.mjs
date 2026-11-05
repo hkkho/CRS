@@ -61,7 +61,7 @@ try {
       throw new Error(`Annotated source layout failed at ${width}px: ${JSON.stringify(layout)}`);
     if (process.env.PLAYTEST_CAPTURE_DIR) {
       await mkdir(process.env.PLAYTEST_CAPTURE_DIR, { recursive: true });
-      await page.locator('#maints-constructs-and-connects-the-application').scrollIntoViewIfNeeded();
+      await page.locator('#maints-constructs-the-browser-run').scrollIntoViewIfNeeded();
       await page.screenshot({ path: `${process.env.PLAYTEST_CAPTURE_DIR}/annotated-source-${width}.png` });
     }
   }
