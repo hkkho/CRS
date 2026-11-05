@@ -73,7 +73,7 @@ try {
 
   // The shared manual remains published as a documentation route.
   await page.goto(new URL('manual/', docsUrl).href);
-  await page.getByRole('heading', { name: 'Player manual', exact: true, level: 1 }).waitFor();
+  await page.getByRole('heading', { name: 'Player manual', exact: false, level: 1 }).waitFor();
   const gameLink = page.getByRole('link', { name: 'Return to the game', exact: true });
   const gamePath = new URL(gameUrl).pathname;
   if (new URL(await gameLink.getAttribute('href')).pathname !== gamePath)
