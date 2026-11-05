@@ -71,19 +71,15 @@ try {
   await search.fill('refuelling');
   await page.locator('.md-search-result__list a').first().waitFor();
 
-  // The game link keeps the current reactor in its original tab; F1 stays local.
-  await page.goto(gameUrl);
-  await page.getByRole('button', { name: 'Manual', exact: true }).click();
-  const manual = page.locator('dialog.simulator-manual[open]');
-  await manual.getByRole('heading', { name: 'One day at a time', exact: true }).waitFor();
-  const library = manual.getByRole('link', { name: /Manual, theory & code library/ });
-  if (await library.getAttribute('href') !== `${new URL(gameUrl).pathname}docs/manual/`)
-    throw new Error('In-game manual does not point at the documentation subpath.');
-  if (await library.getAttribute('target') !== '_blank') throw new Error('Documentation navigation would replace the current run.');
-  await page.keyboard.press('Escape');
-  await manual.waitFor({ state: 'hidden' });
+  // The shared manual remains published as a documentation route.
+  await page.goto(new URL('manual/', docsUrl).href);
+  await page.getByRole('heading', { name: 'Player manual', exact: true, level: 1 }).waitFor();
+  const gameLink = page.getByRole('link', { name: 'Return to the game', exact: true });
+  const gamePath = new URL(gameUrl).pathname;
+  if (new URL(await gameLink.getAttribute('href')).pathname !== gamePath)
+    throw new Error('The player manual does not link back to the deployed game path.');
   if (errors.length) throw new Error(errors.join(' | '));
-  const result = { status: 'passed', gameUrl, docsUrl, buildInfo: info, routes: 6, annotatedPassages, explainedGroups, annotationWidths: [1280, 640, 320], search: 'passed', manual: 'shared-markdown', errors };
+  const result = { status: 'passed', gameUrl, docsUrl, buildInfo: info, routes: 6, annotatedPassages, explainedGroups, annotationWidths: [1280, 640, 320], search: 'passed', manual: 'published-route', errors };
   if (process.env.PLAYTEST_CAPTURE_DIR) {
     await mkdir(process.env.PLAYTEST_CAPTURE_DIR, { recursive: true });
     await writeFile(`${process.env.PLAYTEST_CAPTURE_DIR}/documentation.json`, JSON.stringify(result, null, 2));
