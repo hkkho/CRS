@@ -23,9 +23,12 @@ it("shows the actual loaded build, daily pacing and axial boundary model", async
 it("keeps the running game and worker when saving before an update fails", async () => {
   const snapshot = { ...createSnapshot(), pacingMode: "daily-turn" };
   const session = { snapshot, isPending: false, dispose: vi.fn(), subscribe: (fn: () => void) => { fn(); return () => {}; } } as unknown as BridgeSessionController;
-  const waiting = { postMessage: vi.fn() };
+  const waiting = { postMessage: vi.fn((_message, [reply]: MessagePort[]) => {
+    reply.postMessage({ status: "ready" });
+    reply.close();
+  }) };
   const registration = Object.assign(new EventTarget(), { waiting, installing: null, update: vi.fn(), unregister: vi.fn() });
-  const serviceWorker = Object.assign(new EventTarget(), { register: vi.fn(async () => registration), ready: Promise.resolve() });
+  const serviceWorker = Object.assign(new EventTarget(), { controller: {}, register: vi.fn(async () => registration), ready: Promise.resolve() });
   const network = { onLine: true, serviceWorker };
   vi.stubGlobal("navigator", network);
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ gitCommitSha: "test-build" }) })));
@@ -36,14 +39,57 @@ it("keeps the running game and worker when saving before an update fails", async
   dialog.close = () => { dialog.open = false; };
   try {
     await view.initialize("/CRS/");
-    view.element.querySelector("button")!.click();
     await vi.waitFor(() => expect(view.element.textContent).toContain("Local storage is full."));
-    expect(waiting.postMessage).not.toHaveBeenCalled();
+    expect(waiting.postMessage).toHaveBeenCalledOnce();
     expect(registration.unregister).not.toHaveBeenCalled();
     expect(session.dispose).not.toHaveBeenCalled();
     expect(reload).not.toHaveBeenCalled();
     network.onLine = false;
     window.dispatchEvent(new Event("offline"));
     expect(view.element.querySelector("button")!.disabled).toBe(true);
+  } finally { view.destroy(); }
+});
+
+it("lets the first service worker install without saving or reloading", async () => {
+  const session = { snapshot: createSnapshot(), subscribe: () => () => {}, dispose: vi.fn() };
+  const waiting = { postMessage: vi.fn() };
+  const registration = Object.assign(new EventTarget(), { waiting, installing: null, unregister: vi.fn() });
+  const serviceWorker = Object.assign(new EventTarget(), { controller: null, register: vi.fn(async () => registration), ready: Promise.resolve() });
+  vi.stubGlobal("navigator", { onLine: true, serviceWorker });
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
+  const save = vi.fn();
+  const reload = vi.fn();
+  const view = new GameUpdateView(session, save, reload);
+  try {
+    await view.initialize("/CRS/");
+    expect(waiting.postMessage).not.toHaveBeenCalled();
+    expect(save).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  } finally { view.destroy(); }
+});
+
+it("checks for tabs that opened while the checkpoint was being written", async () => {
+  const session = { snapshot: createSnapshot(), subscribe: () => () => {}, dispose: vi.fn() };
+  const responses = [{ status: "ready" }, { status: "other-tabs", otherTabs: 1 }];
+  const waiting = { postMessage: vi.fn((_message, [reply]: MessagePort[]) => {
+    reply.postMessage(responses.shift());
+    reply.close();
+  }) };
+  const registration = Object.assign(new EventTarget(), { waiting, installing: null, unregister: vi.fn() });
+  const serviceWorker = Object.assign(new EventTarget(), { controller: {}, register: vi.fn(async () => registration), ready: Promise.resolve() });
+  vi.stubGlobal("navigator", { onLine: true, serviceWorker });
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
+  const reload = vi.fn();
+  const release = vi.fn();
+  const view = new GameUpdateView(session, async () => release, reload);
+  const dialog = document.querySelector<HTMLDialogElement>(".game-update-progress")!;
+  dialog.showModal = () => { dialog.open = true; };
+  dialog.close = () => { dialog.open = false; };
+  try {
+    await view.initialize("/CRS/");
+    await vi.waitFor(() => expect(release).toHaveBeenCalledOnce());
+    expect(view.element.textContent).toContain("Close 1 other game tab");
+    expect(registration.unregister).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
   } finally { view.destroy(); }
 });

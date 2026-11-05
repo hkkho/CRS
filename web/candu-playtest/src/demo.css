@@ -48,7 +48,12 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 .trend-grid { stroke: #304657; stroke-width: 1; fill: none; }
 .trend-limit { stroke: #d78b6d; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
 .trend-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.reactor-demo .arcade-legend { border-top: 5px solid transparent; border-image: linear-gradient(90deg, #0964eb, #09dbe9, #57eb09, #f4d709, #eb0909) 1; padding-top: 8px; }
+.demo-map-scale { position: relative; margin: 8px 0 2px; height: 26px; font: 11px/1.3 system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.demo-map-scale::before { content: ""; display: block; height: 6px; border-radius: 3px; background: var(--map-scale); }
+.demo-map-scale span { position: absolute; top: 9px; transform: translateX(-50%); white-space: nowrap; }
+.demo-map-scale span:first-child { transform: none; }
+.demo-map-scale span:last-child { transform: translateX(-100%); }
+.reactor-demo .arcade-legend { margin-top: 0; }
 .reactor-arcade.reactor-demo .arcade-map button { transition: background-color 60ms linear; }
 .reactor-arcade.reactor-demo .arcade-map button:disabled { opacity: 1; }
 .demo-zones { margin: 0 0 24px; padding: 14px; border: 1px solid #38546b; border-radius: 12px; background: #101f2c; }
@@ -99,7 +104,6 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 }
 
 .demo-map-heading select { max-width: 100%; min-height: 44px; padding: 8px 30px 8px 12px; border: 1px solid #58788f; border-radius: 5px; background: #101f2c; color: #eff4dd; font: 700 16px system-ui, sans-serif; }
-.reactor-demo:not([data-map-mode="power"]) .arcade-legend { border-image: none; border-top-color: #58788f; }
 
 /* The order deck stays next to the board on TV and handheld layouts. */
 .reactor-arcade.reactor-demo {

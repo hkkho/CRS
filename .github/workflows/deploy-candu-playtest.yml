@@ -167,12 +167,6 @@ jobs:
           curl --fail --silent "$PLAYTEST_URL" > /dev/null
           wasm_asset="$(find dist-pages/wasm -type f -name '*.wasm' -print -quit)"
           test -n "$wasm_asset"
-          export PLAYTEST_WASM_PATH="/${wasm_asset#dist-pages/}"
-          npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
-          npm run smoke:arcade 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/arcade-smoke.log"
-          npm run smoke:scales 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/scales-smoke.log"
-          npm run smoke:accessibility 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/accessibility-smoke.log"
-          npm run smoke:saves 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/saves-smoke.log"
           npm run smoke:docs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/docs-smoke.log"
           npm run smoke:demo -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/demo-smoke.log"
           npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
@@ -222,9 +216,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          npm run smoke 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/smoke.log"
-          npm run smoke:arcade 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/arcade-smoke.log"
-          npm run smoke:scales 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/scales-smoke.log"
+          npm run smoke:demo -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/demo-smoke.log"
           npm run benchmark -- --label=github-pages --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
           npm run smoke:docs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/docs-smoke.log"
       - name: Save Pages deployment diagnostics

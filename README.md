@@ -7,34 +7,30 @@ Pushes to `main` deploy the validated shared WASM simulation;
 see [hosting and verification](docs/maintenance/hosting.md).
 
 The player keeps a deterministic practice reactor at useful power, manages average
-LZC level between 10% and 90%, spends a finite fresh-bundle inventory, and builds
+LZC level between 10% and 90%, tracks fresh-bundle use, and builds
 score by keeping channel powers close to their time-average reference. CRS consumes
 one authoritative `GameSession`; the browser never substitutes
 a second simulator when the WASM bridge is unavailable.
 
-Choose **Time based** or **Turn based** on the main screen. A loading pop-up prepares the game, then shows **Start**; play stays frozen until you press it. Time based starts a separate temporary run and advances the shared simulation by twelve hours per five seconds of playback. A ticking simulation clock shows the displayed day and time. Double-click a channel (or press Enter/R, or select and tap Queue fuel) to queue an eight-bundle move. All waiting channels are submitted together with the next unsolved time step and appear fuelled at the same displayed endpoint. Yellow outlines mark queued channels; a white outline marks the inspected channel. The dropdown above the time-based core switches between channel power, ripple, burnup, and paired zone fills (End A on the left half of each cell, End B on the right). Hover or focus a cell for the selected map reading. Channel powers and all fourteen liquid-zone levels blend between solved endpoints. Slow solves hold the last endpoint without extrapolation or catch-up. Pause and hidden tabs freeze playback and retain queued fuel; an active solve may finish into the buffer. Retry repeats the seed, New core draws another, and returning preserves the turn based run. Time based runs are not saved or submitted to leaderboards.
+Select **Time based**, then **Start** once the core is ready. The shared
+simulation advances twelve hours per five seconds of playback. Double-click a
+channel, press Enter/R, or select it and tap **Queue fuel** to queue an
+eight-bundle move. The next unsolved step takes all waiting orders together.
+Yellow outlines show queued orders and a white outline shows the selected
+channel. Choose channel power, ripple, burnup, or paired zone fills from the
+map dropdown. Hover or focus a channel to read its value.
 
-CRS defaults to **daily turns**. Time stays frozen while you inspect
-power/burnup maps, bundle profiles, the fuel watchlist and zone levels. The core
-opens on **Channel kW**; the map dropdown also offers burnup, ripple and bundle power. Use
-**Highest burnup** (`N`) to inspect a candidate, then **Add to today's fuel plan**
-(`R`) to add or remove that channel. Each chosen channel receives eight fresh
-bundles with its flow. Adjacent channels have opposite flow directions.
+Power and zone fills blend between solved endpoints. Slow solves hold the last
+endpoint. Pause and hidden tabs freeze playback and retain queued fuel. **Retry
+seed** repeats the starting core and **New core** draws another. Time-based
+play is endless free practice with unlimited fresh fuel.
 
-Review or clear today's list, then select **Refuel & advance 1 day**. Orders execute
-in displayed channel order before the shared simulation advances 24 hours.
-**Advance 1 day without refuelling** is also valid. An animated waiting screen follows the calculation and then flashes success or
-failure. A surviving day shows earned points and total score. The daily report retains every
-fuel movement, bundle identities, discharge burnup, fuel consumed, energy,
-score and ending reason. Limits are checked after each fuel move and at the day
-boundary. A violating fuel move stops remaining orders; a day-end loss commits
-the completed one-day update. Invalid plans or numerical failures consume no fuel or time.
-
-**Free practice** is endless with unlimited fresh fuel. Studio and Arcade are
-presentations of that same daily loop. The one-, three- and seven-day challenges
-are no longer selectable. Arcade provides touch zoom and a pick → review → run
-flow, then returns to planning the next day. Opening Studio preserves the run
-and draft. New run draws a new aged core; retry preserves its seed.
+When a new build is ready, the game finishes its current solve, saves the
+authoritative endpoint and waiting fuel orders in this browser, then reloads.
+Close other game tabs if prompted so the update can proceed. Compatible
+checkpoints reopen at the **Start** screen. If the reactor model changed, the
+checkpoint stays stored and the game offers a return to the launcher. Existing
+daily saves remain in browser storage.
 
 LZC control uses the fixed time-average node-power reference derived with zones
 at 50% fill. The seeded aged core settles its own initial zone distribution
@@ -45,72 +41,20 @@ new run; the stored save is retained.
 
 A run ends below 10% or above 90% average LZC level, beyond ±20% global tilt,
 above 7,100 kW/channel or above 900 kW/bundle. Exact equality is allowed. The
-power map uses discrete dark, bronze, orange, red and bright-red bands. Red begins
-at 90% of the power limit; bright red shakes at 97% (static with reduced motion).
-Burnup and ripple use their own tiered legends. Both Studio and Arcade support
-100–400% zoom, scrolling to pan, and hover/keyboard tooltips with current power
-and estimated average exit burnup from the eight published outgoing positions. Scoring measures RMS deviation
+time-based core maps use fixed, continuous gradients tuned to observed channel
+power, ripple, burnup and zone-fill ranges. Each legend marks the readings
+that anchor its color scale. Power above 6,500 kW pulses and above
+7,000 kW shakes, with static outlines under reduced motion. Hover and keyboard
+tooltips show the exact reading. Scoring measures RMS deviation
 from fixed channel references, earning up to one point per simulated hour.
 Refuelling affects later score through its power response. See the
 [scoring policy](docs/gameplay/score-balance.md),
 [reference derivation](docs/physics/channel-power-reference.md) and
 [daily-turn contract](docs/gameplay/daily-turn-mode.md).
 
-The compact steel-panel interface keeps operating readings and the fuel plan visible.
-Open **Menu → Manual** (or press `F1`) for the daily workflow, fuelling theory, map guide,
-limits, scoring, shortcuts and saves. `Escape` closes it and restores focus;
-the plan stays frozen. Channel readings, fuel movement and axial profiles use tabs in the expanded LZC details block. Device and day reports expand on demand.
-The core map uses the full scene column. Map modes, fuel candidates, devices and compact zoom controls share its heading. History inspection stays visible above the map alongside Keff, tilt and the color legend. History plots use the full available width.
-
-The native launcher and Studio support keyboard operation, a 320px layout and
-quiet operation announcements. History records complete day-boundary observations;
-return to live before issuing orders. Version-2 saves include daily pacing and
-the unfinished fuel plan. The public game accepts daily saves only; older
-real-time saves remain stored but require a new daily run.
-Apply the new [cloud save migration](supabase/migrations/20261009232415_daily_turn_saves.sql)
-to an existing Supabase deployment before uploading version-2 saves.
-
-Studio and Arcade use daily turns, including old `?pacing=real-time` URLs.
-Their controller rejects real-time commands, saves and incompatible runtimes.
-The loaded build and axial boundary version are shown on screen. A newer build
-offers **Save locally & update**; close other game tabs before applying it.
-Existing tabs from before this update need all game tabs closed and reopened
-once. Keep browser site data to preserve saves.
-Normal new test runs use one large 24-hour step: update burnup and poison once
-using the post-refuelling power/flux, then solve equilibrium and LZC once at the
-next day boundary. Limits are checked after fuel moves and at the day end.
-Direct physics comparison tools retain the real-time three-minute integration cadence.
-
-The shift report shows the ending reason, thermal energy and estimated electrical
-energy delivered, fresh fuel consumed, useful discharged bundles and cumulative
-operating/discharge/fuel-cost points. **Retry same seed** repeats the same objective
-and aged core; **Try new seed** draws a random new core. Reports and
-badges belong to the current run and reset when a new run begins.
-
-Before ordering, the fuel strip names the incoming/outgoing ends and marks the
-positions that will leave, with their burnup. Confirmed moves retain bundle
-identities, old/new positions, discharge burnup and score throughout the shift.
-Highest burnup lists eligible channels only; a selected nonfuel channel explains
-why it cannot be refuelled. RRS feedback names the controller decision and the
-zone with least drain/fill headroom.
-
-The tabs show simulation-time line graphs for channel/bundle power peaks,
-thermal/electrical output, discharged burnup, all fourteen zone levels and their
-core mean, axial tilt, Keff/reactivity, average LZC level, fuel stock and score. Hover a graph
-or use the sample slider to read values, filter its time window, and toggle traces.
-Benchmark-based color floors and zoomed graph bounds make day-to-day changes
-visible. Axes expand for outliers, and off-scale operating limits stay labelled.
-History retains up to 4,096 observations in this browser session and clears on
-**New shift**. Discharge readings come from confirmed shared-simulation fuel moves;
-they remain unavailable until fuel has been discharged.
-
-The **Iodine & xenon** tab shows core poison inventories and all fourteen
-regional xenon traces. Poison follows bundle history, changes the solved power
-shape, and affects zone fills. See the [gameplay model](docs/physics/iodine-xenon-gameplay.md)
-for the analytic update and authored calibration. The channel inspector plots
-per-bundle iodine and xenon in End A to End B order. Fresh bundles enter with
-zero of both; retained bundles carry their existing inventories. Daily planning freezes
-these values; advancing a day builds poison in fresh fuel.
+The live charts show channel power and average liquid-zone level. The
+fourteen zone readouts show individual fill and available control room. The
+loaded build and reactor model are shown on screen.
 
 The current [v9 circular radial boundary](docs/physics/radial-circle-v9.md) lowers
 the outer-rim time-average target to about 4,200 kW and raises the middle to about

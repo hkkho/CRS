@@ -9,7 +9,7 @@ let loop: DemoLoop;
 afterEach(() => { loop?.destroy(); vi.useRealTimers(); });
 function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3]) {
   vi.useFakeTimers();
-  let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", completedDays: 0, simulationTimeSeconds: 0, shift: { ...createShift(), fuelConsumed: 0 }, ripple: undefined };
+  let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", scorePolicyId: "test-policy", completedDays: 0, simulationTimeSeconds: 0, shift: { ...createShift(), fuelConsumed: 0 }, ripple: undefined };
   snapshot.core.channels[211].flowDirection = "toward-end-b";
   const calls: CanduCommand[] = [];
   let complete: (accepted?: boolean, terminal?: boolean) => void = () => {};
@@ -184,4 +184,39 @@ it("stops on a rejected batch without claiming any fuel delivery", async () => {
   expect(loop.running).toBe(false); expect(loop.message).toBe("Rejected");
   expect(h.calls).toHaveLength(1);
   expect(loop.snapshot.completedDays).toBe(0); expect(loop.pendingFuel).not.toContain(210);
+});
+
+it("finishes the in-flight step and checkpoints its confirmed endpoint plus waiting fuel", async () => {
+  const h = setup();
+  loop.fuel(210);
+  await vi.advanceTimersByTimeAsync(50);
+  loop.fuel(211);
+  const write = vi.fn();
+  const checkpoint = loop.checkpoint(write);
+  loop.fuel(212);
+  expect(write).not.toHaveBeenCalled();
+  h.complete();
+  const release = await checkpoint;
+  expect(write).toHaveBeenCalledWith(loop.snapshot.shift!.seed, expect.objectContaining({
+    pacingMode: "demo", seconds: 43_200, fuelConsumed: 8, draftChannels: [211], stateDigest: "test",
+    commands: [{ command: { type: "commit-day", expectedCompletedDays: 0, channelIndices: [210] }, accepted: true, responseMode: "compact" }],
+  }));
+  await vi.advanceTimersByTimeAsync(200);
+  expect(h.calls).toHaveLength(1);
+  release();
+  await vi.advanceTimersByTimeAsync(50);
+  expect(h.calls[1]).toMatchObject({ channelIndices: [211] });
+});
+
+it("checkpoints a fuel order queued before the first time step", async () => {
+  const h = setup();
+  loop.fuel(210);
+  const write = vi.fn();
+  const checkpoint = loop.checkpoint(write);
+  expect(h.calls).toEqual([{ type: "pause" }]);
+  h.complete();
+  (await checkpoint)();
+  expect(write).toHaveBeenCalledWith(loop.snapshot.shift!.seed, expect.objectContaining({
+    seconds: 0, draftChannels: [210], stateDigest: "test",
+  }));
 });

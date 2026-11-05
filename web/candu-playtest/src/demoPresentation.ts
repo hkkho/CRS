@@ -26,11 +26,6 @@ export function interpolateDemo(from: CanduSnapshot, to: CanduSnapshot, fraction
   };
 }
 
-export function demoPowerColor(watts: number): string {
-  const fraction = Math.max(0, Math.min(1, (watts / 1000 - 5000) / 1500));
-  // Saturated blue → cyan → green → yellow → red over the requested fixed range.
-  return `hsl(${(220 * (1 - fraction)).toFixed(1)} 92% 48%)`;
-}
 export function demoPowerAlert(watts: number): "normal" | "flash" | "shake" {
   return watts > 7_000_000 ? "shake" : watts > 6_500_000 ? "flash" : "normal";
 }

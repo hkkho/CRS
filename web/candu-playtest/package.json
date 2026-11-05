@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run --configLoader runner",
     "test:watch": "vitest",
-    "smoke": "node scripts/daily-acceptance-smoke.mjs",
+    "smoke": "node scripts/demo-smoke.mjs",
     "smoke:daily": "node scripts/daily-acceptance-smoke.mjs",
     "smoke:arcade": "node scripts/arcade-smoke.mjs",
     "smoke:demo": "node scripts/demo-smoke.mjs",

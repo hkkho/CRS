@@ -1,12 +1,9 @@
 import { expect, it } from "vitest";
-import { demoPowerAlert, demoPowerColor, interpolateDemo, zoneAlert } from "./demoPresentation";
+import { demoPowerAlert, interpolateDemo, zoneAlert } from "./demoPresentation";
 import { createSnapshot } from "./testSnapshot";
 import { channelWatts } from "./studio/powerReadings";
 
-it("uses fixed 5000–6500 kW colours and strict flashing/shaking thresholds", () => {
-  expect(demoPowerColor(0)).toBe(demoPowerColor(5_000_000));
-  expect(demoPowerColor(8_000_000)).toBe(demoPowerColor(6_500_000));
-  expect(new Set([5000, 5300, 5600, 5900, 6200, 6500].map(k => demoPowerColor(k * 1000))).size).toBe(6);
+it("keeps strict flashing and shaking thresholds", () => {
   expect(demoPowerAlert(6_500_000)).toBe("normal");
   expect(demoPowerAlert(6_500_001)).toBe("flash");
   expect(demoPowerAlert(7_000_000)).toBe("flash");

@@ -51,15 +51,11 @@ async function checkApplication(page) {
   observe(page);
   await page.goto(targetUrl.toString(), { waitUntil: "domcontentloaded" });
   await page.locator(".reactor-launcher").waitFor({ state: "attached", timeout: 10_000 });
-  await page.waitForFunction(
-    () => document.querySelector("#status-mirror")?.textContent?.includes("live reactor online"),
-    undefined,
-    { timeout: 60_000 },
-  );
-  const mirror = await page.locator("#status-mirror").textContent();
-  if (!mirror?.includes("380 channels")) {
-    throw new Error(`The browser did not report the full play snapshot: ${mirror}`);
-  }
+  await page.locator("[data-action=demo]").click();
+  await page.locator("[data-game-start]").waitFor({ state: "visible", timeout: 120_000 });
+  const channels = await page.locator(".reactor-demo [data-channel]").count();
+  if (channels !== 380) throw new Error(`Expected 380 time-based channels, got ${channels}.`);
+  const mirror = `Time based reactor ready. ${channels} channels available.`;
   const viewport = await page.locator("#game-root").evaluate(root => ({ width: root.clientWidth, height: root.clientHeight }));
   return { mirror, viewport };
 }

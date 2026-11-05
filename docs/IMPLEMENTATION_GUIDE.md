@@ -3,9 +3,9 @@
 ## Product and ownership
 
 Develop `web/candu-playtest`, with GitHub Pages as the primary acceptance path.
-Reactor Studio provides detailed play; Arcade presents the same shared one-day
-challenge with a full interactive core map, touch zoom, plan review and a result screen. Keep changes small,
+The public launcher starts time-based free practice. Keep changes small,
 playable and testable.
+
 Shutdown, scram, accidents, operator training, full plant operations and plant-grade
 safety claims are outside scope.
 
@@ -25,9 +25,9 @@ duplicate reactor rules in TypeScript. Preserve units, group ordering, channel-m
 indexing, deterministic digests and failure semantics. See [architecture](architecture.md)
 and [protocol v2](spec/browser-playtest-protocol-v2.md).
 
-## Daily decisions
+## Shared daily-turn contract
 
-New runs use `pacingMode: daily-turn` and remain paused during inspection. Players
+Daily sessions use `pacingMode: daily-turn` and remain paused during inspection. Players
 draft today's channels, review outgoing bundles, then refuel and advance a day or
 advance without fuel. Planning consumes no fuel or time. Game validates unique
 indices and `expectedCompletedDays`, sorts the plan and executes eight-bundle moves
@@ -51,8 +51,15 @@ motion and flashes survival/loss with day points and total score. Rejection and
 interrupted unknown outcomes are distinct from physical losses. Solver accuracy
 takes priority over real-time latency. The Studio/Arcade controller requires daily pacing,
 rejects legacy real-time saves and commands, and refuses mismatched runtimes.
-Old URL options cannot enable the live clock. Direct comparison tools retain
-real-time contracts. Time based play retains the internal `demo` pacing identifier for bridge compatibility, with a separate ephemeral worker/session. Game owns atomic 43,200-second steps; completed days count full 86,400-second days. `DemoLoop` interpolates each half-day endpoint over five seconds and buffers one upcoming endpoint. Each authoritative `commit-day` command captures the entire waiting fuel queue before solving the next half-day endpoint. Buffered and displayed endpoints are never changed by later input. Yellow inset outlines mark pending channels until that batch reaches its displayed endpoint; a white outer outline marks the inspected channel. Duplicate pending requests are ignored and waiting input is bounded to eight channels. Channel powers and zone fills interpolate for presentation only; inventory, score and terminal outcomes use authoritative endpoints. Slow solves hold the endpoint without extrapolation or catch-up. Pause and hidden tabs freeze display time and retain input; an active solve may finish into the buffer. The launcher lists Time based first. Both mode entry paths show a modal loading gate and require an explicit Start after setup; time-based playback remains paused until that action. Setup failures keep Start hidden and offer Back. The HUD shows a ticking simulation clock, without a speed value. A native dropdown above the time-based core offers channel power, ripple, burnup and paired zone fills. Each paired cell shows End A on the left and End B on the right using published bundle logical-zone IDs and live zone levels; missing geometry is grey. Legends and hover/keyboard readings follow the chosen map. Fuel arriving during a calculation joins the next unsolved step as one batch, without inserting separate days between channels. Existing shared run-ending limits still apply during batch execution. Core already interpolates material coefficients by bundle burnup and refuelling rebuilds equilibrium with retained bundle history and fresh zero-burnup fuel; display-time interpolation never supplies cross-sections to the solver. Standard daily saves/drafts and leaderboard paths remain separate.
+## Time-based play
+
+The browser starts a worker with the existing `demo` pacing identifier.
+Game owns atomic 43,200-second steps. DemoLoop interpolates endpoints over
+five seconds, with one solved endpoint buffered ahead. The next unsolved step
+captures the entire waiting fuel queue. Yellow outlines persist until the batch
+is displayed, and a white outline marks the inspected channel. Slow solves hold
+the last endpoint. Pause and hidden tabs freeze playback. Start explicitly
+unfreezes playback after setup or restore.
 
 ## Limits, score and fuel
 
@@ -116,17 +123,16 @@ drafts across navigation. Remove listeners/subscriptions when views close.
 
 ## Saves and release checks
 
-Version-2 saves include pacing/drafts, replay shared commands and reject incompatible
-pack/scoring/integration identities. Version-1 real-time saves remain stored but
-cannot resume in the public game. Cloud saves
-preserve ownership/revision checks; apply the [daily migration](../supabase/migrations/20261009232415_daily_turn_saves.sql)
-before version-2 uploads. Guest/offline play remains available. The loaded build
-and physics model are visible. A waiting update saves locally, requires other game
-tabs to close, then unregisters the old worker and reloads a complete current build.
-Failed saves prevent reload. See [accounts](maintenance/player-accounts.md).
+Time-based update checkpoints replay accepted shared commands and verify the
+final state digest, data pack, scoring policy, and integration identity. The
+checkpoint uses the latest completed solver endpoint plus waiting fuel orders.
+IndexedDB stores the replay and session storage points the reloading tab to it.
+The game waits for other tabs to close, commits the checkpoint, then switches
+builds automatically. Failed writes prevent reload. Incompatible checkpoints
+remain stored. Legacy daily saves use a separate storage namespace.
 
 Use `tools/Test-DotNet.ps1` and `tools/Test-Browser.ps1`, with `-Configuration Release`
 to match CI. Add focused changed-behavior tests. Releases publish AOT WASM, build
-under `/CRS/`, run daily/save/graph smoke and direct solver reproduction, and verify
+under `/CRS/`, run time-based gameplay and update smoke and direct solver reproduction, and verify
 the published build commit and live loop. Inspect the final diff. Exact commands
 are in [tools](maintenance/research-tools.md) and [hosting](maintenance/hosting.md).

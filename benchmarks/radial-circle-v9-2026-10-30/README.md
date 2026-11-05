@@ -61,3 +61,30 @@ Reproduce a final campaign with a new output prefix:
 ```powershell
 dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest-lzc --channels-per-day=2 --days=100 --seed=1001 --output=tmp/radial-v9-seed1001
 ```
+
+
+## Time-based map scale calibration
+
+A native Browser bridge sample used the v9 pack, time-based (`demo`) pacing,
+and seeds 1001, 42 and 2026. For each seed it sampled the initialized core and
+ten 12-hour endpoints. The first half of each day refuelled the two eligible
+channels with the highest average burnup, breaking ties by channel index. The
+second half advanced without orders. This gave 12,540 readings for each
+channel metric and 462 individual zone readings. Quantiles use the nearest
+sample rank after sorting.
+
+| Map reading | 5th percentile | Median | 95th percentile |
+| --- | ---: | ---: | ---: |
+| Channel power, kW | 4,261 | 5,492 | 6,437 |
+| Ripple, % of reference | 96.94 | 100.26 | 102.44 |
+| Average channel burnup, MWd/kg | 1.48 | 3.35 | 5.23 |
+| Individual zone fill, % | 39.56 | 49.99 | 60.06 |
+
+The old 5,000 kW floor flattened 30.9% of sampled powers to one color, and
+99.7% of sampled ripple fell into the old 95–105% band. The 100-day daily-turn
+campaign corroborates the power and ripple ranges and shows lower zone fills
+over longer play (5th–95th percentile 36.47–55.35%). The time-based display
+uses fixed piecewise gradients with denser stops around these observed
+ranges. Equal widths between legend ticks show the color space allocated to
+each numerical interval. These samples characterize the tested seeds and
+refuelling policy.

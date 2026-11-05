@@ -8,13 +8,13 @@ page.on('pageerror', error => errors.push(error.message));
 page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
 const waitOptions = { timeout: 180000 };
 try {
-  await page.goto(process.argv[2] ?? 'http://127.0.0.1:4175/CRS/');
-  await page.waitForFunction(() => document.querySelector('[data-action=demo]')?.getAttribute('aria-disabled') === 'false' || document.querySelector('.bridge-recovery:not([hidden])'), undefined, waitOptions);
+  await page.goto(process.argv[2] ?? process.env.PLAYTEST_URL ?? 'http://127.0.0.1:4173/CRS/');
+  await page.locator('[data-action=demo]').waitFor(waitOptions);
   if (errors.length) throw new Error(errors.join('\n'));
   console.log('Launcher ready.');
   await page.locator('.launcher-setup details > summary').click();
   await page.locator('[data-field=seed]').fill('1001');
-  if (!(await page.locator('[data-action=begin]').innerText()).includes('Turn based')) throw new Error('Turn based choice missing');
+  if (await page.getByRole('button', { name: 'Turn based', exact: true }).count()) throw new Error('Turn based is still selectable');
   if ((await page.locator('[data-action=demo]').innerText()) !== 'Time based') throw new Error('Time based choice missing');
   if (await page.locator('.launcher-actions button').first().getAttribute('data-action') !== 'demo') throw new Error('Time based is not first');
   await page.locator('[data-action=demo]').click();
@@ -117,9 +117,8 @@ try {
   await page.waitForFunction(() => document.querySelector('.reactor-demo')?.getAttribute('data-fuel-consumed') === '8', undefined, waitOptions);
   await page.locator('.reactor-demo [data-action=leave]').click();
   if (!await page.locator('.reactor-launcher').isVisible()) throw new Error('Return to launcher failed');
-  if (await page.locator('#status-mirror').getAttribute('data-completed-days') !== '0') throw new Error('Demo changed the daily run');
   if (errors.length) throw new Error(errors.join('\n'));
-  console.log(JSON.stringify({ result: 'Demo Pages-path smoke passed', fuelMs, firstDayMs: dayMs, dayIntervalMs, distinctPowerFrames: powerFrames.size, zones: 14, batchedChannels: 2, queueOutline: true, viewports: [1440, 768, 390, 320], keyboard: true, pause: true, retry: true, preservedDailyRun: true }));
+  console.log(JSON.stringify({ result: 'Demo Pages-path smoke passed', fuelMs, firstDayMs: dayMs, dayIntervalMs, distinctPowerFrames: powerFrames.size, zones: 14, batchedChannels: 2, queueOutline: true, viewports: [1440, 768, 390, 320], keyboard: true, pause: true, retry: true }));
 } catch (error) {
   await mkdir('artifacts/demo', { recursive: true });
   await page.screenshot({ path: 'artifacts/demo/failure.png', fullPage: true });

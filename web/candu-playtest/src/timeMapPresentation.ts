@@ -1,33 +1,91 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
-import { demoPowerColor } from "./demoPresentation";
-import { burnupColor, channelWatts, mapLegend, rippleColor } from "./studio/powerReadings";
+import { channelLimit, channelWatts } from "./studio/powerReadings";
 
 export type TimeMapMode = "power" | "ripple" | "burnup" | "paired-zones";
 const unavailable = "#657080";
+type Stop = readonly [value: number, red: number, green: number, blue: number];
+
+// Fixed across frames and seeds. Closely spaced stops give common readings more
+// color space. See the v9 benchmark notes for the sampled operating ranges.
+const scales: Record<TimeMapMode, { unit: string; stops: readonly Stop[] }> = {
+  power: { unit: "kW", stops: [
+    [3900, 35, 53, 116], [4500, 52, 100, 192], [5000, 36, 153, 195], [5500, 48, 199, 154],
+    [6000, 185, 218, 88], [6450, 255, 176, 68], [7100, 240, 67, 83],
+  ] },
+  ripple: { unit: "%", stops: [
+    [94, 43, 60, 128], [97, 56, 113, 201], [99, 104, 197, 224], [100, 221, 234, 222],
+    [101, 249, 205, 120], [103, 241, 130, 67], [107, 170, 53, 92],
+  ] },
+  burnup: { unit: "MWd/kg", stops: [
+    [0, 25, 35, 66], [1.5, 43, 74, 127], [2.3, 35, 125, 155], [3.3, 48, 173, 157],
+    [4.4, 148, 201, 101], [5.4, 240, 216, 117], [7, 255, 242, 202],
+  ] },
+  "paired-zones": { unit: "%", stops: [
+    [0, 32, 48, 107], [35, 55, 102, 190], [42, 50, 167, 211], [50, 86, 208, 152],
+    [57, 222, 220, 113], [65, 250, 159, 74], [100, 219, 62, 87],
+  ] },
+};
+
+const rgb = (red: number, green: number, blue: number): string => `rgb(${red}, ${green}, ${blue})`;
+
+function color(mode: TimeMapMode, value: number): string {
+  if (!Number.isFinite(value)) return unavailable;
+  const stops = scales[mode].stops;
+  const upper = stops.findIndex(stop => value <= stop[0]);
+  if (upper <= 0) {
+    const [, red, green, blue] = upper === 0 ? stops[0] : stops[stops.length - 1];
+    return rgb(red, green, blue);
+  }
+  const [low, r, g, b] = stops[upper - 1];
+  const [high, red, green, blue] = stops[upper];
+  const fraction = (value - low) / (high - low);
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * fraction);
+  return rgb(mix(r, red), mix(g, green), mix(b, blue));
+}
+
+export function renderTimeMapScale(element: HTMLElement, mode: TimeMapMode): void {
+  const { stops, unit } = scales[mode];
+  element.style.setProperty("--map-scale", `linear-gradient(90deg, ${stops.map(([, r, g, b]) => rgb(r, g, b)).join(", ")})`);
+  const ticks = stops.map(([value], i) => {
+    const tick = document.createElement("span");
+    tick.textContent = `${value.toLocaleString("en-US")}${unit === "%" ? "%" : ""}`;
+    tick.style.left = `${i / (stops.length - 1) * 100}%`;
+    return tick;
+  });
+  element.setAttribute("aria-label", `Color scale in ${unit}`);
+  element.replaceChildren(...ticks);
+}
 
 export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapshot, mode: TimeMapMode): { background: string; reading: string } {
-  if (mode === "power") return { background: demoPowerColor(channelWatts(snapshot, channel)), reading: `${(channelWatts(snapshot, channel) / 1000).toFixed(0)} kW` };
-  if (mode === "burnup") return { background: burnupColor(channel.averageBurnupMwdPerKg), reading: `Burnup ${channel.averageBurnupMwdPerKg.toFixed(2)} MWd/kg` };
+  if (mode === "power") {
+    const kw = channelWatts(snapshot, channel) / 1000;
+    return { background: color(mode, kw), reading: Number.isFinite(kw) ? `${kw.toFixed(0)} kW` : "Power unavailable" };
+  }
+  if (mode === "burnup") {
+    const burnup = channel.averageBurnupMwdPerKg;
+    return { background: color(mode, burnup), reading: Number.isFinite(burnup) ? `Burnup ${burnup.toFixed(2)} MWd/kg` : "Burnup unavailable" };
+  }
   if (mode === "ripple") {
-    const ratio = snapshot.ripple?.channelRippleFractions[channel.channelIndex];
-    return { background: rippleColor(ratio ?? NaN), reading: ratio === undefined ? "Ripple unavailable" : `Ripple ${(ratio * 100).toFixed(1)}% of reference` };
+    const percent = (snapshot.ripple?.channelRippleFractions[channel.channelIndex] ?? NaN) * 100;
+    return { background: color(mode, percent), reading: Number.isFinite(percent) ? `Ripple ${percent.toFixed(1)}% of reference` : "Ripple unavailable" };
   }
   // Published measurement regions, not the localized absorber footprint or grid guesses.
   const ids = [...new Set(channel.bundles.map(b => b.logicalZoneId).filter((id): id is number => id !== undefined))];
   const half = (endA: boolean) => {
     const matches = ids.filter(id => endA ? id < 7 : id >= 7);
     const zone = matches.length === 1 ? snapshot.rrs.zones.find(z => z.logicalZoneId === matches[0]) : undefined;
-    const fill = zone?.fillFraction;
-    return fill === undefined || !Number.isFinite(fill)
+    const fill = zone?.fillFraction ?? NaN;
+    return !Number.isFinite(fill)
       ? { color: unavailable, reading: `End ${endA ? "A" : "B"} fill unavailable` }
-      : { color: `hsl(${(220 * (1 - Math.max(0, Math.min(1, fill)))).toFixed(1)} 80% 48%)`, reading: `End ${endA ? "A" : "B"} Z${zone!.logicalZoneId + 1}: ${(fill * 100).toFixed(1)}% filled` };
+      : { color: color(mode, fill * 100), reading: `End ${endA ? "A" : "B"} Z${zone!.logicalZoneId + 1}: ${(fill * 100).toFixed(1)}% filled` };
   };
   const a = half(true), b = half(false);
   return { background: `linear-gradient(to right, ${a.color} 0%, ${a.color} 50%, ${b.color} 50%, ${b.color} 100%)`, reading: `${a.reading} · ${b.reading}` };
 }
 
 export function timeMapLegend(snapshot: CanduSnapshot, mode: TimeMapMode): string {
-  if (mode === "power") return `5,000 kW blue → 6,500 kW red · >6,500 pulses · >7,000 shakes · Limit ${((snapshot.ripple?.maximumChannelPowerWatts ?? 7_100_000) / 1000).toLocaleString("en-US")} kW`;
-  if (mode === "paired-zones") return "Paired zone fills: left half = End A · right half = End B · 0% blue → 100% red · Grey = unavailable. Hover or focus for zone IDs and fill percentages.";
-  return mapLegend(snapshot, mode);
+  if (mode === "power") return `Channel power (kW) · Above 6,500 pulses · Above 7,000 shakes · Limit ${(channelLimit(snapshot) / 1000).toLocaleString("en-US")} kW`;
+  if (mode === "paired-zones") return "Zone fill (%) · left half = End A · right half = End B · Grey = unavailable";
+  if (mode === "ripple") return "Ripple · Percent of reference · 100% is the channel reference";
+  return "Average channel burnup (MWd/kg)";
 }

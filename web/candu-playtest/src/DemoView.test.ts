@@ -123,7 +123,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   for (const value of ["ripple", "burnup", "paired-zones", "power"]) {
     mode.value = value; mode.dispatchEvent(new Event("change", { bubbles: true }));
     expect(view.element.querySelector('.arcade-map')?.getAttribute('data-map-mode')).toBe(value);
-    expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "5,000 kW" : value === "paired-zones" ? "left half = End A" : value === "ripple" ? "Ripple:" : "Burnup bands:");
+    expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "Channel power (kW)" : value === "paired-zones" ? "left half = End A" : value === "ripple" ? "Ripple" : "Average channel burnup");
   }
 });
 

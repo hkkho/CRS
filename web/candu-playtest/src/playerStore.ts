@@ -22,6 +22,14 @@ export class PlayerStore {
       tx.onerror = tx.onabort = () => reject(new Error('Could not save locally. Browser storage may be full.'));
     });
   }
+  async get(owner: string, id: string): Promise<RunSave | undefined> {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const request = db.transaction('runs').objectStore('runs').get(`${owner}:${id}`);
+      request.onsuccess = () => resolve((request.result as StoredRun | undefined)?.run);
+      request.onerror = () => reject(new Error('Could not read the local checkpoint.'));
+    });
+  }
   async list(owner: string): Promise<RunSave[]> {
     const db = await this.open();
     return new Promise((resolve, reject) => {

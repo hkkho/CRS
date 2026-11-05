@@ -1,7 +1,14 @@
-import type { BridgeSessionController } from "./sessionController";
+import type { CanduSnapshot } from "./protocol";
 import "./gameUpdate.css";
 
-/** Keep a complete JS/WASM build together and let the player choose when to reload. */
+interface UpdateSession {
+  readonly snapshot?: CanduSnapshot;
+  readonly isPending?: boolean;
+  subscribe(listener: () => void): () => void;
+  dispose(): void;
+}
+
+/** Checkpoint the current run before switching to a complete new build. */
 export class GameUpdateView {
   readonly element = document.createElement("aside");
   private readonly version = document.createElement("span");
@@ -10,17 +17,18 @@ export class GameUpdateView {
   private readonly progress = document.createElement("dialog");
   private waiting: ServiceWorker | null = null;
   private busy = false;
+  private retry?: ReturnType<typeof setTimeout>;
   private readonly unsubscribe: () => void;
   private timer?: ReturnType<typeof setInterval>;
   private registration?: ServiceWorkerRegistration;
   private cleanRegistration = () => {};
   private build = "loading";
 
-  constructor(private readonly session: BridgeSessionController, private readonly save: () => Promise<void>, private readonly reload: () => void = () => location.reload()) {
+  constructor(private readonly session: UpdateSession, private readonly save: () => Promise<void | (() => void)>, private readonly reload: () => void = () => location.reload()) {
     this.element.className = "game-update";
     this.element.setAttribute("aria-label", "Game version and updates");
     this.message.setAttribute("role", "status"); this.message.hidden = true;
-    this.button.type = "button"; this.button.textContent = "Save locally & update"; this.button.hidden = true;
+    this.button.type = "button"; this.button.textContent = "Retry update"; this.button.hidden = true;
     this.element.append(this.version, this.message, this.button); document.body.append(this.element);
     this.progress.className = "game-update-progress";
     this.progress.setAttribute("aria-label", "Saving run and updating game");
@@ -43,10 +51,14 @@ export class GameUpdateView {
     try {
       this.registration = await navigator.serviceWorker.register(`${base}sw.js`, { scope: base, updateViaCache: "none" });
       const inspect = () => {
-        this.waiting = this.registration?.waiting ?? null;
+        const previous = this.waiting;
+        // A first install may briefly appear as waiting before it claims this page.
+        this.waiting = navigator.serviceWorker.controller ? this.registration?.waiting ?? null : null;
+        if (previous === this.waiting) return;
         this.message.hidden = !this.waiting;
-        if (this.waiting) { this.message.hidden = false; this.message.textContent = "A newer game is ready. Save locally before updating. Older physics saves may require a new run."; }
+        if (this.waiting) { this.message.hidden = false; this.message.textContent = "A newer game is ready. Preparing to update automatically."; }
         this.render();
+        this.apply();
       };
       const watch = () => {
         const installing = this.registration?.installing;
@@ -68,45 +80,75 @@ export class GameUpdateView {
 
   private render(): void {
     const snapshot = this.session.snapshot;
-    const physics = snapshot.dataPackId.includes("radial-circle-v9")
+    const pack = snapshot?.dataPackId ?? "";
+    const physics = pack.includes("radial-circle-v9")
       ? "Circular radial boundary · Axial incoming current = 0 · v9"
-      : snapshot.dataPackId.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : snapshot.dataPackId;
-    this.version.textContent = `Build ${this.build} · ${snapshot.pacingMode === "daily-turn" ? "Daily turns" : "Update required"} · ${physics}`;
-    this.version.title = `${snapshot.dataPackId} · Time stays frozen until you advance one day.`;
+      : pack.includes("axial-marshak-v8") ? "Axial incoming current = 0 · v8" : pack;
+    const mode = snapshot?.pacingMode === "daily-turn" ? "Daily turns" : "Time based";
+    const label = [`Build ${this.build}`, mode, physics].filter(Boolean).join(" · ");
+    if (this.version.textContent !== label) this.version.textContent = label;
+    this.version.title = pack;
     this.button.hidden = !this.waiting;
     this.button.disabled = this.busy || this.session.isPending || !navigator.onLine;
   }
 
   private readonly apply = (): void => { void this.update(); };
-  private readonly network = (): void => this.render();
+  private readonly network = (): void => { this.render(); this.apply(); };
   private readonly preventCancel = (event: Event): void => event.preventDefault();
   private async update(): Promise<void> {
     if (!this.waiting || this.busy || this.session.isPending || !navigator.onLine) return;
+    if (this.retry) clearTimeout(this.retry);
     this.busy = true; this.render();
+    let release: void | (() => void) = undefined;
+    let reloading = false;
     try {
-      // Prevent new fuel orders while the checkpoint and reload are in flight.
+      const waiting = this.waiting;
+      if (!await this.checkTabs(waiting)) return;
+      // Block new input while the worker finishes its current command and the save commits.
       this.progress.showModal();
-      await this.save();
-      const result = await new Promise<{ status: string; otherTabs?: number }>((resolve, reject) => {
-        const channel = new MessageChannel();
-        const timeout = setTimeout(() => { channel.port1.close(); reject(new Error("Update not available yet. Your run is saved; close other game tabs and reopen the game.")); }, 10_000);
-        channel.port1.onmessage = event => { clearTimeout(timeout); channel.port1.close(); resolve(event.data); };
-        this.waiting!.postMessage({ type: "CANDU_ACTIVATE_UPDATE" }, [channel.port2]);
-      });
-      if (result.status === "other-tabs") {
-        this.message.textContent = `Run saved locally. Close ${result.otherTabs} other game tab(s), then try updating again.`;
-        return;
-      }
-      if (result.status !== "ready") throw new Error("Update could not be loaded. Your run is saved locally.");
+      release = await this.save();
+      if (!await this.checkTabs(waiting)) return;
       this.message.textContent = "Run saved locally. Loading the new game…";
       if (!this.registration || !await this.registration.unregister()) throw new Error("Update could not be loaded. Your run is saved locally.");
+      reloading = true;
       this.session.dispose();
       this.reload();
     } catch (error) { this.message.hidden = false; this.message.textContent = error instanceof Error ? error.message : "Update failed; the current game is preserved."; }
-    finally { this.progress.close(); this.busy = false; this.render(); }
+    finally { if (!reloading) release?.(); if (this.progress.open) this.progress.close(); this.busy = false; this.render(); }
+  }
+
+  private async checkTabs(worker: ServiceWorker): Promise<boolean> {
+    const result = await new Promise<{ status: string; otherTabs?: number }>((resolve, reject) => {
+      const channel = new MessageChannel();
+      const timeout = setTimeout(() => {
+        channel.port1.close();
+        reject(new Error("The update check timed out. Try updating again."));
+      }, 10_000);
+      channel.port1.onmessage = event => {
+        clearTimeout(timeout);
+        channel.port1.close();
+        resolve(event.data);
+      };
+      try {
+        worker.postMessage({ type: "CANDU_ACTIVATE_UPDATE" }, [channel.port2]);
+      } catch (error) {
+        clearTimeout(timeout);
+        channel.port1.close();
+        channel.port2.close();
+        reject(error);
+      }
+    });
+    if (result.status === "other-tabs") {
+      this.message.textContent = `Close ${result.otherTabs} other game tab(s) to continue the automatic update.`;
+      this.retry = setTimeout(this.apply, 10_000);
+      return false;
+    }
+    if (result.status !== "ready") throw new Error("The update could not be prepared.");
+    return true;
   }
 
   destroy(): void {
+    if (this.retry) clearTimeout(this.retry);
     if (this.timer) clearInterval(this.timer);
     this.cleanRegistration();
     window.removeEventListener("online", this.network);

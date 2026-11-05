@@ -1,47 +1,89 @@
-import { AppShell } from "./AppShell";
-import { SessionAnnouncements } from "./SessionAnnouncements";
-import { BridgeSessionController } from "./sessionController";
-import { BridgeRecoveryView } from "./BridgeRecoveryView";
-import { PlayerPanel } from './PlayerPanel';
-import { GameUpdateView } from './GameUpdateView';
-
-import { createCanduPlaytestBridge } from "./bridge";
+import { DemoView } from "./DemoView";
+import { GameUpdateView } from "./GameUpdateView";
+import { PlayerStore } from "./playerStore";
+import { randomCoreSeed } from "./coreSeed";
+import { reactorIllustration } from "./ReactorIllustration";
 import "./observatory.css";
 import "./reactorExperience.css";
+import "./workspace.css";
 import "./interfaceSimplification.css";
 import "./controlRoom.css";
 
-const session = new BridgeSessionController(createCanduPlaytestBridge({
-  initialPacingMode: "daily-turn",
-}), {}, "daily-turn");
+const root = document.getElementById("game-root")!;
+const store = new PlayerStore();
+const checkpointKey = "candu-update-checkpoint";
+const checkpointOwner = "time-based-update";
+let game: DemoView | undefined;
+let unsubscribe = () => {};
+let renderVersion = () => {};
 
-const statusMirror = document.getElementById("status-mirror");
-const recovery = new BridgeRecoveryView(document.body);
-const liveRegion = document.getElementById("session-announcements");
-const announcements = liveRegion ? new SessionAnnouncements(liveRegion) : null;
-session.subscribe(update => {
-  recovery.update(update.status);
-  announcements?.update(update);
-  // Non-announcing diagnostic mirror for smoke/reproduction tooling.
-  if (statusMirror) {
-    const snapshot = update.snapshot;
-    statusMirror.dataset.pacing = snapshot.pacingMode ?? "real-time";
-    statusMirror.dataset.timeSeconds = String(snapshot.simulationTimeSeconds);
-    statusMirror.dataset.completedDays = String(snapshot.completedDays ?? 0);
-    statusMirror.dataset.fuelConsumed = String(snapshot.shift?.fuelConsumed ?? 0);
-    statusMirror.textContent = update.status.isWasmAvailable
-      ? `CANDU live reactor online. ${snapshot.core.channelCount} channels available. ${snapshot.isPaused ? "Paused" : "Running"}. ${snapshot.shift?.unlimitedFreshFuel ? "Unlimited fresh fuel" : `${snapshot.freshBundlesAvailable} fresh bundles`}. ${snapshot.refuellingOperationCount} refuelling operations. Score ${snapshot.scoreTotal.toFixed(1)}. ${update.response?.command.type === "advance" ? "" : update.response?.message ?? "Ready for channel selection."}`
-      : `${update.status.title}. ${update.status.detail}`;
-  }
+const launcher = document.createElement("main");
+launcher.className = "reactor-launcher workspace-native";
+launcher.innerHTML = `<div class="launcher-shell">
+  <header class="launcher-masthead"><p class="workspace-kicker">CRS / A REACTOR STRATEGY GAME</p></header>
+  <div class="launcher-hero"><div class="launcher-story">
+    <h1>CRS</h1><p class="launcher-headline">YOUR CORE.<br><em>YOUR CALL.</em></p>
+    <p class="launcher-intro">Keep the reactor in balance as time advances. Watch the core and queue fresh fuel where it is needed.</p>
+    <div class="launcher-actions"><button data-action="demo" class="workspace-primary">Time based</button><button data-action="resume" hidden>Resume saved run</button></div>
+    <div class="launcher-setup"><details><summary>Starting core</summary><label>Core seed<input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label></details></div>
+  </div><figure class="launcher-art">${reactorIllustration()}</figure></div>
+</div>`;
+const seed = launcher.querySelector<HTMLInputElement>("[data-field=seed]")!;
+const play = launcher.querySelector<HTMLButtonElement>("[data-action=demo]")!;
+const resume = launcher.querySelector<HTMLButtonElement>("[data-action=resume]")!;
+seed.value = String(randomCoreSeed());
+
+function readCheckpoint(): { seed: number; id?: string } | undefined {
+  try {
+    const entry = JSON.parse(sessionStorage.getItem(checkpointKey) ?? "null");
+    if (entry && Number.isInteger(entry.seed) && entry.seed >= 0 && entry.seed <= 4294967295) return entry;
+  } catch { /* The launcher still works when storage is disabled. */ }
+}
+
+function closeGame(): void {
+  unsubscribe();
+  game?.destroy();
+  game = undefined;
+  renderVersion();
+}
+
+function showLauncher(): void {
+  closeGame();
+  root.append(launcher);
+  resume.hidden = !readCheckpoint();
+  play.focus();
+}
+
+function openGame(coreSeed: number, id?: string, restored = false): void {
+  launcher.remove();
+  const restore = id ? store.get(checkpointOwner, id).then(save => {
+    if (!save) throw new Error("The saved reactor checkpoint could not be found.");
+    return save;
+  }) : undefined;
+  game = new DemoView(root, coreSeed, showLauncher, restore, () => {
+    if (restored) {
+      try { sessionStorage.removeItem(checkpointKey); } catch { /* The run can still start. */ }
+    }
+  });
+  unsubscribe = game.subscribe(() => renderVersion());
+}
+
+play.addEventListener("click", () => { if (seed.reportValidity()) openGame(Number(seed.value)); });
+resume.addEventListener("click", () => {
+  const saved = readCheckpoint();
+  if (saved) openGame(saved.seed, saved.id, true);
 });
+const saved = readCheckpoint();
+if (saved) openGame(saved.seed, saved.id, true);
+else showLauncher();
 
-const shell = new AppShell(session, document.getElementById("game-root")!);
-const player = new PlayerPanel(session, () => shell.showStudio());
-const updates = new GameUpdateView(session, () => player.saveBeforeUpdate());
-
+const updates = new GameUpdateView({
+  get snapshot() { return game?.snapshot; },
+  subscribe(listener) { renderVersion = listener; listener(); return () => { renderVersion = () => {}; }; },
+  dispose: closeGame,
+}, () => game?.checkpoint(async (coreSeed, run) => {
+  if (run) await store.put(checkpointOwner, run);
+  sessionStorage.setItem(checkpointKey, JSON.stringify({ seed: coreSeed, id: run?.id }));
+}) ?? Promise.resolve());
 void updates.initialize(import.meta.env.BASE_URL, import.meta.env.PROD);
-
-document.addEventListener("visibilitychange", () => {
-  session.setVisible(document.visibilityState === "visible");
-});
-window.addEventListener("beforeunload", () => { updates.destroy(); player.destroy(); shell.destroy(); session.dispose(); }, { once: true });
+window.addEventListener("beforeunload", () => { updates.destroy(); closeGame(); }, { once: true });

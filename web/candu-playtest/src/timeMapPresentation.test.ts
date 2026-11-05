@@ -45,3 +45,30 @@ it("changes map readings and colours while preserving fuelling and clearing powe
   cell.dispatchEvent(new MouseEvent("dblclick", { bubbles: true })); expect(fuel).toBe(0);
   map.destroy(); map.element.remove();
 });
+
+it("distinguishes nearby readings inside the benchmarked operating bands", () => {
+  const snapshot = createSnapshot(), channel = snapshot.core.channels[0];
+  const shade = (mode: "power" | "ripple" | "burnup" | "paired-zones") => timeMapCell(snapshot, channel, mode).background;
+
+  snapshot.ripple = undefined;
+  channel.powerWatts = 4_400_000;
+  const lowerPower = shade("power");
+  channel.powerWatts = 4_450_000;
+  expect(shade("power")).not.toBe(lowerPower);
+
+  snapshot.ripple = { referenceId: "test", dataPackVersion: "test", coefficientBindingDigestHex: "test", referenceThermalPowerWatts: 1, referenceChannelPowerWatts: [5_500_000], channelRippleFractions: [.998], rmsDeviationFraction: .002, pointsPerHour: 0 };
+  const belowReference = shade("ripple");
+  snapshot.ripple.channelRippleFractions[0] = 1.002;
+  expect(shade("ripple")).not.toBe(belowReference);
+
+  channel.averageBurnupMwdPerKg = 3.2;
+  const lowerBurnup = shade("burnup");
+  channel.averageBurnupMwdPerKg = 3.3;
+  expect(shade("burnup")).not.toBe(lowerBurnup);
+
+  channel.bundles.forEach(b => { b.logicalZoneId = b.position < 6 ? 2 : 9; });
+  snapshot.rrs.zones = [2, 9].map(logicalZoneId => ({ logicalZoneId, fillFraction: .5, referencePowerFraction: 0, targetPowerFraction: 0, measuredPowerFraction: 0, shapeError: 0 }));
+  const halfFull = shade("paired-zones");
+  snapshot.rrs.zones[0].fillFraction = .505;
+  expect(shade("paired-zones")).not.toBe(halfFull);
+});
