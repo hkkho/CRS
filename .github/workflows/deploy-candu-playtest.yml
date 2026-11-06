@@ -16,6 +16,56 @@ permissions:
   contents: read
 
 jobs:
+  validation-plan:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      receipt: ${{ steps.plan.outputs.receipt }}
+      reuse: ${{ steps.plan.outputs.reuse }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Look for successful validation of this source tree
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY_ID: ${{ github.repository_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tree=$(git rev-parse 'HEAD^{tree}')
+          receipt="validated-tree-v1-$tree"
+          echo "receipt=$receipt" >> "$GITHUB_OUTPUT"
+
+          if [[ "$GITHUB_REF" == refs/heads/main && "$GITHUB_EVENT_NAME" != pull_request ]] &&
+            runs=$(timeout 10s gh api --method GET "repos/$GITHUB_REPOSITORY/actions/artifacts" \
+              -f name="$receipt" -F per_page=5 --jq '.artifacts[] | select(.expired == false) | .workflow_run.id | numbers'); then
+            for run in $runs; do
+              # Trust successful runs of this workflow from repository-owned branches only.
+              run_info=$(timeout 10s gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run") || break
+              if head_sha=$(jq -er \
+                --arg path "${GITHUB_WORKFLOW_REF%%@*}" --arg repo "$GITHUB_REPOSITORY/" \
+                --argjson repository_id "$REPOSITORY_ID" '
+                  select(.path == ($path | ltrimstr($repo)) and .conclusion == "success" and
+                    .head_repository.id == $repository_id and
+                    (.event == "pull_request" or
+                      ((.event == "push" or .event == "workflow_dispatch") and .head_branch == "main"))) |
+                  .head_sha | strings | select(test("^[0-9a-f]{40}$"))
+                ' <<< "$run_info"); then
+                # Confirm the producer's source independently of its chosen artifact name.
+                head_tree=$(timeout 10s gh api "repos/$GITHUB_REPOSITORY/git/commits/$head_sha" --jq '.tree.sha') || break
+                [[ "$head_tree" == "$tree" ]] || continue
+                echo "Reusing full validation from workflow run $run."
+                echo 'reuse=true' >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+            done
+          fi
+
+          echo 'Running full validation for this source tree.'
+          echo 'reuse=false' >> "$GITHUB_OUTPUT"
+
   documentation:
     runs-on: ubuntu-latest
     steps:
@@ -40,23 +90,27 @@ jobs:
           path: artifacts/code-library
           if-no-files-found: error
 
-  validate:
+  shared-tests:
+    needs: validation-plan
+    if: needs.validation-plan.outputs.reuse != 'true'
+    name: Test ${{ matrix.suite }} (.NET Release)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [Core, Game, Browser]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.302
+      - shell: pwsh
+        run: ./tools/Test-DotNet.ps1 -Suite ${{ matrix.suite }} -Configuration Release
+
+  wasm-build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: npm
-          cache-dependency-path: web/candu-playtest/package-lock.json
-
-      - name: Install frontend dependencies
-        working-directory: web/candu-playtest
-        run: npm ci
-
+      - uses: actions/checkout@v4
       - name: Install .NET 10
         uses: actions/setup-dotnet@v4
         with:
@@ -64,12 +118,6 @@ jobs:
 
       - name: Install WebAssembly workload
         run: dotnet workload install wasm-tools --skip-manifest-update
-
-      - name: Test authoritative Core and Game
-        shell: pwsh
-        run: |
-          ./tools/Test-DotNet.ps1 -Suite Core -Configuration Release
-          ./tools/Test-DotNet.ps1 -Suite Game -Configuration Release
 
       - name: Publish authoritative browser bridge
         shell: pwsh
@@ -86,38 +134,27 @@ jobs:
           wasm_file="$(find "$wasm_root" -type f -name '*.wasm' -print -quit)"
           test -n "$wasm_file"
           test -s "$wasm_root/build-info.json"
-          node - "$wasm_root/build-info.json" <<'NODE'
-          const fs = require('node:fs');
-          const info = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-          if (info.gitCommitSha !== process.env.GITHUB_SHA) throw new Error('build-info.json has the wrong commit SHA');
-          if (info.configuration !== 'Release') throw new Error('build-info.json is not a Release build');
-          if (info.targetFramework !== 'net10.0' || info.runtimeIdentifier !== 'browser-wasm') {
-            throw new Error('build-info.json has the wrong browser target');
-          }
-          if (info.runAotCompilation !== true || info.omitPrecompressedAssets !== true) {
-            throw new Error('build-info.json does not describe the required Release AOT staging configuration');
-          }
-          NODE
+          jq -e --arg sha "$GITHUB_SHA" '
+            .gitCommitSha == $sha and .configuration == "Release" and
+            .targetFramework == "net10.0" and .runtimeIdentifier == "browser-wasm" and
+            .runAotCompilation == true and .omitPrecompressedAssets == true
+          ' "$wasm_root/build-info.json"
           if find "$wasm_root" -type f \( -name '*.br' -o -name '*.gz' \) -print -quit | grep -q .; then
             echo 'Precompressed .br/.gz assets were staged unexpectedly' >&2
             exit 1
           fi
           printf 'Staged bridge: %s\n' "$wasm_file"
 
-      - name: Test browser contract and frontend, then build
-        shell: pwsh
-        run: ./tools/Test-Browser.ps1 -Configuration Release
-
-      - name: Save validated authoritative bridge
+      - name: Save staged authoritative bridge
         uses: actions/upload-artifact@v4
         with:
-          name: validated-wasm
+          name: staged-wasm
           path: web/candu-playtest/public/wasm
           if-no-files-found: error
           retention-days: 7
 
   pages-build:
-    needs: [validate, documentation]
+    needs: [validation-plan, wasm-build, documentation]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -128,11 +165,15 @@ jobs:
           cache-dependency-path: web/candu-playtest/package-lock.json
       - run: npm ci
         working-directory: web/candu-playtest
-      - name: Restore validated authoritative bridge
+      - name: Restore staged authoritative bridge
         uses: actions/download-artifact@v4
         with:
-          name: validated-wasm
+          name: staged-wasm
           path: web/candu-playtest/public/wasm
+      - name: Test frontend
+        if: needs.validation-plan.outputs.reuse != 'true'
+        working-directory: web/candu-playtest
+        run: npm test
       - name: Build GitHub Pages site
         working-directory: web/candu-playtest
         env:
@@ -153,6 +194,7 @@ jobs:
           PLAYTEST_URL: http://127.0.0.1:4173/CRS/
           PLAYTEST_EXPECTED_COMMIT_SHA: ${{ github.sha }}
           PLAYTEST_CAPTURE_DIR: ${{ github.workspace }}/artifacts/pages-predeploy
+          REUSE_VALIDATION: ${{ needs.validation-plan.outputs.reuse }}
         shell: bash
         run: |
           set -euo pipefail
@@ -169,9 +211,12 @@ jobs:
           test -n "$wasm_asset"
           npm run smoke:docs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/docs-smoke.log"
           npm run smoke:demo -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/demo-smoke.log"
-          npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
-          npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 --expected-commit-sha=${{ github.sha }} 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
+          if [[ "$REUSE_VALIDATION" != true ]]; then
+            npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
+            npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
+          fi
       - name: Upload Pages site
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v4
         with:
           path: web/candu-playtest/dist-pages
@@ -183,8 +228,40 @@ jobs:
           path: artifacts/pages-predeploy
           if-no-files-found: ignore
 
+  release-validation:
+    name: Release validation
+    needs: [validation-plan, shared-tests, pages-build]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a validated Pages build and shared test results
+        env:
+          PAGES_RESULT: ${{ needs.pages-build.result }}
+          SHARED_RESULT: ${{ needs.shared-tests.result }}
+          REUSE_VALIDATION: ${{ needs.validation-plan.outputs.reuse }}
+        shell: bash
+        run: |
+          if [[ "$PAGES_RESULT" != success ]] ||
+            [[ "$SHARED_RESULT" != success && ( "$SHARED_RESULT" != skipped || "$REUSE_VALIDATION" != true ) ]]; then
+            echo "::error::Release validation failed (Pages: $PAGES_RESULT, shared tests: $SHARED_RESULT)."
+            exit 1
+          fi
+      - name: Record full validation for this source tree
+        if: needs.shared-tests.result == 'success'
+        run: printf '%s\n' "$GITHUB_SHA" > validated-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: needs.shared-tests.result == 'success'
+        with:
+          name: ${{ needs.validation-plan.outputs.receipt }}
+          path: validated-commit.txt
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
+      - if: needs.validation-plan.outputs.reuse == 'true'
+        run: echo 'Full validation was already successful for this source tree.'
+
   deploy-pages:
-    needs: pages-build
+    needs: release-validation
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -195,13 +272,15 @@ jobs:
       name: github-pages
       url: ${{ steps.pages.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
       - name: Deploy validated GitHub Pages site
         id: pages
         uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24.x
+          cache: npm
+          cache-dependency-path: web/candu-playtest/package-lock.json
       - run: npm ci
         working-directory: web/candu-playtest
       - run: npx playwright install --with-deps chromium
@@ -216,9 +295,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$PLAYTEST_CAPTURE_DIR"
-          npm run smoke:demo -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/demo-smoke.log"
-          npm run benchmark -- --label=github-pages --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
-          npm run smoke:docs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/docs-smoke.log"
+          node scripts/pages-live-smoke.mjs 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/live-smoke.log"
       - name: Save Pages deployment diagnostics
         if: always()
         uses: actions/upload-artifact@v4

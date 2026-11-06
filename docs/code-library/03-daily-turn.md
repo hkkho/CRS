@@ -241,10 +241,10 @@ steps:
   explanation: '**Convert power into exposure.** For every node, watts × amplitude × seconds gives thermal fission energy in joules. Core validates and applies those increments to new bundle states. A bad increment rejects this candidate.'
 - through: transaction.ThermalEnergyJoules += energy.Sum();
   explanation: '**Retain exposed fuel and energy.** Replace the builder inventory, bind poison references to its new burnup and add the sum of node energies to the thermal-energy total. Stable bundle identities preserve the connection between fuel and poison.'
-- through: PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, amplitude));
-  explanation: '**Accumulate operating points.** The score policy compares the accepted power shape, scaled by amplitude, to fixed channel references. The rate is integrated over this same duration; this call does not award a direct fuel-move bonus.'
+- through: var timedRrs = transaction.Rrs.TryWithSimulationTime(segment.SimulationTimeEndSeconds);
+  explanation: '**Accumulate operating points and prepare the control timestamp.** The score policy uses the accepted power shape and integrates its earning rate over the interval. The next call prepares the controller timestamp for the end of that interval.'
 - through: transaction.PowerProjectionVersion = version.Value;
-  explanation: '**Advance control time and observation identity.** The RRS timestamp moves to the interval end, and the projection version increments with overflow validation. These metadata changes are still provisional.'
+  explanation: '**Validate control time and advance observation identity.** A valid RRS timestamp is kept and the projection version increments with overflow validation. These metadata changes are still provisional.'
 - through: "        }"
   explanation: '**Solve the day boundary and freeze the result.** Updated burnup and poison feed the scheduled equilibrium/RRS calculation. Only a valid solution produces an immutable `PracticeCandidate`. The caller can then commit it to the detached session and eventually adopt the full day.'
 ```

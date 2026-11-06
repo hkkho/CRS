@@ -8,8 +8,9 @@ and code walkthrough under `docs/`. A separate documentation job installs the
 pinned Python dependencies, runs `mkdocs build --strict` and checks generated
 local links/anchors. The Pages build adds that validated output **after** building
 the game, so the offline game asset cache remains independent of documentation.
-Predeployment and live documentation smoke checks verify routes, search, the
-shared in-game manual and the source revision in `docs/build-info.json`.
+The predeployment documentation smoke checks routes, search, the manual and the
+source revision in `docs/build-info.json`. The live check confirms the published
+manual route and commit.
 
 The F1 dialog bundles the chapters in `docs/code-library/manual` through
 `manualContent.ts`; it does not fetch them at runtime. Its website link opens a
@@ -19,18 +20,24 @@ GitHub Pages uses the existing public repository and GitHub account. It needs
 no additional service account or deployment secret. Pages is configured with
 `build_type: workflow`. The single-threaded WASM build remains the default.
 
-The deployment workflow validates Core, Game and the browser contract in Release
-configuration, followed by frontend tests/builds. The test runners retain their
-Debug default for local use and accept `-Configuration Release` for optimized checks.
-The Pages build consumes the validated WASM artifact, builds with `/CRS/` as its
-base URL, and runs the production browser smoke test and deterministic reproduction
-matrix before publishing. Only pushes to `main` and manual runs on `main` publish;
-pull requests validate without deployment. Time-based smoke checks cover the
-Start gate, batched fuel orders, pause, keyboard input and narrow layouts.
-A two-version production test verifies automatic reload after other game tabs
-close and restoration of both confirmed progress and waiting fuel orders.
-The published game is smoke-tested and benchmarked with the expected Git commit
-identity.
+Full validation runs the Core, Game and Browser .NET suites in Release in
+parallel with the AOT build. It also runs Vitest, the direct WASM reproduction
+matrix and the two-version save and update smoke. The local test scripts retain
+their Debug default and accept `-Configuration Release`.
+
+Pull requests run full validation. Use **Release validation** as the required
+status check when configuring branch protection for `main`. Pushes and manual
+runs on `main` can reuse an unexpired validation record from a successful run of
+this workflow when both its tested tree and repository-owned branch head match
+the tree being released. The record lasts 30 days. A direct push without a
+matching record, a merge from a fork, or an unavailable lookup runs full
+validation before publication.
+
+Every publication builds fresh Release AOT WASM and one frontend bundle under
+`/CRS/`, then smoke-tests the exact artifact. The gameplay smoke covers the Start
+gate, batched fuel orders, pause, keyboard input and narrow layouts. After
+publication, a shorter check confirms the game and docs commit, the published
+player manual and one time-based gameplay step.
 
 Vercel deployment steps and secrets are no longer used. The two `vercel.json`
 files only disable automatic Git deployments for any retained Vercel connection.
