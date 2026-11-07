@@ -41,6 +41,12 @@ describe("next-day waiting and outcome", () => {
     expect(view.element.textContent).toContain("+1.25"); expect(view.element.textContent).toContain("Total score 9.75");
     expect((view.element.querySelector("[data-calculation-progress]") as HTMLElement).hidden).toBe(true);
   });
+  it("shows a signed score loss on a surviving day", () => {
+    const { view, response } = harness();
+    view.finish({ ...response, snapshot: { ...response.snapshot, scoreDelta: -2.5, scoreTotal: -2.5 } });
+    expect(view.element.querySelector("[data-calculation-score] strong")!.textContent).toBe("-2.50");
+    expect(view.element.textContent).toContain("Total score -2.5");
+  });
   it("hands an accepted operating loss directly to the final report", () => {
     const { view, response, focus } = harness();
     view.finish({ ...response, snapshot: { ...response.snapshot, runStatus: "ended", runEndReason: "Channel power limit exceeded" } });

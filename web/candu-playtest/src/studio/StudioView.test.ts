@@ -225,7 +225,7 @@ describe("Reactor Studio live interface", () => {
     view.element.querySelector(".studio-trend-plot svg")!.dispatchEvent(new Event("pointermove", { bubbles: true }));
     expect(view.element.querySelector('[data-history="readout"]')!.textContent).toContain("LIVE");
   });
-  it("shows authoritative channel references and current ripple scoring", () => {
+  it("shows authoritative channel references and the current operating rate", () => {
     const { view, session, emit } = harness();
     session.snapshot.core.channels[0].powerWatts = 6e6;
     session.snapshot.ripple = { referenceId: "test", dataPackVersion: "test", coefficientBindingDigestHex: "a".repeat(64),
@@ -234,7 +234,7 @@ describe("Reactor Studio live interface", () => {
     emit();
     expect(view.element.querySelector('[data-field="channel-reference"]')!.textContent).toContain("6.000 MW / reference 5.000 MW");
     expect(view.element.querySelector('[data-field="channel-reference"]')!.textContent).toContain("ripple 120.00%");
-    expect(view.element.querySelector('[data-field="ripple-score"]')!.textContent).toContain("RMS ripple 20.00% · 0.200 points/h");
+    expect(view.element.querySelector('[data-field="ripple-score"]')!.textContent).toContain("Peak ripple 120.00% · 0.200 operating points/h");
     session.snapshot.ripple.channelRippleFractions[210] = 0.96;
     emit();
     expect(view.element.querySelector('[data-field="channel-reference"]')!.textContent).toContain("4.800 MW / reference 5.000 MW");
@@ -416,7 +416,7 @@ describe("Reactor Studio live interface", () => {
     emit();
     expect(view.element.querySelector('[data-field="ending-title"]')!.textContent).toBe("Objective missed");
     expect(view.element.querySelector('[data-field="energy"]')!.textContent).toContain("2,600 MWh electric (estimate)");
-    expect(view.element.querySelector('[data-field="score-components"]')!.textContent).toBe("Ripple points 400.0 · closer channel powers earn more · maximum 1 point/h");
+    expect(view.element.querySelector('[data-field="score-components"]')!.textContent).toBe("Discharge 24.0 · Zone balance 0.0 · Ripple and tilt 400.0");
     expect(document.activeElement).toBe(view.element.querySelector('[data-field="ending-title"]'));
     button("retry").click();
     expect(session.dispatch).toHaveBeenLastCalledWith({ type: "reset" });

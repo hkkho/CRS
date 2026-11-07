@@ -1,25 +1,16 @@
-# Power, fuel and regulation
+# Maps and reactor readings
 
-## Reactivity & Keff
+Use the map selector above the core. Hover, focus or select a channel to inspect its reading.
 
-Keff describes neutron multiplication. Keff = 1 is critical equilibrium. Reactivity is ρ = (Keff − 1) / Keff; 1 mk = 0.001 in reactivity. The shared solver balances the core using two neutron energy groups and spatial fuel/device data.
+| Map | What it measures |
+| --- | --- |
+| Channel power | Thermal power of the twelve bundles, in kW. High-power channels pulse above 6,500 kW and shake above 7,000 kW. Reduced motion uses static outlines. |
+| Ripple | Channel power as a percentage of that channel's fixed time-average reference. At 100%, it matches its reference. |
+| Burnup | Average accumulated fission energy per kilogram of heavy metal for the channel's bundles, in MWd/kg. |
+| Paired zone fills | Liquid-zone fill for each end of the channel. Inspect both values and the zone panel to check the remaining room to fill or drain. |
 
-## Liquid-zone control (LZC)
+The trend panels show channel power and average liquid-zone fill over recent displayed time. The fourteen individual zone readings can reveal tight control room even when the average looks comfortable.
 
-Water in fourteen compartments absorbs neutrons. Filling reduces reactivity; draining adds it. The regulating system adjusts levels and shape. High average level leaves less fill room; low average level leaves less drain room. Individual zones can have little headroom even when the average looks comfortable. The highlighted zone has the least headroom.
+## What changes the readings
 
-## Adjusters
-
-Twenty-one fixed absorber rods depress power near their positions. Amber marks show their geometry; shaded bands show overlap with the selected channel. They are fixed in this game.
-
-## Iodine & xenon
-
-Iodine-135 decays to xenon-135. Xenon absorbs neutrons and is removed by decay and neutron absorption. Inventories follow bundle identity. Fresh bundles start with zero iodine and xenon; retained bundles carry their inventories. Advancing a day builds poison in fresh fuel and changes the solved power shape.
-
-## Axial tilt
-
-Signed tilt measures the End A / End B power imbalance. Positive means higher power toward End B. Global tilt and local channel tilt are separate readings; the run limit applies to global tilt.
-
-## Power units
-
-Channel and bundle kW are thermal fission power. The reference core is 2,064 MW thermal, corresponding to an authored estimate of 650 MW electrical. Burnup uses thermal energy, not electrical output.
+Fuel loses reactivity as it accumulates burnup. Refuelling replaces part of the inventory, changing the local power distribution. Iodine and xenon evolve with exposure, and xenon absorbs neutrons. The automatic regulator adjusts liquid-zone water absorption to control the reactor. Fixed adjusters also shape the power distribution.

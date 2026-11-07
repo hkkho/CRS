@@ -1,5 +1,5 @@
 import type { CanduCommandResponse, CanduSnapshot } from "./protocol";
-import { refuelImpactText } from "./gameplayPresentation";
+import { formatScoreDelta, refuelImpactText } from "./gameplayPresentation";
 
 /** Bounded view-only response summary, retained by the shared session across navigation. */
 export class SessionPresentation {
@@ -13,7 +13,7 @@ export class SessionPresentation {
     if (response.command.type === "commit-day") {
       this.message = response.message; this.result = response.accepted ? "accepted" : "rejected";
       const day = response.snapshot.lastDayResult;
-      if (response.accepted && day) this.impactText = `${day.executedChannels.length} channels refuelled · ${day.fuelUsed} fresh bundles · +${day.scoreDelta.toFixed(2)} points\nLZC ${(day.averageLzcFillFraction * 100).toFixed(1)}% · tilt ${(day.axialTiltFraction * 100).toFixed(1)}%`;
+      if (response.accepted && day) this.impactText = `${day.executedChannels.length} channels refuelled · ${day.fuelUsed} fresh bundles · ${formatScoreDelta(day.scoreDelta)} points\nLZC ${(day.averageLzcFillFraction * 100).toFixed(1)}% · tilt ${(day.axialTiltFraction * 100).toFixed(1)}%`;
     } else if (response.command.type === "commit-refuel") {
       this.message = response.message;
       if (response.accepted) this.impactText = refuelImpactText(previous, response.snapshot, response.command.request.channelIndex);

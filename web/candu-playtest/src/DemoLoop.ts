@@ -54,10 +54,11 @@ export class DemoLoop {
       if (this.disposed) return;
       const initial = await bridge.whenReady();
       if (save.pacingMode !== "demo" || initial.pacingMode !== "demo" ||
-          save.dataPackId !== initial.dataPackId || save.scorePolicyId !== initial.scorePolicyId ||
+          save.dataPackId !== initial.dataPackId ||
           save.dailyIntegrationId !== initial.physics.cadenceIdentity) {
         throw new Error("The saved run uses a different reactor model.");
       }
+      if (save.scorePolicyId !== initial.scorePolicyId) throw new Error("The saved run uses a different scoring policy.");
       let snapshot = initial, digest: string | undefined;
       for (const record of save.commands) {
         if (this.disposed) return;
@@ -96,7 +97,7 @@ export class DemoLoop {
           this.journal.record(command, result, "compact");
           this.solved = result.snapshot;
         }
-        const save = this.journal.hasCommands ? this.journal.capture(this.solved, [...this.waitingFuel]) : undefined;
+        const save = this.journal.hasCommands ? this.journal.capture(this.solved, [...this.waitingFuel], true) : undefined;
         await write(seed, save);
       }
       return release;

@@ -1,4 +1,5 @@
 import { randomCoreSeed } from "./coreSeed";
+import { CUSTOM_PHYSICS_PACK_PREFIX, type CustomPhysics } from "./customPhysics";
 import {
   CORE_BUNDLE_POSITION_COUNT,
   CORE_CHANNEL_COUNT,
@@ -132,17 +133,19 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
     return this.metrics.slice();
   }
 
-  async initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed), pacingMode: PacingMode = "daily-turn"): Promise<CanduSnapshot> {
+  async initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed),
+    pacingMode: PacingMode = "daily-turn", customPhysics?: CustomPhysics): Promise<CanduSnapshot> {
     if (this.exports.initialize === undefined) {
       return this.getSnapshot();
     }
 
     const callStarted = nowMs();
-    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed, pacingMode }));
+    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed, pacingMode, customPhysics }));
     const callDuration = nowMs() - callStarted;
     const parseStarted = nowMs();
     try {
       const response = parseProtocolResponse(raw);
+      if (!response.accepted) throw new Error(response.message);
       recordMetric(this.metrics, {
         commandType: "initialize",
         responseKind: responseKindOf(response),
@@ -260,6 +263,7 @@ interface WorkerRequest {
   mode?: BridgeModeId;
   seed?: number;
   pacingMode?: PacingMode;
+  customPhysics?: CustomPhysics;
   commandJson?: string;
 }
 
@@ -297,6 +301,7 @@ export type WorkerProtocolWorkerFactory = () => WorkerProtocolWorker;
 export interface WorkerProtocolBridgeOptions {
   initialPacingMode?: PacingMode;
   initialSeed?: number;
+  customPhysics?: CustomPhysics;
   onProgress?: () => void;
   createWorker?: WorkerProtocolWorkerFactory;
   onFatalError?: (error: Error) => void;
@@ -390,10 +395,11 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
     this.terminateWorker();
   }
 
-  initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed), pacingMode: PacingMode = "daily-turn"): Promise<CanduSnapshot> {
+  initialize(mode: BridgeModeId, seed = randomCoreSeed(this.lastSnapshot?.shift?.seed),
+    pacingMode: PacingMode = "daily-turn", customPhysics?: CustomPhysics): Promise<CanduSnapshot> {
     return this.enqueue(async () => {
       await this.ready;
-      const result = await this.request({ id: 0, type: "initialize", mode, seed, pacingMode });
+      const result = await this.request({ id: 0, type: "initialize", mode, seed, pacingMode, customPhysics });
       const parseStarted = nowMs();
       let snapshot: CanduSnapshot;
       let response: CanduCommandResponse;
@@ -416,6 +422,7 @@ export class WorkerProtocolBridge implements CanduPlaytestBridge {
             snapshot,
           };
         }
+        if (!response.accepted) throw new Error(response.message);
       } catch (error) {
         recordMetric(this.metrics, {
           commandType: "initialize",
@@ -704,13 +711,15 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     }
 
     this.settled = this.wasm.ready
-      .then(() => this.wasm!.initialize(this.selectedMode, options.initialSeed, options.initialPacingMode ?? "daily-turn"))
+      .then(() => this.wasm!.initialize(this.selectedMode, options.initialSeed, options.initialPacingMode ?? "daily-turn", options.customPhysics))
       .then((snapshot) => {
         if (this.disposed || this.failedClosed) {
           return;
         }
         if ((options.initialPacingMode ?? "daily-turn") === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns. Reload the updated game.");
         if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support time based play. Reload the updated game.");
+        if (options.customPhysics && (!snapshot.dataPackId.startsWith(CUSTOM_PHYSICS_PACK_PREFIX) || !snapshot.provenance?.isModified))
+          throw new Error("This WASM host does not support custom physics. Reload the updated game.");
         this.active = this.wasm!;
         this.activeStatus = this.wasm!.status;
         this.notify(snapshot);

@@ -222,20 +222,23 @@ it("checkpoints a fuel order queued before the first time step", async () => {
   }));
 });
 
-it("retains a v9 checkpoint and skips replay on v10 physics", async () => {
+it.each([
+  ["dataPackId", "v9", "different reactor model"],
+  ["scorePolicyId", "practice-channel-ripple-v3", "different scoring policy"],
+] as const)("retains a checkpoint with an incompatible %s", async (key, value, reason) => {
   const h = setup();
   loop.fuel(210);
   const write = vi.fn<(seed: number, save?: RunSave) => Promise<void>>();
   const checkpoint = loop.checkpoint(write);
   h.complete();
   (await checkpoint)();
-  const oldSave = { ...write.mock.calls[0][1]!, dataPackId: "candu6-two-group-diffusion-v1-radial-circle-v9" };
-  const initial = { ...h.bridge.getSnapshot(), dataPackId: "candu6-two-group-diffusion-v1-diffusion-v10" };
+  const oldSave = { ...write.mock.calls[0][1]!, [key]: value };
+  const initial = h.bridge.getSnapshot();
   const bridge = { ...h.bridge, getSnapshot: () => initial, whenReady: async () => initial, dispatch: vi.fn() };
   loop.destroy();
   loop = new DemoLoop(bridge, () => Date.now(), true, undefined, Promise.resolve(oldSave));
   await vi.advanceTimersByTimeAsync(0);
-  expect(loop.message).toContain("different reactor model");
+  expect(loop.message).toContain(reason);
   expect(loop.message).toContain("checkpoint is still stored");
   expect(bridge.dispatch).not.toHaveBeenCalled();
 });

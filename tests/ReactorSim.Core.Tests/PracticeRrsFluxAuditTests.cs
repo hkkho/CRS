@@ -62,7 +62,8 @@ public sealed class PracticeRrsFluxAuditTests(ITestOutputHelper output)
             double[] command = after.ZoneFills.Zip(before.ZoneFills, (a, b) => a - b).ToArray();
             Assert.Equal(beforeSnapshot.SimulationTimeSeconds, result.Snapshot.SimulationTimeSeconds);
             Assert.Equal(beforeSnapshot.SimulationTimeSeconds, after.SimulationTimeSeconds);
-            Assert.Equal(beforeSnapshot.ScoreTotal, result.Snapshot.ScoreTotal);
+            Assert.Equal(beforeSnapshot.ScoreTotal + result.Snapshot.LastRefuellingScore!.NetPoints,
+                result.Snapshot.ScoreTotal);
             Assert.Equal(beforeSnapshot.Shift.ThermalEnergyMwh, result.Snapshot.Shift.ThermalEnergyMwh);
             Assert.True(result.Snapshot.IsPaused);
             Assert.Contains(command, movement => Math.Abs(movement) > 1e-8);

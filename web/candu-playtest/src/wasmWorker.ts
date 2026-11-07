@@ -5,9 +5,10 @@ import {
   type PacingMode,
   type CanduPlaytestWasmExports,
 } from "./protocol";
+import type { CustomPhysics } from "./customPhysics";
 
 type WorkerRequest =
-  | { id: number; type: "initialize"; mode: BridgeModeId; seed: number; pacingMode?: PacingMode }
+  | { id: number; type: "initialize"; mode: BridgeModeId; seed: number; pacingMode?: PacingMode; customPhysics?: CustomPhysics }
   | { id: number; type: "get-snapshot" }
   | { id: number; type: "dispatch"; commandJson: string; profile?: boolean };
 
@@ -85,7 +86,10 @@ async function dispatchRequest(api: CanduPlaytestWasmExports, request: WorkerReq
       if (api.initialize === undefined) {
         return api.getSnapshotJson();
       }
-      return normalizeJson(await api.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode: request.mode, seed: request.seed, pacingMode: request.pacingMode })));
+      return normalizeJson(await api.initialize(JSON.stringify({
+        protocol: PROTOCOL_VERSION, mode: request.mode, seed: request.seed,
+        pacingMode: request.pacingMode, customPhysics: request.customPhysics,
+      })));
     case "get-snapshot":
       return normalizeJson(await api.getSnapshotJson());
     case "dispatch":

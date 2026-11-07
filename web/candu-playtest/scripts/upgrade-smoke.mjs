@@ -6,7 +6,9 @@ import { offlinePlugin } from '../offlinePlugin.ts';
 
 // Two real production app versions, sharing unchanged authoritative physics.
 // The candidate has new HTML/JS identities and unchanged authoritative physics.
-const root = resolve(process.argv[2] ?? '../../tmp/game-upgrade');
+const args = process.argv.slice(2);
+const customPhysics = args.includes('--custom-physics');
+const root = resolve(args.find(arg => arg !== '--custom-physics') ?? '../../tmp/game-upgrade');
 const first = join(root, 'first'), next = join(root, 'next');
 await mkdir(root, { recursive: true });
 await cp('dist-pages', first, { recursive: true }); await cp('dist-pages', next, { recursive: true });
@@ -43,7 +45,33 @@ try {
   console.log("Opening the first build.");
   await page.locator('.launcher-setup summary').click();
   await page.locator('[data-field=seed]').fill('1001');
-  await page.locator('[data-action=demo]').click();
+  if (customPhysics) {
+    await page.setViewportSize({ width: 320, height: 680 });
+    await page.getByRole('button', { name: 'Custom physics' }).press('Enter');
+    const editor = page.getByRole('dialog', { name: 'Custom physics' });
+    check(await editor.evaluate(element => element.scrollWidth <= element.clientWidth), 'Custom editor overflows a narrow screen.');
+    const power = editor.getByRole('spinbutton', { name: /Thermal power/ });
+    await power.fill('0.98');
+    await page.screenshot({ path: join(root, 'custom-editor.png') });
+    await page.keyboard.press('Escape');
+    check(await page.getByRole('button', { name: 'Custom physics' }).evaluate(button => document.activeElement === button), 'Closing the editor lost keyboard focus.');
+    await page.getByRole('button', { name: 'Custom physics' }).click();
+    check(await power.inputValue() === '1', 'Cancel kept an uncommitted edit.');
+    await power.fill('0.98');
+    await editor.getByText('Solver tolerances and iteration limits').click();
+    const iterations = editor.getByRole('spinbutton', { name: 'Maximum iterations', exact: true });
+    await iterations.fill('1');
+    await editor.getByRole('button', { name: 'Build custom core' }).click();
+    await page.getByRole('dialog', { name: 'Preparing game' }).getByText(/Custom core could not initialize/).waitFor({ timeout });
+    await page.screenshot({ path: join(root, 'custom-rejection.png') });
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Custom physics' }).click();
+    check(await power.inputValue() === '0.98', 'The failed build lost the custom draft.');
+    await iterations.fill('1600');
+    await editor.getByRole('button', { name: 'Build custom core' }).click();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByText(/Build .* Custom physics/).waitFor({ timeout });
+  } else await page.locator('[data-action=demo]').click();
   await page.locator('[data-game-start]').click({ timeout });
   await page.waitForFunction(() => !!navigator.serviceWorker.controller, undefined, { timeout });
   await page.locator('.reactor-demo [data-channel="210"]').dblclick();
@@ -73,7 +101,17 @@ try {
   check(Number(await game.getAttribute('data-time-seconds')) >= before, 'Restored simulation time went backwards.');
   check(await game.getAttribute('data-fuel-consumed') === '8', 'Confirmed fuel move did not survive the update.');
   check(await game.locator('[data-fuel-queue]').textContent() === '1 waiting · 0 submitted', 'Waiting order did not survive the update.');
-  const result = { status: 'passed', automaticUpdate: true, otherTabProtected: true, updatedBuild: candidateSha, restoredFuel: 8, restoredWaitingOrders: 1 };
+  if (customPhysics) {
+    await game.getByText('CRS / CUSTOM PHYSICS', { exact: true }).waitFor({ timeout });
+    check(await page.evaluate(() => JSON.parse(sessionStorage.getItem('candu-update-checkpoint')).customPhysics['practice.thermal_power_multiplier']) === 0.98,
+      'The restored run lost its physics overrides.');
+    await page.locator('[data-game-start]').click();
+    await game.getByRole('button', { name: 'Main screen' }).click();
+    await page.getByRole('button', { name: 'Custom physics' }).click();
+    check(await page.getByRole('spinbutton', { name: /Thermal power/ }).inputValue() === '0.98',
+      'The restored settings did not populate the editor.');
+  }
+  const result = { status: 'passed', customPhysics, automaticUpdate: true, otherTabProtected: true, updatedBuild: candidateSha, restoredFuel: 8, restoredWaitingOrders: 1 };
   await writeFile(join(root, 'result.json'), JSON.stringify(result, null, 2)); console.log(JSON.stringify(result));
 } catch (error) {
   await page.screenshot({ path: join(root, 'failure.png'), fullPage: true, timeout: 5000 }).catch(() => {});

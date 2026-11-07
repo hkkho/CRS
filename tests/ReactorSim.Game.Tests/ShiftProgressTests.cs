@@ -38,7 +38,7 @@ public sealed class ShiftProgressTests
         bool terminal, bool completed, uint useful, string outcome, bool rewarded)
     {
         var progress = new ShiftProgress(true, 1001, 86400, terminal ? 86400 : 3600,
-            terminal, completed, 8, useful, 3_600_000_000, 42, 12, 130);
+            terminal, completed, 8, useful, 3_600_000_000, 42, 12, 0, 130);
         Assert.Equal(outcome, progress.Outcome);
         Assert.Equal(rewarded, progress.RewardEarned);
         Assert.Equal(100, progress.OperatingPoints);

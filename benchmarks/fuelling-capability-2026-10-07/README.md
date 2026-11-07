@@ -38,7 +38,7 @@ The previous v3 calibration ended at day 22.6375 for the regional policy and day
 100 days on this seed with v4. They do not establish performance for other seeds,
 policy optimality, or a realistic plant fuelling response. The existing calibration
 and poison-basis limitations are documented in
-[literature geometry v4](../../docs/physics/literature-geometry-v4.md).
+[calibration provenance](../../docs/physics/calibration-provenance.md).
 
 ## Measurement and verification
 

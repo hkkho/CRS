@@ -18,9 +18,9 @@ try {
   for (const [route, heading] of [
     ['', 'CRS documentation'],
     ['manual/', 'Player manual'],
-    ['manual/start/', 'One day at a time'],
+    ['manual/start/', 'Start a time-based run'],
     ['theory/', 'Reactor theory'],
-    ['theory/numerical-model/', 'The spatial solver and daily approximation'],
+    ['theory/numerical-model/', 'The spatial solver and half-day approximation'],
     ['01-startup/', '1. Entry points and startup'],
   ]) {
     await page.goto(new URL(route, docsUrl).href);

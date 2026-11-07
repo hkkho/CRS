@@ -1,29 +1,11 @@
 # Eight in, eight out
 
-Each channel holds twelve axial bundle positions, numbered from End A to End B. A move inserts eight fresh bundles with the channel’s flow and discharges eight at the opposite end. The other four shift along the channel. Adjacent channels have opposite flow directions.
+A fuel order inserts eight fresh bundles with the channel's flow and discharges eight at the opposite end. Four bundles stay in the channel and carry their burnup and poison history. Adjacent channels have opposite flow directions. Time-based free practice has unlimited fresh stock and still counts all bundles used.
 
-The preview marks outgoing positions **OUT** in gold and retained positions **KEEP** in teal. Numbers show position and burnup in MWd/kg HM. Hover a position for its destination. Confirmed reports retain bundle identities, old and new positions, and discharge burnup.
-
-Adding a channel uses no fuel or time. Double-click a queued channel again,
-press its sheet row's **×**, or clear the whole plan to remove orders. Clicking
-the channel name on a sheet row returns inspection to that channel without
-changing the draft. Moves execute in displayed channel order before the
-simulation advances twenty-four hours.
-
-The paper fuelling sheet fills as you add channels and removes rows as you deselect
-them. Its numbered order matches execution, rather than selection order. Flow
-comes from each channel; exit burnup comes from its eight published outgoing
-positions. The sheet is a draft until you advance. The channel locator and
-confirmed-movement ring are visual feedback, not additional machine controls.
-
-The sheet shows the fresh bundles required and the stock available once, in its
-footer. Arcade reviews this same sheet before **Run the day**; **Change picks**
-returns to editing. After execution, **Day report** below the workspace retains
-all confirmed movements and their bundle identities. A final run report includes
-the ending reason and reward outcome.
-
-A channel containing nonfuel cells cannot be refuelled. A finite-stock plan must have eight fresh bundles available per channel.
+Select a channel and use **Queue fuel**, double-click it, or press **Enter** or **R** on the map. The next unsolved step takes the waiting orders as a batch. Yellow outlines mark waiting or submitted orders until their result appears. A white outline marks the channel you are inspecting. The fuel receipt reports the bundles delivered and the points from the batch.
 
 ## Choosing fuel
 
-Burnup measures thermal energy extracted per kilogram of heavy metal. Older fuel generally contributes less reactivity. Fresh fuel can raise local power and alter the core shape; inspect both the channel and hottest bundle. Average channel burnup alone does not describe the eight outgoing bundles.
+- Look for high burnup and enough headroom in the paired liquid zones. Each discharged bundle scores according to its own burnup, so a channel average is a guide.
+- Check nearby power. Fresh fuel can increase power in the channel and its neighbours.
+- Spread orders when the core is near a limit. A move that crosses a limit ends the run and skips later orders in that batch.

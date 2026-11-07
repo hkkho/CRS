@@ -15,7 +15,7 @@ namespace ReactorSim.Game
 
         internal ShiftProgress(bool challenge, ulong seed, double horizon, double time,
             bool terminal, bool horizonCompleted, uint fuelConsumed, uint usefulDischarged,
-            double thermalEnergyJoules, double dischargeReward, double freshFuelCost, double score, bool standardRun = true,
+            double thermalEnergyJoules, double dischargeReward, double freshFuelCost, double zoneBalanceBonus, double score, bool standardRun = true,
             bool unlimitedFreshFuel = false, string? objectiveId = null)
         {
             var goal = ShiftObjective.ForId(objectiveId ?? (challenge ? ChallengeId : PracticeId));
@@ -38,7 +38,8 @@ namespace ReactorSim.Game
                 PracticeGameSessionFactory.PracticeReferenceThermalPowerWatts;
             DischargeReward = dischargeReward;
             FreshFuelCost = freshFuelCost;
-            OperatingPoints = score - (dischargeReward - freshFuelCost);
+            ZoneBalanceBonus = zoneBalanceBonus;
+            OperatingPoints = score - (dischargeReward - freshFuelCost + zoneBalanceBonus);
             Outcome = !terminal ? "in-progress" : !horizonCompleted ? "ended" :
                 usefulDischarged < goal.UsefulBundles ? "missed" : "success";
             Reward = goal.Reward;
@@ -62,6 +63,7 @@ namespace ReactorSim.Game
         public double ElectricalEnergyMwhEstimate { get; }
         public double DischargeReward { get; }
         public double FreshFuelCost { get; }
+        public double ZoneBalanceBonus { get; }
         public double OperatingPoints { get; }
         public string Outcome { get; }
         public string Reward { get; }

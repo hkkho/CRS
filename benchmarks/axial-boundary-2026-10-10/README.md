@@ -1,8 +1,7 @@
 # Axial boundary sensitivity
 
-The [review](../../docs/physics/axial-boundary-review.md) connects the public
-fuel-management and reactor-physics sources to the active boundary code and
-this controlled experiment.
+The [calibration history](../../docs/physics/calibration-provenance.md) places
+this sensitivity experiment in the development of the current axial boundary.
 
 ![Axial boundary comparison](axial-boundary-comparison.png)
 

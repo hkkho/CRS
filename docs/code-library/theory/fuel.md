@@ -56,18 +56,8 @@ burnup describes the eight positions that a move would discharge. They answer
 different questions, so a high channel average does not by itself identify the
 best discharge or predict an acceptable power response.
 
-## Initial fuel and daily exposure
+## Initial fuel and half-day exposure
 
-Runs begin with a seeded aged inventory. The same seed and objective reconstruct
-the same starting conditions under the same model version. New shifts draw new
-seeds, while retry preserves the selected seed and objective.
+The same seed and physics settings reconstruct the same starting conditions. The [aged-core model](../../physics/aged-core-starts.md) records the initial exposure, bundle mass and reference fuel cycle.
 
-Daily planning leaves that inventory unchanged. At commitment, sorted fuel moves
-are evaluated first. The surviving post-refuelling power/flux supplies one large
-24-hour update of energy, burnup and poison. The next equilibrium solution uses
-the updated inventory. The model does not resolve intermediate intraday states.
-
-The [aged-core notes](../../physics/aged-core-starts.md) describe initial exposure,
-and [fuel calibration](../../physics/power-and-fuel-calibration.md) records mass,
-reference output and residence assumptions. The [daily-turn contract](../../gameplay/daily-turn-mode.md)
-defines validation, stock accounting and failure outcomes.
+For time-based play, the shared model evaluates the fuel batch, then uses post-refuelling power and flux for one 12-hour interval of energy, burnup and poison. The next equilibrium solution uses the updated inventory. See the [shared step contract](../../gameplay/daily-turn-mode.md).

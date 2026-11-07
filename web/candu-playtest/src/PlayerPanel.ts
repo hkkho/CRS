@@ -192,7 +192,10 @@ export class PlayerPanel {
       if (!previous || run.ended || run.seconds > previous.seconds) unique.set(run.id, run);
     }
     const runs = [...unique.values()];
-    this.dialog.querySelector('[data-stats]')!.textContent = `${runs.length} saved runs · ${runs.filter(r => r.ended).length} ended · ${(runs.reduce((sum, r) => sum + r.seconds, 0) / 86400).toFixed(2)} total days · ${runs.reduce((sum, r) => sum + r.fuelConsumed, 0)} bundles consumed. Endless best: ${Math.max(0, ...runs.filter(r => r.shiftId === 'free-practice' && r.scorePolicyId === this.session.snapshot.scorePolicyId).map(r => r.score)).toFixed(2)} points.`;
+    const endlessScores = runs.filter(r => r.shiftId === 'free-practice' &&
+      r.scorePolicyId === this.session.snapshot.scorePolicyId).map(r => r.score);
+    const best = endlessScores.length ? Math.max(...endlessScores).toFixed(2) : '0.00';
+    this.dialog.querySelector('[data-stats]')!.textContent = `${runs.length} saved runs · ${runs.filter(r => r.ended).length} ended · ${(runs.reduce((sum, r) => sum + r.seconds, 0) / 86400).toFixed(2)} total days · ${runs.reduce((sum, r) => sum + r.fuelConsumed, 0)} bundles consumed. Endless best: ${best} points.`;
   }
 
   private async leaderboard(): Promise<void> {

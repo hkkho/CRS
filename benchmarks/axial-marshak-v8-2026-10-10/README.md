@@ -1,8 +1,7 @@
 # V8 axial Marshak acceptance
 
-The [implementation record](../../docs/physics/axial-marshak-v8.md) describes the
-boundary equation, explicit common production normalization, device refit and
-validation scope.
+The [calibration history](../../docs/physics/calibration-provenance.md) records
+how the v8 axial boundary relates to the current model.
 
 ![M11 before and after](m11-before-after.png)
 

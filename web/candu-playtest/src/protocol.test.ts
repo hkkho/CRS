@@ -116,6 +116,14 @@ describe("candu-playtest-v2 protocol validation", () => {
     expect(isProtocolSnapshot(snapshot)).toBe(true);
     snapshot.lastFuelMovement.bundles[0] = { bundleId: "identity", beforePosition: 8, burnupMwdPerKg: 8 };
     expect(isProtocolSnapshot(snapshot)).toBe(true);
+    const movement = { ...snapshot.lastFuelMovement, plan: { ...plan, shiftCount: 8 as const },
+      score: { policyId: "test", dischargeReward: 0, freshFuelCost: 6, zoneBalanceBonus: 1, netPoints: -5 } };
+    const result = { requestedChannels: [210], executedChannels: [210], unexecutedChannels: [], movements: [movement],
+      startSimulationTimeSeconds: 0, endSimulationTimeSeconds: 43200, scoreDelta: -3,
+      fuelUsed: 8, usefulBundlesDischarged: 0, thermalEnergyMwh: 1, electricalEnergyMwhEstimate: 1,
+      averageLzcFillFraction: 0.5, axialTiltFraction: 0, endReason: "" };
+    expect(isProtocolSnapshot({ ...snapshot, scoreTotal: -3, lastDayResult: result })).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, lastDayResult: { ...result, scoreDelta: -Infinity } })).toBe(false);
     expect(isProtocolSnapshot({ ...snapshot, refuellingPlans: [{ ...plan, dischargedPositions: [12] }] })).toBe(false);
     expect(isProtocolSnapshot({ ...snapshot, lastFuelMovement: { ...snapshot.lastFuelMovement,
       bundles: [{ bundleId: "identity", beforePosition: 8, afterPosition: -1, burnupMwdPerKg: 8 }] } })).toBe(false);

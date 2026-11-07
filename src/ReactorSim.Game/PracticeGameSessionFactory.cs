@@ -50,13 +50,16 @@ namespace ReactorSim.Game
             return session;
         }
 
-        public static GameSession CreateBrowserPlaytest(ulong seed, string objectiveId, bool dailyTurns = true, bool demo = false)
+        public static GameSession CreateBrowserPlaytest(ulong seed, string objectiveId, bool dailyTurns = true,
+            bool demo = false, FullCoreDiffusionDataPackV1? customPack = null)
         {
             var goal = ShiftObjective.ForId(objectiveId);
+            if (customPack != null && (!demo || dailyTurns || goal.Id != ShiftProgress.PracticeId))
+                throw new ArgumentException("Custom physics requires a time-based free practice run.", nameof(customPack));
             var session = CreateSession(BrowserBaseSimulationSecondsPerWallSecond,
                 BrowserBaseSimulationSecondsPerWallSecond * 10.0, BrowserBaseSimulationSecondsPerWallSecond * 60.0,
                 BrowserBaseSimulationSecondsPerWallSecond * 60.0 * WallControlTickMilliseconds / 1000.0,
-                goal.Days * 86_400.0, RealTimePlaybackModeId, seed, goal.IsChallenge, !goal.IsChallenge, goal.Id);
+                goal.Days * 86_400.0, RealTimePlaybackModeId, seed, goal.IsChallenge, !goal.IsChallenge, goal.Id, customPack);
             if (dailyTurns) session.UseDailyTurns();
             if (demo) session.UseDemo();
             return session;
@@ -89,7 +92,8 @@ namespace ReactorSim.Game
             ulong seed,
             bool challenge = false,
             bool unlimitedFreshFuel = false,
-            string? objectiveId = null)
+            string? objectiveId = null,
+            FullCoreDiffusionDataPackV1? customPack = null)
         {
             Phase8TimeModelV1 timeModel = Require(
                 Phase8TimeModelV1.TryCreate(
@@ -114,8 +118,9 @@ namespace ReactorSim.Game
             var runtime = new PracticeRunClock(
                 objectiveId == null || objectiveId == ShiftProgress.PracticeId ? challenge ? ShiftProgress.ChallengeId : ScenarioId : objectiveId, seed,
                 scenarioHorizonSeconds, timeModel, playbackModes[initialPlaybackModeId]);
-            FullCoreDiffusionDataPackV1 dataPack = Require(
+            FullCoreDiffusionDataPackV1 dataPack = customPack ?? Require(
                 FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+            double referencePowerWatts = PracticeReferencePowerWatts * dataPack.PracticeThermalPowerMultiplier;
             FullCoreDiffusionModelV1 fullCoreModel = Require(
                 FullCoreDiffusionModelV1.TryCreateCandu6(dataPack));
             SyntheticGameCoreStateV1 coreState = SyntheticGameCoreStateV1.CreateAgedPractice(seed);
@@ -124,15 +129,18 @@ namespace ReactorSim.Game
                 EquilibriumCoreSolverV1.TryCreate(
                     fullCoreModel,
                     coreState.EnumerateBundles(),
-                    PracticeReferencePowerWatts));
-            PracticeLiquidZoneRrsMappingV1 rrsMapping = Require(
-                PracticeLiquidZoneRrsMappingV1.TryCreateCandu6());
+                    referencePowerWatts));
+            PracticeLiquidZoneRrsMappingV1 rrsMapping = dataPack.CreatePracticeZoneMapping();
+            var customReference = customPack == null ? null : PracticeChannelPowerReference.Create(dataPack, referencePowerWatts);
+            if (customReference != null && customReference.ChannelPowerWatts.Any(watts =>
+                watts <= 0 || double.IsNaN(watts) || double.IsInfinity(watts)))
+                throw new InvalidOperationException("The custom ripple reference requires positive finite power in every channel.");
             PracticeLiquidZoneRrsV1 initialRrs = Require(
                 PracticeLiquidZoneRrsV1.TryCreate(
                     rrsMapping,
                     equilibriumSolver.CurrentProjection,
                     runtime.SimulationTimeSeconds,
-                    referenceNodePowerWatts: ReferenceChannelPower.NodePowerWatts));
+                    referenceNodePowerWatts: (customReference ?? ReferenceChannelPower).NodePowerWatts));
             PracticeLiquidZoneRrsEquilibriumResultV1 acceptedRrs = Require(
                 PracticeLiquidZoneRrsV1.TryRunEquilibrium(
                     equilibriumSolver,
@@ -190,7 +198,7 @@ namespace ReactorSim.Game
                 WallControlTickMilliseconds,
                 coreState,
                 equilibriumSolver,
-                acceptedRrs.State, challenge, settledXenon, objectiveId);
+                acceptedRrs.State, challenge, settledXenon, objectiveId, customReference);
             // Let the player read the objective and inspect fuel before the challenge clock starts.
             if (challenge) session.Pause();
             return session;

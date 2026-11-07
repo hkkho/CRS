@@ -56,6 +56,6 @@ public sealed class MultiDayObjectiveTests
     {
         var goal = ShiftObjective.ForId(id);
         return new ShiftProgress(true, 1001, goal.Days * 86400, completed ? goal.Days * 86400 : 86400,
-            terminal, completed, 64, useful, 0, 0, 0, 100, standard, false, id);
+            terminal, completed, 64, useful, 0, 0, 0, 0, 100, standard, false, id);
     }
 }

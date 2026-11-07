@@ -15,12 +15,12 @@ function snapshot(channels: CanduChannelSnapshot[]): CanduSnapshot {
 describe("gameplay presentation", () => {
   it("compares shared ripple readings after refuelling without deriving a score", () => {
     const before = snapshot([channel(3, 6)]), after = snapshot([channel(3, 5)]);
-    before.ripple = { channelRippleFractions: [1, 1, 1, 1.1], rmsDeviationFraction: 0.1, pointsPerHour: 0.5 } as CanduSnapshot['ripple'];
-    after.ripple = { channelRippleFractions: [1, 1, 1, 1.05], rmsDeviationFraction: 0.05, pointsPerHour: 0.8 } as CanduSnapshot['ripple'];
+    before.ripple = { channelRippleFractions: [1, 1, 1, 1.1], maximumRipple: 1.1, pointsPerHour: 0.5 } as CanduSnapshot['ripple'];
+    after.ripple = { channelRippleFractions: [1, 1, 1, 1.05], maximumRipple: 1.05, pointsPerHour: 0.8 } as CanduSnapshot['ripple'];
     const text = refuelImpactText(before, after, 3);
     expect(text).toContain('110.00% → 105.00% (target 100%)');
-    expect(text).toContain('RMS ripple  10.00% → 5.00%');
-    expect(text).toContain('Ripple points/hour  0.500 → 0.800');
+    expect(text).toContain('Peak ripple  110.00% → 105.00%');
+    expect(text).toContain('Operating points/hour  0.500 → 0.800');
     expect(text).not.toContain('Discharge reward');
   });
   it("ranks burnup deterministically without reordering the snapshot or selecting empty cells", () => {
@@ -51,10 +51,11 @@ describe("gameplay presentation", () => {
   it("displays authoritative reward and cost without recomputing the policy", () => {
     const before = snapshot([channel(3, 6)]);
     const after = snapshot([channel(3, 5)]);
-    after.lastRefuellingScore = { policyId: "test-policy", dischargeReward: 17, freshFuelCost: 6, netPoints: 11 };
-    expect(refuelImpactText(before, after, 3)).toContain("+11.0 SCORE");
+    after.lastRefuellingScore = { policyId: "test-policy", dischargeReward: 17, freshFuelCost: 6, zoneBalanceBonus: 1.5, netPoints: 12.5 };
+    expect(refuelImpactText(before, after, 3)).toContain("+12.5 SCORE");
     expect(refuelImpactText(before, after, 3)).toContain("Discharge reward  +17.0");
-    expect(refuelImpactText(before, after, 3)).toContain("Fresh fuel cost  −6.0");
+    expect(refuelImpactText(before, after, 3)).toContain("Early discharge penalty  −6.0");
+    expect(refuelImpactText(before, after, 3)).toContain("Zone balance bonus  +1.5");
   });
 
   it("explains exhausted inventory and terminal runs instead of silently disabling controls", () => {

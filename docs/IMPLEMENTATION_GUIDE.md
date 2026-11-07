@@ -1,138 +1,37 @@
 # CANDU web game implementation guide
 
-## Product and ownership
+Develop `web/candu-playtest` and verify it on the GitHub Pages path. The public launcher offers time-based free practice and Custom physics. Shutdown, scram, accidents, operator training and full plant operations are outside scope.
 
-Develop `web/candu-playtest`, with GitHub Pages as the primary acceptance path.
-The public launcher starts time-based free practice. Keep changes small,
-playable and testable.
+## Architecture and ownership
 
-Shutdown, scram, accidents, operator training, full plant operations and plant-grade
-safety claims are outside scope.
+| Layer | Responsibility |
+| --- | --- |
+| `web/candu-playtest` | Launcher, DOM/SVG presentation, input, replay journal and serialized worker transport |
+| `ReactorSim.BrowserHost` | Single-threaded .NET browser-WASM host and JavaScript exports |
+| `ReactorSim.Browser` | Versioned wire protocol, instance runtime and full/compact snapshot mapping |
+| `ReactorSim.Game` | Clock, transactions, scoring, terminal decisions and immutable presentation snapshots |
+| `ReactorSim.Core` | Topology, fuel inventory, burnup, poison, diffusion and liquid-zone regulation |
 
-- Core owns deterministic topology, inventory, refuelling, exposure, poison,
-  controls and spatial solving.
-- Game owns sessions, commands, daily transactions, scoring, terminal decisions
-  and immutable presentation snapshots.
-- Browser owns the versioned contract and instance runtimes.
-- BrowserHost owns the single-threaded .NET browser-WASM executable.
-- The frontend owns transport, input, history and DOM/SVG presentation.
+The client fails closed without WASM. Keep reactor rules in the shared simulation and preserve SI units, fast/thermal group order, channel-major indexing and deterministic digests. Use the [wire protocol](spec/browser-playtest-protocol-v2.md) and [code walkthrough](code-library/index.md) when changing these boundaries.
 
-TypeScript builds reject unused local code, imports and parameters. Keep browser
-helpers limited to the active Studio; compile/test tools are development dependencies.
-
-The client consumes authoritative snapshots and fails closed without WASM. Do not
-duplicate reactor rules in TypeScript. Preserve units, group ordering, channel-major
-indexing, deterministic digests and failure semantics. See [architecture](architecture.md)
-and [protocol v2](spec/browser-playtest-protocol-v2.md).
-
-## Shared daily-turn contract
-
-Daily sessions use `pacingMode: daily-turn` and remain paused during inspection. Players
-draft today's channels, review outgoing bundles, then refuel and advance a day or
-advance without fuel. Planning consumes no fuel or time. Game validates unique
-indices and `expectedCompletedDays`, sorts the plan and executes eight-bundle moves
-with channel flow. Adjacent channels have opposite flow. Core's `GameRefuellingPlanV1`
-supplies execution and preview position maps; previews predict movement only.
-
-One large 86,400-second interval updates burnup, energy, score and analytic poison
-once using post-refuelling power/flux. One final equilibrium/LZC solve determines
-the next decision. Intermediate intraday states are not calculated. Integration
-identity `practice-daily-one-step-v1` distinguishes saves from subdivided integration.
-
-A detached session/clock/solver makes numerical failure atomic across the day.
-Operating limits are checked after each fuel move and at day end. A violating move
-commits that move and stops remaining orders; a day-end loss commits the completed
-update. Reports retain accepted/unexecuted orders, bundle identities, discharge
-burnup, fuel, energy, points and ending reason. Full and compact snapshots publish
-pacing, completed days and `lastDayResult`. See [daily semantics](gameplay/daily-turn-mode.md).
-
-The scheduler never ticks daily sessions. The waiting dialog supports reduced
-motion and flashes survival/loss with day points and total score. Rejection and
-interrupted unknown outcomes are distinct from physical losses. Solver accuracy
-takes priority over real-time latency. The Studio/Arcade controller requires daily pacing,
-rejects legacy real-time saves and commands, and refuses mismatched runtimes.
 ## Time-based play
 
-The browser starts a worker with the existing `demo` pacing identifier.
-Game owns atomic 43,200-second steps. DemoLoop interpolates endpoints over
-five seconds, with one solved endpoint buffered ahead. The next unsolved step
-captures the entire waiting fuel queue. Yellow outlines persist until the batch
-is displayed, and a white outline marks the inspected channel. Slow solves hold
-the last endpoint. Pause and hidden tabs freeze playback. Start explicitly
-unfreezes playback after setup or restore.
+The public client initializes `pacingMode: demo`. `DemoLoop` submits the waiting fuel batch through `commit-day`. Game validates the batch, sorts channels, and prepares each eight-bundle move with channel flow. It integrates a single 43,200-second interval from the surviving post-refuelling power and flux, then solves the next equilibrium state. The browser interpolates solved endpoints over five seconds. Slow solves hold the last endpoint. Pause and hidden tabs freeze playback and preserve waiting orders.
 
-## Limits, score and fuel
+Numerical failure discards the detached candidate. A physically violating fuel move commits and skips later orders. A violation at the interval endpoint commits the elapsed time and stops play. See [shared step semantics](gameplay/daily-turn-mode.md) and [limits and scoring](gameplay/score-balance.md). Daily turns and real-time commands remain available for compatibility tests and comparison tools.
 
-Free practice is the only selectable run. Both Studio and Arcade use endless
-play with unlimited stock; consumption remains counted. Historical challenge
-contracts remain readable for compatibility, but launcher/new-run/retry controls
-never create them. Seeded retries retain the seed.
+## Physics and custom runs
 
-The full-width core face has compact heading controls; decorative rails and
-on-map device text are removed. The right column combines the fuel sheet with
-an expanded details dock: LZC levels, channel readings, fuel movement and profiles.
-History inspection, Keff, tilt and map colors remain visible above the workspace.
+The [v10 calibration](../data/calibration/diffusion-v10/README.md) uses circular radial leakage and axial zero-flux extrapolation 0.22 m beyond each end. [Core's solver](physics/active-two-group-solver.md) binds fuel coefficients by burnup and carries poison with bundle identity. Startup solves the aged inventory against a [time-average reference](physics/channel-power-reference.md) derived with zones at half fill, then settles xenon and regulation without spending fuel or time.
 
-Startup uses the fixed time-average reference's node powers to derive the
-fourteen RRS target fractions. It verifies a bounded startup shape correction
-inside the ordinary event deadband, then settles equilibrium xenon with those
-fills. Later events retain their existing deadband and candidate acceptance
-rules. The nominal reference is still derived with 50% zones; the actual aged
-core's initial fills are calculated rather than set to 50% for display.
+Custom physics applies numeric overrides to the embedded pack and per-pack practice settings before startup. The shared loader validates the parameters and Game recomputes the reference and initial equilibrium. Custom runs have modified sandbox provenance and a content-based pack ID. They retain the settings across seed resets and local update checkpoints.
 
-The daily run-model identity is `practice-daily-one-step-reference-zones-v2`:
-old daily saves are retained but rejected before candidate restore. The day
-still uses one 86,400-second integration step.
+## Presentation and lifecycle
 
-A run ends outside 10-90% average LZC, beyond 20% absolute global tilt, above
-7,100 kW/channel or above 900 kW/bundle. Equality is allowed. Game publishes status
-and reason separately from numerical diagnostics/RRS exhaustion. Terminal runs
-freeze until reset. See [power limits](gameplay/power-limits.md).
+Render accepted readings, including terminal reasons and diagnostics, without inventing intermediate physical states. Preserve keyboard access, 320px layouts, reduced motion and focus on recovery. Dispose worker, listeners and timers when leaving a run.
 
-Policy `practice-channel-ripple-v3` compares channel powers to fixed time-average
-references summing to 2,064 MW thermal. Equal-channel RMS relative deviation sets
-`points/hour = 1 / (1 + (RMS / 0.10)^2)`. Accepted intervals earn points; fuel moves
-have no direct bonus/cost. See [score balance](gameplay/score-balance.md).
+Update checkpoints store the latest solved endpoint as replayable inputs plus waiting orders. IndexedDB holds the journal and session storage holds its pointer and custom settings. Restore verifies pack, scoring policy, cadence, command acceptance and the final state digest before enabling Start. Failed writes prevent reload. Incompatible checkpoints and older daily saves remain stored.
 
-Use `FreshBundlesAvailable` and `UnlimitedFreshFuel` for stock, not request counters.
-Movement reports retain nullable old/new positions and confirmed discharge values;
-null means unavailable. Rejection preserves readings. Engineering edits mark modified
-sandbox provenance and exclude standard challenge rewards until reset.
+## Verification
 
-## Physics and presentation
-
-V10 uses a circular extrapolated zero-flux boundary in X/Y and a symmetric
-axial zero-flux extrapolation of 0.22 m beyond each end face. Reflecting
-boundaries retain zero conductance. Criticality, the 17/7 mk device fits and
-fuel-cycle checks are documented in the [diffusion v10 calibration](../data/calibration/diffusion-v10/README.md).
-Preserve [active equations](physics/active-two-group-solver.md) and useful
-[physics knowledge](maintenance/knowledge-library.md). Packs are authored
-approximations for plausible gameplay, not validated plant data.
-
-Poison follows bundle identity. Fresh fuel enters with zero iodine/xenon; retained
-fuel carries its inventory. Burnup uses thermal fission energy/heavy-metal mass.
-Reference output is 2,064 MW thermal; 650 MW electrical is a presentation estimate.
-Controller explanations and limiting-zone headroom come from shared data.
-
-Studio provides power/ripple/burnup maps, axial profiles, fuel shortlist, device
-geometry and history tabs. History keeps up to 4,096 complete observations and
-clears on new initialization; it is presentation data. Historical inspection disables
-operations. Benchmark-based chart bounds expand for readings and label off-scale
-limits. Preserve keyboard input, 320px layouts, stable focus, reduced motion and
-drafts across navigation. Remove listeners/subscriptions when views close.
-
-## Saves and release checks
-
-Time-based update checkpoints replay accepted shared commands and verify the
-final state digest, data pack, scoring policy, and integration identity. The
-checkpoint uses the latest completed solver endpoint plus waiting fuel orders.
-IndexedDB stores the replay and session storage points the reloading tab to it.
-The game waits for other tabs to close, commits the checkpoint, then switches
-builds automatically. Failed writes prevent reload. Incompatible checkpoints
-remain stored. Legacy daily saves use a separate storage namespace.
-
-Use `tools/Test-DotNet.ps1` and `tools/Test-Browser.ps1`, with `-Configuration Release`
-to match CI. Add focused changed-behavior tests. Releases publish AOT WASM, build
-under `/CRS/`, run time-based gameplay and update smoke and direct solver reproduction, and verify
-the published build commit and live loop. Inspect the final diff. Exact commands
-are in [tools](maintenance/research-tools.md) and [hosting](maintenance/hosting.md).
+Use `tools/Test-DotNet.ps1` and `tools/Test-Browser.ps1` in Release. Follow the [Pages verification guide](maintenance/hosting.md) for gameplay, custom physics, update restore, documentation and direct WASM reproduction.

@@ -1,9 +1,8 @@
 # Active two-group diffusion solver
 
-This document describes the equations used by the active `ReactorSim.Core`
-spatial path. Browser Reactor Studio consumes the result of
-this Core solver without a second physics calculation. It uses one `GameSession` with one live
-380-channel by 12-position topology.
+This document describes the active `ReactorSim.Core` spatial solver. The browser
+displays observations from one `GameSession` over a 380-channel by 12-position
+topology.
 
 The active pack is the project-authored compact coefficient table used by the
 game. Its values, units, material rows, topology, and solver policy are part of
@@ -45,17 +44,13 @@ conductances used by the 380-channel by 12-position model:
 | Axial extrapolated zero-flux face | `0.0026190440233080296` | `0.0013095220116540148` | m^2 |
 
 The [v10 fit](../../data/calibration/diffusion-v10/README.md) uses effective fast and thermal diffusion coefficients of 0.015 m and 0.0075 m. The radial circle radius is 5.55 m. Each exposed face uses the distance from its node centre to the circle along the outward X/Y ray.
-See [xenon reference v6](xenon-reference-v6.md) for the included-reference replacement
-and [localized LZC tubes](lzc-tubes-v7.md) for tube geometry,
-and [fixed adjusters](adjusters-v5.md) for nominal interstitial absorption,
-and [v4 calibration](literature-geometry-v4.md) for source geometry, authored
-effective diffusion coefficients, fitted boundary leakage and the poison-basis
-limitation of the static burnup curve plus gameplay xenon perturbation.
+See [calibration provenance](calibration-provenance.md) for the source geometry,
+device absorption, fitted boundary leakage, and the included xenon reference.
 
-## Live 380 Ã— 12 design
+## Live 380 × 12 design
 
 The live game maps every `(channel, position)` pair to one diffusion node, for
-`380 Ã— 12 = 4560` nodes. The bundle inventory remains present at every node so
+`380 × 12 = 4560` nodes. The bundle inventory remains present at every node so
 that identity, burnup, refuelling, and presentation state stay aligned with
 the spatial solve.
 
@@ -257,12 +252,12 @@ The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 `SingleCellReflectiveDiffusionFixtureV1` is a Core regression benchmark for
 the six-face reflective boundary assembly. It runs the same
 `SpatialEigenIteration` and `SpatialEigenSolve` implementation used by the
-live full-core session. The browser does not create a second one-cell solver;
-Reactor Studio displays the live 380 Ã— 12 solve and its per-cell fields.
+live full-core session. Game publishes the accepted channel and bundle readings
+from the live solve.
 
 ## Interpretation boundary
 
 The pack metadata, coefficient rows, conductances, and one-cell result define
 the deterministic solver contract used by the game. The one-cell result is a
 small regression check for the assembled equations; the live game result comes
-from solving all 4560 nodes in the configured 380 Ã— 12 topology.
+from solving all 4560 nodes in the configured 380 × 12 topology.

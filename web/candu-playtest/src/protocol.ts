@@ -328,6 +328,7 @@ export interface ShiftProgress {
   dischargeReward: number;
   freshFuelCost: number;
   operatingPoints: number;
+  zoneBalanceBonus?: number;
   outcome: "in-progress" | "success" | "missed" | "ended";
   reward: string;
   rewardEarned: boolean;
@@ -337,9 +338,17 @@ export interface RefuellingPlan {
   directionId: RefuellingDirection; shiftCount: 4 | 8; incomingEnd: "A" | "B"; outgoingEnd: "A" | "B";
   insertedPositions: number[]; dischargedPositions: number[]; retainedFromPositions: number[]; retainedToPositions: number[];
 }
+export interface RefuellingScore {
+  policyId: string;
+  dischargeReward: number;
+  freshFuelCost: number;
+  zoneBalanceBonus?: number;
+  netPoints: number;
+}
+
 export interface FuelMovement {
   operationId: number; channelIndex: number; plan: RefuellingPlan;
-  score: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number };
+  score: RefuellingScore;
   bundles: { bundleId: string; beforePosition?: number | null; afterPosition?: number | null; burnupMwdPerKg: number }[];
 }
 
@@ -377,7 +386,7 @@ export interface CanduSnapshot {
   lastFuelMovement?: FuelMovement | null;
   scorePolicyId?: string;
   ripple?: ChannelRippleSnapshot;
-  lastRefuellingScore?: { policyId: string; dischargeReward: number; freshFuelCost: number; netPoints: number } | null;
+  lastRefuellingScore?: RefuellingScore | null;
   scoreTotal: number;
   scoreDelta: number;
   pacingMode?: PacingMode;
@@ -414,6 +423,9 @@ export interface ChannelRippleSnapshot {
   referenceChannelPowerWatts: number[];
   channelRippleFractions: number[];
   rmsDeviationFraction: number;
+  maximumRipple?: number;
+  ripplePointsPerHour?: number;
+  tiltPointsPerHour?: number;
   pointsPerHour: number;
 }
 
@@ -1227,6 +1239,8 @@ function isChannelRipple(value: unknown): boolean {
     isFiniteNumber(value.referenceThermalPowerWatts) && value.referenceThermalPowerWatts > 0 &&
     (!hasOwn(value, "maximumChannelPowerWatts") || isFiniteNumber(value.maximumChannelPowerWatts) && value.maximumChannelPowerWatts > 0) &&
     (!hasOwn(value, "maximumBundlePowerWatts") || isFiniteNumber(value.maximumBundlePowerWatts) && value.maximumBundlePowerWatts > 0) &&
+    (value.maximumRipple === undefined || isFiniteNumber(value.maximumRipple) && value.maximumRipple >= 0) &&
+    [value.ripplePointsPerHour, value.tiltPointsPerHour].every(rate => rate === undefined || isFiniteNumber(rate) && rate >= 0 && rate <= 0.5) &&
     isFiniteNumber(value.rmsDeviationFraction) && value.rmsDeviationFraction >= 0 &&
     isFiniteNumber(value.pointsPerHour) && value.pointsPerHour >= 0 && value.pointsPerHour <= 1 &&
     Array.isArray(value.referenceChannelPowerWatts) && value.referenceChannelPowerWatts.length === CORE_CHANNEL_COUNT &&
@@ -1238,6 +1252,7 @@ function isChannelRipple(value: unknown): boolean {
 function isRefuellingScore(value: unknown): boolean {
   return isRecord(value) && isString(value.policyId) && value.policyId.length > 0 &&
     hasFiniteNumberFields(value, ["dischargeReward", "freshFuelCost", "netPoints"]) &&
+    (value.zoneBalanceBonus === undefined || isFiniteNumber(value.zoneBalanceBonus) && value.zoneBalanceBonus >= 0) &&
     (value.dischargeReward as number) >= 0 && (value.freshFuelCost as number) >= 0;
 }
 
@@ -1264,7 +1279,7 @@ function isDailyTurnResult(value: unknown): boolean {
   const requested = value.requestedChannels as number[], executed = value.executedChannels as number[], skipped = value.unexecutedChannels as number[];
   return (value.startSimulationTimeSeconds as number) >= 0 && (value.endSimulationTimeSeconds as number) >= (value.startSimulationTimeSeconds as number) &&
     (value.endSimulationTimeSeconds as number) - (value.startSimulationTimeSeconds as number) <= 86400 &&
-    ["scoreDelta", "thermalEnergyMwh", "electricalEnergyMwhEstimate"].every(k => (value[k] as number) >= 0) &&
+    ["thermalEnergyMwh", "electricalEnergyMwhEstimate"].every(k => (value[k] as number) >= 0) &&
     (value.averageLzcFillFraction as number) >= 0 && (value.averageLzcFillFraction as number) <= 1 &&
     executed.length + skipped.length === requested.length && executed.every(c => requested.includes(c) && !skipped.includes(c)) && skipped.every(c => requested.includes(c)) &&
     value.fuelUsed === executed.length * 8 && value.movements.length === executed.length && value.movements.every((m, i) => (m as FuelMovement).channelIndex === executed[i]);
@@ -1290,6 +1305,7 @@ function isShiftProgress(value: unknown): value is ShiftProgress {
     ["seed", "fuelBudget", "fuelConsumed", "usefulBundlesDischarged", "usefulBundlesRequired"].every(key => isNonNegativeInteger(value[key])) &&
     ["horizonSeconds", "remainingSeconds", "usefulBurnupThresholdMwdPerKg", "thermalEnergyMwh", "electricalEnergyMwhEstimate",
       "dischargeReward", "freshFuelCost"].every(key => (value[key] as number) >= 0) &&
+    (value.zoneBalanceBonus === undefined || isFiniteNumber(value.zoneBalanceBonus) && value.zoneBalanceBonus >= 0) &&
     ["in-progress", "success", "missed", "ended"].includes(value.outcome as string) && isBoolean(value.rewardEarned);
 }
 

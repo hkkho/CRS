@@ -3,6 +3,7 @@ import { createCanduPlaytestBridge } from "./bridge";
 import { DemoTrends } from "./DemoTrends";
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { randomCoreSeed } from "./coreSeed";
+import type { CustomPhysics } from "./customPhysics";
 import type { RunSave } from "./runSave";
 import { DemoLoop } from "./DemoLoop";
 import { GameLoadingView } from "./GameLoadingView";
@@ -38,10 +39,11 @@ export class DemoView {
   private gamepadIndex: number | undefined;
   private gamepadButtons: readonly boolean[] = [];
 
-  constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>, onStart?: () => void) {
+  constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>,
+    onStart?: () => void, customPhysics?: CustomPhysics) {
     this.element.className = "reactor-arcade reactor-demo";
     this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Shift</h1></div><nav aria-label="Time based controls"><button data-action="pause">Pause</button><button data-action="leave">Main screen</button></nav></header>
-      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
+      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
       <progress class="demo-clock" max="1" value="0" aria-label="Time step progress"></progress>
       <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading"><select data-map-mode aria-label="Core map"><option value="power">Channel power · kW</option><option value="ripple">Ripple · % of reference</option><option value="burnup">Burnup · MWd/kg</option><option value="paired-zones">Paired zone fills · %</option></select><span data-live>Preparing core…</span></div><div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p><div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p></div><p class="demo-queue-key"><span>Yellow outline: fuel queued</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue fuel <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue fuel <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
       <aside class="demo-readout"><section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2><div class="demo-zone-mean"><span>CORE AVERAGE</span><strong data-zone-mean>—</strong><p data-zone-risk></p></div><div class="demo-zone-grid">${Array.from({ length: 14 }, (_, i) => `<div class="demo-zone" data-zone="${i}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div><p class="demo-help">Average must stay within 10–90%. Amber near an edge; red below 15% or above 85%. Individual zones show remaining control room.</p></section><p>Keep peak power and average liquid-zone fill within their limits. Queue eight fresh bundles by double-clicking a channel or selecting it and pressing Queue fuel.</p><p data-message role="status"></p><p data-ended role="status"></p><div class="demo-retry"><button data-action="retry">Retry seed</button><button data-action="new">New core</button></div><p class="demo-help">Pause to stop the clock.</p></aside></section>`;
@@ -49,7 +51,8 @@ export class DemoView {
     parent.append(this.element);
     this.element.addEventListener("click", this.onClick);
     this.element.addEventListener("change", this.onMapChange);
-    const createBridge = (coreSeed: number) => createCanduPlaytestBridge({ initialPacingMode: "demo", initialSeed: coreSeed });
+    if (customPhysics) this.text(".arcade-kicker", "CRS / CUSTOM PHYSICS");
+    const createBridge = (coreSeed: number) => createCanduPlaytestBridge({ initialPacingMode: "demo", initialSeed: coreSeed, customPhysics });
     this.loop = new DemoLoop(createBridge(seed), undefined, true, createBridge, restore);
     this.loop.setVisible(document.visibilityState !== "hidden");
     this.loading = new GameLoadingView(this.element, () => {
@@ -85,6 +88,10 @@ export class DemoView {
     const minutes = Math.floor(loop.playbackDay * 24 * 60);
     this.text("[data-day]", shiftTime(minutes));
     this.text("[data-score]", snapshot.scoreTotal.toFixed(1));
+    const ripple = snapshot.ripple;
+    this.text("[data-score-rate]", ripple?.ripplePointsPerHour !== undefined && ripple.tiltPointsPerHour !== undefined
+      ? `Ripple ${ripple.ripplePointsPerHour.toFixed(2)} · Tilt ${ripple.tiltPointsPerHour.toFixed(2)} pts/h`
+      : "");
     this.text("[data-message]", loop.message);
     const waiting = loop.waitingFuel.size, pending = loop.pendingFuel.length;
     this.text("[data-fuel-queue]", pending ? `${waiting} waiting · ${pending - waiting} submitted` : "Queue empty");
@@ -92,7 +99,10 @@ export class DemoView {
     if (!result) this.text("[data-fuel-receipt]", "");
     else if (result.fuelUsed || result.unexecutedChannels.length) {
       const skipped = result.unexecutedChannels.length;
-      this.text("[data-fuel-receipt]", `${result.fuelUsed} bundles delivered · ${shiftTime(Math.floor(result.endSimulationTimeSeconds / 60))}${skipped ? ` · ${skipped} orders skipped` : ""}`);
+      const burnup = result.movements.reduce((points, { score }) => points + score.dischargeReward - score.freshFuelCost, 0);
+      const zones = result.movements.reduce((points, { score }) => points + (score.zoneBalanceBonus ?? 0), 0);
+      const fuelScore = result.fuelUsed ? ` · Burnup ${burnup >= 0 ? "+" : ""}${burnup.toFixed(1)} · Zones +${zones.toFixed(1)} pts` : "";
+      this.text("[data-fuel-receipt]", `${result.fuelUsed} bundles delivered${fuelScore} · ${shiftTime(Math.floor(result.endSimulationTimeSeconds / 60))}${skipped ? ` · ${skipped} orders skipped` : ""}`);
     }
     this.text("[data-ended]", ended ? `Run ended: ${snapshot.runEndReason}. Retry to play again.` : "");
     this.text("[data-action=pause]", ended ? "Run ended" : loop.running ? "Pause" : "Resume");

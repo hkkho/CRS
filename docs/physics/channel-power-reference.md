@@ -1,68 +1,21 @@
-# Channel power reference with nominal adjusters
+# Channel power reference
 
-The fixed nominal reference is 2,064 MW thermal across 380 fuel channels:
-5.431578947 MW/channel on average. This mean is not a uniform channel target.
-The channel targets are derived by the authoritative Core diffusion solver.
+The nominal reference is a fixed distribution across 380 channels that sums to 2,064 MW thermal. Each channel has its own reference power. Ripple is the live channel power divided by its reference. The default model ID is `cycle190-time-average-21-adjusters-diffusion-half-zones-v7`.
 
-[Zhang and Rouben, CANDU Fuel Management, section 3.2](https://www.nuceng.ca/canteach-rev2/library/20054411.pdf)
-describes averaging lattice cross sections over each bundle position's dwell
-irradiation range before solving the time-average power distribution. That
-distribution provides the channel targets for fuel management. Instantaneous
-channel refuelling produces ripple around the reference.
-[Reactor Statics and Fuel Management, section 4.3.3.1](https://www.nuceng.ca/canteach-rev2/library/20042113.pdf)
-explains that central adjusters and regional burnup differences flatten power.
-The game now includes 21 fixed nominal adjusters. It solves its own channel
-targets from the shared model rather than copying a published plant profile.
+## Derivation
 
-## Implemented approximation
+The [fuel-management method](https://www.nuceng.ca/canteach-rev2/library/20054411.pdf) averages lattice cross sections over each bundle position's dwell irradiation range before solving the time-average shape. CRS uses the authored [190-full-power-day cycle and exposure ranges](aged-core-starts.md).
 
-`cycle190-time-average-21-adjusters-lzc-tubes-half-zones-v4` uses the existing authored
-190-full-power-day channel cycle, eight-bundle shift, opposite neighbouring
-flow directions, and uniform 6.262135922 MWd/kg target discharge burnup.
-For each position from inlet, compute the existing generator's beginning and
-end burnup at channel ages 0 and 1. Retained positions include their earlier
-dwell exposure. Average each of the nine fuel coefficients over this range:
-`Cbar = integral(C(B), B_in..B_out) / (B_out - B_in)`.
-The pack's coefficients are piecewise linear, so trapezoidal integration split
-at every interior knot evaluates the average exactly for those authored ranges.
-This avoids the incorrect shortcut `C(mean burnup)` on a nonlinear fuel curve.
+For each inlet-relative position, average the nine fuel coefficients over its beginning and end burnup. Core integrates piecewise-linear coefficients by splitting the trapezoidal integral at each interior knot. Bind the resulting coefficients by the channel's actual flow direction. The reference uses the active [two-group solver](active-two-group-solver.md), all 21 fixed adjusters and fourteen liquid-zone compartments at 50% fill. It averages the included xenon reference across the same dwell ranges and replaces it with equilibrium xenon for the solved shape.
 
-Bind the averaged coefficients at each physical axial position using its actual
-channel flow. Solve the same two-group eigenproblem with the existing geometry,
-leakage and boundary conditions, the same pack-bound fixed adjuster absorption
-as the live core, and all 14 [localized LZC tube compartments](lzc-tubes-v7.md)
-fixed at 50% fill. Normalize fission heating to 2,064 MW thermal and sum the
-12 bundle powers into each channel reference. The fuel curve includes its declared poison reference. V6 averages that reference
-over the same dwell ranges and replaces it with self-consistent equilibrium Xe
-at the averaged power shape. Live actual inventories replace their own current
-burnup references. See [the v6 accounting](xenon-reference-v6.md).
+Normalize node heating to the nominal output and sum the twelve bundle powers per channel. The node powers also supply the startup regulator targets. The actual startup fills are calculated separately. A custom pack computes its own immutable reference at the chosen nominal power, which its scoring and ripple displays share.
 
-This is a time-average **approximation to the current game surrogate**. It uses
-prescribed exposure ranges, not an iterated self-consistent RFSP solution of
-flux, channel dwell times and exposure. It retains the authored model's radial
-variation. The power-limit pack flattens this distribution through its effective
-coupling and leakage parameters; see [rebalance](power-limit-balance.md). No external
-analysis program is used at runtime. Core calculates the immutable reference
-once per process; the identity, source pack version and coefficient binding
-digest accompany its presentation snapshot. Seeds, fuel moves, elapsed time,
-power targets and developer geometry edits never rebase it.
+This method prescribes exposure ranges. An iterated time-average fuel management solution would solve for dwell times and exposure as well as flux. Current calibration inputs and validation are recorded with the [v10 pack](../../data/calibration/diffusion-v10/README.md).
 
-## Measured reference
-
-The `lzc-tubes-v7` embedded pack gives **4.931437–5.784966 MW/channel**, with a mean
-of **5.431579 MW**. Initial RMS deviations for seeds 1001, 1002 and 1013 are
-1.5708%, 1.5372% and 1.5725% respectively. These are authored-model measurements.
-The shared [adjuster mapping and worth](adjusters-v5.md) applies both to this
-reference solve and to live burnup, xenon, refuelling and RRS trial solves.
-
-The saved [reference JSON](../../benchmarks/lzc-tubes-v7-reference/reference.json)
-and [CSV](../../benchmarks/lzc-tubes-v7-reference/reference.csv) contain all 380 targets.
-
-Reproduce the reference CSV, complete JSON profile and seed measurements:
+To produce current reference CSV, JSON and seed comparisons, run from the repository root.
 
 ```powershell
-dotnet run --project tools/ChannelReferenceBenchmark -- tmp/channel-reference
+dotnet run --project tools/ChannelReferenceBenchmark -c Release -- tmp/channel-reference
 ```
 
-See [scoring policy](../gameplay/score-balance.md) for the RMS calculation and
-time-integrated points. The browser presents these authoritative readings.
+See [limits and scoring](../gameplay/score-balance.md) for the peak ripple score.

@@ -41,5 +41,5 @@
     "constrainedConditions": "page CPU4x, latency60ms, download1.5MB/s; worker CPU throttling not claimed"
   },
   "queuedPauseReviewBudgetMs": 1100,
-  "evidence": "tmp/phase3-pace-final.json; docs/performance/browser-phase3.md"
+  "evidence": "tmp/phase3-pace-final.json; https://github.com/hkkho/CRS/blob/2015dd334782358e910681bbd10f25d8fb3cf2d7/docs/performance/browser-phase3.md"
 }

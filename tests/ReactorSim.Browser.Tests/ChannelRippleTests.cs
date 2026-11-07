@@ -3,6 +3,7 @@ using System.Linq;
 using System.Text.Json;
 using Xunit;
 using ReactorSim.Browser;
+using ReactorSim.Game;
 
 namespace ReactorSim.Browser.Tests;
 
@@ -16,7 +17,7 @@ public sealed partial class PlaytestBridgeTests
         var reference = before.GetProperty("ripple").GetProperty("referenceChannelPowerWatts");
         Assert.Equal(380, reference.GetArrayLength());
         Assert.Equal(2_064_000_000, reference.EnumerateArray().Sum(p => p.GetDouble()), 3);
-        Assert.Equal("practice-channel-ripple-v3", before.GetProperty("scorePolicyId").GetString());
+        Assert.Equal(PracticeScoring.PolicyId, before.GetProperty("scorePolicyId").GetString());
         var tick = Parse(runtime.Dispatch(CompactCommand(0, "advance", "\"wallMilliseconds\":100")));
         AssertAccepted(tick);
         Assert.True(tick.TryGetProperty("coreReplacement", out var refreshedCore));
@@ -30,6 +31,11 @@ public sealed partial class PlaytestBridgeTests
         Assert.Equal(380, ripple.GetProperty("channelRippleFractions").GetArrayLength());
         double sum = ripple.GetProperty("channelRippleFractions").EnumerateArray().Sum(p => Math.Pow(p.GetDouble() - 1, 2));
         Assert.Equal(Math.Sqrt(sum / 380), ripple.GetProperty("rmsDeviationFraction").GetDouble(), 12);
+        double peak = ripple.GetProperty("channelRippleFractions").EnumerateArray().Max(p => p.GetDouble());
+        Assert.Equal(peak, ripple.GetProperty("maximumRipple").GetDouble());
+        Assert.Equal(PracticeScoring.RipplePointsPerHour(peak), ripple.GetProperty("ripplePointsPerHour").GetDouble());
+        Assert.Equal(PracticeScoring.TiltPointsPerHour(patch.GetProperty("axialTiltFraction").GetDouble()),
+            ripple.GetProperty("tiltPointsPerHour").GetDouble());
         Assert.Equal(before.GetProperty("ripple").GetProperty("pointsPerHour").GetDouble() * 180 / 3600,
             patch.GetProperty("scoreTotal").GetDouble(), 12);
         var exact = Parse(runtime.GetSnapshotJson());

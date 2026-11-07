@@ -1,7 +1,7 @@
 # Circular radial boundary verification
 
-The [physics notes](../../docs/physics/radial-circle-v9.md) describe the geometry,
-preserved axial boundary, calibration, and reference change.
+The [calibration history](../../docs/physics/calibration-provenance.md) describes
+the circular geometry carried into the current model.
 
 Both campaigns use seed 1001, normal 2,064 MW thermal / 650 MW electrical
 browser defaults, unlimited fuel, atomic one-day integration, and the same

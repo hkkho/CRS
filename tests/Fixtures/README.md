@@ -5,9 +5,11 @@ indices projected by Game from Core. The presentation fields alone do not
 alter simulation or replay digests. Older hosts can omit the geometry; the client
 then reports locations unavailable rather than drawing an assumed layout.
 
-The current fixtures were regenerated for the diffusion-v10 physics
-pack. The wire schema is unchanged; physical values, pack identity and digests
-intentionally change with the calibration.
+The diffusion-v10 refresh updated physical values, pack identity and digests
+for the new calibration.
+
+The scoring v4 refresh includes signed score changes, the zone balance bonus,
+and the maximum ripple and tilt rates in the authoritative responses.
 
 `playtest-v2.json.gz` contains exact UTF-8 JSON responses authored by the C#
 runtime, compressed only to avoid repeating thousands of channel/bundle fields.
@@ -35,7 +37,7 @@ zero numeric sentinels, and fuel-consumption accounting.
 
 
 The retained v2 corpus runs with an explicit `PlaytestRuntime("real-time")`
-constructor default so its original response bytes and digests remain covered.
+constructor default to cover exact response bytes and digests in real-time mode.
 Daily fields are omitted on legacy responses. The exact response bytes were
 intentionally regenerated for the v10 diffusion pack and its new reference;
 the real-time protocol shape remains covered. Daily default and full/compact

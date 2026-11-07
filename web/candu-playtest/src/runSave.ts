@@ -1,4 +1,5 @@
 import { isRunTerminal, isShiftId, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type PacingMode } from './protocol';
+import { CUSTOM_PHYSICS_PACK_PREFIX } from './customPhysics';
 
 export const SAVE_VERSION = 2;
 export const MAX_SAVE_COMMANDS = 100_000;
@@ -52,8 +53,12 @@ export class RunJournal {
     if (this.id === save.id) { this.cloudRevision = save.cloudRevision; this.cloudOwnerId = save.cloudOwnerId; }
   }
 
-  capture(snapshot: CanduSnapshot, draftChannels: readonly number[] = []): RunSave {
-    if (this.invalid || snapshot.provenance?.isModified) throw new Error('This run cannot be saved (modified run or replay limit reached).');
+  capture(snapshot: CanduSnapshot, draftChannels: readonly number[] = [], localCustomCheckpoint = false): RunSave {
+    const reasons = snapshot.provenance?.reasons;
+    const allowCustom = localCustomCheckpoint && snapshot.pacingMode === 'demo' &&
+      snapshot.dataPackId.startsWith(CUSTOM_PHYSICS_PACK_PREFIX) &&
+      reasons?.length === 1 && reasons[0] === 'Custom physics';
+    if (this.invalid || (snapshot.provenance?.isModified && !allowCustom)) throw new Error('This run cannot be saved (modified run or replay limit reached).');
     if (!this.digest || !snapshot.shift || !snapshot.scorePolicyId) throw new Error('Play or pause the run before saving.');
     const save: RunSave = {
       version: SAVE_VERSION, pacingMode: snapshot.pacingMode ?? "real-time", draftChannels: [...draftChannels], id: this.id, savedAt: new Date().toISOString(),
@@ -104,7 +109,7 @@ export function parseRunSave(input: unknown): RunSave {
     typeof s.dataPackId !== 'string' || typeof s.scorePolicyId !== 'string' ||
     !Number.isInteger(s.seed) || s.seed < 0 || s.seed > 4294967295 ||
     !isShiftId(s.shiftId) ||
-    ![s.score, s.seconds, s.fuelConsumed].every(n => Number.isFinite(n) && n >= 0) ||
+    !Number.isFinite(s.score) || ![s.seconds, s.fuelConsumed].every(n => Number.isFinite(n) && n >= 0) ||
     typeof s.ended !== 'boolean' || typeof s.stateDigest !== 'string' || !s.stateDigest ||
     (s.cloudRevision !== undefined && (!Number.isInteger(s.cloudRevision) || s.cloudRevision < 1)) ||
     (s.cloudOwnerId !== undefined && typeof s.cloudOwnerId !== 'string') ||

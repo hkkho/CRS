@@ -5,6 +5,7 @@
 body:has(.reactor-demo) .player-toggle { display: none; }
 .demo-hud { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 18px 0 10px; }
 .demo-hud > div > span, .demo-selected-hud span { display: block; color: #b6c8d8; font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.demo-hud [data-score-rate] { display: block; color: #b6c8d8; font-variant-numeric: tabular-nums; }
 .demo-hud strong { font-size: clamp(18px, 2.4vw, 28px); font-variant-numeric: tabular-nums; }
 .demo-selected-hud { display: flex; flex-basis: 100%; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #38546b; padding-top: 10px; }
 .demo-selected-hud [data-selected-channel] { color: #68ddff; }

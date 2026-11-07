@@ -40,7 +40,7 @@ namespace ReactorSim.Browser
                 Source = "wasm",
                 Sequence = runtime.Sequence,
                 ScenarioId = game.ScenarioId,
-                DataPackId = DefaultDataPackId,
+                DataPackId = runtime.DataPackId,
                 SimulationTimeSeconds = game.SimulationTimeSeconds,
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,
@@ -209,7 +209,7 @@ namespace ReactorSim.Browser
             return new PlaytestSnapshotPatchDto
             {
                 ScenarioId = game.ScenarioId,
-                DataPackId = DefaultDataPackId,
+                DataPackId = runtime.DataPackId,
                 SimulationTimeSeconds = game.SimulationTimeSeconds,
                 WallElapsedSeconds = game.WallElapsedSeconds,
                 NormalizedPowerFraction = game.NormalizedPowerFraction,

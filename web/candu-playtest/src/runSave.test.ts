@@ -4,6 +4,7 @@ import { createSnapshot, createShift } from './testSnapshot';
 import { BridgeSessionController } from './sessionController';
 import type { CanduPlaytestBridgeLifecycle } from './bridge';
 import type { CanduCommand, CanduCommandResponse } from './protocol';
+import { CUSTOM_PHYSICS_PACK_PREFIX } from './customPhysics';
 
 function snapshot() { return { ...createSnapshot(), shift: createShift(), scorePolicyId: 'test-policy' }; }
 function response(command: CanduCommand, accepted = true): CanduCommandResponse {
@@ -26,6 +27,19 @@ function bridge(digest = 'digest'): CanduPlaytestBridgeLifecycle & { dispose: Re
 }
 
 describe('run saves', () => {
+  it('captures a custom run only for a local time-based checkpoint', () => {
+    const journal = new RunJournal();
+    journal.record({ type: 'pause' }, response({ type: 'pause' }), 'compact');
+    const custom = {
+      ...snapshot(), pacingMode: 'demo' as const, dataPackId: CUSTOM_PHYSICS_PACK_PREFIX + 'test',
+      provenance: { kind: 'modified-sandbox' as const, label: 'Modified sandbox', isModified: true,
+        eligibleForStandardChallenge: false, reasons: ['Custom physics'] },
+    };
+    expect(() => journal.capture(custom)).toThrow('modified run');
+    expect(journal.capture(custom, [4], true).draftChannels).toEqual([4]);
+    expect(() => journal.capture({ ...custom, provenance: { ...custom.provenance,
+      reasons: ['Custom physics', 'Fuel edited'] } }, [], true)).toThrow('modified run');
+  });
   it.each(['three-day-rhythm-v1', 'seven-day-stewardship-v1'])('accepts %s in the save and replay journal', shiftId => {
     const run = saved(); run.shiftId = shiftId;
     run.commands = [{ command: { type: 'reset', seed: 1001, shiftId: shiftId as 'three-day-rhythm-v1' | 'seven-day-stewardship-v1' }, accepted: true, responseMode: 'compact' }];
@@ -50,6 +64,10 @@ describe('run saves', () => {
     const save = journal.capture(snapshot());
     expect(save.id).not.toBe(id);
     expect(save.commands).toEqual([{ command: { type: 'reset', seed: 42, shiftId: 'useful-fuel-day-v1' }, accepted: true, responseMode: 'full' }]);
+  });
+  it('preserves a negative total after early discharge', () => {
+    expect(parseRunSave({ ...saved(), score: -12.5 }).score).toBe(-12.5);
+    expect(() => parseRunSave({ ...saved(), score: -Infinity })).toThrow();
   });
   it('rejects corrupt, unbounded and engineering-command saves', () => {
     const save = saved();

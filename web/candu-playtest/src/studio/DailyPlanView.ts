@@ -1,5 +1,6 @@
 import { isRunTerminal, type DayProgress, type CanduSnapshot } from "../protocol";
 import { gridCoordinateLabel } from "../channelCoordinates";
+import { formatScoreDelta } from "../gameplayPresentation";
 import { FuelOrderList } from "../FuelOrderList";
 
 /** Draft and report presentation. Orders and reactor decisions remain in Game. */
@@ -41,7 +42,7 @@ export class DailyPlanView {
       this.report.hidden = !result;
       if (result) {
         const hours = (result.endSimulationTimeSeconds - result.startSimulationTimeSeconds) / 3600;
-        text("[data-day-summary]", `${hours.toFixed(1)} hours · ${result.fuelUsed} bundles used · ${result.usefulBundlesDischarged} useful discharges · +${result.scoreDelta.toFixed(2)} points · ${result.thermalEnergyMwh.toFixed(1)} MWh thermal / ${result.electricalEnergyMwhEstimate.toFixed(1)} MWh electric (estimate) · LZC ${(result.averageLzcFillFraction * 100).toFixed(1)}% · tilt ${(result.axialTiltFraction * 100).toFixed(1)}%${result.endReason ? ` · ${result.endReason}` : ""}${result.unexecutedChannels.length ? ` · ${result.unexecutedChannels.length} orders not executed` : ""}`);
+        text("[data-day-summary]", `${hours.toFixed(1)} hours · ${result.fuelUsed} bundles used · ${result.usefulBundlesDischarged} useful discharges · ${formatScoreDelta(result.scoreDelta)} points · ${result.thermalEnergyMwh.toFixed(1)} MWh thermal / ${result.electricalEnergyMwhEstimate.toFixed(1)} MWh electric (estimate) · LZC ${(result.averageLzcFillFraction * 100).toFixed(1)}% · tilt ${(result.axialTiltFraction * 100).toFixed(1)}%${result.endReason ? ` · ${result.endReason}` : ""}${result.unexecutedChannels.length ? ` · ${result.unexecutedChannels.length} orders not executed` : ""}`);
         this.report.querySelector("[data-day-moves]")!.replaceChildren(...result.movements.map(move => {
           const item = document.createElement("li");
           const channel = snapshot.core.channels.find(c => c.channelIndex === move.channelIndex)!;

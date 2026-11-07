@@ -75,7 +75,8 @@ public sealed class PowerLimitGameSessionTests
             Assert.All(channel.Bundles, bundle => Assert.InRange(bundle.PowerWatts, 0, 900_000));
         });
         Assert.Equal(before.SimulationTimeSeconds, result.Snapshot.SimulationTimeSeconds);
-        Assert.Equal(before.ScoreTotal, result.Snapshot.ScoreTotal);
+        Assert.Equal(before.ScoreTotal + result.Snapshot.LastRefuellingScore!.NetPoints,
+            result.Snapshot.ScoreTotal);
         Assert.Equal(before.Shift.ThermalEnergyMwh, result.Snapshot.Shift.ThermalEnergyMwh);
         Assert.Equal(before.FreshBundlesAvailable - 8, result.Snapshot.FreshBundlesAvailable);
         Assert.Equal(safeAmplitude, result.Snapshot.Physics.PowerAmplitude);

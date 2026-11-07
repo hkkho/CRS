@@ -1,129 +1,41 @@
 # Browser playtest protocol v2
 
-The optional `pacingMode` now also accepts `demo`. This temporary browser mode
-uses shared atomic `commit-day` updates (`completedDays` is published in full and
-compact snapshots), and accepts immediate `commit-refuel` between days. Its
-underlying simulation clock remains paused. The demo UI queues fuel into atomic
-`commit-day` batches and buffers solved snapshots for five-second interpolated
-playback, keeping at most one command in flight and one upcoming endpoint.
-The display holds on slow solves; it does not extrapolate or replay missed time.
-`advance`, `resume` and legacy accelerated playback remain unsupported for this
-mode. Endpoint predictions are authoritative solved snapshots. Interpolation is
-display-only; discrete outcomes are revealed at their endpoint, never blended.
-Daily sessions still reject direct refuelling. Reset retains the current pacing
-unless explicitly changed. Demo runs do not enter the public save/leaderboard path.
+The authoritative C# bridge accepts JSON commands with `protocol: candu-playtest-v2` and publishes full snapshots or compact patches. See [PlaytestRuntime](../../src/ReactorSim.Browser/PlaytestRuntime.cs), [DTOs](../../src/ReactorSim.Browser/PlaytestDtos.cs), [fixtures](../../tests/Fixtures/README.md), and the [TypeScript parser](../../web/candu-playtest/src/protocol.ts).
 
-`candu-playtest-v2` reports schema version 2 and keeps the v1 command and
-response envelope shape. It changes
-the live snapshot to carry `axialTiltFraction` and `rrsReserveFraction` from
-`GameSession`. Both are dimensionless. Axial tilt is the signed first moment
-of the solved group-2 (thermal) neutron flux: End A is negative and End B is
-positive. RRS reserve is normalized to 0–1 from the nearest
-liquid-zone fill boundary, so a 50% fill in every zone means full reserve.
+## Initialization and pacing
 
-Full snapshots and compact patches also publish `runStatus` (`running`,
-`paused`, `completed`, or `ended`) and `runEndReason` (empty for a live run).
-`completed` means the practice horizon was reached; `ended` covers an earlier
-terminal outcome. RRS `isGameOver` continues to describe physical RRS exhaustion,
-so consumers must use run status to stop gameplay at the horizon. Older v2 hosts
-may omit these additive fields; clients then retain the RRS terminal fallback.
-The top-level `targetPowerFraction` is the applied target, equal to
-`physics.targetPowerWatts / physics.referencePowerWatts`, not a fixed nominal
-power or a queued request. Targets are rejected while paused and applied on a
-subsequent running advance.
+Initialize accepts `mode: play`, an unsigned 32-bit `seed`, optional `shiftId`, and `pacingMode`. Reset retains the current seed, shift and pacing unless explicitly changed.
 
-The snapshot no longer carries `absoluteTiltFraction`,
-`controlMarginFraction`, `targetTiltFraction`, `staticReactivity`, or
-`staticReactivityMethodId`. `physics.reactivity` remains the solved
-`(k - 1) / k`; `physics.coreReactivity` is the uncompensated equilibrium value,
-and `physics.compensatedNetReactivity` is the value after liquid-zone
-coefficient overlays. The practice run integrates burnup and refreshes the
-equilibrium shape every half hour and after accepted refuelling. Spatial
-iodine/xenon evolves analytically between solves; prompt kinetics is out of scope.
+| Pacing | Command and interval |
+| --- | --- |
+| `demo` | Public time-based play. `commit-day` solves a half-day, then the browser displays it over five seconds when ready. The managed clock stays paused between steps. The bridge also supports direct `commit-refuel`. |
+| `daily-turn` | Retained daily planning and replay. `commit-day` advances 86,400 simulated seconds. Direct refuelling and wall-clock advances are rejected. |
+| `real-time` | Retained comparison tools use explicit clock advances. |
 
-The v1 `queue-tilt-target` browser command is removed because it only changed a
-legacy scenario scalar, not the spatial flux solve. Other v1 commands, core
-fields, compact patches, and failure semantics remain
-as described in the v1 specification (historical v1 specification, retained in Git history).
+`commit-day` takes `expectedCompletedDays` and `channelIndices`. An empty list advances without fuelling. The [shared step contract](../gameplay/daily-turn-mode.md) explains ordering, loss and rollback.
 
+For `demo` free practice, initialization may include `customPhysics`, a map of pack-field paths to finite numeric overrides. Core validates it against the embedded defaults, and Game settles the custom core and reference. The resulting `dataPackId` has a `custom-practice-v1-` content identity and the snapshot carries modified sandbox provenance. Resets reuse the custom parameters. Custom runs support local update checkpoints.
 
-## Replay recording and identity
+## Observations
 
-The live bridge uses `sha256-chained-replay-v2`, published in capability metadata
-and the top-level `replayDigestAlgorithm` on initialization and dispatch responses.
-Digest strings retain the `sha256:` prefix and lowercase hexadecimal encoding.
-This replaces `sha256-canonical-replay-v1`; values across these algorithms are
-not comparable. The simulation state-digest algorithms are unchanged.
+A compact patch names its base sequence. The client must materialize it against that exact snapshot or resynchronize. Both response forms include authoritative operation acceptance and diagnostics, state and replay digests, and the active sequence. The compact response can replace detailed core readings as needed.
 
-Let `H(text)` be SHA-256 of UTF-8 text with that output encoding. Initialize with:
+- `runStatus` and `runEndReason` describe the run. Treat terminal status separately from `rrs.isGameOver`, which reports physical regulator exhaustion.
+- `axialTiltFraction` is the signed first moment of thermal flux, negative toward End A and positive toward End B. `rrsReserveFraction` describes remaining control room.
+- `physics.reactivity` is the solved `(k - 1) / k`. `coreReactivity` and `compensatedNetReactivity` distinguish the uncompensated and zone-compensated readings.
+- `lastDayResult` carries the committed moves, unexecuted channels, score change and timing. The browser may interpolate continuous measurements for display. It reveals fuel movement and terminal outcomes at the accepted endpoint.
+- `shift` carries the seed, fuel use, energy and objective. Current launcher runs are endless free practice. Historical objective IDs remain supported for replay.
+- `lastRefuellingScore` is null before the first accepted move. It then carries discharge reward, early-discharge penalty (`freshFuelCost`), zone bonus and signed net points. `ripple` carries the peak ratio and ripple and tilt rates. See the [scoring policy](../gameplay/score-balance.md).
+
+## Replay identity
+
+The `sha256-chained-replay-v2` chain uses SHA-256 over UTF-8 with a `sha256:` prefix and lowercase hex.
 
 ```text
 D0 = H("sha256-chained-replay-v2|" + scorePolicyId + "|" + mode + "|" + initializationJson)
 Dn = H(D(n-1) + "|" + canonicalCommandJson)
 ```
 
-`initializationJson` is the exact successful Initialize request string, preserving
-the earlier initialization identity contract. Each dispatched command is canonical
-JSON using the bridge's sorted-object-key canonicalization. Accepted commands and
-commands rejected by the dispatcher both advance sequence and digest. Malformed
-requests, protocol/seed validation failures, and compact base-sequence resync
-requests do neither. Snapshot reads do not append anything.
+Initialization hashes the exact successful request. Each sequence-advancing dispatch appends sorted-key canonical command JSON, including rejections handled by the dispatcher. Malformed requests, validation failures returned before dispatch, compact resync requests and snapshot reads do not advance the chain.
 
-Reset creates a fresh chain using its resolved seed and shift ID. Its initialization
-string is exactly `{"protocol":"candu-playtest-v2","mode":"play","seed":SEED,"shiftId":"SHIFT"}`
-with decimal SEED and the resolved SHIFT. The reset command is then appended as
-the first command of that new chain, at sequence 1; earlier commands are excluded.
-
-The bridge retains only the current digest, with no command or diagnostic history
-collections. Dispatch responses stream command, sequence, acceptance, diagnostics,
-and digests. A caller needing a replay must durably record the successful Initialize
-request and every sequence-advancing dispatch response in order, including rejected
-commands and resets. Record before discarding a response; a digest alone cannot
-reconstruct commands. The browser's bounded chart history is not a replay archive.
-There is no bridge replay-export API or promise of server-side retained evidence.
-
-## Refuelling score metadata
-
-Full snapshots and compact patches publish `scorePolicyId` and
-`lastRefuellingScore`. The latter is explicitly null before the first accepted
-fuel move and after reset. Otherwise it contains `policyId`, `dischargeReward`,
-`freshFuelCost` (a positive deduction) and `netPoints` (signed). Values are authored
-game points, calculated in Game from the actual discharged bundles. The summary
-persists through time advances and rejected commands; it is not the current
-command's `scoreDelta`. Operating score remains separate from this operation
-summary. Older v2 hosts may omit these additive fields.
-
-The current policy is `practice-fuel-and-operation-v2`: discharge components
-retain the per-bundle v1 rule; operating reward is now capped at one point per
-simulated hour, retaining the 70% power / 30% tilt quality ratio. v1 totals are
-not directly comparable with v2 totals. Older responses with v1 metadata remain
-readable; replaying commands under v2 produces the v2 score and digest. Replay digests include
-this policy ID before the mode, initialization JSON and command history. Thus
-replay digests differ from older builds even for identical commands; compare runs
-only under the same scoring policy. The scoring formula itself is unchanged by
-this metadata addition.
-
-## Shift objectives and cumulative results
-
-New full snapshots and compact patches include optional `shift` metadata from
-Game. Older v2 snapshots without this field remain readable. `shift.id` is
-`free-practice` or `useful-fuel-day-v1`; the object includes the seed, objective,
-horizon and remaining simulation seconds, fuel budget/consumption, useful bundle
-count/goal and burnup threshold, thermal MWh, estimated electrical MWh, cumulative
-operating points, discharge reward and fresh-fuel cost, outcome and badge status.
-Outcome is `in-progress`, `success`, `missed` or `ended`; physical run state remains
-separate in `runStatus` and `runEndReason`.
-
-Initialize and reset accept optional `shiftId`. Initialize defaults to free
-practice; reset retains the current objective and seed when omitted. Invalid
-objective IDs reject atomically. The challenge starts paused, uses a 24-hour
-horizon and the existing 128-bundle stock; free practice retains 30 days. The
-challenge requires eight actual discharged bundles at >= 6 MWd/kg and horizon
-completion without a terminal RRS result. The reward is a run-local badge, with
-no bonus points or scoring-weight change. Replay initialization records the
-objective ID; snapshot digests include its progress and cumulative totals.
-
-Energy integrates the same accepted per-node fission-energy increments as burnup;
-startup inventory, rejected transactions and paused wall time contribute nothing.
-Electrical MWh is an estimate at the existing 650/2064 conversion ratio. Fuel and
-discharge score totals accumulate only after accepted refuelling transactions.
+Reset starts a new chain from the resolved seed and shift. Its initialization JSON also includes non-real-time pacing and, for a custom run, the original custom overrides in canonical form. The reset command becomes sequence 1. Replayers must record initialization and the sequence-advancing responses and commands. The bridge keeps the current digest rather than a replay archive.

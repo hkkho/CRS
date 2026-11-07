@@ -1,26 +1,24 @@
-# One day at a time
+# Start a time-based run
 
-1. Read the core’s LZC average, tilt and power peaks.
-2. Select a channel on the core map, or use **Highest burnup**. Compare its power and burnup profiles at both ends.
-3. Use the **Fuel** and **Profiles** tabs in the LZC details block to see which bundles leave. Double-click a channel to queue or remove an eight-bundle order. Touch: tap to inspect, then use **Add channel**. Keyboard: arrows inspect; `R`, `Enter` or `Space` on a core channel toggles its order.
-4. Review the persistent **Fuelling list** beside the core: numbered channels, flow, outgoing burnup and fresh-bundle total. Select **Refuel & advance** on the sheet. With an empty plan, **Advance day** advances without fuel.
-5. Read the day result and repeat. Time stays frozen while you inspect, plan or read this manual.
+1. Choose **Time based** and wait for **Start**. Under **Starting core**, you can enter a seed to reproduce a core.
+2. Press **Start** and inspect the core map and liquid-zone levels. Each simulated half-day takes five seconds to display when the next solution is ready.
+3. Queue fuel when a channel needs it. Use **Pause** to inspect the core without advancing playback. **Retry seed** repeats the starting core and **New core** draws a different seed.
 
-Free practice has unlimited fresh fuel and no time limit. Both presentations
-use the same endless run. LZC targets come from the fixed time-average power
-reference at nominal 50% fill; actual starting zone levels depend on the aged
-fuel and are calculated before the first day.
+## Controls
 
-Select **Show me the ropes · guided practice** and **Start run** on the launcher for an optional introduction on
-seed 1001 with unlimited practice fuel. It follows channel selection, inspecting
-outgoing fuel, drafting a list and reading the first real day result. It never
-executes an order for you. **Skip guide** closes it; **Menu → First-shift guide**
-reopens guidance over your current run.
+| Action | Pointer or touch | Keyboard | Standard gamepad |
+| --- | --- | --- | --- |
+| Inspect a channel | Select a channel | Arrow keys on the map | D-pad |
+| Queue fuel | Double-click or use **Queue fuel** | Enter or R on the map | Bottom face button |
+| Change the map | Use the map selector | Focus and change the selector | Shoulder buttons |
+| Pause or resume | Use the playback button | Focus and activate the button | Start |
 
-**Start run** launches free practice. Expand **Starting core** to
-enter or randomize the seed. Choose Arcade in **Presentation** for the touch-focused
-view. During play, **Menu → New run** contains seed
-setup. **History** keeps the timeline visible; **Return to current day** restores live
-planning. A completed run opens its final report directly.
+## Custom physics
 
-Highest burnup ranks eligible channels by observed average burnup. It is a candidate list, not a prediction of the best move. Compare outgoing bundles, channel power and zone headroom before choosing.
+Choose **Custom physics** on the launcher to set up a sandbox. Edit nominal power, device absorption, iodine and xenon kinetics, diffusion and boundary geometry, fuel coefficients and solver settings. **Restore defaults** clears the draft. **Build custom core** validates the settings and solves the starting state. If the core cannot settle, choose **Back** and revise your draft. The run uses the chosen settings through retries and local update restores.
+
+## Updates and recovery
+
+When a new build is ready, close other game tabs if prompted. The game saves the latest solved state and waiting orders, then reloads. A compatible checkpoint opens at **Start**. If the model or score policy has changed, the game keeps the checkpoint and offers a return to the launcher.
+
+In retained daily views, select channels in the plan and confirm the day explicitly. Each accepted day covers 24 simulated hours.

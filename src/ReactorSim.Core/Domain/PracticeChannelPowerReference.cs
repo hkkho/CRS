@@ -88,9 +88,8 @@ namespace ReactorSim.Core
             if (!inventory.IsValid) return InvalidSolve(inventory.FirstDiagnostic.Code, inventory.FirstDiagnostic.Path, inventory.FirstDiagnostic.Message);
             var coefficients = BuildCoefficientSet(inventory.Value, values);
             if (!coefficients.IsValid) return InvalidSolve(coefficients.FirstDiagnostic.Code, coefficients.FirstDiagnostic.Path, coefficients.FirstDiagnostic.Message);
-            var mapping = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6();
-            if (!mapping.IsValid) return InvalidSolve(mapping.FirstDiagnostic.Code, mapping.FirstDiagnostic.Path, mapping.FirstDiagnostic.Message);
-            var overlay = mapping.Value.TryBuildOverlay(Enumerable.Repeat(0.5, 14).ToArray());
+            var mapping = _dataPack.CreatePracticeZoneMapping();
+            var overlay = mapping.TryBuildOverlay(Enumerable.Repeat(0.5, 14).ToArray());
             if (!overlay.IsValid) return InvalidSolve(overlay.FirstDiagnostic.Code, overlay.FirstDiagnostic.Path, overlay.FirstDiagnostic.Message);
             var effective = ApplyStaticAbsorptionOverlay(coefficients.Value, overlay.Value);
             if (!effective.IsValid) return InvalidSolve(effective.FirstDiagnostic.Code, effective.FirstDiagnostic.Path, effective.FirstDiagnostic.Message);
@@ -102,7 +101,9 @@ namespace ReactorSim.Core
                 referenceAxial[k] = _dataPack.XenonReference.Average(
                     AgedCoreSnapshotGeneratorV1.BundleBurnupMwDayPerKg(k, 0) * 8.64e10,
                     AgedCoreSnapshotGeneratorV1.BundleBurnupMwDayPerKg(k, 1) * 8.64e10);
-            var previousDelta = new double[_stencil.NodeCount];
+            var physics = _dataPack.PracticePhysics;
+            var previousFast = new double[_stencil.NodeCount];
+            var previousThermal = new double[_stencil.NodeCount];
             for (int pass = 0; pass < 16; pass++)
             {
                 var entries = new List<StaticAbsorptionOverlayEntryV1>(_stencil.NodeCount);
@@ -113,18 +114,21 @@ namespace ReactorSim.Core
                     var c = coefficients.Value.Nodes[n];
                     double f = c.FissionGroup1PerM * solved.Value.Group1Flux[n] +
                         c.FissionGroup2PerM * solved.Value.Group2Flux[n];
-                    double xe = (PracticeXenonDataV1.GammaI + PracticeXenonDataV1.GammaXe) * f /
-                        (PracticeXenonDataV1.LambdaXe + PracticeXenonDataV1.SigmaGroup2M2 * solved.Value.Group2Flux[n]);
+                    double xe = (physics.GammaI + physics.GammaXe) * f /
+                        (physics.LambdaXe + physics.SigmaFast * solved.Value.Group1Flux[n] +
+                         physics.SigmaThermal * solved.Value.Group2Flux[n]);
                     bool reverse = Candu6CoreTopologyFactoryV1.GetFlowDirection(
                         Candu6CoreTopologyFactoryV1.GetPosition(node.Node.ChannelId.Value)) == FlowDirection.EndBtoEndA;
                     int k = (int)node.Node.Position.Value;
-                    maximumXeAbsorption = Math.Max(maximumXeAbsorption, PracticeXenonDataV1.SigmaGroup2M2 * xe);
-                    double delta = PracticeXenonDataV1.SigmaGroup2M2 * (xe - referenceAxial[reverse ? 11 - k : k]);
-                    error = Math.Max(error, Math.Abs(delta - previousDelta[n]));
-                    previousDelta[n] = delta;
+                    maximumXeAbsorption = Math.Max(maximumXeAbsorption, Math.Max(physics.SigmaFast, physics.SigmaThermal) * xe);
+                    double difference = xe - referenceAxial[reverse ? 11 - k : k];
+                    double fast = physics.SigmaFast * difference, thermal = physics.SigmaThermal * difference;
+                    error = Math.Max(error, Math.Max(Math.Abs(fast - previousFast[n]), Math.Abs(thermal - previousThermal[n])));
+                    previousFast[n] = fast;
+                    previousThermal[n] = thermal;
                     entries.Add(new StaticAbsorptionOverlayEntryV1(node.Node,
-                        overlay.Value.GetDeltaAbsorptionGroup1PerM(node.Node),
-                        overlay.Value.GetDeltaAbsorptionGroup2PerM(node.Node) + delta));
+                        overlay.Value.GetDeltaAbsorptionGroup1PerM(node.Node) + fast,
+                        overlay.Value.GetDeltaAbsorptionGroup2PerM(node.Node) + thermal));
                 }
                 double tolerance = Math.Max(1e-10, 4 * _dataPack.ConvergencePolicy.SourceShapeTolerance * maximumXeAbsorption);
                 if (pass > 0 && error <= tolerance) return solved;

@@ -306,7 +306,7 @@ export class StudioView {
       this.text("reserve", `${(snapshot.rrs.averageFillFraction * 100).toFixed(1)}%`);
       this.text("score", snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 }));
       this.text("operations", String(snapshot.refuellingOperationCount));
-      this.text("ripple-score", snapshot.ripple ? `RMS ripple ${(snapshot.ripple.rmsDeviationFraction * 100).toFixed(2)}% · ${snapshot.ripple.pointsPerHour.toFixed(3)} points/h` : "Reference unavailable from this host");
+      this.text("ripple-score", snapshot.ripple ? `Peak ripple ${((snapshot.ripple.maximumRipple ?? Math.max(...snapshot.ripple.channelRippleFractions)) * 100).toFixed(2)}% · ${snapshot.ripple.pointsPerHour.toFixed(3)} operating points/h` : "Reference unavailable from this host");
       this.text("time", snapshot.pacingMode === "daily-turn" ? `Day ${(snapshot.completedDays ?? 0) + 1}` : formatSimulationTime(snapshot.simulationTimeSeconds));
       (this.element.querySelector('.studio-clock .studio-segments') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
       (this.element.querySelector('.studio-controls') as HTMLElement).hidden = snapshot.pacingMode === "daily-turn";
@@ -398,7 +398,7 @@ export class StudioView {
       this.text("fuel-used", shift.unlimitedFreshFuel ? `${shift.fuelConsumed} bundles` : `${shift.fuelConsumed} / ${shift.fuelBudget} bundles`);
       this.text("useful-fuel", `${shift.usefulBundlesDischarged} discharged at ≥ ${shift.usefulBurnupThresholdMwdPerKg} MWd/kg`);
       this.text("final-score", `${this.snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 1 })} points`);
-      this.text("score-components", `Ripple points ${shift.operatingPoints.toFixed(1)} · closer channel powers earn more · maximum 1 point/h`);
+      this.text("score-components", `Discharge ${(shift.dischargeReward - shift.freshFuelCost).toFixed(1)} · Zone balance ${(shift.zoneBalanceBonus ?? 0).toFixed(1)} · Ripple and tilt ${shift.operatingPoints.toFixed(1)}`);
     } else {
       this.text("ending-title", "Shift complete");
     }

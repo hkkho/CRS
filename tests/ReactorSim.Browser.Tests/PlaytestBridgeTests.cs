@@ -399,7 +399,7 @@ namespace ReactorSim.Browser.Tests
             AssertCompactPatch(committed, 1, 2);
             JsonElement score = committed.GetProperty("snapshotPatch").GetProperty("lastRefuellingScore");
             Assert.Equal(PracticeScoring.PolicyId, score.GetProperty("policyId").GetString());
-            Assert.Equal(score.GetProperty("dischargeReward").GetDouble() - score.GetProperty("freshFuelCost").GetDouble(),
+            Assert.Equal(score.GetProperty("dischargeReward").GetDouble() - score.GetProperty("freshFuelCost").GetDouble() + score.GetProperty("zoneBalanceBonus").GetDouble(),
                 score.GetProperty("netPoints").GetDouble(), 10);
             Assert.Equal(committed.GetProperty("snapshotPatch").GetProperty("scoreDelta").GetDouble(), score.GetProperty("netPoints").GetDouble(), 10);
 

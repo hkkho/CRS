@@ -24,7 +24,8 @@ public sealed class DailyTurnTests
         Assert.Equal(1u, day.Snapshot.CompletedDays);
         Assert.True(day.Snapshot.IsPaused);
         Assert.Empty(day.Snapshot.LastDayResult!.Movements);
-        Assert.InRange(day.Snapshot.LastDayResult.ScoreDelta, 0, 24);
+        Assert.Equal(day.Snapshot.ScoreTotal, day.Snapshot.LastDayResult.ScoreDelta);
+        Assert.InRange(day.Snapshot.Shift.OperatingPoints, 0, 24);
         Assert.Equal(2064 * 24, day.Snapshot.LastDayResult.ThermalEnergyMwh, 5);
         Assert.False(session.CommitDay(0, Array.Empty<uint>()).Accepted);
         Assert.Equal(86400, session.Snapshot.SimulationTimeSeconds);
@@ -57,7 +58,7 @@ public sealed class DailyTurnTests
         var projection = session.CurrentSpatialCandidate;
         var expectedCore = session.CoreState.TryAddFissionEnergy(projection.ShapeNodePowerWatts.Select(w => w * 86400).ToArray()).Value;
         var expectedPoison = session.CurrentXenonState.Advance(projection, 1, 86400).BindBurnupReference(expectedCore);
-        double expectedScore = PracticeScoring.OperatingPoints(86400, before.Ripple.RmsDeviationFraction);
+        double expectedScore = PracticeScoring.OperatingPoints(86400, before.Ripple.MaximumRipple, before.AxialTiltFraction);
         var day = session.CommitDay(0, Array.Empty<uint>());
         Assert.True(day.Accepted, day.DiagnosticMessage);
         Assert.Equal(1u, day.Snapshot.TurnSummaryCount);

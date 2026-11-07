@@ -25,18 +25,22 @@ namespace ReactorSim.Core
         // Exact frozen-source Bateman step. The divided exponential has a regular
         // equal-rate limit and does not overflow when the rates straddle each other.
         public static (double Iodine, double Xenon) Advance(double iodine, double xenon,
-            double fissionRateDensity, double flux1, double flux2, double seconds)
+            double fissionRateDensity, double flux1, double flux2, double seconds) =>
+            Advance(iodine, xenon, fissionRateDensity, flux1, flux2, seconds, CustomPracticePhysics.Default);
+
+        internal static (double Iodine, double Xenon) Advance(double iodine, double xenon,
+            double fissionRateDensity, double flux1, double flux2, double seconds, CustomPracticePhysics physics)
         {
             if (!Valid(iodine) || !Valid(xenon) || !Valid(fissionRateDensity) ||
                 !Valid(flux1) || !Valid(flux2) || !Valid(seconds))
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Poison inputs must be finite and nonnegative.");
-            double a = LambdaI;
-            double b = LambdaXe + SigmaGroup1M2 * flux1 + SigmaGroup2M2 * flux2;
+            double a = physics.LambdaI;
+            double b = physics.LambdaXe + physics.SigmaFast * flux1 + physics.SigmaThermal * flux2;
             double ea = Math.Exp(-a * seconds), eb = Math.Exp(-b * seconds);
-            double ieq = GammaI * fissionRateDensity / a;
-            double nextI = iodine * ea + GammaI * fissionRateDensity * seconds * Phi(a * seconds);
+            double ieq = physics.GammaI * fissionRateDensity / a;
+            double nextI = iodine * ea + physics.GammaI * fissionRateDensity * seconds * Phi(a * seconds);
             double divided = Math.Exp(-Math.Min(a, b) * seconds) * seconds * Phi(Math.Abs(b - a) * seconds);
-            double nextXe = xenon * eb + (GammaXe * fissionRateDensity + a * ieq) * seconds * Phi(b * seconds)
+            double nextXe = xenon * eb + (physics.GammaXe * fissionRateDensity + a * ieq) * seconds * Phi(b * seconds)
                 + a * (iodine - ieq) * divided;
             if (!ContractValidation.IsFinite(nextI) || !ContractValidation.IsFinite(nextXe) || nextI < 0 || nextXe < 0)
                 throw new InvalidOperationException("Analytic poison result must be finite and nonnegative.");
@@ -57,6 +61,7 @@ namespace ReactorSim.Core
         private readonly StableId[] _bundles;
         private readonly double[] _iodine, _xenon, _reference;
         private readonly PracticeXenonReferenceV1? _background;
+        private readonly CustomPracticePhysics _physics;
         private readonly Lazy<Digest32> _stateDigest;
         private readonly Lazy<StaticAbsorptionOverlayV1> _overlay;
         public IReadOnlyList<double> Iodine { get; }
@@ -64,13 +69,17 @@ namespace ReactorSim.Core
         public IReadOnlyList<double> IncludedReferenceXenon { get; }
         public double SimulationTimeSeconds { get; }
         public ulong StateVersion { get; }
+        public double FastAbsorptionCrossSectionM2 => _physics.SigmaFast;
+        public double ThermalAbsorptionCrossSectionM2 => _physics.SigmaThermal;
         public Digest32 StateDigest => _stateDigest.Value;
         public StaticAbsorptionOverlayV1 Overlay => _overlay.Value;
 
         private PracticeXenonStateV1(StableId[] bundles, double[] iodine, double[] xenon,
-            double[] reference, double time, ulong version, PracticeXenonReferenceV1? background = null)
+            double[] reference, double time, ulong version, PracticeXenonReferenceV1? background,
+            CustomPracticePhysics physics)
         {
             _background = background;
+            _physics = physics;
             _bundles = bundles; _iodine = iodine; _xenon = xenon; _reference = reference;
             IncludedReferenceXenon = new ReadOnlyCollection<double>(reference);
             Iodine = new ReadOnlyCollection<double>(iodine);
@@ -80,6 +89,12 @@ namespace ReactorSim.Core
             {
                 Phase5CanonicalBytesV1.WriteDigest(writer, PracticeXenonDataV1.DataDigest);
                 if (background != null) Phase5CanonicalBytesV1.WriteDigest(writer, background.ReferenceDigest);
+                if (!ReferenceEquals(physics, CustomPracticePhysics.Default))
+                {
+                    writer.Write(physics.GammaI); writer.Write(physics.GammaXe);
+                    writer.Write(physics.LambdaI); writer.Write(physics.LambdaXe);
+                    writer.Write(physics.SigmaFast); writer.Write(physics.SigmaThermal);
+                }
                 writer.Write(time); writer.Write(version);
                 for (int n = 0; n < bundles.Length; n++)
                 {
@@ -99,18 +114,19 @@ namespace ReactorSim.Core
             if (projection.ShapeNodePowerWatts.Count != bundles.Length)
                 throw new ArgumentException("Poison state requires the complete channel-major practice topology.");
             var iodine = new double[bundles.Length]; var xenon = new double[bundles.Length];
+            var physics = projection.DataPack.PracticePhysics;
             for (int n = 0; n < bundles.Length; n++)
             {
                 double f = FissionRate(projection, n);
-                iodine[n] = PracticeXenonDataV1.GammaI * f / PracticeXenonDataV1.LambdaI;
-                xenon[n] = (PracticeXenonDataV1.GammaXe + PracticeXenonDataV1.GammaI) * f /
-                    (PracticeXenonDataV1.LambdaXe + PracticeXenonDataV1.SigmaGroup2M2 * projection.ShapeGroup2[n]);
+                iodine[n] = physics.GammaI * f / physics.LambdaI;
+                xenon[n] = (physics.GammaXe + physics.GammaI) * f /
+                    (physics.LambdaXe + physics.SigmaFast * projection.ShapeGroup1[n] + physics.SigmaThermal * projection.ShapeGroup2[n]);
             }
             var background = projection.DataPack.XenonReference;
             double[] reference = background == null ? (double[])xenon.Clone() :
                 bundles.Select(b => background.At(b.CurrentBurnupJPerKgHm)).ToArray();
             return new PracticeXenonStateV1(bundles.Select(b => b.BundleId).ToArray(), iodine, xenon,
-                reference, time, 0, background);
+                reference, time, 0, background, physics);
         }
 
         public PracticeXenonStateV1 Advance(EquilibriumCoreProjectionV1 projection, double amplitude, double seconds)
@@ -129,10 +145,10 @@ namespace ReactorSim.Core
             {
                 double f = FissionRate(projection, n) * amplitude;
                 (iodine[n], xenon[n]) = PracticeXenonDataV1.Advance(_iodine[n], _xenon[n], f,
-                    projection.ShapeGroup1[n] * amplitude, projection.ShapeGroup2[n] * amplitude, seconds);
+                    projection.ShapeGroup1[n] * amplitude, projection.ShapeGroup2[n] * amplitude, seconds, _physics);
             }
             return new PracticeXenonStateV1(_bundles, iodine, xenon, _reference,
-                SimulationTimeSeconds + seconds, checked(StateVersion + 1), _background);
+                SimulationTimeSeconds + seconds, checked(StateVersion + 1), _background, _physics);
         }
 
         public PracticeXenonStateV1 Rebind(SyntheticGameCoreStateV1 core)
@@ -148,7 +164,7 @@ namespace ReactorSim.Core
             double[] reference = _background == null ? _reference :
                 bundles.Select(b => _background.At(b.CurrentBurnupJPerKgHm)).ToArray();
             return new PracticeXenonStateV1(bundles.Select(b => b.BundleId).ToArray(), iodine, xenon,
-                reference, SimulationTimeSeconds, checked(StateVersion + 1), _background);
+                reference, SimulationTimeSeconds, checked(StateVersion + 1), _background, _physics);
         }
 
         public PracticeXenonStateV1 BindBurnupReference(SyntheticGameCoreStateV1 core)
@@ -159,7 +175,7 @@ namespace ReactorSim.Core
                 throw new ArgumentException("Burnup binding must retain the exact poison bundle identities.", nameof(core));
             return new PracticeXenonStateV1(_bundles, _iodine, _xenon,
                 bundles.Select(b => _background.At(b.CurrentBurnupJPerKgHm)).ToArray(),
-                SimulationTimeSeconds, StateVersion, _background);
+                SimulationTimeSeconds, StateVersion, _background, _physics);
         }
 
         private static double FissionRate(EquilibriumCoreProjectionV1 projection, int n)
@@ -184,9 +200,9 @@ namespace ReactorSim.Core
             for (int n = 0; n < entries.Length; n++)
             {
                 var node = new NodeKey(new ChannelId((uint)(n / 12)), new BundlePosition((uint)(n % 12)));
-                double delta = excluded != null && excluded.Contains(node) ? 0 :
-                    PracticeXenonDataV1.SigmaGroup2M2 * (_xenon[n] - _reference[n]);
-                entries[n] = new StaticAbsorptionOverlayEntryV1(node, 0, delta == 0 ? 0 : delta);
+                double difference = excluded != null && excluded.Contains(node) ? 0 : _xenon[n] - _reference[n];
+                double fast = _physics.SigmaFast * difference, thermal = _physics.SigmaThermal * difference;
+                entries[n] = new StaticAbsorptionOverlayEntryV1(node, fast == 0 ? 0 : fast, thermal == 0 ? 0 : thermal);
             }
             var result = StaticAbsorptionOverlayV1.TryCreate(PracticeXenonDataV1.Identity + (_background == null ? "/fixed-reference-calibration" : "/burnup-reference-replacement"), entries);
             if (!result.IsValid) throw new InvalidOperationException(result.FirstDiagnostic.ToString());

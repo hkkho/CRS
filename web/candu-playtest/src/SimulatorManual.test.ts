@@ -53,7 +53,8 @@ describe("simulator manual", () => {
   it("renders the shared Markdown and links to the published manual without replacing the run", () => {
     const { manual, opener } = setup(); opener.click();
     expect(manual.element.querySelectorAll("h1")).toHaveLength(1);
-    expect(manual.element.querySelector("#manual-start h2")?.textContent).toBe("One day at a time");
+    expect(manual.element.querySelector("#manual-start h2")?.textContent).toBe("Start a time-based run");
+    expect(manual.element.querySelector("#manual-start")?.textContent).toContain("Build custom core");
     expect(manual.element.querySelectorAll("#manual-score tbody tr")).toHaveLength(4);
     const link = manual.element.querySelector<HTMLAnchorElement>(".manual-library-link")!;
     expect(link.getAttribute("href")).toBe(`${import.meta.env.BASE_URL}docs/manual/`);

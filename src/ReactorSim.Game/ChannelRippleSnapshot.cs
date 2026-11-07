@@ -7,7 +7,7 @@ namespace ReactorSim.Game
 {
     public sealed class ChannelRippleSnapshot
     {
-        internal ChannelRippleSnapshot(PracticeChannelPowerReference reference, IReadOnlyList<double> powers, double amplitude)
+        internal ChannelRippleSnapshot(PracticeChannelPowerReference reference, IReadOnlyList<double> powers, double amplitude, double axialTiltFraction)
         {
             ReferenceId = PracticeChannelPowerReference.ModelId;
             DataPackVersion = reference.DataPackVersion;
@@ -16,7 +16,9 @@ namespace ReactorSim.Game
             ReferenceChannelPowerWatts = reference.ChannelPowerWatts;
             ChannelRippleFractions = Array.AsReadOnly(powers.Select((p, i) => p * amplitude / reference.ChannelPowerWatts[i]).ToArray());
             RmsDeviationFraction = PracticeScoring.RmsRipple(powers, reference.ChannelPowerWatts, amplitude);
-            PointsPerHour = PracticeScoring.OperatingPoints(3600, RmsDeviationFraction);
+            MaximumRipple = ChannelRippleFractions.Max();
+            RipplePointsPerHour = PracticeScoring.RipplePointsPerHour(MaximumRipple);
+            TiltPointsPerHour = PracticeScoring.TiltPointsPerHour(axialTiltFraction);
         }
         public string ReferenceId { get; }
         public string DataPackVersion { get; }
@@ -27,6 +29,9 @@ namespace ReactorSim.Game
         public IReadOnlyList<double> ReferenceChannelPowerWatts { get; }
         public IReadOnlyList<double> ChannelRippleFractions { get; }
         public double RmsDeviationFraction { get; }
-        public double PointsPerHour { get; }
+        public double MaximumRipple { get; }
+        public double RipplePointsPerHour { get; }
+        public double TiltPointsPerHour { get; }
+        public double PointsPerHour => RipplePointsPerHour + TiltPointsPerHour;
     }
 }

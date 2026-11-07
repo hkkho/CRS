@@ -77,6 +77,15 @@ it('rejects malformed and nonfinite stat payloads', async () => {
   }
 });
 
+it('accepts and publishes a negative total under its scoring policy', async () => {
+  await asUser(bob);
+  const run = payload({ id: '77777777-7777-4777-8777-777777777777', scorePolicyId: 'signed-policy', score: -24.5, ended: true });
+  expect((await save(run, 0)).rows[0].revision).toBe(1);
+  await db.query('select public.publish_endless_score($1)', [run.id]);
+  expect((await db.query("select * from public.endless_leaderboard('signed-policy')")).rows)
+    .toEqual([{ display_name: 'bob', score: -24.5, seconds: 3600 }]);
+});
+
 it('accepts daily v2 saves, rejects invalid pacing and keeps pacing immutable', async () => {
   await asUser(alice);
   const daily = payload({ id: '44444444-4444-4444-8444-444444444444', version: 2, pacingMode: 'daily-turn', draftChannels: [210, 211],

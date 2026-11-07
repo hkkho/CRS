@@ -7,6 +7,7 @@ import type { SessionUpdate } from "./sessionController";
 import type { WorkspaceSession } from "./studio/StudioNavigation";
 import "./arcade.css";
 import { ArcadeMap } from "./ArcadeMap";
+import { formatScoreDelta } from "./gameplayPresentation";
 import { FuelOrderList } from "./FuelOrderList";
 
 /** Touch presentation of the Game-owned useful-fuel challenge. No local simulation or victory rules. */
@@ -127,7 +128,7 @@ export class ArcadeView {
       if (this.disposed) return;
       if (response.accepted) { this.reviewing = false; this.setPlan([]); }
       this.field("[data-message]").textContent = command.type === "commit-day" && response.accepted && !isRunTerminal(response.snapshot)
-        ? `Day ${response.snapshot.completedDays} complete · +${(response.snapshot.lastDayResult?.scoreDelta ?? 0).toFixed(2)} points · ${response.snapshot.lastDayResult?.fuelUsed ?? 0} bundles used. Plan your next day.` : response.message;
+        ? `Day ${response.snapshot.completedDays} complete · ${formatScoreDelta(response.snapshot.lastDayResult?.scoreDelta ?? 0)} points · ${response.snapshot.lastDayResult?.fuelUsed ?? 0} bundles used. Plan your next day.` : response.message;
     } catch (error) { if (!this.disposed) this.field("[data-message]").textContent = `Unable to complete the order: ${String(error)}`; }
     finally { this.busy = false; this.render(); if (!this.disposed && isRunTerminal(this.update.snapshot)) this.field("[data-outcome]").focus(); }
   }

@@ -8,7 +8,7 @@ namespace ReactorSim.Game.Tests;
 public sealed class GameplayBalanceTests
 {
     [Fact]
-    public void PoliciesAreRankedByRippleForTheSameSeedAndDuration()
+    public void OperatingPointsIntegrateSeparatelyFromRefuellingScore()
     {
         const ulong seed = 1002;
         var idle = PracticeGameSessionFactory.Create(seed);
@@ -33,8 +33,9 @@ public sealed class GameplayBalanceTests
             }
             Assert.Equal(600, session.Snapshot.SimulationTimeSeconds);
             Assert.InRange(session.Snapshot.Shift.OperatingPoints, 0, 600.0 / 3600.0);
-            Assert.Equal(expected, session.Snapshot.ScoreTotal, 10);
+            Assert.Equal(expected, session.Snapshot.Shift.OperatingPoints, 10);
         }
+        Assert.True(useful.Snapshot.ScoreTotal > waste.Snapshot.ScoreTotal);
         Assert.Equal(8u, useful.Snapshot.Shift.FuelConsumed);
         Assert.Equal(40u, waste.Snapshot.Shift.FuelConsumed);
         Assert.Equal(344, useful.Snapshot.Shift.ThermalEnergyMwh, 6);

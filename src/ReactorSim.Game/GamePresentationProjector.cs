@@ -30,8 +30,9 @@ namespace ReactorSim.Game
             double amplitude = Clamp(powerAmplitude, 0.0, 1.5);
             double physicalShapeScale = amplitude;
             double totalPowerWatts = projection.ShapePowerWatts * physicalShapeScale;
-            double actualPowerFraction = totalPowerWatts /
-                                         PracticeGameSessionFactory.PracticeReferencePowerWatts;
+            double referencePowerWatts = PracticeGameSessionFactory.PracticeReferencePowerWatts *
+                projection.DataPack.PracticeThermalPowerMultiplier;
+            double actualPowerFraction = totalPowerWatts / referencePowerWatts;
             double meanChannelPowerWatts = totalPowerWatts /
                                            GameCorePresentationConstants.ChannelCount;
             var channelPowerWatts = new double[
@@ -117,10 +118,10 @@ namespace ReactorSim.Game
                 "converged",
                 true,
                 version,
-                PracticeGameSessionFactory.PracticeReferencePowerWatts,
+                referencePowerWatts,
                 amplitude,
                 actualPowerFraction,
-                PracticeGameSessionFactory.PracticeReferencePowerWatts * targetPowerAmplitude,
+                referencePowerWatts * targetPowerAmplitude,
                 totalPowerWatts,
                 meanChannelPowerWatts,
                 totalPowerWatts /
@@ -185,9 +186,10 @@ namespace ReactorSim.Game
                     new GameXenonChannelPresentationSnapshot(
                         channelIndex,
                         meanI, maxI, meanXe, maxXe,
-                        0.0, 0.0,
-                        meanXe * PracticeXenonDataV1.SigmaGroup2M2,
-                        maxXe * PracticeXenonDataV1.SigmaGroup2M2));
+                        meanXe * xenon.FastAbsorptionCrossSectionM2,
+                        maxXe * xenon.FastAbsorptionCrossSectionM2,
+                        meanXe * xenon.ThermalAbsorptionCrossSectionM2,
+                        maxXe * xenon.ThermalAbsorptionCrossSectionM2));
             }
 
             return new GameXenonPresentationSnapshot(
@@ -206,8 +208,8 @@ namespace ReactorSim.Game
                 channelDiagnostics.Max(c => c.MaxI135NumberDensityM3),
                 channelDiagnostics.Average(c => c.MeanXe135NumberDensityM3),
                 channelDiagnostics.Max(c => c.MaxXe135NumberDensityM3),
-                0.0,
-                0.0,
+                channelDiagnostics.Average(c => c.MeanDynamicAbsorptionGroup1PerM),
+                channelDiagnostics.Max(c => c.MaxDynamicAbsorptionGroup1PerM),
                 channelDiagnostics.Average(c => c.MeanDynamicAbsorptionGroup2PerM),
                 channelDiagnostics.Max(c => c.MaxDynamicAbsorptionGroup2PerM),
                 channelDiagnostics,

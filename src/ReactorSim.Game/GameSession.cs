@@ -30,9 +30,11 @@ namespace ReactorSim.Game
         private uint _usefulBundlesDischarged;
         private double _dischargeReward;
         private double _freshFuelCost;
+        private double _zoneBalanceBonus;
         private RefuellingScoreBreakdown? _lastRefuellingScore;
         private RefuellingMovement? _lastFuelMovement;
         private readonly List<string> _modificationReasons = new List<string>();
+        private readonly PracticeChannelPowerReference? _customReference;
         private double? _lastDischargedMaximumBurnupMwDayPerKg;
         private double? _maximumDischargedBurnupMwDayPerKg;
         private ulong _powerProjectionVersion;
@@ -51,8 +53,11 @@ namespace ReactorSim.Game
             PracticeLiquidZoneRrsV1 practiceRrs,
             bool challenge = false,
             PracticeXenonStateV1? initialXenon = null,
-            string? objectiveId = null)
+            string? objectiveId = null,
+            PracticeChannelPowerReference? customReference = null)
         {
+            _customReference = customReference;
+            if (customReference != null) MarkModified("Custom physics");
             _challenge = challenge;
             _objectiveId = objectiveId ?? (challenge ? ShiftProgress.ChallengeId : ShiftProgress.PracticeId);
             _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
@@ -216,6 +221,7 @@ namespace ReactorSim.Game
             _syntheticScore = candidate._syntheticScore; _thermalEnergyJoules = candidate._thermalEnergyJoules;
             _fuelConsumed = candidate._fuelConsumed; _usefulBundlesDischarged = candidate._usefulBundlesDischarged;
             _dischargeReward = candidate._dischargeReward; _freshFuelCost = candidate._freshFuelCost;
+            _zoneBalanceBonus = candidate._zoneBalanceBonus;
             _lastRefuellingScore = candidate._lastRefuellingScore; _lastFuelMovement = candidate._lastFuelMovement;
             _lastDischargedMaximumBurnupMwDayPerKg = candidate._lastDischargedMaximumBurnupMwDayPerKg;
             _maximumDischargedBurnupMwDayPerKg = candidate._maximumDischargedBurnupMwDayPerKg;
@@ -530,11 +536,12 @@ namespace ReactorSim.Game
         public GameSessionCommandResult DebugResetSyntheticResponse()
         {
             if (IsRunTerminal) return RejectGameOver();
-            if (_syntheticScore != 0.0 || _dischargeReward != 0.0 || _freshFuelCost != 0.0)
+            if (_syntheticScore != 0.0 || _dischargeReward != 0.0 || _freshFuelCost != 0.0 || _zoneBalanceBonus != 0.0)
                 MarkModified("Developer score reset");
             _syntheticScore = 0.0;
             _dischargeReward = 0.0;
             _freshFuelCost = 0.0;
+            _zoneBalanceBonus = 0.0;
             return AcceptedMessage("Debug: practice score adjustment reset.");
         }
 
@@ -584,7 +591,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<PracticeCandidate> transaction =
-                TryBuildRefuellingTransaction(result.Value);
+                TryBuildRefuellingTransaction(result.Value, out var score);
             if (!transaction.IsValid)
             {
                 return Rejected(
@@ -604,7 +611,7 @@ namespace ReactorSim.Game
 
             var previousCore = _coreState;
             ApplyPracticeCandidate(transaction.Value);
-            _lastRefuellingScore = PracticeScoring.DescribeRefuelling(result.Value);
+            _lastRefuellingScore = score!;
             _lastFuelMovement = new RefuellingMovement(previousCore, result.Value, _lastRefuellingScore);
             _fuelConsumed += checked((uint)result.Value.DischargedBundles.Count);
             _usefulBundlesDischarged += checked((uint)result.Value.DischargedBundles.Count(bundle =>
@@ -612,6 +619,7 @@ namespace ReactorSim.Game
                 ShiftProgress.UsefulBurnupThresholdMwDayPerKg));
             _dischargeReward += _lastRefuellingScore.DischargeReward;
             _freshFuelCost += _lastRefuellingScore.FreshFuelCost;
+            _zoneBalanceBonus += _lastRefuellingScore.ZoneBalanceBonus;
             string message = FormatRefuellingMessage(result.Value);
             _lastDischargedMaximumBurnupMwDayPerKg = result.Value.DischargedBundles.Max(
                 bundle => bundle.CurrentBurnupJPerKgHm /
@@ -721,11 +729,11 @@ namespace ReactorSim.Game
                     _runtime.Outcome == PracticeRunOutcome.SurvivedScenarioHorizon && !HasOperatingLoss(_practiceRrs, CurrentEquilibriumProjection,
                         _runtime.NormalizedPowerFraction),
                     _fuelConsumed, _usefulBundlesDischarged, _thermalEnergyJoules,
-                    _dischargeReward, _freshFuelCost, _syntheticScore, _modificationReasons.Count == 0,
+                    _dischargeReward, _freshFuelCost, _zoneBalanceBonus, _syntheticScore, _modificationReasons.Count == 0,
                     _coreState.UnlimitedFreshFuel, _objectiveId),
                 _lastFuelMovement, new RunProvenance(_challenge, _modificationReasons),
-                new ChannelRippleSnapshot(PracticeGameSessionFactory.ReferenceChannelPower,
-                    CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude),
+                new ChannelRippleSnapshot(_customReference ?? PracticeGameSessionFactory.ReferenceChannelPower,
+                    CurrentEquilibriumProjection.ShapeChannelPowerWatts, core.Physics.PowerAmplitude, core.AxialTiltFraction),
                 PacingMode, _completedDays, _lastDayResult);
         }
 
@@ -786,8 +794,9 @@ namespace ReactorSim.Game
         }
 
         private ContractValidationResult<PracticeCandidate> TryBuildRefuellingTransaction(
-            GameRefuellingResultV1 result)
+            GameRefuellingResultV1 result, out RefuellingScoreBreakdown? score)
         {
+            score = null;
             if (result == null)
             {
                 return InvalidTransaction(
@@ -832,7 +841,8 @@ namespace ReactorSim.Game
                     nextProjectionVersion.FirstDiagnostic.Message);
             }
 
-            double nextScore = _syntheticScore + PracticeScoring.DescribeRefuelling(result).NetPoints;
+            score = PracticeScoring.DescribeRefuelling(result, regulated.Value.State);
+            double nextScore = _syntheticScore + score.NetPoints;
             if (!IsFinite(nextScore))
             {
                 return InvalidTransaction(
@@ -983,8 +993,7 @@ namespace ReactorSim.Game
             transaction.Xenon = transaction.Xenon.BindBurnupReference(transaction.CoreState);
             transaction.ThermalEnergyJoules += energy.Sum();
             transaction.SyntheticScore += PracticeScoring.OperatingPoints(seconds,
-                PracticeScoring.RmsRipple(transaction.SpatialCandidate.ShapeChannelPowerWatts,
-                    PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, amplitude));
+                transaction.SpatialCandidate, amplitude, _customReference);
             var timedRrs = transaction.Rrs.TryWithSimulationTime(segment.SimulationTimeEndSeconds);
             if (!timedRrs.IsValid) return InvalidTransaction(timedRrs.FirstDiagnostic.Code, timedRrs.FirstDiagnostic.Path, timedRrs.FirstDiagnostic.Message);
             transaction.Rrs = timedRrs.Value;
@@ -1163,8 +1172,7 @@ namespace ReactorSim.Game
                     transaction.PowerProjectionVersion = nextProjectionVersion.Value;
                     double averagePowerScale = integratedPowerScale / stepSeconds;
                     transaction.SyntheticScore += PracticeScoring.OperatingPoints(stepSeconds,
-                        PracticeScoring.RmsRipple(transaction.SpatialCandidate.ShapeChannelPowerWatts,
-                            PracticeGameSessionFactory.ReferenceChannelPower.ChannelPowerWatts, averagePowerScale));
+                        transaction.SpatialCandidate, averagePowerScale, _customReference);
                     simulationCursor = stepEnd;
                     if (simulationCursor - transaction.LastFullCoreSolveSimulationTime >=
                         PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds - 1e-9)

@@ -46,6 +46,7 @@ try {
   }
   if ((await page.locator('.reactor-demo header').innerText()).includes('DEMO')) throw new Error('Old demo label');
   if ((await page.locator('.demo-hud').innerText()).includes('sec')) throw new Error('Speed value is still visible');
+  if (!/^Ripple [0-9.]+ .* Tilt [0-9.]+ pts\/h$/.test(await page.locator('[data-score-rate]').innerText())) throw new Error('Operating score components missing');
   if (!(await page.locator('[data-day]').innerText()).includes(':')) throw new Error('Simulation clock missing');
   if (await page.locator('.demo-zone-grid [data-zone]').count() !== 14) throw new Error('Missing liquid zones');
   if (await page.locator('.reactor-demo .core-map-zoom').count()) throw new Error('Demo retained zoom controls');
@@ -91,6 +92,7 @@ try {
   fuelReadings.push(Number(await page.locator('.reactor-demo').getAttribute('data-fuel-consumed')));
   if (fuelReadings.some(value => value !== 0 && value !== 16)) throw new Error(`Fuel batch was split across displayed steps: ${fuelReadings}`);
   if (fuelReadings.at(-1) !== 16) throw new Error('Both channels were not fuelled together');
+  if (!/Burnup [+-][0-9.]+ .* Zones \+[0-9.]+ pts/.test(await page.locator('[data-fuel-receipt]').innerText())) throw new Error('Fuel receipt score components missing');
   if (await page.locator('.reactor-demo [data-planned=true]').count()) throw new Error('Delivered batch retained queue outlines');
   const fuelMs = Date.now() - start;
   console.log(`Fuel response: ${fuelMs}ms.`);

@@ -187,9 +187,41 @@ namespace ReactorSim.Browser
                             "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
                     if (!TryReadPacing(root, _defaultPacing, out string pacing))
                         return SerializeError("initialize", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn, demo or real-time."), _runtime);
-                    BridgeRuntime candidate = CreateRuntime(
-                        mode,
-                        requestJson ?? "{}", seed, shiftId, pacing);
+                    FullCoreDiffusionDataPackV1? customPack = null;
+                    string? customPhysicsJson = null;
+                    if (PlaytestInput.TryGetProperty(root, out JsonElement physics, "customPhysics"))
+                    {
+                        if (pacing != "demo" || shiftId != ShiftProgress.PracticeId)
+                            return CustomPhysicsError("initialize", "Custom physics requires a time-based free practice run.");
+                        if (physics.ValueKind != JsonValueKind.Object)
+                            return CustomPhysicsError("initialize", "Custom physics must be an object of numeric overrides.");
+                        var overrides = new Dictionary<string, double>(StringComparer.Ordinal);
+                        foreach (var field in physics.EnumerateObject())
+                        {
+                            if (overrides.Count >= 512 || field.Name.Length > 100)
+                                return CustomPhysicsError("initialize", "Too many custom physics parameters or a parameter name is too long.");
+                            if (field.Value.ValueKind != JsonValueKind.Number || !field.Value.TryGetDouble(out double value) ||
+                                !overrides.TryAdd(field.Name, value))
+                                return CustomPhysicsError("initialize", "Invalid or duplicate custom physics parameter: " + field.Name);
+                        }
+                        try
+                        {
+                            var pack = FullCoreDiffusionDataPackV1.TryLoadPracticeOverrides(overrides);
+                            if (!pack.IsValid) return CustomPhysicsError("initialize", pack.FirstDiagnostic.ToString());
+                            customPack = pack.Value;
+                            customPhysicsJson = PlaytestProtocolV2.CanonicalizeJson(physics);
+                        }
+                        catch (Exception error) when (IsCustomStartupFailure(error))
+                        {
+                            return CustomPhysicsError("initialize", "Custom physics could not be applied. " + error.Message);
+                        }
+                    }
+                    BridgeRuntime candidate;
+                    try { candidate = CreateRuntime(mode, requestJson ?? "{}", seed, shiftId, pacing, customPack, customPhysicsJson); }
+                    catch (Exception error) when (customPack != null && IsCustomStartupFailure(error))
+                    {
+                        return CustomPhysicsError("initialize", "Custom core could not initialize. " + error.Message);
+                    }
                     _runtime = candidate;
                     GameSessionSnapshot game = _runtime.PlaySession.Snapshot;
                     PlaytestSnapshotDto snapshot = CreateSnapshot(_runtime, game, 0.0);
@@ -345,11 +377,20 @@ namespace ReactorSim.Browser
                                 "Browser.Shift.Invalid", "shiftId", "Unknown shift objective."), _runtime);
                         if (!TryReadPacing(payload, previousGame.PacingMode, out string pacing))
                             return SerializeError("dispatch", PlaytestProtocolV2.Diagnostic("Browser.Pacing.Invalid", "pacingMode", "Use daily-turn, demo or real-time."), _runtime);
+                        var customPack = _runtime.CustomPack;
+                        var customPhysicsJson = _runtime.CustomPhysicsJson;
+                        if (customPack != null && (pacing != "demo" || shiftId != ShiftProgress.PracticeId))
+                            return CustomPhysicsError("dispatch", "Custom physics requires a time-based free practice run.");
                         string resetInitialization = "{\"protocol\":\"candu-playtest-v2\",\"mode\":\"play\",\"seed\":" +
-                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"" + (pacing != "real-time" ? ",\"pacingMode\":\"" + pacing + "\"" : "") + "}";
-                        BridgeRuntime candidate = CreateRuntime(
-                            _runtime.Mode,
-                            resetInitialization, resetSeed, shiftId, pacing);
+                            resetSeed.ToString(CultureInfo.InvariantCulture) + ",\"shiftId\":\"" + shiftId + "\"" +
+                            (pacing != "real-time" ? ",\"pacingMode\":\"" + pacing + "\"" : "") +
+                            (customPhysicsJson != null ? ",\"customPhysics\":" + customPhysicsJson : "") + "}";
+                        BridgeRuntime candidate;
+                        try { candidate = CreateRuntime(_runtime.Mode, resetInitialization, resetSeed, shiftId, pacing, customPack, customPhysicsJson); }
+                        catch (Exception error) when (customPack != null && IsCustomStartupFailure(error))
+                        {
+                            return CustomPhysicsError("dispatch", "Custom core could not reset. " + error.Message);
+                        }
                         _runtime = candidate;
                         _runtime.LastEvent = new PlaytestEventDto
                         {
@@ -363,6 +404,8 @@ namespace ReactorSim.Browser
                     }
                     else if (IsEngineeringCommand(commandType))
                     {
+                        if (_runtime.CustomPack != null)
+                            return CustomPhysicsError("dispatch", "Edit custom physics from the main screen before starting a run.");
                         execution = DispatchEngineering(_runtime, commandType, payload);
                     }
                     else
@@ -520,13 +563,22 @@ namespace ReactorSim.Browser
             string mode,
             string initializationJson,
             ulong seed = PlaytestProtocolV2.PracticeSeed,
-            string shiftId = ShiftProgress.PracticeId, string pacing = "daily-turn")
+            string shiftId = ShiftProgress.PracticeId, string pacing = "daily-turn",
+            FullCoreDiffusionDataPackV1? customPack = null, string? customPhysicsJson = null)
         {
             return new BridgeRuntime(
                 mode,
                 initializationJson,
-                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId, pacing == "daily-turn", pacing == "demo"));
+                PracticeGameSessionFactory.CreateBrowserPlaytest(seed, shiftId, pacing == "daily-turn", pacing == "demo", customPack),
+                customPack, customPhysicsJson);
         }
+
+        private static bool IsCustomStartupFailure(Exception error) =>
+            error is InvalidOperationException || error is ArgumentException || error is ArithmeticException;
+
+        private string CustomPhysicsError(string operation, string message) =>
+            SerializeError(operation, PlaytestProtocolV2.Diagnostic(
+                "Browser.CustomPhysics.Invalid", "customPhysics", message), _runtime);
 
         private static bool TryReadPacing(JsonElement payload, string fallback, out string pacing)
         {
@@ -1130,16 +1182,22 @@ namespace ReactorSim.Browser
             public BridgeRuntime(
                 string mode,
                 string initializationJson,
-                GameSession playSession)
+                GameSession playSession,
+                FullCoreDiffusionDataPackV1? customPack, string? customPhysicsJson)
             {
                 Mode = mode;
                 InitializationJson = initializationJson;
                 Replay = new ReplayDigestChain(mode, initializationJson);
                 PlaySession = playSession;
+                CustomPack = customPack;
+                CustomPhysicsJson = customPhysicsJson;
                 LastDetailedProjection = playSession.CurrentSpatialCandidate;
             }
 
             public string Mode { get; }
+            public FullCoreDiffusionDataPackV1? CustomPack { get; }
+            public string? CustomPhysicsJson { get; }
+            public string DataPackId => CustomPack?.Descriptor.DataPackVersion ?? DefaultDataPackId;
 
             public string InitializationJson { get; }
 

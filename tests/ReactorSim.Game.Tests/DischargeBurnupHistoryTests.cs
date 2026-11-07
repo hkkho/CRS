@@ -24,9 +24,8 @@ public sealed class DischargeBurnupHistoryTests
         var accepted = session.RefuelChannel(189, "toward-end-b", 8, "NAT-U-SYNTHETIC");
         Assert.True(accepted.Accepted, accepted.DiagnosticMessage);
         var score = accepted.Snapshot.LastRefuellingScore!;
-        Assert.Equal(0.0, score.FreshFuelCost);
         Assert.Equal(expected.Value.DischargedBundles.Sum(bundle => PracticeScoring.DischargeBundlePoints(
-            bundle.CurrentBurnupJPerKgHm / GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram)), score.NetPoints);
+            bundle.CurrentBurnupJPerKgHm / GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram)), score.NetPoints - score.ZoneBalanceBonus, 12);
         Assert.Equal(score.NetPoints, accepted.Snapshot.ScoreTotal);
         Assert.Equal(peak, accepted.Snapshot.LastDischargedMaximumBurnupMwDayPerKg);
         Assert.Equal(peak, accepted.Snapshot.MaximumDischargedBurnupMwDayPerKg);
@@ -39,8 +38,8 @@ public sealed class DischargeBurnupHistoryTests
 
         var second = session.RefuelChannel(189, "toward-end-a", 8, "NAT-U-SYNTHETIC");
         Assert.True(second.Accepted, second.DiagnosticMessage);
-        Assert.Equal(0.0, second.Snapshot.LastRefuellingScore!.NetPoints);
-        Assert.Equal(0.0, second.Snapshot.LastRefuellingScore.FreshFuelCost);
+        Assert.True(second.Snapshot.LastRefuellingScore!.NetPoints < 0);
+        Assert.True(second.Snapshot.LastRefuellingScore.FreshFuelCost > 0);
         Assert.Null(PracticeGameSessionFactory.CreateBrowserPlaytest(dailyTurns: false).Snapshot.LastRefuellingScore);
         Assert.Equal(Math.Max(peak, second.Snapshot.LastDischargedMaximumBurnupMwDayPerKg!.Value),
             second.Snapshot.MaximumDischargedBurnupMwDayPerKg);

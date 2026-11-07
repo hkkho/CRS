@@ -1,4 +1,4 @@
-# The spatial solver and daily approximation
+# The spatial solver and half-day approximation
 
 CRS calculates neutron balance over 4,560 spatial nodes: 380 channels multiplied
 by twelve bundle positions. Each node has fast and thermal flux, material
@@ -47,32 +47,14 @@ power balance. Convergence requires the combined policy to pass. The session
 adopts a candidate only after its surrounding transaction is valid; numerical
 work on a detached candidate does not partially replace the live reactor.
 
-## Axial boundaries
+## Multiplication, power and boundaries
 
-The active v8 model uses zero incoming partial neutron current at nonreflective
-axial ends. Its Marshak conductance permits outward leakage and produces lower
-end-bundle power. This is separate from the authored radial leakage fit. A
-reflective face instead has zero boundary conductance. Material absorption and
-boundary leakage remain distinct terms in the neutron balance.
+Keff describes how neutron production balances removal and leakage for the solved shape. A value of 1 is critical, below 1 is subcritical and above 1 is supercritical. Reactivity is (k − 1) / k, and 1 mk is 0.001 in that dimensionless quantity. The solver normalizes the resulting shape to the run's nominal thermal power. Multiplication and actual thermal output describe different quantities.
 
-The [v8 boundary notes](../../physics/axial-marshak-v8.md) explain the refit, and
-the [active solver equations](../../physics/active-two-group-solver.md) specify the
-operator, numerical tolerances and analytic one-cell check.
+V10 extrapolates radial flux to zero on a concentric circle and axial flux to zero 0.22 m beyond each end face. Reflective faces have zero boundary conductance. See the [active solver equations](../../physics/active-two-group-solver.md) and [pack fit](../../../data/calibration/diffusion-v10/README.md).
 
-## One large daily step
+## Time-based exposure
 
-The public game leaves time frozen during planning. On commitment it evaluates
-each fuel move, then uses the surviving post-refuelling shape/flux for one
-86,400-second energy and analytic poison interval. A final equilibrium/RRS solve
-produces the next displayed decision.
+After the waiting fuel batch, the shared model uses the accepted post-fuelling shape and flux to integrate energy, burnup and poison over 43,200 seconds. The next equilibrium solve produces the endpoint. Iterations improve the endpoint solution. They do not sample power inside the interval. The browser blends the readings for playback.
 
-Many inner and outer numerical iterations may be needed for that final solve.
-They refine a boundary solution; they are not observations at intermediate times
-through the day. The game therefore does not claim to detect an intraday peak
-between the states it calculates. Retained comparison tools can use a different
-three-minute integration cadence, which is identified separately from the public
-`practice-daily-one-step-v1` model.
-
-The [daily contract](../../gameplay/daily-turn-mode.md) defines the transaction and
-failure semantics, and the [implementation walkthrough](../03-daily-turn.md)
-connects them to the relevant C# operations.
+The [shared step contract](../../gameplay/daily-turn-mode.md) explains adoption and failure. Retained daily and real-time comparison modes use separate integration cadences.

@@ -1,18 +1,21 @@
 # Keep the run productive
 
-Run limits — equality is allowed.
+Equality is allowed at all four operating limits.
 
 | Reading | Allowed |
 | --- | --- |
-| Average LZC | 10–90% |
+| Average liquid-zone fill | 10–90% |
 | Global axial tilt | −20 to +20% |
-| Channel power | ≤ 7,100 kW |
-| Bundle power | ≤ 900 kW |
+| Channel power | ≤ 7,100 kW thermal |
+| Bundle power | ≤ 900 kW thermal |
 
-Limits are checked after each fuel move and at the day boundary. A violating move ends the run and stops remaining orders. A day-end loss retains the completed day. An invalid plan or numerical failure consumes no fuel or time; an interrupted calculation may have an unknown outcome, which is reported separately.
+The shared simulation checks limits after each fuel move and at the end of the half-day. A violating move commits and skips the rest of the batch. An endpoint loss retains the elapsed interval. A numerical rejection preserves the previously solved reactor.
 
-## Ripple points
+## Earning points
 
-Each channel has a fixed time-average power reference. The score uses RMS relative deviation from those references: points/hour = 1 / (1 + (RMS / 0.10)²). Smaller ripple earns more, up to one point per simulated hour. Fuel moves have no direct bonus or cost; their later power response changes points earned.
+- Each discharged bundle earns its burnup in MWd/kg minus 6. Discharges below 6 cost points.
+- Each move earns up to 2 points for keeping all fourteen zones close to half full after the move.
+- Peak channel ripple earns 0.50 points per simulated hour below 108%, 0.25 from 108% through 110%, and zero above 110%.
+- Global axial tilt earns 0.50 points per simulated hour at zero tilt, decreasing linearly to zero at ±20%.
 
-The day report records executed and unexecuted orders, fuel, useful discharges, energy, earned points and any ending reason. After a loss, Retry same seed repeats the starting core and objective; Try new seed draws another core.
+The time-based fuel receipt reports the latest batch. The score display shows the ripple and tilt rates. When the run ends, **Retry seed** recreates the starting core and **New core** draws another.

@@ -15,7 +15,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / 'tmp/longrun-maps'
-OUT = ROOT / 'docs/gameplay/figures'
+OUT = INPUT / 'figures'
 OUT.mkdir(parents=True, exist_ok=True)
 ROWS = list('ABCDEFGHJKLMNOPQRSTUVW')
 CAMPAIGNS = [

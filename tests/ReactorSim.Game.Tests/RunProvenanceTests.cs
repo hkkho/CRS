@@ -46,7 +46,7 @@ public sealed class RunProvenanceTests
     [Fact]
     public void ModifiedChallengeCanMeetObjectiveWithoutEarningStandardReward()
     {
-        var progress = new ShiftProgress(true, 1001, 86400, 86400, true, true, 8, 8, 0, 42, 12, 30, standardRun: false);
+        var progress = new ShiftProgress(true, 1001, 86400, 86400, true, true, 8, 8, 0, 42, 12, 0, 30, standardRun: false);
         Assert.Equal("success", progress.Outcome);
         Assert.False(progress.RewardEarned);
         var reasons = new List<string> { "Zone geometry edited" };

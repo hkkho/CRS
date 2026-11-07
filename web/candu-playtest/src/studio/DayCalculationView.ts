@@ -1,5 +1,6 @@
 import { isRunTerminal, type CanduCommand, type CanduCommandResponse, type CanduSnapshot, type DayProgress } from "../protocol";
 import type { SessionUpdate } from "../sessionController";
+import { formatScoreDelta } from "../gameplayPresentation";
 import { gridCoordinateLabel } from "../channelCoordinates";
 
 /** Animation follows actual work and authoritative outcomes; it never drives the clock. */
@@ -97,7 +98,7 @@ export class DayCalculationView {
     const score = this.element.querySelector<HTMLElement>("[data-calculation-score]")!;
     score.hidden = this.phase !== "success";
     if (!score.hidden) {
-      score.querySelector("strong")!.textContent = `+${(day?.scoreDelta ?? snapshot.scoreDelta).toFixed(2)}`;
+      score.querySelector("strong")!.textContent = formatScoreDelta(day?.scoreDelta ?? snapshot.scoreDelta);
       score.querySelector("small")!.textContent = `Total score ${snapshot.scoreTotal.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
     }
     (this.element.querySelector("[data-calculation-progress]") as HTMLElement).hidden = true;

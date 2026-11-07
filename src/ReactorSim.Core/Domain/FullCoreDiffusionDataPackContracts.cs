@@ -36,7 +36,7 @@ namespace ReactorSim.Core
     /// conductances for the fixed CANDU-6 lattice. The active embedded pack is
     /// project-authored surrogate data consumed directly by the runtime solver.
     /// </summary>
-    public sealed class FullCoreDiffusionDataPackV1
+    public sealed partial class FullCoreDiffusionDataPackV1
     {
         public const uint CurrentSchemaVersion = 1;
         public const string SupportedUnitsProfileId = "SI-v1";
@@ -70,8 +70,10 @@ namespace ReactorSim.Core
             IEnumerable<BurnupCoefficientTableV1> coefficientTables,
             StaticAbsorptionOverlayV1? adjusters,
             PracticeXenonReferenceV1? xenonReference,
-            XenonBasisV1 declaredXenonBasis)
+            XenonBasisV1 declaredXenonBasis,
+            CustomPracticePhysics practicePhysics)
         {
+            PracticePhysics = practicePhysics;
             DeclaredXenonBasis = declaredXenonBasis;
             XenonReference = xenonReference;
             Adjusters = adjusters;
@@ -167,7 +169,10 @@ namespace ReactorSim.Core
         }
 
         public static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadJson(
-            string json)
+            string json) => TryLoadJson(json, CustomPracticePhysics.Default);
+
+        private static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadJson(
+            string json, CustomPracticePhysics practicePhysics)
         {
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -473,7 +478,9 @@ namespace ReactorSim.Core
                             "Every Xe reference row must contain finite numeric burnup and number density.");
                     if (referenceBurnup[n] != tables[0].Rows[n].BurnupJPerKgHm || referenceXe[n] < 0 ||
                         (referenceXe[n] == 0 && BitConverter.DoubleToInt64Bits(referenceXe[n]) < 0) ||
-                        tables[0].Rows[n].Coefficients.AbsorptionGroup2PerM - PracticeXenonDataV1.SigmaGroup2M2 * referenceXe[n] <
+                        tables[0].Rows[n].Coefficients.AbsorptionGroup1PerM - practicePhysics.SigmaFast * referenceXe[n] <
+                        tables[0].Rows[n].Coefficients.FissionGroup1PerM ||
+                        tables[0].Rows[n].Coefficients.AbsorptionGroup2PerM - practicePhysics.SigmaThermal * referenceXe[n] <
                         tables[0].Rows[n].Coefficients.FissionGroup2PerM)
                         return Invalid("FullCoreDiffusionDataPack.XenonReference.Row.Invalid", "xenon_reference.rows",
                             "Reference knots must match fuel knots and permit nonnegative Xe-free absorption support.");
@@ -526,7 +533,8 @@ namespace ReactorSim.Core
                     tables,
                     adjusters,
                     xenonReference,
-                    declaredXenonBasis));
+                    declaredXenonBasis,
+                    practicePhysics));
         }
 
         private static ContractValidationResult<BurnupCoefficientTableV1> TryReadTable(
