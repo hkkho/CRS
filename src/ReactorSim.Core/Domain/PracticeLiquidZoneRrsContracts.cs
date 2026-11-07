@@ -46,9 +46,9 @@ namespace ReactorSim.Core
         public const int MaximumCandidateSolveCount = 4;
         public const int MaximumControllerPasses = 1;
         public const int MaximumControllerIterations = MaximumControllerPasses;
-        public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-first-rrs-v4";
+        public const string ControllerIdentity = "synthetic-practice-liquid-zone-criticality-shape-rrs-v5";
         public const string ResponseModelIdentity =
-            "synthetic-practice-liquid-zone-response-common-shape-v3";
+            "synthetic-practice-liquid-zone-response-common-shape-v4";
         public const string MappingIdentity = "candu6-regions-localized-tubes-radial-circle-380x12-v6";
         public const string OverlayIdentity = "synthetic-practice-liquid-zone-tube-water-absorption-v5";
         public const string CadenceIdentity = "equilibrium-three-minute-step-and-event-rrs-v3";
@@ -474,7 +474,8 @@ namespace ReactorSim.Core
             IEnumerable<IEnumerable<double>> jacobian,
             IEnumerable<double> residualWeights,
             IEnumerable<double> commonModeReactivitySensitivities,
-            double effectiveAbsorptionPerMPerFillFraction)
+            double effectiveAbsorptionPerMPerFillFraction,
+            string provenance)
         {
             _baselineZonalPowerFractions = new ReadOnlyCollection<double>(
                 baselineZonalPowerFractions.ToArray());
@@ -488,7 +489,7 @@ namespace ReactorSim.Core
                 commonModeReactivitySensitivities.ToArray());
             EffectiveAbsorptionPerMPerFillFraction = effectiveAbsorptionPerMPerFillFraction;
             Identity = PracticeLiquidZoneRrsIdentityV1.ResponseModelIdentity;
-            Provenance = PracticeLiquidZoneRrsIdentityV1.Provenance;
+            Provenance = provenance;
             Regularization = PracticeLiquidZoneRrsIdentityV1.ResponseRegularization;
             ShapeSensitivityScale = PracticeLiquidZoneRrsIdentityV1.ResponseShapeSensitivityScale;
             CommonModeReactivitySensitivityScale =
@@ -503,7 +504,7 @@ namespace ReactorSim.Core
         {
             return new PracticeLiquidZoneRrsResponseModelV1(
                 fractions, VariableOrder, Jacobian, ResidualWeights,
-                CommonModeReactivitySensitivities, EffectiveAbsorptionPerMPerFillFraction);
+                CommonModeReactivitySensitivities, EffectiveAbsorptionPerMPerFillFraction, Provenance);
         }
 
         /// <summary>
@@ -540,7 +541,10 @@ namespace ReactorSim.Core
                 double correction = (observedChange - predictedChange) / normSquared;
                 for (int variable = 0; variable < VariableCount; variable++)
                 {
-                    rows[output][variable] += correction * fillMovement[variable];
+                    double sensitivity = rows[output][variable] + correction * fillMovement[variable];
+                    // Increasing water absorption cannot increase reactivity.
+                    rows[output][variable] = output == VariableCount && sensitivity > 0.0
+                        ? 0.0 : sensitivity;
                 }
             }
 
@@ -550,7 +554,8 @@ namespace ReactorSim.Core
                 rows,
                 ResidualWeights,
                 rows[VariableCount],
-                EffectiveAbsorptionPerMPerFillFraction);
+                EffectiveAbsorptionPerMPerFillFraction,
+                Provenance);
         }
 
         public string ResponseModelIdentity
@@ -660,7 +665,13 @@ namespace ReactorSim.Core
         }
 
         public static ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1> TryCreate(
-            IReadOnlyList<double> baselineZonalPowerFractions)
+            IReadOnlyList<double> baselineZonalPowerFractions) =>
+            TryCreate(baselineZonalPowerFractions, null, null);
+
+        internal static ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1> TryCreate(
+            IReadOnlyList<double> baselineZonalPowerFractions,
+            FullCoreDiffusionDataPackV1? dataPack,
+            PracticeLiquidZoneRrsMappingV1? mapping)
         {
             if (baselineZonalPowerFractions == null)
             {
@@ -710,8 +721,9 @@ namespace ReactorSim.Core
                 normalizedFractions[zone] = baselineZonalPowerFractions[zone] / totalFraction;
             }
 
-            // Initial regional-response heuristic is independent of localized device
-            // strength; measured secant responses replace it during controller trials.
+            // Use the nominal pack's full-core response where the reference calibration applies.
+            // Other packs and zone mappings start from a generic estimate and use measured secants.
+            bool calibrated = PracticeLiquidZoneReferenceResponseV1.AppliesTo(dataPack, mapping);
             double effectiveAbsorption =
                 0.0017640042499876617 *
                 PracticeLiquidZoneRrsIdentityV1.ResponseGroup1AbsorptionWeight +
@@ -755,12 +767,14 @@ namespace ReactorSim.Core
                     double conservationAwareContrast = output == variable
                         ? 1.0 - normalizedFractions[output]
                         : -normalizedFractions[output];
-                    jacobian[output][variable] =
-                        localPowerLeverage * conservationAwareContrast;
+                    jacobian[output][variable] = calibrated
+                        ? PracticeLiquidZoneReferenceResponseV1.GetSensitivity(output, variable)
+                        : localPowerLeverage * conservationAwareContrast;
                 }
 
-                double commonModeSensitivity =
-                    -effectiveAbsorption *
+                double commonModeSensitivity = calibrated
+                    ? PracticeLiquidZoneReferenceResponseV1.GetSensitivity(variableOrder.Length, variable)
+                    : -effectiveAbsorption *
                     PracticeLiquidZoneRrsIdentityV1.ResponseCommonModeSensitivityScale *
                     zoneFraction;
                 jacobian[PracticeLiquidZoneRrsIdentityV1.ResponseVariableCount][variable] =
@@ -787,7 +801,9 @@ namespace ReactorSim.Core
                     jacobian,
                     residualWeights,
                     commonModeSensitivities,
-                    effectiveAbsorption));
+                    effectiveAbsorption,
+                    calibrated ? PracticeLiquidZoneReferenceResponseV1.Provenance :
+                        PracticeLiquidZoneRrsIdentityV1.Provenance));
         }
 
         private Digest32 ComputeModelDigest()
@@ -1293,7 +1309,8 @@ namespace ReactorSim.Core
             }
 
             ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1> responseModel =
-                PracticeLiquidZoneRrsResponseModelV1.TryCreate(measurement.Value.Fractions);
+                PracticeLiquidZoneRrsResponseModelV1.TryCreate(
+                    measurement.Value.Fractions, initialEquilibrium.DataPack, mapping);
             if (!responseModel.IsValid)
             {
                 return Invalid(
@@ -1530,7 +1547,8 @@ namespace ReactorSim.Core
                     ? ContractValidationResult<PracticeLiquidZoneRrsResponseModelV1>.Valid(
                         previousState.CorrectionResponseModel.WithBaselineFractions(
                             baselineMeasurement.Value.Fractions))
-                    : PracticeLiquidZoneRrsResponseModelV1.TryCreate(baselineMeasurement.Value.Fractions);
+                    : PracticeLiquidZoneRrsResponseModelV1.TryCreate(
+                        baselineMeasurement.Value.Fractions, controlledBaseline.Value.DataPack, previousState.Mapping);
             if (!responseModel.IsValid)
             {
                 return InvalidRun(
@@ -1868,15 +1886,6 @@ namespace ReactorSim.Core
                 upperBounds[variable] = eventUpper - currentFill;
             }
 
-            // Regulate common-mode criticality independently of the shape
-            // objective; burnup must not act as the reactivity controller.
-            // Actual diffusion candidates verify this estimated response.
-            if (Math.Abs(reactivity) > PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance)
-            {
-                return ContractValidationResult<double[]>.Valid(SolveCommonModeCommand(
-                    responseModel, reactivity, lowerBounds, upperBounds));
-            }
-
             var residual = new double[responseModel.OutputCount];
             for (int output = 0; output < variableCount; output++)
             {
@@ -1925,6 +1934,11 @@ namespace ReactorSim.Core
                             "The project-authored RRS response matrix must remain finite.");
                     }
 
+                    if (output == variableCount)
+                    {
+                        continue;
+                    }
+
                     gradient[column] += weightedResponse * weightedResidual;
                     for (int other = 0; other < variableCount; other++)
                     {
@@ -1941,128 +1955,116 @@ namespace ReactorSim.Core
                 normalMatrix[diagonal, diagonal] += responseModel.Regularization;
             }
 
-            var solution = new double[variableCount];
-            var fixedVariables = new bool[variableCount];
-            bool solved = false;
-            for (int activePass = 0; activePass <= variableCount; activePass++)
+            // Start at the closest feasible modeled reactivity, then minimize shape error
+            // with moves that preserve it. Pair directions span the bounded nullspace
+            // of the reactivity row, including when some compartments reach their limits.
+            double[] solution = SolveClosestReactivityCommand(responseModel, reactivity, lowerBounds, upperBounds);
+            var sensitivities = responseModel.CommonModeReactivitySensitivities;
+            for (int row = 0; row < variableCount; row++)
             {
-                var freeVariables = new List<int>(variableCount);
-                for (int variable = 0; variable < variableCount; variable++)
+                for (int column = 0; column < variableCount; column++)
                 {
-                    if (!fixedVariables[variable])
+                    gradient[row] += normalMatrix[row, column] * solution[column];
+                }
+            }
+
+            const int maximumShapeSweeps = 32;
+            for (int sweep = 0; sweep < maximumShapeSweeps; sweep++)
+            {
+                double maxStep = 0.0;
+                for (int first = 0; first < variableCount; first++)
+                {
+                    if (sensitivities[first] == 0.0)
                     {
-                        freeVariables.Add(variable);
+                        maxStep = Math.Max(maxStep, ImproveShape(first, first, 1.0, 0.0));
+                        continue;
                     }
-                }
 
-                if (freeVariables.Count == 0)
-                {
-                    solved = true;
-                    break;
-                }
-
-                var system = new double[freeVariables.Count, freeVariables.Count];
-                var rightHandSide = new double[freeVariables.Count];
-                for (int row = 0; row < freeVariables.Count; row++)
-                {
-                    int variable = freeVariables[row];
-                    rightHandSide[row] = -gradient[variable];
-                    for (int fixedVariable = 0;
-                         fixedVariable < variableCount;
-                         fixedVariable++)
+                    for (int second = first + 1; second < variableCount; second++)
                     {
-                        if (fixedVariables[fixedVariable])
+                        if (sensitivities[second] == 0.0)
                         {
-                            rightHandSide[row] -=
-                                normalMatrix[variable, fixedVariable] * solution[fixedVariable];
+                            continue;
                         }
-                    }
 
-                    for (int column = 0; column < freeVariables.Count; column++)
-                    {
-                        system[row, column] = normalMatrix[
-                            variable,
-                            freeVariables[column]];
+                        double scale = Math.Max(Math.Abs(sensitivities[first]), Math.Abs(sensitivities[second]));
+                        maxStep = Math.Max(maxStep, ImproveShape(first, second,
+                            -sensitivities[second] / scale, sensitivities[first] / scale));
                     }
                 }
 
-                if (!TrySolveLinearSystem(system, rightHandSide, out double[] freeSolution))
+                if (maxStep <= PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)
                 {
-                    return ContractValidationResult<double[]>.Invalid(
-                        "PracticeLiquidZoneRrs.Response.Solve.IllConditioned",
-                        "response_model.normal_matrix",
-                        "The regularized RRS response system is non-finite or ill-conditioned.");
-                }
-
-                bool fixedAny = false;
-                for (int index = 0; index < freeVariables.Count; index++)
-                {
-                    int variable = freeVariables[index];
-                    double proposed = freeSolution[index];
-                    if (!IsCanonicalFinite(proposed))
-                    {
-                        return ContractValidationResult<double[]>.Invalid(
-                            "PracticeLiquidZoneRrs.Response.Solve.NonFinite",
-                            "response_model.command",
-                            "The bounded RRS least-squares command must remain finite.");
-                    }
-
-                    solution[variable] = proposed;
-                    if (proposed < lowerBounds[variable] -
-                        PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)
-                    {
-                        solution[variable] = lowerBounds[variable];
-                        fixedVariables[variable] = true;
-                        fixedAny = true;
-                    }
-                    else if (proposed > upperBounds[variable] +
-                             PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)
-                    {
-                        solution[variable] = upperBounds[variable];
-                        fixedVariables[variable] = true;
-                        fixedAny = true;
-                    }
-                }
-
-                if (!fixedAny)
-                {
-                    solved = true;
                     break;
                 }
             }
 
-            if (!solved)
+            double ImproveShape(int first, int second, double firstDirection, double secondDirection)
             {
-                return ContractValidationResult<double[]>.Invalid(
-                    "PracticeLiquidZoneRrs.Response.Solve.ActiveSetLimit",
-                    "response_model.command",
-                    "The bounded RRS active-set command did not settle within fourteen passes.");
+                double slope = gradient[first] * firstDirection + gradient[second] * secondDirection;
+                double curvature =
+                    normalMatrix[first, first] * firstDirection * firstDirection +
+                    2.0 * normalMatrix[first, second] * firstDirection * secondDirection +
+                    normalMatrix[second, second] * secondDirection * secondDirection;
+                if (!IsCanonicalPositive(curvature))
+                {
+                    return 0.0;
+                }
+
+                double low = double.NegativeInfinity;
+                double high = double.PositiveInfinity;
+                IntersectBounds(first, firstDirection);
+                IntersectBounds(second, secondDirection);
+                if (low > high)
+                {
+                    return 0.0;
+                }
+
+                double step = Clamp(-slope / curvature, low, high);
+                double firstChange = firstDirection * step;
+                double secondChange = secondDirection * step;
+                double firstBefore = solution[first];
+                double secondBefore = solution[second];
+                double firstAfter = Clamp(firstBefore + firstChange, lowerBounds[first], upperBounds[first]);
+                double secondAfter = first == second ? firstAfter :
+                    Clamp(secondBefore + secondChange, lowerBounds[second], upperBounds[second]);
+                solution[first] = firstAfter;
+                solution[second] = secondAfter;
+                firstChange = firstAfter - firstBefore;
+                secondChange = first == second ? 0.0 : secondAfter - secondBefore;
+                for (int row = 0; row < variableCount; row++)
+                {
+                    gradient[row] += normalMatrix[row, first] * firstChange + normalMatrix[row, second] * secondChange;
+                }
+
+                return Math.Abs(step);
+
+                void IntersectBounds(int zone, double direction)
+                {
+                    if (direction == 0.0)
+                    {
+                        return;
+                    }
+
+                    double firstStep = (lowerBounds[zone] - solution[zone]) / direction;
+                    double secondStep = (upperBounds[zone] - solution[zone]) / direction;
+                    low = Math.Max(low, Math.Min(firstStep, secondStep));
+                    high = Math.Min(high, Math.Max(firstStep, secondStep));
+                }
             }
 
             for (int variable = 0; variable < variableCount; variable++)
             {
-                if (!IsCanonicalFinite(solution[variable]) ||
-                    solution[variable] < lowerBounds[variable] -
-                    PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance ||
-                    solution[variable] > upperBounds[variable] +
-                    PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)
+                solution[variable] = CanonicalizeZero(solution[variable]);
+                if (!IsCanonicalFinite(solution[variable]))
                 {
                     return ContractValidationResult<double[]>.Invalid(
-                        "PracticeLiquidZoneRrs.Response.Solve.Bounds",
+                        "PracticeLiquidZoneRrs.Response.Solve.NonFinite",
                         "response_model.command",
-                        "The bounded RRS command must respect the event movement and fill bounds.");
-                }
-
-                if (Math.Abs(solution[variable]) <=
-                    PracticeLiquidZoneRrsIdentityV1.FillCommandTolerance)
-                {
-                    solution[variable] = 0.0;
+                        "The bounded RRS command must remain finite.");
                 }
             }
 
-            // Shape corrections live in the common-mode nullspace: add a
-            // bounded common offset so the estimated net reactivity stays zero.
-            solution = SolveCommonModeCommand(responseModel, reactivity, lowerBounds, upperBounds, solution);
             double initialResidual = ComputeWeightedResidual(
                 responseModel,
                 shapeErrors,
@@ -2079,109 +2081,6 @@ namespace ReactorSim.Core
             }
 
             return ContractValidationResult<double[]>.Valid(solution);
-        }
-
-        private static bool TrySolveLinearSystem(
-            double[,] matrix,
-            double[] rightHandSide,
-            out double[] solution)
-        {
-            int dimension = rightHandSide.Length;
-            solution = new double[dimension];
-            if (matrix.GetLength(0) != dimension || matrix.GetLength(1) != dimension)
-            {
-                return false;
-            }
-
-            var work = new double[dimension, dimension];
-            var rhs = new double[dimension];
-            for (int row = 0; row < dimension; row++)
-            {
-                rhs[row] = rightHandSide[row];
-                for (int column = 0; column < dimension; column++)
-                {
-                    work[row, column] = matrix[row, column];
-                }
-            }
-
-            for (int pivot = 0; pivot < dimension; pivot++)
-            {
-                int pivotRow = pivot;
-                double pivotMagnitude = Math.Abs(work[pivot, pivot]);
-                for (int row = pivot + 1; row < dimension; row++)
-                {
-                    double candidateMagnitude = Math.Abs(work[row, pivot]);
-                    // Strict comparison deliberately keeps the lowest row
-                    // index when magnitudes tie.
-                    if (candidateMagnitude > pivotMagnitude)
-                    {
-                        pivotRow = row;
-                        pivotMagnitude = candidateMagnitude;
-                    }
-                }
-
-                if (!ContractValidation.IsFinite(pivotMagnitude) || pivotMagnitude <= 1.0e-14)
-                {
-                    return false;
-                }
-
-                if (pivotRow != pivot)
-                {
-                    for (int column = pivot; column < dimension; column++)
-                    {
-                        double temporary = work[pivot, column];
-                        work[pivot, column] = work[pivotRow, column];
-                        work[pivotRow, column] = temporary;
-                    }
-
-                    double rightHandSideTemporary = rhs[pivot];
-                    rhs[pivot] = rhs[pivotRow];
-                    rhs[pivotRow] = rightHandSideTemporary;
-                }
-
-                for (int row = pivot + 1; row < dimension; row++)
-                {
-                    double factor = work[row, pivot] / work[pivot, pivot];
-                    if (!ContractValidation.IsFinite(factor))
-                    {
-                        return false;
-                    }
-
-                    work[row, pivot] = 0.0;
-                    for (int column = pivot + 1; column < dimension; column++)
-                    {
-                        work[row, column] -= factor * work[pivot, column];
-                    }
-
-                    rhs[row] -= factor * rhs[pivot];
-                }
-            }
-
-            for (int row = dimension - 1; row >= 0; row--)
-            {
-                double value = rhs[row];
-                for (int column = row + 1; column < dimension; column++)
-                {
-                    value -= work[row, column] * solution[column];
-                }
-
-                if (!ContractValidation.IsFinite(value) ||
-                    !ContractValidation.IsFinite(work[row, row]) ||
-                    Math.Abs(work[row, row]) <= 1.0e-14)
-                {
-                    return false;
-                }
-
-                // Elimination may produce signed zero; canonicalize only at
-                // the contract boundary, not during valid finite arithmetic.
-                solution[row] = value == 0.0 ? 0.0 : value / work[row, row];
-                if (!ContractValidation.IsFinite(solution[row]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         private static double[] ApplyFillCommand(
@@ -2303,32 +2202,31 @@ namespace ReactorSim.Core
                 incumbent.WeightedResidual;
         }
 
-        private static double[] SolveCommonModeCommand(
+        private static double[] SolveClosestReactivityCommand(
             PracticeLiquidZoneRrsResponseModelV1 responseModel, double reactivity,
-            double[] lowerBounds, double[] upperBounds, double[]? shapeCommand = null)
+            double[] lowerBounds, double[] upperBounds)
         {
-            // One common fill request, clipped at each compartment's physical
-            // and event bounds. Other compartments remain active at a limit.
-            // A learned positive derivative cannot reverse absorption.
-            double Change(double request)
-            {
-                double change = 0;
-                for (int zone = 0; zone < lowerBounds.Length; zone++)
-                    change += Math.Min(0, responseModel.CommonModeReactivitySensitivities[zone]) *
-                        Clamp((shapeCommand?[zone] ?? 0) + request, lowerBounds[zone], upperBounds[zone]);
-                return change;
-            }
-            double low = lowerBounds.Min() - (shapeCommand?.Max() ?? 0);
-            double high = upperBounds.Max() - (shapeCommand?.Min() ?? 0);
+            // A common starting move finds the target reactivity, or the nearest
+            // reachable value if the available movement cannot reach criticality.
+            double low = lowerBounds.Min();
+            double high = upperBounds.Max();
+            var sensitivities = responseModel.CommonModeReactivitySensitivities;
             for (int iteration = 0; iteration < 56; iteration++)
             {
                 double middle = (low + high) * 0.5;
-                if (reactivity + Change(middle) > 0) low = middle;
+                double predictedReactivity = reactivity;
+                for (int zone = 0; zone < lowerBounds.Length; zone++)
+                {
+                    predictedReactivity += sensitivities[zone] * Clamp(middle, lowerBounds[zone], upperBounds[zone]);
+                }
+
+                if (predictedReactivity > 0.0) low = middle;
                 else high = middle;
             }
+
             double request = (low + high) * 0.5;
-            return lowerBounds.Select((lower, zone) =>
-                CanonicalizeZero(Clamp((shapeCommand?[zone] ?? 0) + request, lower, upperBounds[zone]))).ToArray();
+            return lowerBounds.Select((lower, zone) => sensitivities[zone] == 0.0 ? 0.0 :
+                CanonicalizeZero(Clamp(request, lower, upperBounds[zone]))).ToArray();
         }
 
         private static double CanonicalizeZero(double value)

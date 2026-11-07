@@ -85,6 +85,7 @@ public sealed class DailyTurnTests
         Assert.Equal(a.Snapshot.ScoreTotal, b.Snapshot.ScoreTotal);
         Assert.Equal(first.CurrentSpatialCandidate.ShapeChannelPowerWatts, second.CurrentSpatialCandidate.ShapeChannelPowerWatts);
         Assert.Equal(first.CurrentXenonState.Xenon, second.CurrentXenonState.Xenon);
+        Assert.Equal(first.CurrentLiquidZoneRrs.StateDigest, second.CurrentLiquidZoneRrs.StateDigest);
         Assert.Equal(new uint[] { 210, 211 }.Take(a.Snapshot.LastDayResult!.Movements.Count), a.Snapshot.LastDayResult.ExecutedChannels);
     }
 

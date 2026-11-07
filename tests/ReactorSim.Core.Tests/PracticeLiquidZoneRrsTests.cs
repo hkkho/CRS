@@ -217,6 +217,53 @@ public sealed class PracticeLiquidZoneRrsTests
     }
 
     [Fact]
+    public void ReferenceResponsePredictsAllFourteenCompartmentsOnAHoldoutCore()
+    {
+        var inventory = SyntheticGameCoreStateV1.CreateAgedPractice(1002);
+        var pack = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+        var mapping = pack.CreatePracticeZoneMapping();
+        var model = Require(FullCoreDiffusionModelV1.TryCreateCandu6(pack));
+        var solver = Require(EquilibriumCoreSolverV1.TryCreate(model, inventory.EnumerateBundles(), 2_064_000_000));
+        double[] fills = Enumerable.Repeat(0.5, 14).ToArray();
+        var equilibrium = Require(PracticeXenonEquilibriumV1.TryCreate(solver, inventory, fills));
+        var prepared = Require(solver.TryPrepareCandidates(inventory.EnumerateBundles(), equilibrium.Poison.Overlay));
+        var state = Require(PracticeLiquidZoneRrsV1.TryCreate(mapping, equilibrium.Projection));
+        Assert.Equal(PracticeLiquidZoneReferenceResponseV1.Provenance, state.ResponseModel.Provenance);
+
+        const double fillStep = 0.025;
+        for (int compartment = 0; compartment < fills.Length; compartment++)
+        {
+            var lowerFills = fills.ToArray();
+            var upperFills = fills.ToArray();
+            lowerFills[compartment] -= fillStep;
+            upperFills[compartment] += fillStep;
+            var lower = Require(solver.TrySolveCandidate(prepared, equilibrium.Projection.SpatialSolve,
+                Require(mapping.TryBuildOverlay(lowerFills))));
+            var upper = Require(solver.TrySolveCandidate(prepared, equilibrium.Projection.SpatialSolve,
+                Require(mapping.TryBuildOverlay(upperFills))));
+            var regionalSensitivity = ShapeFractions(mapping, lower).Zip(ShapeFractions(mapping, upper),
+                (a, b) => (a - b) / (2 * fillStep)).ToArray();
+            double observedNorm = Math.Sqrt(regionalSensitivity.Sum(value => value * value));
+            double errorNorm = Math.Sqrt(regionalSensitivity.Select((sensitivity, zone) =>
+                Math.Pow(sensitivity - state.ResponseModel.Jacobian[zone][compartment], 2)).Sum());
+            Assert.True(regionalSensitivity[compartment] > 0);
+            Assert.InRange(errorNorm / observedNorm, 0, 0.25);
+            var zoneErrors = regionalSensitivity.Select((sensitivity, zone) => new
+            {
+                Error = Math.Abs(sensitivity - state.ResponseModel.Jacobian[zone][compartment]),
+                Tolerance = 1.0e-4 + 0.25 * Math.Abs(sensitivity)
+            });
+            Assert.All(zoneErrors, sample => Assert.InRange(sample.Error, 0, sample.Tolerance));
+            double bulkSensitivity = (upper.RelativeReactivity - lower.RelativeReactivity) / (2 * fillStep);
+            double modeledBulkSensitivity = state.ResponseModel.Jacobian[fills.Length][compartment];
+            Assert.True(bulkSensitivity < 0);
+            Assert.Equal(state.ResponseModel.CommonModeReactivitySensitivities[compartment], modeledBulkSensitivity);
+            // The centered reference overestimates holdout reactivity worth in Z5 and Z7 by up to 18%.
+            Assert.InRange(modeledBulkSensitivity / bulkSensitivity, 0.85, 1.20);
+        }
+    }
+
+    [Fact]
     public void CalibratedZonesHaveValidPositiveAbsorptionAndApproximatelySevenMkWorth()
     {
         CreateRunFixture(out var inventory, out var solver, out _);
@@ -305,7 +352,7 @@ public sealed class PracticeLiquidZoneRrsTests
     }
 
     [Fact]
-    public void ExcessFuelReactivityIsRegulatedBeforeSpatialShapeOptimisation()
+    public void ExcessFuelReactivityIsRegulatedAlongsideSpatialShape()
     {
         CreateRunFixture(out var inventory, out var solver, out var initial);
         var coupled = Require(PracticeXenonEquilibriumV1.TryCreate(solver, inventory, Enumerable.Repeat(.5, 14).ToArray()));
@@ -327,8 +374,20 @@ public sealed class PracticeLiquidZoneRrsTests
         Assert.True(Math.Abs(regulated.Projection.RelativeReactivity) < Math.Abs(retained.RelativeReactivity));
         Assert.InRange(Math.Abs(regulated.Projection.RelativeReactivity), 0,
             PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
+        double frozenMaxShapeError = ShapeFractions(settled.State.Mapping, retained)
+            .Zip(settled.State.TargetZonalPowerFractions, (measured, target) => Math.Abs(measured - target)).Max();
+        Assert.True(regulated.State.ZonalShapeErrors.Max(Math.Abs) < frozenMaxShapeError);
+        Assert.True(regulated.State.ControllerConverged);
         Assert.True(regulated.State.AverageFillFraction > settled.State.AverageFillFraction);
         Assert.Equal(0, regulated.State.SimulationTimeSeconds);
+    }
+
+    private static double[] ShapeFractions(
+        PracticeLiquidZoneRrsMappingV1 mapping, EquilibriumCoreProjectionV1 projection)
+    {
+        double total = projection.ShapeNodePowerWatts.Sum();
+        return mapping.NodeIndicesByZone.Select(nodes => nodes.Sum(i => projection.ShapeNodePowerWatts[i]) / total)
+            .ToArray();
     }
 
     private static void CreateRunFixture(

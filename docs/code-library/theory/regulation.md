@@ -8,7 +8,11 @@ The authored fuel curve includes a burnup-dependent reference xenon concentratio
 
 ## Fixed adjusters and liquid zones
 
-Twenty-one fixed absorber rods add localized absorption and shape nearby power. Fourteen liquid-zone compartments vary water absorption as they fill. The controller assesses neutron balance and region power relative to the [time-average reference](../../physics/channel-power-reference.md). It tries bounded changes to the fills and checks the response with the spatial solver.
+Twenty-one fixed absorber rods add localized absorption and shape nearby power. Fourteen liquid-zone compartments vary water absorption as they fill. The controller measures each region's share of total power and compares it with the same share of the immutable [time-average reference](../../physics/channel-power-reference.md). Custom runs use the reference solved for their pack. A controller result is converged when compensated reactivity is within ±0.05 mk and all fourteen power shares are within one percentage point of their targets. The equilibrium solver separately normalizes the reported total thermal power to the run's configured power.
+
+For a correction, the controller starts with the closest modeled reactivity it can reach, then adjusts individual fills to reduce regional power errors while preserving that modeled reactivity. The spatial solver verifies the move and supplies a measured response for one further correction if needed. Fills stay between 0% and 100% and can change by at most eight percentage points in one event.
+
+For the matching diffusion-v10 pack and tube mapping, the initial response uses full-core finite differences around 50% fill. The fit uses aged seed 1001 at nominal power with equilibrium xenon held fixed during ±2.5 percentage-point perturbations of each compartment. This is a local calibration. Other packs or mappings start from a generic estimate, and all accepted states use the full-core solver's measured response.
 
 A zone's headroom is its remaining room to fill or drain. The core average can be within bounds while an individual zone has little room to move. Numerical convergence, controller headroom and terminal game status are separate readings.
 
