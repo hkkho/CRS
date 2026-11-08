@@ -1,7 +1,7 @@
 import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelWatts } from "./studio/powerReadings";
 import { gridCoordinateLabel } from "./channelCoordinates";
-import { channelZonePair } from "./timeMapPresentation";
+import { channelZonePair, timeZoneLabel } from "./timeMapPresentation";
 
 type Sample = { day: number; peak: number; powers: number[]; mean: number; zoneFills: number[] };
 const MAX_SAMPLES = 241;
@@ -48,8 +48,8 @@ export class DemoTrends {
     const selectedPower = latest.powers[selected];
     this.element.querySelector("[data-power-trend-reading]")!.textContent = `${label}: ${selectedPower?.toFixed(0) ?? "—"} · Peak: ${latest.peak.toFixed(0)} kW`;
     const [endA, endB] = channel ? channelZonePair(channel) : [];
-    this.element.querySelector("[data-trend-end-a]")!.textContent = endA === undefined ? "End A" : `End A · Z${endA + 1}`;
-    this.element.querySelector("[data-trend-end-b]")!.textContent = endB === undefined ? "End B" : `End B · Z${endB + 1}`;
+    this.element.querySelector("[data-trend-end-a]")!.textContent = endA === undefined ? "End A" : `End A · ${timeZoneLabel(endA)}`;
+    this.element.querySelector("[data-trend-end-b]")!.textContent = endB === undefined ? "End B" : `End B · ${timeZoneLabel(endB)}`;
     const zoneReading = (id: number | undefined) => {
       const fill = id === undefined ? NaN : latest.zoneFills[id];
       return Number.isFinite(fill) ? `${fill.toFixed(1)}%` : "—";

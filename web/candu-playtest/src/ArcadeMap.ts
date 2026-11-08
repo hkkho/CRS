@@ -23,7 +23,6 @@ export class ArcadeMap {
     this.element.className = "arcade-map";
     this.element.setAttribute("role", "group");
     this.element.setAttribute("aria-label", "Core channels. Use arrow keys to inspect, Enter or R queues/removes. Double-click a channel to queue/remove.");
-    if (instantFuel) this.element.setAttribute("aria-label", "Channel power map. Arrow keys select; Enter, Space, R or double-click queues fuel for the next step.");
     const housing = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     housing.setAttribute("viewBox", "0 0 560 560"); housing.setAttribute("aria-hidden", "true"); housing.classList.add("arcade-vessel-art");
     this.element.append(housing); this.frame = new ReactorFrame(housing, true);
@@ -39,11 +38,12 @@ export class ArcadeMap {
     this.element.addEventListener("dblclick", this.onDoubleClick);
     this.element.addEventListener("keydown", this.onKey);
   }
-  update(snapshot: CanduSnapshot, selected: number, planned: readonly number[], mode: TimeMapMode, locked: boolean): void {
+  update(snapshot: CanduSnapshot, selected: number, planned: readonly number[], mode: TimeMapMode, locked: boolean,
+    waiting?: ReadonlySet<number>): void {
     this.frame.update(snapshot, selected);
     const readings = new Map<number, string>();
     this.element.dataset.mapMode = mode;
-    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", ripple: "Ripple", burnup: "Burnup", "paired-zones": "Paired zone fills" })[mode]} map. Arrow keys select; Enter, Space, R or double-click queues fuel for the next step.`);
+    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", ripple: "Ripple", burnup: "Burnup", "inlet-zones": "Inlet zone fill" })[mode]} map. Arrow keys inspect. Enter, Space, R or double-click queues fuel or removes a waiting order.`);
     this.snapshot = snapshot; this.selected = selected; this.locked = locked;
     for (const channel of snapshot.core.channels) {
       const cell = this.cells.get(channel.channelIndex);
@@ -58,11 +58,15 @@ export class ArcadeMap {
       cell.style.background = presentation ? presentation.background : mode === "power" ? powerColor(power, channelColorMinimum(snapshot), channelLimit(snapshot))
         : burnupColor(channel.averageBurnupMwdPerKg);
       if (this.instantFuel) {
+        const waitingOrder = waiting?.has(channel.channelIndex);
+        cell.dataset.fuelState = waitingOrder ? "waiting" : queued ? "submitted" : "";
         cell.dataset.alert = "false";
         cell.dataset.demoAlert = mode === "power" ? demoPowerAlert(power) : "normal";
         const reading = presentation!.reading;
         readings.set(channel.channelIndex, reading);
-        cell.setAttribute("aria-label", `${gridCoordinateLabel(channel)} · ${reading}. ${mode === "power" && power > 7_000_000 ? "Critical power. " : mode === "power" && power > 6_500_000 ? "High power. " : ""}${queued ? "Fuel queued. " : ""}${channel.canRefuel === false ? "Cannot refuel." : "Double-click or press Enter to queue fuel."}`);
+        const order = waitingOrder ? "Fuel waiting. Double-click or press Enter to remove the order."
+          : queued ? "Fuel order submitted." : channel.canRefuel === false ? "Cannot refuel." : "Double-click or press Enter to queue fuel.";
+        cell.setAttribute("aria-label", `${gridCoordinateLabel(channel)} · ${reading}. ${mode === "power" && power > 7_000_000 ? "Critical power. " : mode === "power" && power > 6_500_000 ? "High power. " : ""}${order}`);
       } else {
         // Detailed bundle/burnup tooltips are unnecessary on every demo frame.
         cell.dataset.alert = String(mode === "power" && powerBand(power, channelColorMinimum(snapshot), channelLimit(snapshot)) === "extreme");

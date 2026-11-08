@@ -122,7 +122,7 @@ export class DemoLoop {
   private initialize(snapshot: CanduSnapshot): void {
     this.snapshot = this.solved = this.from = snapshot;
     this.active = this.buffered = undefined; this.elapsed = 0; this.lastTime = this.now();
-    this.ready = true; this.faulted = false; this.message = "Double-click to queue fuel for the next step.";
+    this.ready = true; this.faulted = false; this.message = "Double-click a channel to queue or remove a fuel order.";
   }
   get isReady(): boolean { return this.ready; }
   get loadError(): string | undefined { return this.faulted ? this.message : undefined; }
@@ -139,7 +139,7 @@ export class DemoLoop {
   get canTogglePause(): boolean { return !this.singleStep && this.canOperate && !isRunTerminal(this.snapshot); }
   get canFuel(): boolean {
     return this.canOperate && this.visible && !isRunTerminal(this.solved) &&
-      (this.singleStep ? !this.busy && !this.solved.lastDayResult && this.pending.size === 0 : this.running);
+      (!this.singleStep || !this.busy && !this.solved.lastDayResult && this.pending.size === 0);
   }
   get canStep(): boolean {
     return this.singleStep && this.canOperate && this.visible && !this.busy && this.waitingFuel.size === 1;
@@ -157,10 +157,14 @@ export class DemoLoop {
     this.emit();
   }
 
-  clearStepOrder(): void {
-    if (!this.canStep) return;
-    this.waitingFuel.clear();
-    this.pending.clear();
+  canRemoveFuel(index: number): boolean {
+    return this.canOperate && this.visible && this.waitingFuel.has(index);
+  }
+
+  removeFuel(index: number): void {
+    if (!this.canRemoveFuel(index)) return;
+    this.waitingFuel.delete(index);
+    this.pending.delete(index);
     this.message = "Fuel order removed.";
     this.emit();
   }
@@ -172,7 +176,7 @@ export class DemoLoop {
   togglePause(): void {
     if (!this.canTogglePause) return;
     this.running = !this.running; this.lastTime = this.now();
-    this.message = this.running ? "Double-click to queue fuel for the next step." : "Paused · fuel queue retained.";
+    this.message = this.running ? "Double-click a channel to queue or remove a fuel order." : "Paused · edit waiting orders before resuming.";
     this.emit();
   }
   toggleSpeed(speed: "slow" | "fast"): void {
@@ -225,7 +229,7 @@ export class DemoLoop {
       this.snapshot = interpolateDemo(this.from, this.active.snapshot, this.dayProgress);
       if (this.elapsed === duration) {
         for (const index of this.active.fuel) this.pending.delete(index);
-        this.message = this.pending.size ? `${this.pending.size} fuel requests queued for the next step.` : "Double-click to queue fuel for the next step.";
+        this.message = this.pending.size ? `${this.pending.size} fuel orders pending.` : "Double-click a channel to queue or remove a fuel order.";
         this.from = this.snapshot; this.active = undefined;
         if (isRunTerminal(this.snapshot)) {
           this.running = false; this.waitingFuel.clear(); this.pending.clear();

@@ -1,9 +1,14 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
 import { channelLimit, channelWatts } from "./studio/powerReadings";
 
-export type TimeMapMode = "power" | "ripple" | "burnup" | "paired-zones";
+export type TimeMapMode = "power" | "ripple" | "burnup" | "inlet-zones";
 const unavailable = "#657080";
 type Stop = readonly [value: number, red: number, green: number, blue: number];
+
+// Internal IDs follow the calibrated model. Display order follows the letter
+// rows and numbered columns of CANTEACH TTR-570 Figure 5.14.
+export const zoneDisplayOrder: readonly number[] = [1, 0, 4, 3, 2, 6, 5, 8, 7, 11, 10, 9, 13, 12];
+export const timeZoneLabel = (logicalZoneId: number): string => `Z${zoneDisplayOrder.indexOf(logicalZoneId) + 1}`;
 
 // Fixed across frames and seeds. Closely spaced stops give common readings more
 // color space. See the v9 benchmark notes for the sampled operating ranges.
@@ -20,7 +25,7 @@ const scales: Record<TimeMapMode, { unit: string; stops: readonly Stop[] }> = {
     [0, 25, 35, 66], [1.5, 43, 74, 127], [2.3, 35, 125, 155], [3.3, 48, 173, 157],
     [4.4, 148, 201, 101], [5.4, 240, 216, 117], [7, 255, 242, 202],
   ] },
-  "paired-zones": { unit: "%", stops: [
+  "inlet-zones": { unit: "%", stops: [
     [0, 32, 48, 107], [35, 55, 102, 190], [42, 50, 167, 211], [50, 86, 208, 152],
     [57, 222, 220, 113], [65, 250, 159, 74], [100, 219, 62, 87],
   ] },
@@ -77,21 +82,19 @@ export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapsh
     const percent = (snapshot.ripple?.channelRippleFractions[channel.channelIndex] ?? NaN) * 100;
     return { background: color(mode, percent), reading: Number.isFinite(percent) ? `Ripple ${percent.toFixed(1)}% of reference` : "Ripple unavailable" };
   }
+  const plan = snapshot.refuellingPlans?.find(p => p.shiftCount === 8 && p.directionId === channel.flowDirection);
+  if (!plan) return { background: unavailable, reading: "Inlet zone unavailable" };
   const [endA, endB] = channelZonePair(channel);
-  const half = (end: string, id: number | undefined) => {
-    const zone = snapshot.rrs.zones.find(z => z.logicalZoneId === id);
-    const fill = zone?.fillFraction ?? NaN;
-    return !Number.isFinite(fill)
-      ? { color: unavailable, reading: `End ${end} fill unavailable` }
-      : { color: color(mode, fill * 100), reading: `End ${end} Z${zone!.logicalZoneId + 1}: ${(fill * 100).toFixed(1)}% filled` };
-  };
-  const a = half("A", endA), b = half("B", endB);
-  return { background: `linear-gradient(to right, ${a.color} 0%, ${a.color} 50%, ${b.color} 50%, ${b.color} 100%)`, reading: `${a.reading} · ${b.reading}` };
+  const id = plan.incomingEnd === "A" ? endA : endB;
+  const zone = snapshot.rrs.zones.find(z => z.logicalZoneId === id);
+  if (!zone) return { background: unavailable, reading: "Inlet zone unavailable" };
+  const percent = zone.fillFraction * 100;
+  return { background: color(mode, percent), reading: `Inlet End ${plan.incomingEnd} · ${timeZoneLabel(zone.logicalZoneId)} · ${percent.toFixed(1)}% filled` };
 }
 
 export function timeMapLegend(snapshot: CanduSnapshot, mode: TimeMapMode): string {
   if (mode === "power") return `Channel power (kW) · Above 6,500 pulses · Above 7,000 shakes · Limit ${(channelLimit(snapshot) / 1000).toLocaleString("en-US")} kW`;
-  if (mode === "paired-zones") return "Zone fill (%) · left half = End A · right half = End B · Grey = unavailable";
+  if (mode === "inlet-zones") return "Inlet zone fill (%) · Six of eight fresh bundles go into this half · Grey = unavailable";
   if (mode === "ripple") return "Ripple · Percent of reference · 100% is the channel reference";
   return "Average channel burnup (MWd/kg)";
 }

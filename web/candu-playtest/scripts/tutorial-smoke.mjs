@@ -71,7 +71,7 @@ try {
   await cell(210).focus();
   await page.keyboard.press('Enter');
   assert.equal(await map.locator('[data-planned=true]').count(), 0);
-  for (const mode of ['ripple', 'burnup', 'paired-zones', 'power', 'power', 'burnup']) {
+  for (const mode of ['ripple', 'burnup', 'inlet-zones', 'power', 'power', 'burnup']) {
     await button('Next lesson').click();
     assert.equal(await map.getAttribute('data-map-mode'), mode);
     assert.notEqual(await readings.innerText(), '');

@@ -119,11 +119,11 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(second.dataset.planned).toBe("true");
   expect(view.element.querySelector('[data-message]')?.textContent).not.toContain("Power updated");
   const mode = view.element.querySelector<HTMLSelectElement>('[data-map-mode]')!;
-  expect([...mode.options].map(o => o.value)).toEqual(["power", "ripple", "burnup", "paired-zones"]);
-  for (const value of ["ripple", "burnup", "paired-zones", "power"]) {
+  expect([...mode.options].map(o => o.value)).toEqual(["power", "ripple", "burnup", "inlet-zones"]);
+  for (const value of ["ripple", "burnup", "inlet-zones", "power"]) {
     mode.value = value; mode.dispatchEvent(new Event("change", { bubbles: true }));
     expect(view.element.querySelector('.arcade-map')?.getAttribute('data-map-mode')).toBe(value);
-    expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "Channel power (kW)" : value === "paired-zones" ? "left half = End A" : value === "ripple" ? "Ripple" : "Average channel burnup");
+    expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "Channel power (kW)" : value === "inlet-zones" ? "Inlet zone fill (%)" : value === "ripple" ? "Ripple" : "Average channel burnup");
   }
 });
 

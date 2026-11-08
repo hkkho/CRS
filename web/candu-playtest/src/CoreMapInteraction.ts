@@ -64,7 +64,7 @@ export class CoreMapTooltip {
     if (!channel || !this.snapshot || !this.active) { this.hide(); return; }
     const outgoing = exitBurnup(this.snapshot, channel);
     this.tip.textContent = this.instantFuel
-      ? `${gridCoordinateLabel(channel)} · ${this.readings?.get(channel.channelIndex) ?? `${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW`}\nDouble-click to queue fuel at the first opportunity`
+      ? `${gridCoordinateLabel(channel)} · ${this.readings?.get(channel.channelIndex) ?? `${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW`}\n${this.active.getAttribute("data-fuel-state") === "submitted" ? "Fuel order submitted" : "Double-click to queue or remove a waiting order"}`
       : `${gridCoordinateLabel(channel)} · ${(channelWatts(this.snapshot, channel) / 1000).toFixed(0)} kW\nExit burnup ${outgoing === null ? "unavailable" : `${outgoing.toFixed(2)} MWd/kg`}\nClick to inspect · Double-click to queue/remove`;
     this.active.setAttribute("aria-describedby", this.tip.id);
     this.tip.hidden = false;

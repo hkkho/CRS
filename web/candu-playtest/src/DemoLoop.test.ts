@@ -137,6 +137,8 @@ it("submits the entire waiting queue in one step and keeps the markers until its
   expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [210, 211] });
   expect(loop.waitingFuel.size).toBe(0);
   loop.fuel(210); // A submitted channel is still pending, not a new request.
+  loop.removeFuel(210);
+  expect(loop.pendingFuel).toEqual([210, 211]);
   h.complete(); await vi.advanceTimersByTimeAsync(7500);
   expect(loop.snapshot.shift?.fuelConsumed).toBe(0);
   expect(loop.pendingFuel).toEqual([210, 211]);
@@ -197,6 +199,21 @@ it("freezes playback and retains queued input on pause/hidden tabs, then resets 
   expect(loop.pendingFuel).toHaveLength(0); expect(loop.snapshot.completedDays).toBe(0);
   expect(loop.dayProgress).toBe(0); expect(loop.running).toBe(true);
   loop.destroy(); expect(h.bridge.dispose).toHaveBeenCalled();
+});
+
+it("edits the waiting queue while paused and submits only the remaining order on resume", async () => {
+  const h = setup();
+  loop.togglePause();
+  loop.fuel(210);
+  loop.fuel(211);
+  loop.removeFuel(210);
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(h.calls).toEqual([]);
+  expect(loop.pendingFuel).toEqual([211]);
+  expect(loop.snapshot.simulationTimeSeconds).toBe(0);
+  loop.togglePause();
+  await vi.advanceTimersByTimeAsync(50);
+  expect(h.calls).toEqual([{ type: "commit-day", expectedCompletedDays: 0, channelIndices: [211] }]);
 });
 
 it("reveals terminal state only at the displayed endpoint and stops future commands", async () => {

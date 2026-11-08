@@ -2,7 +2,7 @@
 
 1. Choose **Start game** and wait for **Start**. Under **Starting core**, you can enter a seed to reproduce a core.
 2. Press **Start** and inspect the core map and liquid-zone levels. Each simulated half-day takes 7.5 seconds to display when the next solution is ready. Choose **0.5×** for 10 seconds or **1.5×** for 5 seconds. Press the selected speed again to return to normal.
-3. Queue fuel when a channel needs it. Use **Pause** to inspect the core without advancing playback. **Retry seed** repeats the starting core and **New core** draws a different seed.
+3. Queue fuel when a channel needs it. Use **Pause** to inspect the core and edit waiting orders without advancing playback. Yellow insets mark waiting orders. Blue insets mark orders already submitted to the solver. **Retry seed** repeats the starting core and **New core** draws a different seed.
 
 ## Tutorial
 
@@ -13,7 +13,7 @@ Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the st
 | Action | Pointer or touch | Keyboard | Standard gamepad |
 | --- | --- | --- | --- |
 | Inspect a channel | Select a channel | Arrow keys on the map | D-pad |
-| Queue fuel | Double-click or use **Queue fuel** | Enter or R on the map | Bottom face button |
+| Queue or remove waiting fuel | Double-click or use **Queue fuel** or **Remove order** | Enter or R on the map | Bottom face button |
 | Change the map | Use the map selector | Focus and change the selector | Shoulder buttons |
 | Pause or resume | Use the playback button | Focus and activate the button | Start |
 

@@ -35,23 +35,33 @@ try {
   await fast.click();
   if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Fast speed was not selected');
   console.log('Time based core ready.');
-  for (const mode of ['ripple', 'burnup', 'paired-zones', 'power']) {
+  for (const mode of ['ripple', 'burnup', 'inlet-zones', 'power']) {
     await page.locator('select[data-map-mode]').selectOption(mode);
     if (await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
-    if (mode === 'paired-zones') {
+    if (mode === 'inlet-zones') {
       const channel = page.locator('.arcade-map [data-channel="210"]');
-      const label = await channel.getAttribute('aria-label');
-      const pair = label.match(/End A (Z\d+).*End B (Z\d+)/);
-      if (!pair) throw new Error('Published zone pair missing');
+      const neighbor = page.locator('.arcade-map [data-channel="211"]');
+      const top = page.locator('.arcade-map [data-channel="0"]');
+      if (!(await channel.getAttribute('aria-label')).includes('Inlet End B · Z14') ||
+          !(await neighbor.getAttribute('aria-label')).includes('Inlet End A · Z7') ||
+          !(await top.getAttribute('aria-label')).includes('Inlet End A · Z3')) {
+        throw new Error('Inlet zones do not match alternating flow and face numbering');
+      }
+      if ((await channel.evaluate(cell => getComputedStyle(cell).backgroundImage)) !== 'none' ||
+          (await channel.evaluate(cell => cell.style.backgroundColor)) === (await neighbor.evaluate(cell => cell.style.backgroundColor))) {
+        throw new Error('Inlet zones are missing their alternating full-cell colors');
+      }
       await channel.click();
-      if (await page.locator('[data-trend-end-a]').innerText() !== `End A · ${pair[1]}` ||
-          await page.locator('[data-trend-end-b]').innerText() !== `End B · ${pair[2]}` ||
+      if (!(await page.locator('[data-selected-zone]').innerText()).includes('Inlet End B · Z14') ||
+          await page.locator('[data-trend-end-a]').innerText() !== 'End A · Z7' ||
+          await page.locator('[data-trend-end-b]').innerText() !== 'End B · Z14' ||
           await page.locator('[data-chart=zones] .trend-line').count() !== 3) {
         throw new Error('Zone chart does not show the selected channel pair');
       }
-      await page.screenshot({ path: 'artifacts/demo/paired-map.png', fullPage: true });
+      await page.screenshot({ path: 'artifacts/demo/inlet-map.png', fullPage: true });
     }
   }
+  if (await page.locator('.reactor-demo h1').innerText() !== 'Reactor Sumulator') throw new Error('Play-screen title is incorrect');
   if ((await page.locator('.reactor-demo header').innerText()).includes('DEMO')) throw new Error('Old demo label');
   if ((await page.locator('.demo-hud').innerText()).includes('sec')) throw new Error('Speed value is still visible');
   if (!/^Ripple [0-9.]+ .* Tilt [0-9.]+ pts\/h$/.test(await page.locator('[data-score-rate]').innerText())) throw new Error('Operating score components missing');
@@ -114,8 +124,20 @@ try {
   if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Pause changed the selected speed');
   await page.waitForFunction(() => document.querySelector('.reactor-demo')?.getAttribute('data-solving') === 'false', undefined, waitOptions);
   const pausedDay = await page.locator('.reactor-demo').getAttribute('data-days');
+  const pausedTime = await page.locator('.reactor-demo').getAttribute('data-time-seconds');
+  const fuel = page.locator('[data-action=fuel]');
+  const cell = page.locator('.arcade-map [data-channel="210"]');
+  await cell.click();
+  await fuel.click();
+  if (await cell.getAttribute('data-fuel-state') !== 'waiting' || await fuel.innerText() !== 'Remove order') throw new Error('Cannot queue fuel while paused');
+  await cell.press('Enter');
+  if (await cell.getAttribute('data-planned') !== 'false' || await fuel.innerText() !== 'Queue fuel') throw new Error('Cannot remove a waiting order by keyboard');
+  await cell.dblclick();
+  await fuel.click();
+  if (await cell.getAttribute('data-planned') !== 'false') throw new Error('Cannot remove a waiting order using the fuel button');
   await page.waitForTimeout(5500);
-  if (await page.locator('.reactor-demo').getAttribute('data-days') !== pausedDay) throw new Error('Paused demo advanced');
+  if (await page.locator('.reactor-demo').getAttribute('data-days') !== pausedDay ||
+      await page.locator('.reactor-demo').getAttribute('data-time-seconds') !== pausedTime) throw new Error('Paused demo advanced');
   await mkdir('artifacts/demo', { recursive: true });
   await page.locator('.reactor-demo').evaluate(element => { element.scrollTop = 0; });
   await page.screenshot({ path: 'artifacts/demo/desktop.png', fullPage: true });

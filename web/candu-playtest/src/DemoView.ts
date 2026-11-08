@@ -10,12 +10,12 @@ import { DemoTutorialView } from "./DemoTutorialView";
 import { GameLoadingView } from "./GameLoadingView";
 import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelLimit, channelWatts } from "./studio/powerReadings";
-import { renderTimeMapScale, timeMapLegend, type TimeMapMode } from "./timeMapPresentation";
+import { renderTimeMapScale, timeMapCell, timeMapLegend, timeZoneLabel, zoneDisplayOrder, type TimeMapMode } from "./timeMapPresentation";
 import { zoneAlert } from "./demoPresentation";
 import "./arcade.css";
 import "./demo.css";
 
-const mapModes: readonly TimeMapMode[] = ["power", "ripple", "burnup", "paired-zones"];
+const mapModes: readonly TimeMapMode[] = ["power", "ripple", "burnup", "inlet-zones"];
 const padDirections = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"] as const;
 
 function shiftTime(minutes: number): string {
@@ -44,7 +44,7 @@ export class DemoView {
   constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>,
     onStart?: () => void, customPhysics?: CustomPhysics, readonly isTutorial = false) {
     this.element.className = "reactor-arcade reactor-demo";
-    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Shift</h1></div><nav aria-label="Time based controls">
+    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Sumulator</h1></div><nav aria-label="Time based controls">
       <div class="demo-playback" role="group" aria-label="Playback">
         <button type="button" data-action="slow" aria-label="0.5× speed (10 seconds per half-day)" aria-pressed="false" title="0.5× · 10 seconds per half-day. Press again for normal speed.">0.5×</button>
         <button type="button" data-action="pause" aria-label="Resume" title="Resume">
@@ -55,10 +55,10 @@ export class DemoView {
         </button>
         <button type="button" data-action="fast" aria-label="1.5× speed (5 seconds per half-day)" aria-pressed="false" title="1.5× · 5 seconds per half-day. Press again for normal speed.">1.5×</button>
       </div><button data-action="leave">Main screen</button></nav></header>
-      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
+      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span><span data-selected-zone hidden></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
       <progress class="demo-clock" max="1" value="0" aria-label="Time step progress"></progress>
-      <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading"><select data-map-mode aria-label="Core map"><option value="power">Channel power · kW</option><option value="ripple">Ripple · % of reference</option><option value="burnup">Burnup · MWd/kg</option><option value="paired-zones">Paired zone fills · %</option></select><span data-live>Preparing core…</span></div><div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p><div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p></div><p class="demo-queue-key"><span>Yellow outline: fuel queued</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue fuel <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue fuel <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
-      <aside class="demo-readout"><section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2><div class="demo-zone-mean"><span>CORE AVERAGE</span><strong data-zone-mean>—</strong><p data-zone-risk></p></div><div class="demo-zone-grid">${Array.from({ length: 14 }, (_, i) => `<div class="demo-zone" data-zone="${i}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div><p class="demo-help">Average must stay within 10–90%. Amber near an edge; red below 15% or above 85%. Individual zones show remaining control room.</p></section><p>Keep peak power and average liquid-zone fill within their limits. Queue eight fresh bundles by double-clicking a channel or selecting it and pressing Queue fuel.</p><p data-message role="status"></p><p data-ended role="status"></p><div class="demo-retry"><button data-action="retry">Retry seed</button><button data-action="new">New core</button></div><p class="demo-help">Pause to stop the clock.</p></aside></section>`;
+      <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading"><select data-map-mode aria-label="Core map"><option value="power">Channel power · kW</option><option value="ripple">Ripple · % of reference</option><option value="burnup">Burnup · MWd/kg</option><option value="inlet-zones">Inlet zone fill · %</option></select><span data-live>Preparing core…</span></div><div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p><div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p></div><p class="demo-queue-key"><span>Yellow inset: waiting</span> &middot; <span>Blue inset: submitted</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue or remove <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue or remove <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
+      <aside class="demo-readout"><section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2><div class="demo-zone-mean"><span>CORE AVERAGE</span><strong data-zone-mean>—</strong><p data-zone-risk></p></div><div class="demo-zone-grid">${zoneDisplayOrder.map((id, i) => `<div class="demo-zone" data-zone="${id}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div><p class="demo-help">Average must stay within 10–90%. Amber near an edge; red below 15% or above 85%. Individual zones show remaining control room.</p></section><p>Keep peak power and average liquid-zone fill within their limits. Double-click or use Queue fuel to order eight fresh bundles. You can queue or remove waiting orders while paused.</p><p data-message role="status"></p><p data-ended role="status"></p><div class="demo-retry"><button data-action="retry">Retry seed</button><button data-action="new">New core</button></div><p class="demo-help">Pause to stop the clock.</p></aside></section>`;
     this.element.querySelector(".demo-workspace")!.append(this.trends.element);
     parent.append(this.element);
     this.element.addEventListener("click", this.onClick);
@@ -153,11 +153,17 @@ export class DemoView {
     }
     for (const action of ["retry", "new"]) this.field<HTMLButtonElement>(`[data-action=${action}]`).disabled = !this.started || !loop.isReady || loop.busy;
     const selected = snapshot.core.channels.find(c => c.channelIndex === this.selected);
-    this.field<HTMLButtonElement>("[data-action=fuel]").disabled = !this.canQueue(this.selected) || !selected || selected.canRefuel === false || loop.pendingFuel.includes(this.selected);
+    const fuel = this.field<HTMLButtonElement>("[data-action=fuel]");
+    const removal = !this.tutorial && loop.waitingFuel.has(this.selected);
+    const submitted = !removal && loop.pendingFuel.includes(this.selected);
+    const fuelLabel = removal ? "Remove order" : submitted && !this.tutorial ? "Order submitted" : "Queue fuel";
+    if (fuel.textContent !== fuelLabel) fuel.textContent = fuelLabel;
+    fuel.disabled = !this.started || (removal ? !loop.canRemoveFuel(this.selected)
+      : !this.canQueue(this.selected) || !selected || selected.canRefuel === false || submitted);
     this.tutorial?.update(this.selected);
     if (!loop.isReady) return;
     if (!this.map) {
-      this.map = new ArcadeMap(snapshot, index => { this.selected = index; this.render(); }, index => this.queueFuel(index), true);
+      this.map = new ArcadeMap(snapshot, index => { this.selected = index; this.render(); }, index => this.editFuel(index), true);
       this.field("[data-map]").append(this.map.element);
     }
     if (this.legendMode !== this.mapMode) {
@@ -165,15 +171,18 @@ export class DemoView {
       this.legendMode = this.mapMode;
     }
     this.trends.update(snapshot, loop.playbackDay, this.selected, !loop.running);
-    const key = `${this.mapMode}:${this.selected}:${loop.pendingFuel}:${ended}`;
+    const key = `${this.mapMode}:${this.selected}:${loop.pendingFuel}:${waiting}:${ended}`;
     if (snapshot !== this.lastSnapshot || key !== this.lastMapKey) {
-      this.map.update(snapshot, this.selected, loop.pendingFuel, this.mapMode, ended);
+      this.map.update(snapshot, this.selected, loop.pendingFuel, this.mapMode, ended, loop.waitingFuel);
       this.lastSnapshot = snapshot; this.lastMapKey = key;
       this.text("[data-peak]", `${(Math.max(...snapshot.core.channels.map(c => channelWatts(snapshot, c))) / 1000).toFixed(0)} kW`);
       this.text("[data-legend]", timeMapLegend(snapshot, this.mapMode));
       this.text("[data-selected-channel]", selected ? gridCoordinateLabel(selected) : "—");
       this.text("[data-power]", selected ? (channelWatts(snapshot, selected) / 1000).toFixed(0) : "—");
       this.text("[data-channel-limit]", `Limit ${(channelLimit(snapshot) / 1000).toLocaleString("en-US")} kW`);
+      const zoneReading = this.field("[data-selected-zone]");
+      zoneReading.hidden = this.mapMode !== "inlet-zones" || !selected;
+      if (!zoneReading.hidden && selected) zoneReading.textContent = timeMapCell(snapshot, selected, this.mapMode).reading;
       this.renderZones(snapshot);
     }
   }
@@ -191,7 +200,7 @@ export class DemoView {
       card.querySelector<HTMLElement>("i")!.style.height = `${Math.max(0, Math.min(100, zone.fillFraction * 100))}%`;
       card.querySelector("strong")!.textContent = `${percent}%`;
       card.querySelector("small")!.textContent = zone.fillFraction < .25 ? "LOW" : zone.fillFraction > .75 ? "HIGH" : "OK";
-      card.setAttribute("aria-label", `Zone ${zone.logicalZoneId + 1}: ${percent}% full`);
+      card.setAttribute("aria-label", `${timeZoneLabel(zone.logicalZoneId)}, ${percent}% full`);
     }
   }
   private readonly onMapChange = (event: Event): void => {
@@ -208,8 +217,10 @@ export class DemoView {
   private canQueue(index: number): boolean {
     return this.loop.canFuel && (!this.tutorial || this.started && this.tutorial.canQueue(index));
   }
-  private queueFuel(index: number): void {
-    if (this.canQueue(index)) this.loop.fuel(index);
+  private editFuel(index: number): void {
+    if (!this.started || this.tutorial && !this.tutorial.canQueue(index)) return;
+    if (this.loop.waitingFuel.has(index)) this.loop.removeFuel(index);
+    else this.loop.fuel(index);
   }
   private readonly pollGamepad = (): void => {
     let pad: Gamepad | undefined;
@@ -231,7 +242,7 @@ export class DemoView {
         const direction = padDirections.find((_, index) => pressed(index + 12));
         if (direction) this.map?.moveSelection(direction);
         if (pressed(9)) this.loop.togglePause();
-        else if (pressed(0)) this.queueFuel(this.selected);
+        else if (pressed(0)) this.editFuel(this.selected);
         const offset = Number(pressed(5) === true) - Number(pressed(4) === true);
         if (offset) this.setMapMode(mapModes[(mapModes.indexOf(this.mapMode) + offset + mapModes.length) % mapModes.length]);
       }
@@ -247,7 +258,7 @@ export class DemoView {
       case "pause": this.loop.togglePause(); break;
       case "slow": this.loop.toggleSpeed("slow"); break;
       case "fast": this.loop.toggleSpeed("fast"); break;
-      case "fuel": this.queueFuel(this.selected); break;
+      case "fuel": this.editFuel(this.selected); break;
       case "retry": void this.loop.restart(this.loop.snapshot.shift?.seed ?? 1001); break;
       case "new": void this.loop.restart(randomCoreSeed(this.loop.snapshot.shift?.seed)); break;
     }

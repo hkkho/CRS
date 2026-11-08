@@ -45,7 +45,7 @@ it("switches both selected zone histories immediately, retaining the core averag
   trends.update(snapshot, .05, 0);
   const original = paths();
   expect(original).toHaveLength(3);
-  expect(trends.element.querySelector("[data-trend-end-b]")?.textContent).toBe("End B · Z8");
+  expect(trends.element.querySelector("[data-trend-end-b]")?.textContent).toBe("End B · Z9");
 
   trends.update(snapshot, .06, 1);
   const switched = paths();
@@ -53,8 +53,8 @@ it("switches both selected zone histories immediately, retaining the core averag
   expect(switched[0]).toBe(original[0]);
   expect(switched[1]).not.toBe(original[1]);
   expect(switched[2]).toBe("M38.0,95.1 L48.5,68.2");
-  expect(trends.element.querySelector("[data-trend-end-a]")?.textContent).toBe("End A · Z3");
-  expect(trends.element.querySelector("[data-trend-end-b]")?.textContent).toBe("End B · Z10");
+  expect(trends.element.querySelector("[data-trend-end-a]")?.textContent).toBe("End A · Z5");
+  expect(trends.element.querySelector("[data-trend-end-b]")?.textContent).toBe("End B · Z12");
   expect(trends.element.querySelector("[data-zone-trend-reading]")?.textContent).toContain("End A: 32.0% · End B: 60.0%");
 
   trends.update(snapshot, .06, 2);

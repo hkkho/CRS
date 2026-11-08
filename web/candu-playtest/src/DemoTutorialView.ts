@@ -15,14 +15,14 @@ const lessons: readonly { title: string; map: TimeMapMode; text: string }[] = [
     text: "Ripple compares a channel’s power with its fixed time-average reference. At 100% it matches that reference. A channel below its reference may have room for fresh fuel, but check its absolute power and its neighbours too. The game awards operating points for keeping the highest ripple low." },
   { title: "Follow the outgoing fuel", map: "burnup",
     text: "Burnup is accumulated thermal energy per kilogram of heavy metal. The map averages all twelve bundles. A move pushes eight bundles out in the channel’s flow direction and shifts the four retained bundles to new positions. Use the outgoing average to compare candidates. Each outgoing bundle scores its burnup in MWd/kg minus 6." },
-  { title: "Read liquid-zone headroom", map: "paired-zones",
-    text: "Each map cell shows the zones at its two ends. The regulator changes water fill to absorb more or fewer neutrons. Fresh fuel usually adds reactivity, so look for room to add water and watch for uneven fills. The core average sets one game limit. Individual fills show where the regulator has room to act." },
+  { title: "Read liquid-zone headroom", map: "inlet-zones",
+    text: "Each map cell shows the inlet zone. Flow alternates between neighbours, and six of the eight fresh bundles go into the inlet half. The regulator varies water fill to absorb neutrons. Look for room to add water near the fresh fuel and check the core average. The trends show both ends." },
   { title: "Read tilt, multiplication and poison", map: "power",
     text: "Global axial tilt shows which end carries more thermal flux. Positive means End B and negative means End A. Keff measures neutron multiplication. At 1 the neutron population is steady. Iodine decays into neutron-absorbing xenon, which changes reactivity and the power distribution as its concentration changes." },
   { title: "Check all four operating limits", map: "power",
     text: "Check the whole core before committing. The game checks the solved fuel batch and the half-day endpoint. Equality at a limit is allowed. A solved state outside a limit ends the run, and a numerical rejection leaves the previous state available for inspection." },
   { title: "Compare two channels and refuel one", map: "burnup",
-    text: "Look for high outgoing burnup with room below the power limits. Check ripple and both zone fills. Fresh fuel can raise power in nearby channels too. Engineers and physicists use core models to assess predicted power and burnup distributions against plant limits. Compare the current readings below, queue one channel and advance 12 hours." },
+    text: "Look for high outgoing burnup with room below the power limits. Check ripple and inlet zone fill. Fresh fuel can raise power in nearby channels too. Engineers and physicists use core models to assess predicted power and burnup distributions against plant limits. Compare the current readings below, queue one channel and advance 12 hours." },
   { title: "Review the solved result", map: "power",
     text: "Compare the result with the starting readings. Trends plot selected-channel power and zone fills over simulated time. The score includes outgoing burnup minus fuel cost, the zone balance after refuelling, and operating points from ripple and tilt. In regular play, each half-day takes 7.5 seconds at normal speed. Pause to inspect the core." },
 ];
@@ -71,7 +71,10 @@ export class DemoTutorialView {
     this.previous.textContent = "Back a lesson";
     this.remove.textContent = "Remove order";
     this.previous.onclick = () => this.openLesson(this.step - 1);
-    this.remove.onclick = () => this.loop.clearStepOrder();
+    this.remove.onclick = () => {
+      const [index] = this.loop.waitingFuel;
+      if (index !== undefined) this.loop.removeFuel(index);
+    };
     this.retry.onclick = () => { void this.restart(); };
     this.next.onclick = () => {
       if (this.step === result) this.finish();
@@ -133,7 +136,7 @@ export class DemoTutorialView {
       const ripple = snapshot.ripple?.channelRippleFractions[index];
       const exit = exitBurnup(snapshot, candidate);
       card.querySelector("p")!.textContent =
-        `${kw(channelWatts(snapshot, candidate))} channel · ${kw(peakBundle(candidate))} peak bundle · ${ripple === undefined ? "—" : pct(ripple)} ripple · ${exit?.toFixed(2) ?? "—"} MWd/kg outgoing. ${timeMapCell(snapshot, candidate, "paired-zones").reading}.`;
+        `${kw(channelWatts(snapshot, candidate))} channel · ${kw(peakBundle(candidate))} peak bundle · ${ripple === undefined ? "—" : pct(ripple)} ripple · ${exit?.toFixed(2) ?? "—"} MWd/kg outgoing. ${timeMapCell(snapshot, candidate, "inlet-zones").reading}.`;
     });
     this.previous.hidden = this.step === 0 || !!solved;
     this.previous.disabled = busy || waiting;
@@ -184,7 +187,7 @@ export class DemoTutorialView {
         const plan = snapshot.refuellingPlans?.find(p => p.shiftCount === 8 && p.directionId === channel.flowDirection);
         return `${label} · ${channel.averageBurnupMwdPerKg.toFixed(2)} MWd/kg across all bundles · ${outgoing?.toFixed(2) ?? "—"} MWd/kg outgoing${plan ? ` at End ${plan.outgoingEnd}` : ""}.`;
       }
-      case 3: return `${label} · ${timeMapCell(snapshot, channel, "paired-zones").reading}. Core average ${pct(snapshot.rrs.averageFillFraction)} · individual fills ${pct(snapshot.rrs.minimumFillFraction)} to ${pct(snapshot.rrs.maximumFillFraction)}.`;
+      case 3: return `${label} · ${timeMapCell(snapshot, channel, "inlet-zones").reading}. Core average ${pct(snapshot.rrs.averageFillFraction)} · individual fills ${pct(snapshot.rrs.minimumFillFraction)} to ${pct(snapshot.rrs.maximumFillFraction)}.`;
       case 4: return `Core tilt ${pct(snapshot.axialTiltFraction)} · Keff ${snapshot.physics.effectiveK.toFixed(6)}. ${label} average iodine ${channel.xenon.meanI135NumberDensityM3.toExponential(2)} and xenon ${channel.xenon.meanXe135NumberDensityM3.toExponential(2)} atoms/m³.`;
       case 5: return `Core average fill ${pct(snapshot.rrs.averageFillFraction)} (10–90%) · tilt ${pct(snapshot.axialTiltFraction)} (−20% to +20%) · peak channel ${kw(Math.max(...snapshot.core.channels.map(c => channelWatts(snapshot, c))))} (limit ${kw(channelLimit(snapshot))}) · peak bundle ${kw(Math.max(...snapshot.core.channels.map(peakBundle)))} (limit ${kw(bundleLimit(snapshot))}).`;
       case result: {
