@@ -2,6 +2,8 @@ import type { CanduSnapshot } from "./protocol";
 import { CUSTOM_PHYSICS_PACK_PREFIX } from "./customPhysics";
 import "./gameUpdate.css";
 
+const updateReady = "A newer game is ready. Preparing to update automatically.";
+
 interface UpdateSession {
   readonly snapshot?: CanduSnapshot;
   readonly isPending?: boolean;
@@ -43,6 +45,7 @@ export class GameUpdateView {
     this.unsubscribe = session.subscribe(() => {
       const readyToUpdate = pending && !session.isPending;
       pending = session.isPending;
+      if (readyToUpdate && this.waiting) this.message.textContent = navigator.onLine ? updateReady : "Reconnect to update the game.";
       this.render();
       if (readyToUpdate) this.apply();
     });
@@ -63,7 +66,7 @@ export class GameUpdateView {
         this.waiting = navigator.serviceWorker.controller ? this.registration?.waiting ?? null : null;
         if (previous === this.waiting) return;
         this.message.hidden = !this.waiting;
-        if (this.waiting) this.message.textContent = "A newer game is ready. Preparing to update automatically.";
+        if (this.waiting) this.message.textContent = updateReady;
         this.render();
         this.apply();
       };

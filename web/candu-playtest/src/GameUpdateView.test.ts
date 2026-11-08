@@ -68,6 +68,44 @@ it("lets the first service worker install without saving or reloading", async ()
   } finally { view.destroy(); }
 });
 
+it("defers an update during the tutorial and resumes after exit and reconnect", async () => {
+  let publish = () => {};
+  const session = {
+    isPending: true,
+    dispose: vi.fn(),
+    subscribe: (listener: () => void) => { publish = listener; return () => {}; },
+  };
+  const waiting = { postMessage: vi.fn((_message, [reply]: MessagePort[]) => {
+    reply.postMessage({ status: "ready" });
+    reply.close();
+  }) };
+  const registration = Object.assign(new EventTarget(), { waiting, unregister: vi.fn(async () => true) });
+  const serviceWorker = Object.assign(new EventTarget(), { controller: {}, register: vi.fn(async () => registration), ready: Promise.resolve() });
+  const network = { onLine: true, serviceWorker };
+  vi.stubGlobal("navigator", network);
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })));
+  const save = vi.fn();
+  const reload = vi.fn();
+  const view = new GameUpdateView(session, save, reload);
+  const dialog = document.querySelector<HTMLDialogElement>(".game-update-progress")!;
+  dialog.showModal = () => { dialog.open = true; };
+  dialog.close = () => { dialog.open = false; };
+  try {
+    await view.initialize("/CRS/");
+    expect(view.element.textContent).toContain("Return to the main screen");
+    expect(waiting.postMessage).not.toHaveBeenCalled();
+    network.onLine = false;
+    session.isPending = false;
+    publish();
+    expect(view.element.textContent).toContain("Reconnect to update the game.");
+    expect(save).not.toHaveBeenCalled();
+    network.onLine = true;
+    window.dispatchEvent(new Event("online"));
+    await vi.waitFor(() => expect(reload).toHaveBeenCalledOnce());
+    expect(save).toHaveBeenCalledOnce();
+  } finally { view.destroy(); }
+});
+
 it("checks for tabs that opened while the checkpoint was being written", async () => {
   const session = { snapshot: createSnapshot(), subscribe: () => () => {}, dispose: vi.fn() };
   const responses = [{ status: "ready" }, { status: "other-tabs", otherTabs: 1 }];
