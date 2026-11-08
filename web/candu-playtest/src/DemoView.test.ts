@@ -2,8 +2,8 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { createCanduPlaytestBridge, type CanduPlaytestBridgeLifecycle } from "./bridge";
 import { DemoView } from "./DemoView";
-import { createSnapshot } from "./testSnapshot";
-import type { BridgeStatus, CanduCommandResponse, CanduSnapshot } from "./protocol";
+import { createShift, createSnapshot } from "./testSnapshot";
+import type { BridgeStatus, CanduCommand, CanduCommandResponse, CanduSnapshot } from "./protocol";
 
 vi.mock("./bridge", () => ({ createCanduPlaytestBridge: vi.fn() }));
 let view: DemoView;
@@ -100,7 +100,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(cell.textContent).toBe(text); // No fabricated power response while solving.
   expect(cell.dataset.planned).toBe("true");
   expect(view.element.querySelector("[data-fuel-queue]")?.textContent).toBe("0 waiting · 2 submitted");
-  expect(view.element.querySelector("dialog")).toBeNull();
+  expect(view.element.querySelector("dialog[open]")).toBeNull();
   expect(view.element.querySelector("[data-live]")?.textContent).toBe("Live power");
   expect(view.element.querySelectorAll("[data-zone]")).toHaveLength(14);
   expect(cell.dataset.demoAlert).toBe("flash");
@@ -108,7 +108,10 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(view.element.querySelector<HTMLElement>('[data-zone="0"]')?.dataset.demoAlert).toBe("shake");
   expect(view.element.querySelector<HTMLElement>('[data-zone="1"]')?.dataset.demoAlert).toBe("flash");
   expect(view.element.querySelector('[data-zone-risk]')?.textContent).toContain("4.0 percentage points");
-  expect(view.element.querySelector("[data-zone-mean]")?.textContent).toContain("%");
+  const average = view.element.querySelector("[data-zone-mean]")!;
+  expect(average.textContent).toBe("14.0%");
+  expect(average.parentElement?.previousElementSibling?.querySelector("[data-peak]")).toBeTruthy();
+  expect(average.parentElement?.nextElementSibling?.querySelector("[data-score]")).toBeTruthy();
   const other = view.element.querySelector<HTMLButtonElement>('[data-channel="211"]')!;
   other.click(); expect(other.getAttribute("aria-pressed")).toBe("true");
   expect(view.element.querySelector('.demo-hud [data-power]')?.textContent).toBe("7050");
@@ -118,7 +121,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(cell.dataset.planned).toBe("true"); // Remains queued until the displayed endpoint.
   expect(second.dataset.planned).toBe("true");
   expect(view.element.querySelector('[data-message]')?.textContent).not.toContain("Power updated");
-  const tabs = [...view.element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const tabs = [...view.element.querySelectorAll<HTMLButtonElement>(".demo-map-tabs [role=tab]")];
   expect(tabs.map(tab => tab.textContent)).toEqual(["Power", "Ripple", "Burnup", "Inlet zones"]);
   const panel = view.element.querySelector('[role="tabpanel"]')!;
   for (const value of ["ripple", "burnup", "inlet-zones", "power"]) {
@@ -137,6 +140,51 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
     expect(tabs[index].getAttribute("aria-selected")).toBe("true");
     expect(panel.getAttribute("aria-labelledby")).toBe(tabs[index].id);
   }
+});
+
+it("opens the result after Start and keeps restart choices available when a retry fails", async () => {
+  const seed = 77;
+  const snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", completedDays: 0,
+    shift: { ...createShift(), seed } };
+  const terminal: CanduSnapshot = { ...snapshot, runStatus: "ended", runEndReason: "Channel power exceeds 7,100 kW" };
+  let accept = false;
+  const bridge: ReturnType<typeof createCanduPlaytestBridge> = {
+    status: { source: "wasm", title: "", detail: "", isWasmAvailable: true, capabilities: [] },
+    getSnapshot: () => terminal, subscribe: () => () => {}, initializeMode: async () => terminal,
+    whenReady: async () => terminal, dispose: vi.fn(),
+    dispatch: vi.fn(async (command: CanduCommand): Promise<CanduCommandResponse> => ({ protocol: "candu-playtest-v2", command, accepted: accept,
+      message: "Core could not be prepared.", diagnostics: [], sequence: 1, stateDigest: "test", snapshot })),
+  };
+  vi.mocked(createCanduPlaytestBridge).mockReturnValue(bridge);
+  view = new DemoView(document.body, seed, vi.fn());
+  const dialog = view.element.querySelector<HTMLDialogElement>(".demo-end-dialog")!;
+  expect(dialog.open).toBe(false);
+  view.element.querySelector<HTMLButtonElement>("[data-game-start]")!.click();
+  expect(dialog.open).toBe(true);
+  expect(dialog.querySelector("#demo-end-reason")?.textContent).toBe(terminal.runEndReason);
+  expect(view.element.querySelector("[data-message]")?.textContent).toBe("");
+
+  const result = view.element.querySelector<HTMLButtonElement>("[data-action=result]")!;
+  dialog.removeAttribute("open");
+  dialog.dispatchEvent(new Event("close"));
+  expect(document.activeElement).toBe(result);
+  result.click();
+  expect(dialog.open).toBe(true);
+
+  const retry = dialog.querySelector<HTMLButtonElement>("[data-action=retry-ended]")!;
+  retry.click();
+  expect(retry.disabled).toBe(true);
+  await vi.waitFor(() => expect(retry.disabled).toBe(false));
+  expect(dialog.querySelector("[data-restart-status]")?.textContent).toBe("Core could not be prepared.");
+  expect(bridge.dispatch).toHaveBeenLastCalledWith(expect.objectContaining({ type: "reset", seed }), { responseMode: "compact" });
+  expect(dialog.open).toBe(true);
+
+  accept = true;
+  dialog.querySelector<HTMLButtonElement>("[data-action=new-ended]")!.click();
+  expect(bridge.dispatch).toHaveBeenLastCalledWith(expect.objectContaining({ type: "reset", seed: expect.any(Number) }), { responseMode: "compact" });
+  expect(vi.mocked(bridge.dispatch).mock.lastCall?.[0]).not.toMatchObject({ seed });
+  await vi.waitFor(() => expect(dialog.open).toBe(false));
+  expect(result.hidden).toBe(true);
 });
 
 it("routes standard controller presses through the same map, fuel, and pause controls", async () => {

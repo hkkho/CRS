@@ -26,6 +26,16 @@ export function interpolateDemo(from: CanduSnapshot, to: CanduSnapshot, fraction
   };
 }
 
+export function nextTabIndex(event: KeyboardEvent, current: number, count: number): number | undefined {
+  if (event.altKey || event.ctrlKey || event.metaKey) return;
+  switch (event.key) {
+    case "ArrowLeft": return (current - 1 + count) % count;
+    case "ArrowRight": return (current + 1) % count;
+    case "Home": return 0;
+    case "End": return count - 1;
+  }
+}
+
 export function demoPowerAlert(watts: number): "normal" | "flash" | "shake" {
   return watts > 7_000_000 ? "shake" : watts > 6_500_000 ? "flash" : "normal";
 }

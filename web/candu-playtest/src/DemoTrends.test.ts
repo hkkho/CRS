@@ -26,6 +26,22 @@ it("keeps bounded displayed history, changes channel traces, and resets on timel
   expect(trends.element.querySelector('[data-zone-trend-reading]')?.textContent).toContain("9.0%");
 });
 
+it("shows one trend panel and moves focus when the active tab changes", () => {
+  const trends = new DemoTrends();
+  document.body.append(trends.element);
+  const tabs = [...trends.element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  const panels = [...trends.element.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+  expect(panels.map(panel => panel.hidden)).toEqual([false, true]);
+  tabs[1].click();
+  expect(tabs.map(tab => tab.getAttribute("aria-selected"))).toEqual(["false", "true"]);
+  expect(panels.map(panel => panel.hidden)).toEqual([true, false]);
+  tabs[1].focus();
+  tabs[1].dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+  expect(panels.map(panel => panel.hidden)).toEqual([false, true]);
+  expect(document.activeElement).toBe(tabs[0]);
+  trends.element.remove();
+});
+
 it("switches both selected zone histories immediately, retaining the core average", () => {
   const snapshot = createSnapshot();
   for (const [index, pair] of [[0, [0, 7]], [1, [2, 9]]] as const) {

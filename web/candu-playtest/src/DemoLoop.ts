@@ -122,7 +122,7 @@ export class DemoLoop {
   private initialize(snapshot: CanduSnapshot): void {
     this.snapshot = this.solved = this.from = snapshot;
     this.active = this.buffered = undefined; this.elapsed = 0; this.lastTime = this.now();
-    this.ready = true; this.faulted = false; this.message = "Double-click a channel to queue or remove a fuel order.";
+    this.ready = true; this.faulted = false; this.message = "";
   }
   get isReady(): boolean { return this.ready; }
   get loadError(): string | undefined { return this.faulted ? this.message : undefined; }
@@ -176,7 +176,7 @@ export class DemoLoop {
   togglePause(): void {
     if (!this.canTogglePause) return;
     this.running = !this.running; this.lastTime = this.now();
-    this.message = this.running ? "Double-click a channel to queue or remove a fuel order." : "Paused · edit waiting orders before resuming.";
+    this.message = "";
     this.emit();
   }
   toggleSpeed(speed: "slow" | "fast"): void {
@@ -229,11 +229,11 @@ export class DemoLoop {
       this.snapshot = interpolateDemo(this.from, this.active.snapshot, this.dayProgress);
       if (this.elapsed === duration) {
         for (const index of this.active.fuel) this.pending.delete(index);
-        this.message = this.pending.size ? `${this.pending.size} fuel orders pending.` : "Double-click a channel to queue or remove a fuel order.";
+        this.message = "";
         this.from = this.snapshot; this.active = undefined;
         if (isRunTerminal(this.snapshot)) {
           this.running = false; this.waitingFuel.clear(); this.pending.clear();
-          this.message = "Run ended. Retry the seed or start a new core."; this.emit(); return;
+          this.emit(); return;
         }
       }
     }

@@ -2,6 +2,7 @@ import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelWatts } from "./studio/powerReadings";
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { channelZonePair, timeZoneLabel } from "./timeMapPresentation";
+import { nextTabIndex } from "./demoPresentation";
 
 type Sample = { day: number; peak: number; powers: number[]; mean: number; zoneFills: number[] };
 const MAX_SAMPLES = 241;
@@ -13,13 +14,39 @@ export class DemoTrends {
   private samples: Sample[] = [];
   private seed?: number;
   private selected = -1;
+  private activeTab = 0;
 
   constructor() {
     this.element.className = "demo-trends";
     this.element.setAttribute("aria-label", "Live trend plots");
-    this.element.innerHTML = `<h2>Live trends</h2><p class="demo-trend-note">Recent displayed days</p>
-      <section class="demo-trend-card"><h3>Channel power <small>kW</small></h3><p class="demo-trend-key"><span class="trend-selected" data-trend-channel>Selected</span><span class="trend-peak">Core peak</span></p><svg data-chart="power" viewBox="0 0 260 180" role="img" aria-label="Selected channel and peak power history"></svg><p data-power-trend-reading></p></section>
-      <section class="demo-trend-card"><h3>Average zone level <small>%</small></h3><p class="demo-trend-key"><span class="trend-mean">Core average</span><span class="trend-end-a" data-trend-end-a></span><span class="trend-end-b" data-trend-end-b></span></p><svg data-chart="zones" viewBox="0 0 260 180" role="img" aria-label="Core average and selected channel End A and End B liquid zone history, with 10 and 90 percent limits"></svg><p data-zone-trend-reading></p><p class="demo-trend-note">Dashed lines: 10% / 90% limits</p></section>`;
+    this.element.innerHTML = `<h2>Live trends</h2>
+      <div class="demo-tabs demo-trend-tabs" role="tablist" aria-label="Live trends">
+        <button type="button" id="demo-trend-power" role="tab" aria-selected="true" aria-controls="demo-trend-power-panel">Power</button>
+        <button type="button" id="demo-trend-zones" role="tab" aria-selected="false" aria-controls="demo-trend-zones-panel" tabindex="-1">Zone fills</button>
+      </div>
+      <section class="demo-trend-card" id="demo-trend-power-panel" role="tabpanel" aria-labelledby="demo-trend-power" tabindex="0"><h3>Channel power <small>kW</small></h3><p class="demo-trend-key"><span class="trend-selected" data-trend-channel>Selected</span><span class="trend-peak">Core peak</span></p><svg data-chart="power" viewBox="0 0 260 180" role="img" aria-label="Selected channel and peak power history"></svg><p data-power-trend-reading></p></section>
+      <section class="demo-trend-card" id="demo-trend-zones-panel" role="tabpanel" aria-labelledby="demo-trend-zones" tabindex="0" hidden><h3>Liquid-zone fill <small>%</small></h3><p class="demo-trend-key"><span class="trend-mean">Core average</span><span class="trend-end-a" data-trend-end-a></span><span class="trend-end-b" data-trend-end-b></span></p><svg data-chart="zones" viewBox="0 0 260 180" role="img" aria-label="Core average and selected channel End A and End B liquid zone history, with 10 and 90 percent limits"></svg><p data-zone-trend-reading></p><p class="demo-trend-note">Dashed lines: 10% / 90% limits</p></section>`;
+    const tablist = this.element.querySelector('[role="tablist"]')!;
+    const tabs = [...tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...this.element.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    const selectTab = (index: number) => {
+      this.activeTab = index;
+      tabs.forEach((tab, i) => {
+        const selected = i === index;
+        tab.setAttribute("aria-selected", String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        panels[i].hidden = !selected;
+      });
+    };
+    tabs.forEach((tab, i) => tab.addEventListener("click", () => selectTab(i)));
+    tablist.addEventListener("keydown", event => {
+      const key = event as KeyboardEvent;
+      const next = nextTabIndex(key, this.activeTab, tabs.length);
+      if (next === undefined) return;
+      key.preventDefault();
+      selectTab(next);
+      tabs[next].focus();
+    });
   }
 
   update(snapshot: CanduSnapshot, day: number, selected: number, paused = false): void {

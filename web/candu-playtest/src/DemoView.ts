@@ -11,7 +11,7 @@ import { GameLoadingView } from "./GameLoadingView";
 import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelLimit, channelWatts } from "./studio/powerReadings";
 import { refuellingZoneReadings, renderTimeMapScale, timeMapCell, timeMapLegend, timeZoneLabel, zoneDisplayOrder, type TimeMapMode } from "./timeMapPresentation";
-import { zoneAlert } from "./demoPresentation";
+import { nextTabIndex, zoneAlert } from "./demoPresentation";
 import "./arcade.css";
 import "./demo.css";
 
@@ -30,6 +30,8 @@ export class DemoView {
   private readonly tutorial?: DemoTutorialView;
   private readonly unsubscribe: () => void;
   private readonly mapTabs: HTMLButtonElement[];
+  private readonly endDialog: HTMLDialogElement;
+  private endPresented = false;
   private map?: ArcadeMap;
   private readonly trends = new DemoTrends();
   private selected = 0;
@@ -58,18 +60,35 @@ export class DemoView {
         </button>
         <button type="button" data-action="fast" aria-label="1.5× speed (5 seconds per half-day)" aria-pressed="false" title="1.5× · 5 seconds per half-day. Press again for normal speed.">1.5×</button>
       </div><button data-action="leave">Main screen</button></nav></header>
-      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span><span data-selected-zone hidden></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
+      <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div class="demo-zone-mean"><span>AVG. ZONE FILL</span><strong data-zone-mean>—</strong><small data-zone-risk></small></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span><span data-selected-zone hidden></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
       <progress class="demo-clock" max="1" value="0" aria-label="Time step progress"></progress>
       <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading">
-        <div class="demo-map-tabs" role="tablist" aria-label="Core map">${maps.map(([mode, label]) => `
+        <div class="demo-tabs demo-map-tabs" role="tablist" aria-label="Core map">${maps.map(([mode, label]) => `
           <button type="button" role="tab" id="demo-map-${mode}" data-action="map" data-map-tab="${mode}" aria-controls="demo-map-panel" aria-selected="${mode === this.mapMode}" tabindex="${mode === this.mapMode ? 0 : -1}">${label}</button>`).join("")}</div>
         <span data-live>Preparing core…</span></div>
         <div id="demo-map-panel" role="tabpanel" aria-labelledby="demo-map-power">
           <div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p>
         </div>
-        <div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p></div><p class="demo-queue-key"><span>Yellow inset: waiting</span> &middot; <span>Blue inset: submitted</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue or remove <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue or remove <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
-      <aside class="demo-readout"><section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2><div class="demo-zone-mean"><span>CORE AVERAGE</span><strong data-zone-mean>—</strong><p data-zone-risk></p></div><div class="demo-zone-grid">${zoneDisplayOrder.map((id, i) => `<div class="demo-zone" data-zone="${id}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div><p class="demo-help">Average must stay within 10–90%. Amber near an edge; red below 15% or above 85%. Individual zones show remaining control room.</p></section><p>Keep peak power and average liquid-zone fill within their limits. Double-click or use Queue fuel to order eight fresh bundles. You can queue or remove waiting orders while paused.</p><p data-message role="status"></p><p data-ended role="status"></p><div class="demo-retry"><button data-action="retry">Retry seed</button><button data-action="new">New core</button></div><p class="demo-help">Pause to stop the clock.</p></aside></section>`;
-    this.element.querySelector(".demo-workspace")!.append(this.trends.element);
+        <div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p><p data-message role="status"></p></div><p class="demo-queue-key"><span>Yellow inset: waiting</span> &middot; <span>Blue inset: submitted</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue or remove <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue or remove <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
+        <div class="demo-readout">
+          <section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2>
+            <div class="demo-zone-grid">${zoneDisplayOrder.map((id, i) => `<div class="demo-zone" data-zone="${id}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div>
+          </section>
+          <div class="demo-retry"><button type="button" data-action="retry">Retry seed</button><button type="button" data-action="new">New core</button><button type="button" data-action="result" hidden>Run result</button></div>
+        </div>
+      </section>
+      <dialog class="demo-end-dialog" aria-labelledby="demo-end-title" aria-describedby="demo-end-reason">
+        <h2 id="demo-end-title">Run ended</h2><p id="demo-end-reason"></p>
+        <p data-restart-status role="status"></p>
+        <div class="demo-end-actions">
+          <button type="button" class="arcade-primary" data-action="retry-ended" autofocus>Retry seed</button>
+          <button type="button" data-action="new-ended">New core</button>
+          <button type="button" data-action="leave-ended">Main screen</button>
+        </div>
+      </dialog>`;
+    this.field(".demo-retry").before(this.trends.element);
+    this.endDialog = this.field(".demo-end-dialog");
+    this.endDialog.addEventListener("close", this.onEndDialogClose);
     this.field(".demo-command-deck").insertAdjacentHTML("beforeend", `<details class="demo-zone-receipt" data-fuel-zone-response hidden>
       <summary>Zone response to last fuel batch</summary>
       <p>Before refuelling → After refuelling → End of step</p><p data-fuel-zone-values></p>
@@ -87,7 +106,6 @@ export class DemoView {
       this.text("h1", "Guided refuelling");
       this.field(".demo-playback").hidden = true;
       this.field(".demo-retry").hidden = true;
-      this.field(".demo-readout > .demo-help").hidden = true;
       const controllerHint = this.field("[data-gamepad-hint]");
       controllerHint.lastChild?.remove();
       controllerHint.querySelector("kbd:last-of-type")?.remove();
@@ -104,8 +122,11 @@ export class DemoView {
       if (this.tutorial) this.tutorial.begin();
       else {
         onStart?.();
-        this.loop.togglePause();
-        this.map?.focusSelected();
+        if (isRunTerminal(this.loop.snapshot)) this.render();
+        else {
+          this.loop.togglePause();
+          this.map?.focusSelected();
+        }
       }
     }, this.leave);
     this.unsubscribe = this.loop.subscribe(() => this.render());
@@ -133,7 +154,7 @@ export class DemoView {
     this.element.dataset.solving = String(loop.busy);
     this.element.dataset.running = String(loop.running);
     this.field<HTMLProgressElement>("progress").value = loop.dayProgress;
-    this.text("[data-live]", !loop.isReady ? "Preparing core…" : ended ? "Run ended" : this.tutorial
+    this.text("[data-live]", !loop.isReady ? "Preparing core…" : ended ? "Final core" : this.tutorial
       ? loop.busy ? "Calculating…" : "Tutorial · paused" : !loop.running ? "Paused" : "Live power");
     const minutes = Math.floor(loop.playbackDay * 24 * 60);
     this.text("[data-day]", shiftTime(minutes));
@@ -142,11 +163,10 @@ export class DemoView {
     this.text("[data-score-rate]", ripple?.ripplePointsPerHour !== undefined && ripple.tiltPointsPerHour !== undefined
       ? `Ripple ${ripple.ripplePointsPerHour.toFixed(2)} · Tilt ${ripple.tiltPointsPerHour.toFixed(2)} pts/h`
       : "");
-    this.text("[data-message]", loop.message);
+    this.text("[data-message]", ended ? "" : loop.message);
     const waiting = loop.waitingFuel.size, pending = loop.pendingFuel.length;
     this.text("[data-fuel-queue]", pending ? `${waiting} waiting · ${pending - waiting} submitted` : "Queue empty");
     this.renderFuelReceipt(snapshot);
-    this.text("[data-ended]", ended ? `Run ended: ${snapshot.runEndReason}.${this.tutorial ? "" : " Retry to play again."}` : "");
     const playbackDisabled = !this.started || !loop.canTogglePause;
     const pause = this.field<HTMLButtonElement>("[data-action=pause]");
     const pauseLabel = ended ? "Run ended" : loop.running ? "Pause" : "Resume";
@@ -158,7 +178,14 @@ export class DemoView {
       button.disabled = playbackDisabled;
       button.setAttribute("aria-pressed", String(loop.speed === speed));
     }
-    for (const action of ["retry", "new"]) this.field<HTMLButtonElement>(`[data-action=${action}]`).disabled = !this.started || !loop.isReady || loop.busy;
+    const restartDisabled = !this.started || !loop.isReady || loop.busy;
+    for (const action of ["retry", "new"]) {
+      const button = this.field<HTMLButtonElement>(`[data-action=${action}]`);
+      button.hidden = ended;
+      button.disabled = restartDisabled;
+      this.field<HTMLButtonElement>(`[data-action=${action}-ended]`).disabled = restartDisabled;
+    }
+    this.renderRunEnd(ended);
     const selected = snapshot.core.channels.find(c => c.channelIndex === this.selected);
     const fuel = this.field<HTMLButtonElement>("[data-action=fuel]");
     const removal = !this.tutorial && loop.waitingFuel.has(this.selected);
@@ -193,6 +220,37 @@ export class DemoView {
       this.renderZones(snapshot);
     }
   }
+  private renderRunEnd(ended: boolean): void {
+    if (this.tutorial) return;
+    this.field("[data-action=result]").hidden = !ended;
+    if (!ended) {
+      this.endPresented = false;
+      if (this.endDialog.open) this.closeEndDialog();
+      return;
+    }
+    this.text("#demo-end-reason", this.loop.snapshot.runEndReason || "The run reached its end.");
+    if (this.started && !this.endPresented) this.showEndDialog();
+  }
+  private showEndDialog(): void {
+    if (this.endDialog.open) return;
+    this.endPresented = true;
+    if (typeof this.endDialog.showModal === "function") this.endDialog.showModal();
+    else this.endDialog.setAttribute("open", "");
+  }
+  private closeEndDialog(): void {
+    if (typeof this.endDialog.close === "function") this.endDialog.close();
+    else this.endDialog.removeAttribute("open");
+  }
+  private readonly onEndDialogClose = (): void => {
+    if (isRunTerminal(this.loop.snapshot)) this.field("[data-action=result]").focus({ preventScroll: true });
+  };
+  private async restart(seed: number, fromResult: boolean): Promise<void> {
+    if (fromResult) this.text("[data-restart-status]", "Preparing core…");
+    const restarted = await this.loop.restart(seed);
+    if (!fromResult || !this.element.isConnected) return;
+    this.text("[data-restart-status]", restarted ? "" : this.loop.message || "Unable to restart the core.");
+    if (restarted && !isRunTerminal(this.loop.snapshot)) this.map?.focusSelected();
+  }
   private renderFuelReceipt(snapshot: CanduSnapshot): void {
     const result = snapshot.lastDayResult;
     if (result === this.lastReceiptResult) return;
@@ -219,9 +277,10 @@ export class DemoView {
   private renderZones(snapshot: CanduSnapshot): void {
     const mean = snapshot.rrs.averageFillFraction;
     this.text("[data-zone-mean]", `${(mean * 100).toFixed(1)}%`);
-    this.field(".demo-zone-mean").dataset.demoAlert = zoneAlert(mean);
+    const alert = zoneAlert(mean);
+    this.field(".demo-zone-mean").dataset.demoAlert = alert;
     const margin = Math.min(mean - .1, .9 - mean) * 100;
-    this.text("[data-zone-risk]", margin < 0 ? "Outside operating range" : `${margin.toFixed(1)} percentage points to ${mean < .5 ? "lower" : "upper"} limit`);
+    this.text("[data-zone-risk]", alert === "normal" ? "" : margin < 0 ? "Outside operating range" : `${margin.toFixed(1)} percentage points to ${mean < .5 ? "lower" : "upper"} limit`);
     for (const zone of snapshot.rrs.zones) {
       const card = this.element.querySelector<HTMLElement>(`[data-zone="${zone.logicalZoneId}"]`);
       if (!card) continue;
@@ -234,16 +293,8 @@ export class DemoView {
     }
   }
   private readonly onMapTabKey = (event: KeyboardEvent): void => {
-    if (event.altKey || event.ctrlKey || event.metaKey) return;
-    const current = mapModes.indexOf(this.mapMode);
-    let next: number;
-    switch (event.key) {
-      case "ArrowLeft": next = (current - 1 + mapModes.length) % mapModes.length; break;
-      case "ArrowRight": next = (current + 1) % mapModes.length; break;
-      case "Home": next = 0; break;
-      case "End": next = mapModes.length - 1; break;
-      default: return;
-    }
+    const next = nextTabIndex(event, mapModes.indexOf(this.mapMode), mapModes.length);
+    if (next === undefined) return;
     event.preventDefault();
     this.setMapMode(mapModes[next]);
     this.mapTabs[next].focus();
@@ -282,6 +333,14 @@ export class DemoView {
       if (!this.started) {
         const start = this.element.querySelector<HTMLButtonElement>("[data-game-start]");
         if ((pressed(0) || pressed(9)) && start && !start.disabled && !start.hidden) start.click();
+      } else if (this.endDialog.open) {
+        const choices = [...this.endDialog.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+        const current = choices.findIndex(button => button === document.activeElement);
+        const offset = Number(!!(pressed(13) || pressed(15))) - Number(!!(pressed(12) || pressed(14)));
+        if (offset && choices.length) choices[(Math.max(current, 0) + offset + choices.length) % choices.length].focus();
+        if (pressed(0)) (choices.find(button => button === document.activeElement) ?? choices[0])?.click();
+      } else if (!this.tutorial && isRunTerminal(this.loop.snapshot)) {
+        if (pressed(0) || pressed(9)) this.showEndDialog();
       } else {
         const direction = padDirections.find((_, index) => pressed(index + 12));
         if (direction) this.map?.moveSelection(direction);
@@ -298,7 +357,9 @@ export class DemoView {
     const action = (event.target as Element).closest<HTMLButtonElement>("[data-action]");
     if (!action || action.disabled) return;
     switch (action.dataset.action) {
-      case "leave": this.leave(); break;
+      case "leave":
+      case "leave-ended": this.leave(); break;
+      case "result": this.showEndDialog(); break;
       case "pause": this.loop.togglePause(); break;
       case "slow": this.loop.toggleSpeed("slow"); break;
       case "fast": this.loop.toggleSpeed("fast"); break;
@@ -308,10 +369,12 @@ export class DemoView {
         break;
       }
       case "fuel": this.editFuel(this.selected); break;
-      case "retry": void this.loop.restart(this.loop.snapshot.shift?.seed ?? 1001); break;
-      case "new": void this.loop.restart(randomCoreSeed(this.loop.snapshot.shift?.seed)); break;
+      case "retry":
+      case "retry-ended": void this.restart(this.loop.snapshot.shift?.seed ?? 1001, action.dataset.action === "retry-ended"); break;
+      case "new":
+      case "new-ended": void this.restart(randomCoreSeed(this.loop.snapshot.shift?.seed), action.dataset.action === "new-ended"); break;
     }
   };
   private readonly onVisibility = (): void => this.loop.setVisible(document.visibilityState !== "hidden");
-  destroy(): void { clearInterval(this.gamepadTimer); this.loading?.destroy(); this.unsubscribe(); this.loop.destroy(); this.map?.destroy(); document.removeEventListener("visibilitychange", this.onVisibility); this.element.removeEventListener("click", this.onClick); this.field(".demo-map-tabs").removeEventListener("keydown", this.onMapTabKey); this.element.remove(); }
+  destroy(): void { clearInterval(this.gamepadTimer); this.loading?.destroy(); this.unsubscribe(); this.loop.destroy(); this.map?.destroy(); document.removeEventListener("visibilitychange", this.onVisibility); this.element.removeEventListener("click", this.onClick); this.field(".demo-map-tabs").removeEventListener("keydown", this.onMapTabKey); this.endDialog.removeEventListener("close", this.onEndDialogClose); if (this.endDialog.open) this.closeEndDialog(); this.element.remove(); }
 }

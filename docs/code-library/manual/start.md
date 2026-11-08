@@ -4,6 +4,8 @@
 2. Press **Start** and inspect the core map and liquid-zone levels. Each simulated half-day takes 7.5 seconds to display when the next solution is ready. Choose **0.5×** for 10 seconds or **1.5×** for 5 seconds. Press the selected speed again to return to normal.
 3. Queue fuel when a channel needs it. Use **Pause** to inspect the core and edit waiting orders without advancing playback. Yellow insets mark waiting orders. Blue insets mark orders already submitted to the solver. **Retry seed** repeats the starting core and **New core** draws a different seed.
 
+If the run ends, the result dialog gives the reason and offers **Retry seed**, **New core** or **Main screen**. Press Escape to inspect the final core. **Run result** reopens the dialog.
+
 ## Tutorial
 
 Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the starting state while you explore the readings and game limits. After comparing two channels, queue one and advance 12 simulated hours. Use **Try the other channel** to repeat the exercise from the same starting state and compare the outcomes.

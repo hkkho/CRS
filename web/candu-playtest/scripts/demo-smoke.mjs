@@ -71,7 +71,11 @@ try {
   if (await page.locator('.demo-zone-grid [data-zone]').count() !== 14) throw new Error('Missing liquid zones');
   if (await page.locator('.reactor-demo .core-map-zoom').count()) throw new Error('Demo retained zoom controls');
   if ((await page.locator('.reactor-demo .arcade-map [data-channel="210"]').innerText()) !== '') throw new Error('Demo channel still contains a power label');
-  if (await page.locator('.demo-trends svg').count() !== 2) throw new Error('Missing live plots');
+  const trendTabs = page.getByRole('tablist', { name: 'Live trends' });
+  await trendTabs.getByRole('tab', { name: 'Zone fills' }).click();
+  if (!await page.locator('[data-chart=zones]').isVisible() || await page.locator('[data-chart=power]').isVisible()) throw new Error('Zone trend did not replace power');
+  await trendTabs.getByRole('tab', { name: 'Zone fills' }).press('ArrowLeft');
+  if (!await page.locator('[data-chart=power]').isVisible() || await page.locator('[data-chart=zones]').isVisible()) throw new Error('Power trend did not replace zone fills');
   if (!await page.evaluate(() => document.querySelector('.reactor-demo [data-map]').clientWidth >= document.querySelector('.demo-core').clientWidth * .98)) throw new Error('Core map does not fill its available panel');
   if (!await page.evaluate(() => document.querySelector('.demo-selected-hud').getBoundingClientRect().height < 100)) throw new Error('Selected channel header is wrapping excessively');
   // Queue several channels early in playback, while its successor is solving or buffered.
@@ -149,10 +153,12 @@ try {
     await page.setViewportSize({ width, height: 844 });
     if (!await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.reactor-demo').scrollWidth <= innerWidth)) throw new Error(`Overflow at ${width}px`);
     const layout = await page.evaluate(() => {
-      const [map, readout, trends] = [...document.querySelector('.demo-workspace').children].map(panel => panel.getBoundingClientRect());
+      const [map, readout] = [...document.querySelector('.demo-workspace').children].map(panel => panel.getBoundingClientRect());
+      const zones = document.querySelector('.demo-zones').getBoundingClientRect();
+      const trends = document.querySelector('.demo-trends').getBoundingClientRect();
       const scale = document.querySelector('[data-scale]');
-      const expectedColumns = innerWidth >= 960 ? readout.left >= map.right && trends.left === readout.left : readout.top >= map.bottom;
-      return expectedColumns && trends.top >= readout.bottom && readout.height > 0 && trends.height > 0 &&
+      const expectedColumns = innerWidth >= 960 ? readout.left >= map.right : readout.top >= map.bottom;
+      return expectedColumns && trends.top >= zones.bottom && trends.left === readout.left && trends.height > 0 &&
         scale.clientWidth >= map.width * .98 &&
         getComputedStyle(scale, '::before').backgroundImage.startsWith('linear-gradient');
     });
