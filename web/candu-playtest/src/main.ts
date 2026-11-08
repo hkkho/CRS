@@ -30,10 +30,11 @@ launcher.innerHTML = `<div class="launcher-shell">
     <h1>Candu Refuelling Simulator (CRS)</h1>
     <p class="launcher-subtitle">A Stylized Simulator demo made by ChatGPT and Gemini.</p>
     <p class="launcher-intro">Keep the reactor in balance as time advances. Watch the core and queue fresh fuel where it is needed.</p>
-    <div class="launcher-actions"><button data-action="demo" class="workspace-primary">Start game</button><button data-action="tutorial">Tutorial</button><button data-action="custom">Custom physics</button><button data-action="resume" hidden>Resume saved run</button></div>
+    <div class="launcher-actions"><button data-action="demo" class="workspace-primary">Start game</button><button data-action="tutorial">Tutorial</button><button data-action="resume" hidden>Resume saved run</button></div>
     <div class="launcher-setup"><details><summary>Starting core</summary><label>Core seed<input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label></details></div>
     <p class="launcher-feedback"><a href="https://github.com/hkkho/CRS/issues" target="_blank" rel="noopener">GitHub · Report an issue or request a feature</a></p>
   </div><figure class="launcher-art">${reactorIllustration()}</figure></div>
+  <footer class="launcher-utilities"><button type="button" data-action="custom">Custom physics</button></footer>
 </div>`;
 const seed = launcher.querySelector<HTMLInputElement>("[data-field=seed]")!;
 const play = launcher.querySelector<HTMLButtonElement>("[data-action=demo]")!;

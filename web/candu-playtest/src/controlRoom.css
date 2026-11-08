@@ -362,6 +362,8 @@
 .crs-launcher .launcher-actions [hidden] { display: none; }
 .crs-launcher .launcher-feedback { margin: 14px 0 0; }
 .crs-launcher .launcher-feedback a { color: var(--obs-teal); font-size: 13px; }
+.crs-launcher .launcher-utilities { margin-top: 20px; }
+.crs-launcher .launcher-utilities button { min-height: 36px; padding: 6px 12px; font-size: 12px; }
 
 /* Compact planning deck: reserve the left column for the reactor face. */
 .launcher-story .launcher-goals { grid-template-columns: minmax(0, 1fr); }
