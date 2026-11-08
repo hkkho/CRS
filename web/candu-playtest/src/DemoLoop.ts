@@ -39,9 +39,10 @@ export class DemoLoop {
   private readonly timer: ReturnType<typeof setInterval>;
 
   constructor(private bridge: CanduPlaytestBridgeLifecycle, private readonly now = () => performance.now(), startPaused = false,
-    private readonly createRecoveryBridge?: (seed: number) => RecoveryBridge, restore?: Promise<RunSave>) {
+    private readonly createRecoveryBridge?: (seed: number) => RecoveryBridge, restore?: Promise<RunSave>,
+    private readonly singleStep = false) {
     this.restoring = !!restore;
-    this.running = !startPaused;
+    this.running = !startPaused && !singleStep;
     this.snapshot = this.solved = this.from = bridge.getSnapshot();
     this.lastTime = now();
     this.unsubscribe = this.watch(bridge);
@@ -132,12 +133,21 @@ export class DemoLoop {
     return this.active ? start + (this.active.snapshot.simulationTimeSeconds / 86400 - start) * this.dayProgress : this.snapshot.simulationTimeSeconds / 86400;
   }
   get pendingFuel(): number[] { return [...this.pending]; }
-  get canTogglePause(): boolean { return this.ready && !this.checkpointing && !this.resetting && !this.faulted && !isRunTerminal(this.snapshot); }
-  get canFuel(): boolean { return this.ready && !this.checkpointing && !this.resetting && this.running && this.visible && !isRunTerminal(this.solved); }
+  private get canOperate(): boolean {
+    return this.ready && !this.disposed && !this.checkpointing && !this.resetting && !this.faulted;
+  }
+  get canTogglePause(): boolean { return !this.singleStep && this.canOperate && !isRunTerminal(this.snapshot); }
+  get canFuel(): boolean {
+    return this.canOperate && this.visible && !isRunTerminal(this.solved) &&
+      (this.singleStep ? !this.busy && !this.solved.lastDayResult && this.pending.size === 0 : this.running);
+  }
+  get canStep(): boolean {
+    return this.singleStep && this.canOperate && this.visible && !this.busy && this.waitingFuel.size === 1;
+  }
   subscribe(listener: () => void): () => void { this.listeners.add(listener); listener(); return () => this.listeners.delete(listener); }
 
   fuel(index: number): void {
-    if (!this.canFuel || this.disposed) return;
+    if (!this.canFuel) return;
     const channel = this.solved.core.channels.find(c => c.channelIndex === index);
     if (!channel || channel.canRefuel === false) { this.message = channel?.refuellingIneligibilityReason || "This channel cannot be fuelled."; this.emit(); return; }
     if (this.pending.has(index)) return;
@@ -145,6 +155,18 @@ export class DemoLoop {
     this.waitingFuel.add(index); this.pending.add(index);
     this.message = `${this.waitingFuel.size} channel${this.waitingFuel.size === 1 ? "" : "s"} queued for the next step.`;
     this.emit();
+  }
+
+  clearStepOrder(): void {
+    if (!this.canStep) return;
+    this.waitingFuel.clear();
+    this.pending.clear();
+    this.message = "Fuel order removed.";
+    this.emit();
+  }
+
+  stepOnce(): void {
+    if (this.canStep) void this.advance();
   }
 
   togglePause(): void {
@@ -163,8 +185,8 @@ export class DemoLoop {
   }
   setVisible(visible: boolean): void { this.visible = visible; this.lastTime = this.now(); this.emit(); }
 
-  async restart(seed: number): Promise<void> {
-    if (this.checkpointing || this.busy || !this.ready || this.disposed) return;
+  async restart(seed: number): Promise<boolean> {
+    if (this.checkpointing || this.busy || !this.ready || this.disposed) return false;
     this.running = false; this.busy = this.resetting = true; this.emit();
     try {
       let snapshot: CanduSnapshot;
@@ -178,15 +200,19 @@ export class DemoLoop {
         this.journal.clear();
       } else {
         const result = await this.bridge.dispatch({ type: "reset", seed, shiftId: "free-practice", pacingMode: "demo" }, { responseMode: "compact" });
-        if (this.disposed) return;
-        if (!result.accepted) { this.message = result.message; return; }
+        if (this.disposed) return false;
+        if (!result.accepted) { this.message = result.message; return false; }
         snapshot = result.snapshot;
         this.journal.record({ type: "reset", seed, shiftId: "free-practice", pacingMode: "demo" }, result, "compact");
       }
-      if (this.disposed) return;
+      if (this.disposed) return false;
       this.waitingFuel.clear(); this.pending.clear(); this.initialize(snapshot);
-      this.running = !isRunTerminal(snapshot);
-    } catch (error) { if (!this.disposed) this.message = String(error); }
+      this.running = !this.singleStep && !isRunTerminal(snapshot);
+      return true;
+    } catch (error) {
+      if (!this.disposed) this.message = String(error);
+      return false;
+    }
     finally { this.busy = this.resetting = false; if (!this.disposed) this.emit(); }
   }
 
@@ -222,13 +248,21 @@ export class DemoLoop {
     const fuel = [...this.waitingFuel];
     this.waitingFuel.clear();
     this.busy = true;
+    if (this.singleStep) this.emit();
     try {
       const command = { type: "commit-day", expectedCompletedDays: this.solved.completedDays ?? 0, channelIndices: fuel } as const;
       const result = await this.bridge.dispatch(command, { responseMode: "compact" });
       if (this.disposed) return;
       if (result.accepted) {
         this.journal.record(command, result, "compact");
-        this.solved = result.snapshot; this.buffered = { snapshot: result.snapshot, fuel };
+        this.solved = result.snapshot;
+        if (this.singleStep) {
+          this.snapshot = this.from = result.snapshot;
+          for (const index of fuel) this.pending.delete(index);
+          this.message = "Half-day result ready.";
+        } else {
+          this.buffered = { snapshot: result.snapshot, fuel };
+        }
       } else {
         for (const index of fuel) this.pending.delete(index);
         this.running = false; this.faulted = true; this.message = result.message;

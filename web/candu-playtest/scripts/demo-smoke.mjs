@@ -15,8 +15,8 @@ try {
   await page.locator('.launcher-setup details > summary').click();
   await page.locator('[data-field=seed]').fill('1001');
   if (await page.getByRole('button', { name: 'Turn based', exact: true }).count()) throw new Error('Turn based is still selectable');
-  if ((await page.locator('[data-action=demo]').innerText()) !== 'Time based') throw new Error('Time based choice missing');
-  if (await page.locator('.launcher-actions button').first().getAttribute('data-action') !== 'demo') throw new Error('Time based is not first');
+  if ((await page.locator('[data-action=demo]').innerText()) !== 'Start game') throw new Error('Start game choice missing');
+  if (await page.locator('.launcher-actions button').first().getAttribute('data-action') !== 'demo') throw new Error('Start game is not first');
   await page.locator('[data-action=demo]').click();
   await page.locator('.game-loading-dialog').waitFor();
   await mkdir('artifacts/demo', { recursive: true });

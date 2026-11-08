@@ -6,6 +6,7 @@ import { randomCoreSeed } from "./coreSeed";
 import type { CustomPhysics } from "./customPhysics";
 import type { RunSave } from "./runSave";
 import { DemoLoop } from "./DemoLoop";
+import { DemoTutorialView } from "./DemoTutorialView";
 import { GameLoadingView } from "./GameLoadingView";
 import { isRunTerminal, type CanduSnapshot } from "./protocol";
 import { channelLimit, channelWatts } from "./studio/powerReadings";
@@ -25,6 +26,7 @@ function shiftTime(minutes: number): string {
 export class DemoView {
   readonly element = document.createElement("main");
   private readonly loop: DemoLoop;
+  private readonly tutorial?: DemoTutorialView;
   private readonly unsubscribe: () => void;
   private map?: ArcadeMap;
   private readonly trends = new DemoTrends();
@@ -40,7 +42,7 @@ export class DemoView {
   private gamepadButtons: readonly boolean[] = [];
 
   constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>,
-    onStart?: () => void, customPhysics?: CustomPhysics) {
+    onStart?: () => void, customPhysics?: CustomPhysics, readonly isTutorial = false) {
     this.element.className = "reactor-arcade reactor-demo";
     this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Shift</h1></div><nav aria-label="Time based controls">
       <div class="demo-playback" role="group" aria-label="Playback">
@@ -63,11 +65,33 @@ export class DemoView {
     this.element.addEventListener("change", this.onMapChange);
     if (customPhysics) this.text(".arcade-kicker", "CRS / CUSTOM PHYSICS");
     const createBridge = (coreSeed: number) => createCanduPlaytestBridge({ initialPacingMode: "demo", initialSeed: coreSeed, customPhysics });
-    this.loop = new DemoLoop(createBridge(seed), undefined, true, createBridge, restore);
+    this.loop = new DemoLoop(createBridge(seed), undefined, true, createBridge, restore, isTutorial);
+    if (isTutorial) {
+      this.element.classList.add("reactor-tutorial");
+      this.text(".arcade-kicker", "CRS / TUTORIAL");
+      this.text("h1", "Guided refuelling");
+      this.field(".demo-playback").hidden = true;
+      this.field(".demo-retry").hidden = true;
+      this.field(".demo-readout > .demo-help").hidden = true;
+      const controllerHint = this.field("[data-gamepad-hint]");
+      controllerHint.lastChild?.remove();
+      controllerHint.querySelector("kbd:last-of-type")?.remove();
+      this.tutorial = new DemoTutorialView(this.loop, this.field("[data-action=fuel]"), mode => this.setMapMode(mode), index => {
+        this.selected = index;
+        this.render();
+      }, this.leave);
+      this.field(".demo-hud").before(this.tutorial.element);
+    }
     this.loop.setVisible(document.visibilityState !== "hidden");
     this.loading = new GameLoadingView(this.element, () => {
-      this.loading = undefined; this.started = true; onStart?.(); this.loop.togglePause();
-      this.map?.focusSelected();
+      this.loading = undefined;
+      this.started = true;
+      if (this.tutorial) this.tutorial.begin();
+      else {
+        onStart?.();
+        this.loop.togglePause();
+        this.map?.focusSelected();
+      }
     }, this.leave);
     this.unsubscribe = this.loop.subscribe(() => this.render());
     document.addEventListener("visibilitychange", this.onVisibility);
@@ -94,7 +118,8 @@ export class DemoView {
     this.element.dataset.solving = String(loop.busy);
     this.element.dataset.running = String(loop.running);
     this.field<HTMLProgressElement>("progress").value = loop.dayProgress;
-    this.text("[data-live]", !loop.isReady ? "Preparing core…" : ended ? "Run ended" : !loop.running ? "Paused" : "Live power");
+    this.text("[data-live]", !loop.isReady ? "Preparing core…" : ended ? "Run ended" : this.tutorial
+      ? loop.busy ? "Calculating…" : "Tutorial · paused" : !loop.running ? "Paused" : "Live power");
     const minutes = Math.floor(loop.playbackDay * 24 * 60);
     this.text("[data-day]", shiftTime(minutes));
     this.text("[data-score]", snapshot.scoreTotal.toFixed(1));
@@ -114,7 +139,7 @@ export class DemoView {
       const fuelScore = result.fuelUsed ? ` · Burnup ${burnup >= 0 ? "+" : ""}${burnup.toFixed(1)} · Zones +${zones.toFixed(1)} pts` : "";
       this.text("[data-fuel-receipt]", `${result.fuelUsed} bundles delivered${fuelScore} · ${shiftTime(Math.floor(result.endSimulationTimeSeconds / 60))}${skipped ? ` · ${skipped} orders skipped` : ""}`);
     }
-    this.text("[data-ended]", ended ? `Run ended: ${snapshot.runEndReason}. Retry to play again.` : "");
+    this.text("[data-ended]", ended ? `Run ended: ${snapshot.runEndReason}.${this.tutorial ? "" : " Retry to play again."}` : "");
     const playbackDisabled = !this.started || !loop.canTogglePause;
     const pause = this.field<HTMLButtonElement>("[data-action=pause]");
     const pauseLabel = ended ? "Run ended" : loop.running ? "Pause" : "Resume";
@@ -128,10 +153,11 @@ export class DemoView {
     }
     for (const action of ["retry", "new"]) this.field<HTMLButtonElement>(`[data-action=${action}]`).disabled = !this.started || !loop.isReady || loop.busy;
     const selected = snapshot.core.channels.find(c => c.channelIndex === this.selected);
-    this.field<HTMLButtonElement>("[data-action=fuel]").disabled = !loop.canFuel || !selected || selected.canRefuel === false || loop.pendingFuel.includes(this.selected);
+    this.field<HTMLButtonElement>("[data-action=fuel]").disabled = !this.canQueue(this.selected) || !selected || selected.canRefuel === false || loop.pendingFuel.includes(this.selected);
+    this.tutorial?.update(this.selected);
     if (!loop.isReady) return;
     if (!this.map) {
-      this.map = new ArcadeMap(snapshot, index => { this.selected = index; this.render(); }, index => loop.fuel(index), true);
+      this.map = new ArcadeMap(snapshot, index => { this.selected = index; this.render(); }, index => this.queueFuel(index), true);
       this.field("[data-map]").append(this.map.element);
     }
     if (this.legendMode !== this.mapMode) {
@@ -179,6 +205,12 @@ export class DemoView {
     this.field<HTMLSelectElement>("[data-map-mode]").value = mode;
     this.render();
   }
+  private canQueue(index: number): boolean {
+    return this.loop.canFuel && (!this.tutorial || this.started && this.tutorial.canQueue(index));
+  }
+  private queueFuel(index: number): void {
+    if (this.canQueue(index)) this.loop.fuel(index);
+  }
   private readonly pollGamepad = (): void => {
     let pad: Gamepad | undefined;
     if (document.visibilityState !== "hidden" && document.hasFocus()) {
@@ -199,7 +231,7 @@ export class DemoView {
         const direction = padDirections.find((_, index) => pressed(index + 12));
         if (direction) this.map?.moveSelection(direction);
         if (pressed(9)) this.loop.togglePause();
-        else if (pressed(0)) this.loop.fuel(this.selected);
+        else if (pressed(0)) this.queueFuel(this.selected);
         const offset = Number(pressed(5) === true) - Number(pressed(4) === true);
         if (offset) this.setMapMode(mapModes[(mapModes.indexOf(this.mapMode) + offset + mapModes.length) % mapModes.length]);
       }
@@ -215,7 +247,7 @@ export class DemoView {
       case "pause": this.loop.togglePause(); break;
       case "slow": this.loop.toggleSpeed("slow"); break;
       case "fast": this.loop.toggleSpeed("fast"); break;
-      case "fuel": this.loop.fuel(this.selected); break;
+      case "fuel": this.queueFuel(this.selected); break;
       case "retry": void this.loop.restart(this.loop.snapshot.shift?.seed ?? 1001); break;
       case "new": void this.loop.restart(randomCoreSeed(this.loop.snapshot.shift?.seed)); break;
     }

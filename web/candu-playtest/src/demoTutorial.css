@@ -1,0 +1,38 @@
+.reactor-arcade.reactor-tutorial > header { padding: 10px 12px; }
+.reactor-tutorial .demo-selected-hud { flex-basis: auto; }
+.demo-tutorial {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: clamp(14px, 3vw, 24px);
+  border: 1px solid #547187;
+  border-top: 3px solid #ffcc6a;
+  border-radius: 12px;
+  background: #132634;
+  color: #eef5f7;
+}
+.reactor-tutorial .demo-tutorial h2 { margin: 0; font-size: clamp(22px, 3vw, 32px); line-height: 1.15; }
+.reactor-tutorial .demo-tutorial p { margin: 0; max-width: 76ch; line-height: 1.5; }
+.demo-tutorial .demo-tutorial-kicker { color: #ffdc92; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.demo-tutorial .demo-tutorial-readings { color: #b9f3da; font-variant-numeric: tabular-nums; }
+.demo-tutorial-status { color: #ffdc92; }
+.demo-tutorial-status:empty { display: none; }
+.demo-tutorial a { justify-self: start; color: #c5dcf0; font-size: 13px; }
+.demo-tutorial-examples { display: grid; gap: 8px; }
+.demo-tutorial-examples > div {
+  display: grid;
+  justify-items: start;
+  align-content: start;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #47637a;
+  border-radius: 8px;
+  background: #101e2b;
+}
+.demo-tutorial-examples p { color: #d6e6ed; font-size: 13px; }
+.reactor-tutorial .demo-tutorial-examples [aria-pressed=true] { border-color: #ffcc6a; }
+.demo-tutorial-controls { display: flex; gap: 10px; flex-wrap: wrap; }
+.reactor-tutorial .demo-tutorial-controls .arcade-primary { width: auto; min-height: 44px; }
+@media (min-width: 610px) {
+  .demo-tutorial-examples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

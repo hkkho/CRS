@@ -8,7 +8,7 @@ import { channelWatts } from "./studio/powerReadings";
 
 let loop: DemoLoop;
 afterEach(() => { loop?.destroy(); vi.useRealTimers(); });
-function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3]) {
+function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3], singleStep = false) {
   vi.useFakeTimers();
   let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", scorePolicyId: "test-policy", completedDays: 0, simulationTimeSeconds: 0, shift: { ...createShift(), fuelConsumed: 0 }, ripple: undefined };
   snapshot.core.channels[211].flowDirection = "toward-end-b";
@@ -36,7 +36,7 @@ function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3])
       });
     },
   };
-  loop = new DemoLoop(bridge, () => Date.now(), false, createRecoveryBridge);
+  loop = new DemoLoop(bridge, () => Date.now(), false, createRecoveryBridge, undefined, singleStep);
   return { calls, bridge, complete: (accepted = true, terminal = false) => complete(accepted, terminal),
     fail: () => {
       Object.assign(bridge.status, { source: "unavailable", isWasmAvailable: false });
@@ -214,6 +214,29 @@ it("stops on a rejected batch without claiming any fuel delivery", async () => {
   expect(loop.running).toBe(false); expect(loop.message).toBe("Rejected");
   expect(h.calls).toHaveLength(1);
   expect(loop.snapshot.completedDays).toBe(0); expect(loop.pendingFuel).not.toContain(210);
+});
+
+it("keeps a rejected tutorial step at its starting state and retries paused", async () => {
+  const h = setup(undefined, true);
+  const starting = loop.snapshot;
+  loop.fuel(210);
+  loop.fuel(211);
+  await vi.advanceTimersByTimeAsync(10_000);
+  expect(h.calls).toEqual([]);
+  loop.stepOnce();
+  loop.stepOnce();
+  expect(h.calls).toEqual([{ type: "commit-day", expectedCompletedDays: 0, channelIndices: [210] }]);
+  h.complete(false);
+  await vi.advanceTimersByTimeAsync(0);
+  expect(loop.snapshot).toBe(starting);
+  expect(loop.loadError).toBe("Rejected");
+  expect(loop.pendingFuel).toEqual([]);
+  const retry = loop.restart(1001);
+  h.complete();
+  expect(await retry).toBe(true);
+  expect(loop.running).toBe(false);
+  expect(loop.canFuel).toBe(true);
+  expect(loop.canStep).toBe(false);
 });
 
 it("finishes the in-flight step and checkpoints its confirmed endpoint plus waiting fuel", async () => {

@@ -7,12 +7,12 @@ path: web/candu-playtest/src/DemoLoop.ts
 title: "Submit a waiting batch"
 language: typescript
 start: "  private async advance(): Promise<void> {"
-end: "        this.solved = result.snapshot; this.buffered = { snapshot: result.snapshot, fuel };"
+end: "          this.buffered = { snapshot: result.snapshot, fuel };"
 steps:
 - through: "    this.busy = true;"
   explanation: "Capture the waiting orders once. Input during the solve joins the following batch."
-- through: "        this.solved = result.snapshot; this.buffered = { snapshot: result.snapshot, fuel };"
-  explanation: "Send the current counter and channel indices. Journal an accepted response and buffer its authoritative endpoint for display."
+- through: "          this.buffered = { snapshot: result.snapshot, fuel };"
+  explanation: "Send the current counter and channel indices. Journal an accepted response and buffer its endpoint for playback. The tutorial displays the endpoint immediately."
 ```
 
 ```annotated-source

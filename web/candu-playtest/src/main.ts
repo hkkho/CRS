@@ -1,4 +1,5 @@
 import { DemoView } from "./DemoView";
+import { TUTORIAL_SEED } from "./DemoTutorialView";
 import { CustomPhysicsView } from "./CustomPhysicsView";
 import { isCustomPhysics, type CustomPhysics } from "./customPhysics";
 import { GameUpdateView } from "./GameUpdateView";
@@ -22,18 +23,21 @@ let activePhysics: CustomPhysics | undefined;
 let customView: CustomPhysicsView | undefined;
 
 const launcher = document.createElement("main");
-launcher.className = "reactor-launcher workspace-native";
+launcher.className = "reactor-launcher workspace-native crs-launcher";
 launcher.innerHTML = `<div class="launcher-shell">
-  <header class="launcher-masthead"><p class="workspace-kicker">CRS / A REACTOR STRATEGY GAME</p></header>
+  <header class="launcher-masthead"><p class="workspace-kicker">REACTOR STRATEGY GAME</p></header>
   <div class="launcher-hero"><div class="launcher-story">
-    <h1>CRS</h1><p class="launcher-headline">YOUR CORE.<br><em>YOUR CALL.</em></p>
+    <h1>Candu Refuelling Simulator (CRS)</h1>
+    <p class="launcher-subtitle">A Stylized Simulator demo made by ChatGPT and Gemini.</p>
     <p class="launcher-intro">Keep the reactor in balance as time advances. Watch the core and queue fresh fuel where it is needed.</p>
-    <div class="launcher-actions"><button data-action="demo" class="workspace-primary">Time based</button><button data-action="custom">Custom physics</button><button data-action="resume" hidden>Resume saved run</button></div>
+    <div class="launcher-actions"><button data-action="demo" class="workspace-primary">Start game</button><button data-action="tutorial">Tutorial</button><button data-action="custom">Custom physics</button><button data-action="resume" hidden>Resume saved run</button></div>
     <div class="launcher-setup"><details><summary>Starting core</summary><label>Core seed<input data-field="seed" type="number" min="0" max="4294967295" step="1" required></label></details></div>
+    <p class="launcher-feedback"><a href="https://github.com/hkkho/CRS/issues" target="_blank" rel="noopener">GitHub · Report an issue or request a feature</a></p>
   </div><figure class="launcher-art">${reactorIllustration()}</figure></div>
 </div>`;
 const seed = launcher.querySelector<HTMLInputElement>("[data-field=seed]")!;
 const play = launcher.querySelector<HTMLButtonElement>("[data-action=demo]")!;
+const tutorial = launcher.querySelector<HTMLButtonElement>("[data-action=tutorial]")!;
 const custom = launcher.querySelector<HTMLButtonElement>("[data-action=custom]")!;
 const resume = launcher.querySelector<HTMLButtonElement>("[data-action=resume]")!;
 seed.value = String(randomCoreSeed());
@@ -72,7 +76,7 @@ function physicsEditor(): CustomPhysicsView {
   return customView;
 }
 
-function openGame(coreSeed: number, id?: string, restored = false, customPhysics?: CustomPhysics): void {
+function openGame(coreSeed: number, id?: string, restored = false, customPhysics?: CustomPhysics, guided = false): void {
   if (restored) {
     seed.value = String(coreSeed);
     if (customPhysics) physicsEditor().setDraft(customPhysics);
@@ -86,17 +90,20 @@ function openGame(coreSeed: number, id?: string, restored = false, customPhysics
   }) : undefined;
   game = new DemoView(root, coreSeed, () => {
     showLauncher();
-    if (customPhysics) custom.focus();
+    if (guided) tutorial.focus();
+    else if (customPhysics) custom.focus();
   }, restore, () => {
     try { sessionStorage.removeItem(checkpointKey); } catch { /* The run can still start. */ }
-  }, customPhysics);
+  }, customPhysics, guided);
   unsubscribe = game.subscribe(() => renderVersion());
+  renderVersion();
 }
 
 play.addEventListener("click", () => {
   if (!seed.validity.valid) seed.closest("details")!.open = true;
   if (seed.reportValidity()) openGame(Number(seed.value));
 });
+tutorial.addEventListener("click", () => openGame(TUTORIAL_SEED, undefined, false, undefined, true));
 custom.addEventListener("click", () => physicsEditor().open(seed.value));
 resume.addEventListener("click", () => {
   const saved = readCheckpoint();
@@ -108,6 +115,7 @@ else showLauncher();
 
 const updates = new GameUpdateView({
   get snapshot() { return game?.snapshot; },
+  get isPending() { return game?.isTutorial; },
   subscribe(listener) { renderVersion = listener; listener(); return () => { renderVersion = () => {}; }; },
   dispose: closeGame,
 }, () => {

@@ -39,7 +39,13 @@ export class GameUpdateView {
     this.button.addEventListener("click", this.apply);
     window.addEventListener("online", this.network);
     window.addEventListener("offline", this.network);
-    this.unsubscribe = session.subscribe(() => this.render());
+    let pending = session.isPending;
+    this.unsubscribe = session.subscribe(() => {
+      const readyToUpdate = pending && !session.isPending;
+      pending = session.isPending;
+      this.render();
+      if (readyToUpdate) this.apply();
+    });
   }
 
   async initialize(base: string, registerOffline = true): Promise<void> {
@@ -57,7 +63,7 @@ export class GameUpdateView {
         this.waiting = navigator.serviceWorker.controller ? this.registration?.waiting ?? null : null;
         if (previous === this.waiting) return;
         this.message.hidden = !this.waiting;
-        if (this.waiting) { this.message.hidden = false; this.message.textContent = "A newer game is ready. Preparing to update automatically."; }
+        if (this.waiting) this.message.textContent = "A newer game is ready. Preparing to update automatically.";
         this.render();
         this.apply();
       };
@@ -94,6 +100,7 @@ export class GameUpdateView {
     this.version.title = pack;
     this.button.hidden = !this.waiting;
     this.button.disabled = this.busy || this.session.isPending || !navigator.onLine;
+    if (this.waiting && this.session.isPending) this.message.textContent = "A newer game is ready. Return to the main screen to update.";
   }
 
   private readonly apply = (): void => { void this.update(); };
@@ -107,7 +114,7 @@ export class GameUpdateView {
     let reloading = false;
     try {
       const waiting = this.waiting;
-      if (!await this.checkTabs(waiting)) return;
+      if (!await this.checkTabs(waiting) || this.session.isPending) return;
       // Block new input while the worker finishes its current command and the save commits.
       this.progress.showModal();
       release = await this.save();
