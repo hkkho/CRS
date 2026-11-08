@@ -8,7 +8,7 @@ Initialize accepts `mode: play`, an unsigned 32-bit `seed`, optional `shiftId`, 
 
 | Pacing | Command and interval |
 | --- | --- |
-| `demo` | Public time-based play. `commit-day` solves a half-day, then the browser displays it over five seconds when ready. The managed clock stays paused between steps. The bridge also supports direct `commit-refuel`. |
+| `demo` | Public time-based play. `commit-day` solves a half-day, then the browser displays it at the selected playback speed when ready. The managed clock stays paused between steps. The bridge also supports direct `commit-refuel`. |
 | `daily-turn` | Retained daily planning and replay. `commit-day` advances 86,400 simulated seconds. Direct refuelling and wall-clock advances are rejected. |
 | `real-time` | Retained comparison tools use explicit clock advances. |
 

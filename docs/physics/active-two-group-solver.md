@@ -11,7 +11,7 @@ the deterministic runtime contract.
 ## Pack and fresh material row
 
 The embedded pack has data-pack version
-`candu6-two-group-diffusion-v1-diffusion-v10`, units profile
+`candu6-two-group-diffusion-v1-xenon-v11`, units profile
 `SI-v1`, energy-group order `fast, thermal`, model ID
 `candu6-two-group-full-core-diffusion-v1`, and solver ID
 `spatial-eigen-jacobi-v1`. The `NAT-U-SYNTHETIC` table is queried at the first
@@ -26,8 +26,8 @@ group 2 is thermal.
 | `Sigma_a2` | `0.16` | m^-1 | Thermal absorption |
 | `Sigma_f1` | `0.035` | m^-1 | Fast fission rate for power |
 | `Sigma_f2` | `0.1545382857142857` | m^-1 | Thermal fission rate for power |
-| `nuSigma_f1` | `0.08556132430032726` | m^-1 | Fast neutron production |
-| `nuSigma_f2` | `0.37778572516618936` | m^-1 | Thermal neutron production |
+| `nuSigma_f1` | `0.0856539290262777` | m^-1 | Fast neutron production |
+| `nuSigma_f2` | `0.37819461018325856` | m^-1 | Thermal neutron production |
 | `Sigma_s12` | `0.200` | m^-1 | Fast-to-thermal downscatter |
 | `chi1` | `1.0` | dimensionless | Fast fission spectrum fraction |
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
@@ -43,7 +43,7 @@ conductances used by the 380-channel by 12-position model:
 | Radial circle face at distance d (m) | `0.0074295 * 0.28575 / d` | `0.00371475 * 0.28575 / d` | m^2 |
 | Axial extrapolated zero-flux face | `0.0026190440233080296` | `0.0013095220116540148` | m^2 |
 
-The [v10 fit](../../data/calibration/diffusion-v10/README.md) uses effective fast and thermal diffusion coefficients of 0.015 m and 0.0075 m. The radial circle radius is 5.55 m. Each exposed face uses the distance from its node centre to the circle along the outward X/Y ray.
+The [v10 geometry fit](../../data/calibration/diffusion-v10/README.md) uses effective fast and thermal diffusion coefficients of 0.015 m and 0.0075 m. The radial circle radius is 5.55 m. Each exposed face uses the distance from its node centre to the circle along the outward X/Y ray. See the [v11 xenon calibration](xenon-calibration.md) for the updated capture, worth and neutron production.
 See [calibration provenance](calibration-provenance.md) for the source geometry,
 device absorption, fitted boundary leakage, and the included xenon reference.
 
@@ -217,8 +217,8 @@ Substitution into the fast equation gives the infinite-medium eigenvalue
 ```text
 k_inf = (nuSigma_f1 + nuSigma_f2 * (phi_2 / phi_1)) /
         (Sigma_a1 + Sigma_s12)
-      = (0.08556132430032726 + 0.37778572516618936 * 1.25) / 0.50
-      = 1.115586961516128
+      = (0.0856539290262777 + 0.37819461018325856 * 1.25) / 0.50
+      = 1.1167943835107017
 ```
 
 The one-watt normalization is computed from the actual `Sigma_f`, energy, and
@@ -242,7 +242,7 @@ The passing `SingleCellReflectiveDiffusionFixtureTests` verify:
 | Result | Value |
 | --- | ---: |
 | Status | `Converged` |
-| Effective `k` | `1.115586961516128` (10 decimal places) |
+| Effective `k` | `1.1167943835107017` (10 decimal places) |
 | Fast flux | Within `1e-11` relative of the analytic value |
 | Thermal flux | Within `1e-11` relative of the analytic value |
 | Total power | `1 W` |

@@ -42,7 +42,17 @@ export class DemoView {
   constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>,
     onStart?: () => void, customPhysics?: CustomPhysics) {
     this.element.className = "reactor-arcade reactor-demo";
-    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Shift</h1></div><nav aria-label="Time based controls"><button data-action="pause">Pause</button><button data-action="leave">Main screen</button></nav></header>
+    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Shift</h1></div><nav aria-label="Time based controls">
+      <div class="demo-playback" role="group" aria-label="Playback">
+        <button type="button" data-action="slow" aria-label="0.5× speed (10 seconds per half-day)" aria-pressed="false" title="0.5× · 10 seconds per half-day. Press again for normal speed.">0.5×</button>
+        <button type="button" data-action="pause" aria-label="Resume" title="Resume">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+            <path data-play-icon d="M5 2.5 15 9 5 15.5Z"/>
+            <path data-pause-icon d="M4 3h3v12H4zm7 0h3v12h-3z"/>
+          </svg>
+        </button>
+        <button type="button" data-action="fast" aria-label="1.5× speed (5 seconds per half-day)" aria-pressed="false" title="1.5× · 5 seconds per half-day. Press again for normal speed.">1.5×</button>
+      </div><button data-action="leave">Main screen</button></nav></header>
       <div class="demo-hud"><div><span>SIMULATION TIME</span><strong data-day>Day 0 · 00:00</strong></div><div><span>PEAK CHANNEL</span><strong data-peak>—</strong></div><div><span>SCORE</span><strong data-score>0</strong><small data-score-rate></small></div><div class="demo-selected-hud"><div><span>SELECTED CHANNEL <b data-selected-channel>—</b></span><strong><b data-power>—</b> <small>kW</small></strong><span data-channel-limit></span></div><button class="arcade-primary" data-action="fuel">Queue fuel</button></div></div>
       <progress class="demo-clock" max="1" value="0" aria-label="Time step progress"></progress>
       <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading"><select data-map-mode aria-label="Core map"><option value="power">Channel power · kW</option><option value="ripple">Ripple · % of reference</option><option value="burnup">Burnup · MWd/kg</option><option value="paired-zones">Paired zone fills · %</option></select><span data-live>Preparing core…</span></div><div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p><div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p></div><p class="demo-queue-key"><span>Yellow outline: fuel queued</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue fuel <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue fuel <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
@@ -105,8 +115,17 @@ export class DemoView {
       this.text("[data-fuel-receipt]", `${result.fuelUsed} bundles delivered${fuelScore} · ${shiftTime(Math.floor(result.endSimulationTimeSeconds / 60))}${skipped ? ` · ${skipped} orders skipped` : ""}`);
     }
     this.text("[data-ended]", ended ? `Run ended: ${snapshot.runEndReason}. Retry to play again.` : "");
-    this.text("[data-action=pause]", ended ? "Run ended" : loop.running ? "Pause" : "Resume");
-    this.field<HTMLButtonElement>("[data-action=pause]").disabled = !this.started || !loop.canTogglePause;
+    const playbackDisabled = !this.started || !loop.canTogglePause;
+    const pause = this.field<HTMLButtonElement>("[data-action=pause]");
+    const pauseLabel = ended ? "Run ended" : loop.running ? "Pause" : "Resume";
+    pause.disabled = playbackDisabled;
+    pause.setAttribute("aria-label", pauseLabel);
+    pause.title = pauseLabel;
+    for (const speed of ["slow", "fast"] as const) {
+      const button = this.field<HTMLButtonElement>(`[data-action=${speed}]`);
+      button.disabled = playbackDisabled;
+      button.setAttribute("aria-pressed", String(loop.speed === speed));
+    }
     for (const action of ["retry", "new"]) this.field<HTMLButtonElement>(`[data-action=${action}]`).disabled = !this.started || !loop.isReady || loop.busy;
     const selected = snapshot.core.channels.find(c => c.channelIndex === this.selected);
     this.field<HTMLButtonElement>("[data-action=fuel]").disabled = !loop.canFuel || !selected || selected.canRefuel === false || loop.pendingFuel.includes(this.selected);
@@ -194,6 +213,8 @@ export class DemoView {
     switch (action.dataset.action) {
       case "leave": this.leave(); break;
       case "pause": this.loop.togglePause(); break;
+      case "slow": this.loop.toggleSpeed("slow"); break;
+      case "fast": this.loop.toggleSpeed("fast"); break;
       case "fuel": this.loop.fuel(this.selected); break;
       case "retry": void this.loop.restart(this.loop.snapshot.shift?.seed ?? 1001); break;
       case "new": void this.loop.restart(randomCoreSeed(this.loop.snapshot.shift?.seed)); break;

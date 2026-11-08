@@ -5,8 +5,8 @@ using System.Linq;
 
 namespace ReactorSim.Core
 {
-    /// <summary>Authored gameplay poison data, SI units. Cross sections are deliberately
-    /// softened for the compact synthetic diffusion pack; not plant nuclear data.</summary>
+    /// <summary>Analytic poison integration in SI units. Constants are the fallback
+    /// for historical packs without explicit kinetics.</summary>
     public static class PracticeXenonDataV1
     {
         public const string Identity = "practice-iodine-xenon-analytic-v1";
@@ -35,7 +35,7 @@ namespace ReactorSim.Core
                 !Valid(flux1) || !Valid(flux2) || !Valid(seconds))
                 throw new ArgumentOutOfRangeException(nameof(seconds), "Poison inputs must be finite and nonnegative.");
             double a = physics.LambdaI;
-            double b = physics.LambdaXe + physics.SigmaFast * flux1 + physics.SigmaThermal * flux2;
+            double b = physics.LambdaXe + physics.SigmaFast * flux1 + physics.SigmaThermalCapture * flux2;
             double ea = Math.Exp(-a * seconds), eb = Math.Exp(-b * seconds);
             double ieq = physics.GammaI * fissionRateDensity / a;
             double nextI = iodine * ea + physics.GammaI * fissionRateDensity * seconds * Phi(a * seconds);
@@ -71,6 +71,7 @@ namespace ReactorSim.Core
         public ulong StateVersion { get; }
         public double FastAbsorptionCrossSectionM2 => _physics.SigmaFast;
         public double ThermalAbsorptionCrossSectionM2 => _physics.SigmaThermal;
+        public double ThermalCaptureCrossSectionM2 => _physics.SigmaThermalCapture;
         public Digest32 StateDigest => _stateDigest.Value;
         public StaticAbsorptionOverlayV1 Overlay => _overlay.Value;
 
@@ -94,6 +95,8 @@ namespace ReactorSim.Core
                     writer.Write(physics.GammaI); writer.Write(physics.GammaXe);
                     writer.Write(physics.LambdaI); writer.Write(physics.LambdaXe);
                     writer.Write(physics.SigmaFast); writer.Write(physics.SigmaThermal);
+                    if (physics.SigmaThermalCapture != physics.SigmaThermal)
+                        writer.Write(physics.SigmaThermalCapture);
                 }
                 writer.Write(time); writer.Write(version);
                 for (int n = 0; n < bundles.Length; n++)
@@ -120,7 +123,7 @@ namespace ReactorSim.Core
                 double f = FissionRate(projection, n);
                 iodine[n] = physics.GammaI * f / physics.LambdaI;
                 xenon[n] = (physics.GammaXe + physics.GammaI) * f /
-                    (physics.LambdaXe + physics.SigmaFast * projection.ShapeGroup1[n] + physics.SigmaThermal * projection.ShapeGroup2[n]);
+                    (physics.LambdaXe + physics.SigmaFast * projection.ShapeGroup1[n] + physics.SigmaThermalCapture * projection.ShapeGroup2[n]);
             }
             var background = projection.DataPack.XenonReference;
             double[] reference = background == null ? (double[])xenon.Clone() :

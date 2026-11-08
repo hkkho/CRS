@@ -104,6 +104,7 @@ namespace ReactorSim.Game
         public PracticeXenonStateV1 CurrentXenonState => _xenon;
         public string PacingMode => _demo ? "demo" : _dailyTurns ? "daily-turn" : "real-time";
         public const string DailyIntegrationId = "practice-daily-one-step-reference-zones-v2";
+        public const string DemoIntegrationId = "practice-demo-batch-refuelling-v1";
 
         internal void UseDailyTurns() { _dailyTurns = true; _runtime.TryPause(); }
 
@@ -149,8 +150,18 @@ namespace ReactorSim.Game
             var candidate = (GameSession)MemberwiseClone();
             candidate._runtime = _runtime.Fork();
             candidate._equilibriumSolver = _equilibriumSolver.Fork();
-            candidate._executingDay = true;
             var movements = new List<RefuellingMovement>();
+            if (_demo)
+            {
+                if (ordered.Length > 0)
+                {
+                    var failure = candidate.ApplyFuelBatch(ordered, movements);
+                    if (failure != null) return new DailyTurnOperation(Rejected(failure.Code, failure.Message));
+                }
+                return new DailyTurnOperation(this, candidate, ordered, movements);
+            }
+
+            candidate._executingDay = true;
             foreach (uint channel in ordered)
             {
                 if (candidate.IsRunTerminal) break;
@@ -160,6 +171,38 @@ namespace ReactorSim.Game
             }
             candidate._executingDay = false;
             return new DailyTurnOperation(this, candidate, ordered, movements);
+        }
+
+        private ContractDiagnostic? ApplyFuelBatch(uint[] channels, List<RefuellingMovement> movements)
+        {
+            // Stage every inventory change before binding poison and solving the combined core.
+            var moves = new GameRefuellingResultV1[channels.Length];
+            var inventory = _coreState;
+            for (int index = 0; index < channels.Length; index++)
+            {
+                uint channel = channels[index];
+                var move = inventory.TryRefuel(channel, RefuellingDirection(channel), 8, "NAT-U-SYNTHETIC",
+                    _runtime.SimulationTimeSeconds);
+                if (!move.IsValid) return move.FirstDiagnostic;
+                moves[index] = move.Value;
+                inventory = move.Value.ResultingState;
+            }
+
+            var transaction = TryBuildRefuellingTransaction(moves, out var scores);
+            if (!transaction.IsValid) return transaction.FirstDiagnostic;
+            var committed = _equilibriumSolver.TryCommitCandidate(transaction.Value.SpatialCandidate);
+            if (!committed.IsValid) return committed.FirstDiagnostic;
+
+            var before = _coreState;
+            ApplyPracticeCandidate(transaction.Value);
+            for (int index = 0; index < moves.Length; index++)
+            {
+                var move = moves[index];
+                RecordFuelMovement(before, move, scores[index]);
+                movements.Add(_lastFuelMovement!);
+                before = move.ResultingState;
+            }
+            return null;
         }
 
         public sealed class DailyTurnOperation
@@ -557,7 +600,7 @@ namespace ReactorSim.Game
                 return RejectGameOver();
             }
 
-            if (!TryParseDirection(directionId, out GameRefuellingDirectionV1 direction))
+            if (!TryParseDirection(directionId, out _))
             {
                 return Rejected(
                     "GameSession.Refuelling.Direction.Invalid",
@@ -575,14 +618,9 @@ namespace ReactorSim.Game
                 return Rejected("GameRefuelling.ShiftCount.Unsupported", "Refuelling uses eight fresh bundles per move.");
             if (channelIndex >= SyntheticGameCoreStateV1.ChannelCount)
                 return Rejected("GameRefuelling.Channel.OutOfRange", "Choose a channel from 0 through 379.");
-            // Adjacent channels have opposite flow. Always fuel with the selected channel's flow.
-            direction = Candu6CoreTopologyFactoryV1.GetFlowDirection(
-                Candu6CoreTopologyFactoryV1.GetPosition(channelIndex)) == FlowDirection.EndAtoEndB
-                ? GameRefuellingDirectionV1.TowardEndB : GameRefuellingDirectionV1.TowardEndA;
-
             ContractValidationResult<GameRefuellingResultV1> result = TryRefuel(
                 channelIndex,
-                direction,
+                RefuellingDirection(channelIndex),
                 shiftCount,
                 fuelTypeId);
             if (!result.IsValid)
@@ -591,7 +629,7 @@ namespace ReactorSim.Game
             }
 
             ContractValidationResult<PracticeCandidate> transaction =
-                TryBuildRefuellingTransaction(result.Value, out var score);
+                TryBuildRefuellingTransaction(new[] { result.Value }, out var scores);
             if (!transaction.IsValid)
             {
                 return Rejected(
@@ -611,28 +649,39 @@ namespace ReactorSim.Game
 
             var previousCore = _coreState;
             ApplyPracticeCandidate(transaction.Value);
-            _lastRefuellingScore = score!;
-            _lastFuelMovement = new RefuellingMovement(previousCore, result.Value, _lastRefuellingScore);
-            _fuelConsumed += checked((uint)result.Value.DischargedBundles.Count);
-            _usefulBundlesDischarged += checked((uint)result.Value.DischargedBundles.Count(bundle =>
+            RecordFuelMovement(previousCore, result.Value, scores[0]);
+            return new GameSessionCommandResult(
+                true,
+                string.Empty,
+                string.Empty,
+                FormatRefuellingMessage(result.Value),
+                CreateSnapshot());
+        }
+
+        // Adjacent channels have opposite flow. Always fuel with the selected channel's flow.
+        private static GameRefuellingDirectionV1 RefuellingDirection(uint channelIndex) =>
+            Candu6CoreTopologyFactoryV1.GetFlowDirection(
+                Candu6CoreTopologyFactoryV1.GetPosition(channelIndex)) == FlowDirection.EndAtoEndB
+                ? GameRefuellingDirectionV1.TowardEndB : GameRefuellingDirectionV1.TowardEndA;
+
+        private void RecordFuelMovement(SyntheticGameCoreStateV1 previousCore,
+            GameRefuellingResultV1 result, RefuellingScoreBreakdown score)
+        {
+            _lastRefuellingScore = score;
+            _lastFuelMovement = new RefuellingMovement(previousCore, result, score);
+            _fuelConsumed += checked((uint)result.DischargedBundles.Count);
+            _usefulBundlesDischarged += checked((uint)result.DischargedBundles.Count(bundle =>
                 bundle.CurrentBurnupJPerKgHm / GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram >=
                 ShiftProgress.UsefulBurnupThresholdMwDayPerKg));
-            _dischargeReward += _lastRefuellingScore.DischargeReward;
-            _freshFuelCost += _lastRefuellingScore.FreshFuelCost;
-            _zoneBalanceBonus += _lastRefuellingScore.ZoneBalanceBonus;
-            string message = FormatRefuellingMessage(result.Value);
-            _lastDischargedMaximumBurnupMwDayPerKg = result.Value.DischargedBundles.Max(
+            _dischargeReward += score.DischargeReward;
+            _freshFuelCost += score.FreshFuelCost;
+            _zoneBalanceBonus += score.ZoneBalanceBonus;
+            _lastDischargedMaximumBurnupMwDayPerKg = result.DischargedBundles.Max(
                 bundle => bundle.CurrentBurnupJPerKgHm /
                     GameCorePresentationConstants.JoulesPerMegaWattDayPerKilogram);
             _maximumDischargedBurnupMwDayPerKg = Math.Max(
                 _maximumDischargedBurnupMwDayPerKg ?? 0.0,
                 _lastDischargedMaximumBurnupMwDayPerKg.Value);
-            return new GameSessionCommandResult(
-                true,
-                string.Empty,
-                string.Empty,
-                message,
-                CreateSnapshot());
         }
 
         private GameSessionCommandResult Complete<T>(ContractValidationResult<T> result)
@@ -794,17 +843,9 @@ namespace ReactorSim.Game
         }
 
         private ContractValidationResult<PracticeCandidate> TryBuildRefuellingTransaction(
-            GameRefuellingResultV1 result, out RefuellingScoreBreakdown? score)
+            GameRefuellingResultV1[] moves, out RefuellingScoreBreakdown[] scores)
         {
-            score = null;
-            if (result == null)
-            {
-                return InvalidTransaction(
-                    "GameSession.Refuelling.Result.Missing",
-                    "refuelling",
-                    "A refuelling transaction requires a validated inventory candidate.");
-            }
-
+            scores = Array.Empty<RefuellingScoreBreakdown>();
             double simulationTimeSeconds = _runtime.SimulationTimeSeconds;
             ContractValidationResult<bool> timeBinding =
                 ValidateCommittedTime(simulationTimeSeconds);
@@ -816,10 +857,11 @@ namespace ReactorSim.Game
                     timeBinding.FirstDiagnostic.Message);
             }
 
-            PracticeXenonStateV1 xenon = _xenon.Rebind(result.ResultingState);
+            var inventory = moves[moves.Length - 1].ResultingState;
+            PracticeXenonStateV1 xenon = _xenon.Rebind(inventory);
             ContractValidationResult<PracticeLiquidZoneRrsEquilibriumResultV1> regulated =
                 TryBuildRrsEquilibrium(
-                    result.ResultingState,
+                    inventory,
                     _practiceRrs,
                     simulationTimeSeconds,
                     xenon: xenon);
@@ -841,8 +883,13 @@ namespace ReactorSim.Game
                     nextProjectionVersion.FirstDiagnostic.Message);
             }
 
-            score = PracticeScoring.DescribeRefuelling(result, regulated.Value.State);
-            double nextScore = _syntheticScore + score.NetPoints;
+            scores = new RefuellingScoreBreakdown[moves.Length];
+            double nextScore = _syntheticScore;
+            for (int index = 0; index < moves.Length; index++)
+            {
+                scores[index] = PracticeScoring.DescribeRefuelling(moves[index], regulated.Value.State);
+                nextScore += scores[index].NetPoints;
+            }
             if (!IsFinite(nextScore))
             {
                 return InvalidTransaction(
@@ -853,7 +900,7 @@ namespace ReactorSim.Game
 
             return ContractValidationResult<PracticeCandidate>.Valid(
                 new PracticeCandidate(
-                    result.ResultingState,
+                    inventory,
                     regulated.Value.Projection,
                     regulated.Value.State,
                     simulationTimeSeconds,
@@ -1319,7 +1366,8 @@ namespace ReactorSim.Game
             => GamePresentationProjector.Build(state, powerAmplitude, projection, rrs,
                 CreateXenonPresentationSnapshot(state.RefuellingOperationCount == 0 ? -1 : state.LastRefuelledChannel,
                     _runtime.SimulationTimeSeconds), _runtime.NormalizedPowerFraction,
-                _powerProjectionVersion, _xenon, RefuellingIneligibilityReason, _dailyTurns ? DailyIntegrationId : null);
+                _powerProjectionVersion, _xenon, RefuellingIneligibilityReason,
+                _demo ? DemoIntegrationId : _dailyTurns ? DailyIntegrationId : null);
         private GameXenonPresentationSnapshot CreateXenonPresentationSnapshot(int selectedChannelIndex, double simulationTimeSeconds)
             => GamePresentationProjector.Poison(selectedChannelIndex, simulationTimeSeconds, _xenon, _coupledXenon,
                 _equilibriumSolver, _nonfuelNodes);

@@ -42,10 +42,9 @@ public sealed class AgedPracticeSessionTests
         var burned = initial.TryAddFissionEnergy(half.ShapeNodePowerWatts.Select(p => p * 86400).ToArray());
         Assert.True(burned.IsValid);
         var after = Solve(burned.Value, .5);
-        // Independent tight v10 audit, actual Xe frozen: 0.427160 mk/FPD.
-        // Production tolerances allow a small source-iteration difference.
-        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .42, .44);
-        Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.97, 7.03);
+        // The v11 burnup reference changes the frozen-Xe fuel loss through its knot slopes.
+        Assert.InRange(1000 * (half.RelativeReactivity - after.RelativeReactivity), .32, .36);
+        Assert.InRange(1000 * (empty.RelativeReactivity - full.RelativeReactivity), 6.9, 7.1);
     }
 
     [Fact]

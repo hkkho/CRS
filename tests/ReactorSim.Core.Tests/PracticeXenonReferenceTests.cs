@@ -10,6 +10,27 @@ namespace ReactorSim.Core.Tests;
 public sealed class PracticeXenonReferenceTests
 {
     [Fact]
+    public void ActiveKineticsUseCaptureDominatedLossAndAnIndependentDiffusionWorth()
+    {
+        var core = SyntheticGameCoreStateV1.CreateAgedPractice(1001);
+        var pack = Require(FullCoreDiffusionDataPackV1.TryLoadEmbeddedCandu6());
+        var model = Require(FullCoreDiffusionModelV1.TryCreateCandu6(pack));
+        var solver = Require(EquilibriumCoreSolverV1.TryCreate(model, core.EnumerateBundles(), 2_064_000_000));
+        var projection = solver.CurrentProjection;
+        var poison = PracticeXenonStateV1.CreateEquilibrium(core, projection, 0);
+        Assert.Equal(.064, pack.PracticePhysics.GammaI);
+        Assert.Equal(.006, pack.PracticePhysics.GammaXe);
+        Assert.InRange(poison.ThermalCaptureCrossSectionM2 * projection.ShapeGroup2.Average() / PracticeXenonDataV1.LambdaXe, 8, 10);
+        Assert.True(poison.ThermalCaptureCrossSectionM2 > poison.ThermalAbsorptionCrossSectionM2);
+        int n = projection.ShapeGroup2.Count / 2;
+        var node = projection.SpatialSolve.Coefficients.Nodes[n].Node;
+        Assert.Equal((poison.Xenon[n] - poison.IncludedReferenceXenon[n]) * poison.ThermalAbsorptionCrossSectionM2,
+            poison.Overlay.GetDeltaAbsorptionGroup2PerM(node));
+        var advanced = poison.Advance(projection, 1, 3600);
+        Assert.InRange(Math.Abs(advanced.Xenon[n] / poison.Xenon[n] - 1), 0, 1e-12);
+    }
+
+    [Fact]
     public void FreshFuelHasNoIncludedOrLiveXenonAndRetainedReferenceMovesWithBurnup()
     {
         var core = SyntheticGameCoreStateV1.CreateAgedPractice(1001);

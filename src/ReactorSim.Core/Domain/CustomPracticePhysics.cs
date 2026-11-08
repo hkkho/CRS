@@ -13,18 +13,22 @@ namespace ReactorSim.Core
     {
         public static readonly CustomPracticePhysics Default = new CustomPracticePhysics(new JObject());
 
-        public CustomPracticePhysics(JObject values)
+        public CustomPracticePhysics(JObject values, double iodineYield = PracticeXenonDataV1.GammaI,
+            double xenonYield = PracticeXenonDataV1.GammaXe, double thermalCaptureM2 = PracticeXenonDataV1.SigmaGroup2M2,
+            double thermalWorthScale = 1)
         {
             double Scale(string name) => values.Value<double?>(name) ?? 1;
             ThermalPowerMultiplier = Scale("thermal_power_multiplier");
             ZoneFastAbsorption = PracticeLiquidZoneRrsIdentityV1.Group1AbsorptionPerMPerFillFraction * Scale("lzc_fast_absorption_multiplier");
             ZoneThermalAbsorption = PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction * Scale("lzc_thermal_absorption_multiplier");
-            GammaI = PracticeXenonDataV1.GammaI * Scale("iodine_yield_multiplier");
-            GammaXe = PracticeXenonDataV1.GammaXe * Scale("xenon_yield_multiplier");
+            GammaI = iodineYield * Scale("iodine_yield_multiplier");
+            GammaXe = xenonYield * Scale("xenon_yield_multiplier");
             LambdaI = PracticeXenonDataV1.LambdaI / Scale("iodine_half_life_multiplier");
             LambdaXe = PracticeXenonDataV1.LambdaXe / Scale("xenon_half_life_multiplier");
             SigmaFast = values.Value<double?>("xenon_fast_absorption_m2") ?? PracticeXenonDataV1.SigmaGroup1M2;
-            SigmaThermal = PracticeXenonDataV1.SigmaGroup2M2 * Scale("xenon_thermal_absorption_multiplier");
+            SigmaThermalCapture = thermalCaptureM2 * Scale("xenon_thermal_absorption_multiplier");
+            // The compact diffusion group's reaction worth is an independently fitted surrogate.
+            SigmaThermal = SigmaThermalCapture * thermalWorthScale;
         }
 
         public double ThermalPowerMultiplier { get; }
@@ -36,6 +40,7 @@ namespace ReactorSim.Core
         public double LambdaXe { get; }
         public double SigmaFast { get; }
         public double SigmaThermal { get; }
+        public double SigmaThermalCapture { get; }
     }
 
     public sealed partial class FullCoreDiffusionDataPackV1
@@ -126,7 +131,7 @@ namespace ReactorSim.Core
             root["data_pack_version"] = version;
             root["evidence_class"] = "custom-practice";
             root["source_provenance"] = "Player-configured practice physics based on the embedded CANDU-6 pack.";
-            return TryLoadJson(root.ToString(Formatting.None), new CustomPracticePhysics(practice));
+            return TryLoadJson(root.ToString(Formatting.None), practice);
         }
     }
 }

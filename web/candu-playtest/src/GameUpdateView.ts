@@ -82,7 +82,8 @@ export class GameUpdateView {
   private render(): void {
     const snapshot = this.session.snapshot;
     const pack = snapshot?.dataPackId ?? "";
-    const physics = pack.startsWith(CUSTOM_PHYSICS_PACK_PREFIX) ? "Custom physics" : pack.includes("diffusion-v10")
+    const physics = pack.startsWith(CUSTOM_PHYSICS_PACK_PREFIX) ? "Custom physics" : pack.endsWith("xenon-v11")
+      ? "Iodine–xenon calibration · v11" : pack.includes("diffusion-v10")
       ? "Reduced diffusion · Axial extrapolation · v10"
       : pack.includes("radial-circle-v9")
         ? "Circular radial boundary · Axial incoming current = 0 · v9"

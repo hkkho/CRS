@@ -3,7 +3,8 @@ import type { CanduPlaytestBridgeLifecycle } from "./bridge";
 import { parseRunSave, RunJournal, type RunSave } from "./runSave";
 import { interpolateDemo } from "./demoPresentation";
 
-export const DEMO_STEP_MS = 5_000;
+const stepDurationMs = { slow: 10_000, normal: 7_500, fast: 5_000 } as const;
+type DemoSpeed = keyof typeof stepDurationMs;
 const MAX_WAITING_FUEL = 8;
 type RecoveryBridge = CanduPlaytestBridgeLifecycle & { whenReady(): Promise<CanduSnapshot> };
 type Step = { snapshot: CanduSnapshot; fuel: number[] };
@@ -24,6 +25,7 @@ export class DemoLoop {
   private buffered?: Step;
   private readonly pending = new Set<number>();
   private elapsed = 0;
+  private speedValue: DemoSpeed = "normal";
   private lastTime: number;
   private ready = false;
   private readonly journal = new RunJournal();
@@ -123,7 +125,8 @@ export class DemoLoop {
   }
   get isReady(): boolean { return this.ready; }
   get loadError(): string | undefined { return this.faulted ? this.message : undefined; }
-  get dayProgress(): number { return this.elapsed / DEMO_STEP_MS; }
+  get speed(): DemoSpeed { return this.speedValue; }
+  get dayProgress(): number { return this.elapsed / stepDurationMs[this.speed]; }
   get playbackDay(): number {
     const start = this.from.simulationTimeSeconds / 86400;
     return this.active ? start + (this.active.snapshot.simulationTimeSeconds / 86400 - start) * this.dayProgress : this.snapshot.simulationTimeSeconds / 86400;
@@ -148,6 +151,14 @@ export class DemoLoop {
     if (!this.canTogglePause) return;
     this.running = !this.running; this.lastTime = this.now();
     this.message = this.running ? "Double-click to queue fuel for the next step." : "Paused · fuel queue retained.";
+    this.emit();
+  }
+  toggleSpeed(speed: "slow" | "fast"): void {
+    if (!this.canTogglePause) return;
+    const progress = this.dayProgress;
+    this.speedValue = this.speed === speed ? "normal" : speed;
+    this.elapsed = progress * stepDurationMs[this.speed];
+    this.lastTime = this.now();
     this.emit();
   }
   setVisible(visible: boolean): void { this.visible = visible; this.lastTime = this.now(); this.emit(); }
@@ -183,9 +194,10 @@ export class DemoLoop {
     const now = this.now(), delta = Math.max(0, now - this.lastTime); this.lastTime = now;
     if (this.disposed || this.checkpointing || !this.ready || !this.running || !this.visible) return;
     if (this.active) {
-      this.elapsed = Math.min(DEMO_STEP_MS, this.elapsed + delta);
+      const duration = stepDurationMs[this.speed];
+      this.elapsed = Math.min(duration, this.elapsed + delta);
       this.snapshot = interpolateDemo(this.from, this.active.snapshot, this.dayProgress);
-      if (this.elapsed === DEMO_STEP_MS) {
+      if (this.elapsed === duration) {
         for (const index of this.active.fuel) this.pending.delete(index);
         this.message = this.pending.size ? `${this.pending.size} fuel requests queued for the next step.` : "Double-click to queue fuel for the next step.";
         this.from = this.snapshot; this.active = undefined;

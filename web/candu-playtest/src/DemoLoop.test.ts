@@ -78,22 +78,51 @@ it("retries on a fresh seeded bridge without replaying queued fuel", async () =>
   expect(loop.running).toBe(true);
 });
 
-it("buffers solved endpoints, blends for five seconds, and never leaks subscription results", async () => {
+it("buffers solved endpoints, blends for 7.5 seconds by default, and never leaks subscription results", async () => {
   const h = setup(), start = loop.snapshot;
   await vi.advanceTimersByTimeAsync(50);
   h.complete(); await vi.advanceTimersByTimeAsync(0);
   expect(loop.snapshot).toBe(start);
   await vi.advanceTimersByTimeAsync(50); // Start playback, compute one endpoint ahead.
   expect(h.calls).toHaveLength(2);
-  h.complete(); await vi.advanceTimersByTimeAsync(2500);
+  h.complete(); await vi.advanceTimersByTimeAsync(3750);
   expect(loop.snapshot.completedDays).toBe(0);
   expect(channelWatts(loop.snapshot, loop.snapshot.core.channels[0])).toBeCloseTo(start.core.channels[0].powerWatts + 50000);
   expect(loop.snapshot.rrs.averageFillFraction).toBeCloseTo(start.rrs.averageFillFraction + .05);
   expect(loop.playbackDay).toBeCloseTo(.25);
   expect(h.calls).toHaveLength(2);
-  await vi.advanceTimersByTimeAsync(2500);
+  await vi.advanceTimersByTimeAsync(3750);
   expect(loop.snapshot.completedDays).toBe(0);
   expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [] });
+});
+
+it.each([["slow", 10_000], ["fast", 5_000]] as const)("plays a half-day at %s speed in %i ms", async (speed, duration) => {
+  const h = setup();
+  loop.toggleSpeed(speed);
+  await vi.advanceTimersByTimeAsync(50);
+  h.complete(); await vi.advanceTimersByTimeAsync(50);
+  expect(h.calls).toHaveLength(2); // Solve ahead at every playback speed.
+  h.complete(); await vi.advanceTimersByTimeAsync(duration - 50);
+  expect(loop.snapshot.simulationTimeSeconds).toBe(0);
+  await vi.advanceTimersByTimeAsync(50);
+  expect(loop.snapshot.simulationTimeSeconds).toBe(43_200);
+  expect(h.calls).toHaveLength(3);
+});
+
+it("preserves the displayed position when switching speed while paused", async () => {
+  const h = setup();
+  await vi.advanceTimersByTimeAsync(50);
+  h.complete(); await vi.advanceTimersByTimeAsync(50 + 3750);
+  loop.togglePause();
+  loop.toggleSpeed("fast");
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(loop.playbackDay).toBe(.25);
+  loop.togglePause();
+  await vi.advanceTimersByTimeAsync(1250);
+  expect(loop.playbackDay).toBe(.375);
+  loop.toggleSpeed("fast");
+  expect(loop.speed).toBe("normal");
+  expect(loop.playbackDay).toBe(.375);
 });
 
 it("submits the entire waiting queue in one step and keeps the markers until its displayed endpoint", async () => {
@@ -101,17 +130,17 @@ it("submits the entire waiting queue in one step and keeps the markers until its
   await vi.advanceTimersByTimeAsync(50); h.complete(); await vi.advanceTimersByTimeAsync(50);
   h.complete(); await vi.advanceTimersByTimeAsync(0); // Active and buffered endpoints exist.
   loop.fuel(210); loop.fuel(211); loop.fuel(210);
-  await vi.advanceTimersByTimeAsync(4950);
+  await vi.advanceTimersByTimeAsync(7450);
   expect(h.calls).toHaveLength(2); // Never mutate an endpoint already solved.
   expect(loop.pendingFuel).toEqual([210, 211]);
   await vi.advanceTimersByTimeAsync(50);
   expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [210, 211] });
   expect(loop.waitingFuel.size).toBe(0);
   loop.fuel(210); // A submitted channel is still pending, not a new request.
-  h.complete(); await vi.advanceTimersByTimeAsync(5000);
+  h.complete(); await vi.advanceTimersByTimeAsync(7500);
   expect(loop.snapshot.shift?.fuelConsumed).toBe(0);
   expect(loop.pendingFuel).toEqual([210, 211]);
-  await vi.advanceTimersByTimeAsync(4950);
+  await vi.advanceTimersByTimeAsync(7450);
   expect(loop.snapshot.shift?.fuelConsumed).toBe(0);
   await vi.advanceTimersByTimeAsync(50);
   expect(loop.snapshot.shift?.fuelConsumed).toBe(16);
@@ -127,7 +156,7 @@ it("batches input arriving during a solve and separates only input arriving afte
   h.complete(); await vi.advanceTimersByTimeAsync(50);
   expect(h.calls[1]).toEqual({ type: "commit-day", expectedCompletedDays: 0, channelIndices: [210, 211] });
   loop.fuel(212); loop.fuel(213);
-  h.complete(); await vi.advanceTimersByTimeAsync(5000);
+  h.complete(); await vi.advanceTimersByTimeAsync(7500);
   expect(h.calls[2]).toEqual({ type: "commit-day", expectedCompletedDays: 1, channelIndices: [212, 213] });
   expect(loop.pendingFuel).toEqual([210, 211, 212, 213]);
 });
@@ -143,7 +172,7 @@ it("deduplicates and bounds each waiting batch to eight channels", async () => {
 });
 
 it("holds at a slow endpoint without extrapolating or replaying missed days", async () => {
-  const h = setup(); await vi.advanceTimersByTimeAsync(50);
+  const h = setup(); loop.toggleSpeed("fast"); await vi.advanceTimersByTimeAsync(50);
   await vi.advanceTimersByTimeAsync(60000); expect(h.calls).toHaveLength(1);
   h.complete(); await vi.advanceTimersByTimeAsync(50);
   await vi.advanceTimersByTimeAsync(60000);
@@ -163,7 +192,7 @@ it("freezes playback and retains queued input on pause/hidden tabs, then resets 
   loop.togglePause(); loop.setVisible(false); await vi.advanceTimersByTimeAsync(60000);
   expect(loop.snapshot).toBe(frozen);
   loop.setVisible(true); await vi.advanceTimersByTimeAsync(50);
-  expect(loop.snapshot).not.toBe(frozen); expect(loop.dayProgress).toBeCloseTo(.21);
+  expect(loop.snapshot).not.toBe(frozen); expect(loop.dayProgress).toBeCloseTo(.14);
   const reset = loop.restart(1001); h.complete(); await reset;
   expect(loop.pendingFuel).toHaveLength(0); expect(loop.snapshot.completedDays).toBe(0);
   expect(loop.dayProgress).toBe(0); expect(loop.running).toBe(true);
@@ -174,7 +203,7 @@ it("reveals terminal state only at the displayed endpoint and stops future comma
   const h = setup(); await vi.advanceTimersByTimeAsync(50); h.complete(true, true);
   await vi.advanceTimersByTimeAsync(50);
   expect(loop.snapshot.runStatus).not.toBe("ended"); expect(loop.running).toBe(true);
-  await vi.advanceTimersByTimeAsync(5000);
+  await vi.advanceTimersByTimeAsync(7500);
   expect(loop.snapshot.runStatus).toBe("ended"); expect(loop.running).toBe(false);
   await vi.advanceTimersByTimeAsync(60000); expect(h.calls).toHaveLength(1);
 });

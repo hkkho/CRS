@@ -1,7 +1,7 @@
 # Start a time-based run
 
 1. Choose **Time based** and wait for **Start**. Under **Starting core**, you can enter a seed to reproduce a core.
-2. Press **Start** and inspect the core map and liquid-zone levels. Each simulated half-day takes five seconds to display when the next solution is ready.
+2. Press **Start** and inspect the core map and liquid-zone levels. Each simulated half-day takes 7.5 seconds to display when the next solution is ready. Choose **0.5×** for 10 seconds or **1.5×** for 5 seconds. Press the selected speed again to return to normal.
 3. Queue fuel when a channel needs it. Use **Pause** to inspect the core without advancing playback. **Retry seed** repeats the starting core and **New core** draws a different seed.
 
 ## Controls

@@ -1,12 +1,50 @@
 # Aged-core burn benchmark
 
-The current [v10 calibration](../../data/calibration/diffusion-v10/README.md)
+The [v10 geometry calibration](../../data/calibration/diffusion-v10/README.md)
 measures about 0.427 mk per full-power day of frozen-xenon fuel loss and 7 mk
 total zone worth. Use
 `--reactivity-scale OUTPUT.json` for an isolated current-pack measurement;
 `--fit-reactivity-scale ARCHIVED_SOURCE.json OUTPUT_DIRECTORY` reproduces the
 reviewed v3 fit from the archived powerlimits-v2 source. Historical benchmark
 numbers below describe their original packs and cadence.
+
+## Lateral iodine–xenon tilt
+
+```powershell
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-hourly.json 1001
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-15min.json 1001 4
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-xe0.json 1001 1 0
+```
+
+The benchmark starts from the seed-aged core with iodine and xenon in equilibrium
+at 50% zone fill. At hour zero it freezes the four left compartments at 80%,
+the four right compartments at 20%, and the six centre compartments at 50%.
+One trace holds those fills through hour 96. The other shares the first eight
+hours of poison history and then restores all fills to 50% at hour eight to
+measure the free response. Both use the shared C# diffusion and poison model
+at 2,064 MW thermal with fixed fuel inventory and burnup. The benchmark bypasses
+regulation and gameplay limit checks and tightens the spatial solver tolerances
+to reduce drift in small tilts.
+
+The JSON records hourly left and right power, mean I-135 and Xe-135 number
+densities, thermal flux, effective multiplication factor, and solver residual.
+Tilt is `100 × (right power − left power) / total power`. A reported period
+spans two same-kind extrema with an intervening opposite extremum and at least
+0.05 percentage points of movement on each leg. The argument after the seed sets
+the integration steps per hour. Reports stay hourly. The final optional
+number sets the xenon thermal absorption multiplier. At zero the isotopes
+still evolve while xenon absorption and neutron capture are disabled. An
+optional pack path after the multiplier runs an offline comparison against
+another pack. Set the multiplier to one when passing a pack path.
+
+The seed-1001 v11 case shows 25–26-hour cycles with hourly integration.
+Keeping the zones split leaves a rightward bias. Releasing the split lets the
+dominant half reverse and the oscillation decay toward equilibrium. The v10
+case had a single undershoot after release and no resolved cycle. See the
+[v11 calibration](../../docs/physics/xenon-calibration.md) for the full-power
+capture, worth, and damping comparisons.
+
+## Refuelling response
 
 Isolate fuel-only worth of the oldest channel in each feed direction at hour 14:
 

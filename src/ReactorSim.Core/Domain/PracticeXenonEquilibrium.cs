@@ -16,9 +16,8 @@ namespace ReactorSim.Core
             EquilibriumCoreSolverV1 solver, SyntheticGameCoreStateV1 core, IReadOnlyList<double> fills,
             double simulationTimeSeconds = 0)
         {
-            var mapping = PracticeLiquidZoneRrsMappingV1.TryCreateCandu6();
-            if (!mapping.IsValid) return Invalid(mapping.FirstDiagnostic);
-            var zone = mapping.Value.TryBuildOverlay(fills);
+            var mapping = solver.CurrentProjection.DataPack.CreatePracticeZoneMapping();
+            var zone = mapping.TryBuildOverlay(fills);
             if (!zone.IsValid) return Invalid(zone.FirstDiagnostic);
             var candidate = solver.TrySolveCandidate(core.EnumerateBundles(), zone.Value);
             if (!candidate.IsValid) return Invalid(candidate.FirstDiagnostic);
@@ -27,10 +26,10 @@ namespace ReactorSim.Core
                 var poison = PracticeXenonStateV1.CreateEquilibrium(core, candidate.Value, simulationTimeSeconds);
                 var combined = StaticAbsorptionOverlayV1.TryCreate("fixed-zone-equilibrium-xenon-replacement",
                     zone.Value.Entries.Select(e => new StaticAbsorptionOverlayEntryV1(e.Node,
-                        e.DeltaAbsorptionGroup1PerM,
+                        e.DeltaAbsorptionGroup1PerM + poison.Overlay.GetDeltaAbsorptionGroup1PerM(e.Node),
                         e.DeltaAbsorptionGroup2PerM + poison.Overlay.GetDeltaAbsorptionGroup2PerM(e.Node))));
                 if (!combined.IsValid) return Invalid(combined.FirstDiagnostic);
-                candidate = solver.TrySolveCandidate(core.EnumerateBundles(), combined.Value);
+                candidate = solver.TrySolveCandidate(core.EnumerateBundles(), combined.Value, candidate.Value.SpatialSolve);
                 if (!candidate.IsValid) return Invalid(candidate.FirstDiagnostic);
                 var next = PracticeXenonStateV1.CreateEquilibrium(core, candidate.Value, simulationTimeSeconds);
                 double error = next.Xenon.Select((x, n) => Math.Abs(x - poison.Xenon[n]) / Math.Max(1, x)).Max();

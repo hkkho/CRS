@@ -74,6 +74,48 @@ public sealed class DailyTurnTests
     }
 
     [Fact]
+    public void TimeBasedBatchSolvesOnceAfterAllFuelMovesBeforeAdvancing()
+    {
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, ShiftProgress.PracticeId, dailyTurns: false, demo: true);
+        var initial = session.Snapshot;
+        uint[] channels = { 217, 216, 215, 214, 213, 212, 211, 210 };
+        var step = session.CommitDay(0, channels);
+
+        Assert.True(step.Accepted, step.DiagnosticMessage);
+        Assert.False(step.Snapshot.IsGameOver, step.Snapshot.GameOverReason);
+        Assert.Equal(GameSession.DemoIntegrationId, step.Snapshot.Physics.CadenceIdentity);
+        Assert.Equal(43200, step.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(initial.Physics.BindingVersion + 3, step.Snapshot.Physics.BindingVersion);
+        var receipt = step.Snapshot.LastDayResult!;
+        Assert.Equal(channels.OrderBy(channel => channel), receipt.ExecutedChannels);
+        Assert.Empty(receipt.UnexecutedChannels);
+        Assert.Equal(64u, receipt.FuelUsed);
+        Assert.All(receipt.Movements, move =>
+            Assert.Equal(receipt.Movements[0].Score.ZoneBalanceBonus, move.Score.ZoneBalanceBonus));
+    }
+
+    [Fact]
+    public void TimeBasedBatchCommitsEveryMoveWhenTheCombinedResultEndsTheRun()
+    {
+        var session = PracticeGameSessionFactory.CreateBrowserPlaytest(1001, ShiftProgress.PracticeId, dailyTurns: false, demo: true);
+        var initial = session.Snapshot;
+        var channels = Enumerable.Range(0, 8).Select(channel => (uint)channel).ToArray();
+        var step = session.CommitDay(0, channels);
+
+        Assert.True(step.Accepted, step.DiagnosticMessage);
+        Assert.True(step.Snapshot.IsGameOver);
+        Assert.Contains("Channel power", step.Snapshot.GameOverReason);
+        Assert.Equal(0, step.Snapshot.SimulationTimeSeconds);
+        Assert.Equal(initial.Physics.BindingVersion + 1, step.Snapshot.Physics.BindingVersion);
+        var receipt = step.Snapshot.LastDayResult!;
+        Assert.Equal(channels, receipt.ExecutedChannels);
+        Assert.Empty(receipt.UnexecutedChannels);
+        Assert.Equal(64u, receipt.FuelUsed);
+        Assert.Equal(64u, session.Snapshot.Shift.FuelConsumed);
+        Assert.False(session.CommitDay(0, Array.Empty<uint>()).Accepted);
+    }
+
+    [Fact]
     public void PlansExecuteCanonicallyAndReplayDeterministically()
     {
         var first = PracticeGameSessionFactory.CreateBrowserPlaytest();

@@ -83,7 +83,7 @@ steps:
 
 ## Solve the spatial balance
 
-The v10 pack supplies material coefficients, volume, leakage conductances, explicit radial and axial boundaries and convergence tolerances. Core binds fuel coefficients by burnup and combines device absorption with the difference between live and reference xenon. An outer eigenvalue iteration uses deterministic inner group solves and normalizes fission power.
+The active pack supplies material coefficients, volume, leakage conductances, explicit radial and axial boundaries and convergence tolerances. Core binds fuel coefficients by burnup and combines device absorption with the difference between live and reference xenon. An outer eigenvalue iteration uses deterministic inner group solves and normalizes fission power.
 
 ```annotated-source
 path: src/ReactorSim.Core/Domain/SpatialEigenIterationContracts.cs

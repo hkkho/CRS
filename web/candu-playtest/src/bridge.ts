@@ -4,6 +4,7 @@ import {
   CORE_BUNDLE_POSITION_COUNT,
   CORE_CHANNEL_COUNT,
   DAILY_INTEGRATION_ID,
+  DEMO_INTEGRATION_ID,
   CORE_GRID_HEIGHT,
   CORE_GRID_WIDTH,
   type BridgeStatus,
@@ -717,7 +718,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
           return;
         }
         if ((options.initialPacingMode ?? "daily-turn") === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns. Reload the updated game.");
-        if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support time based play. Reload the updated game.");
+        if (options.initialPacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DEMO_INTEGRATION_ID)) throw new Error("This WASM host does not support time based play. Reload the updated game.");
         if (options.customPhysics && (!snapshot.dataPackId.startsWith(CUSTOM_PHYSICS_PACK_PREFIX) || !snapshot.provenance?.isModified))
           throw new Error("This WASM host does not support custom physics. Reload the updated game.");
         this.active = this.wasm!;
@@ -770,6 +771,7 @@ class AuthoritativeProtocolBridge implements CanduPlaytestBridgeLifecycle {
     if (this.active === this.wasm && this.wasm !== null) {
       const snapshot = await this.wasm.initialize(mode, seed, pacingMode);
       if (pacingMode === "daily-turn" && (snapshot.pacingMode !== "daily-turn" || snapshot.physics.cadenceIdentity !== DAILY_INTEGRATION_ID)) throw new Error("This WASM host does not support daily turns.");
+      if (pacingMode === "demo" && (snapshot.pacingMode !== "demo" || snapshot.physics.cadenceIdentity !== DEMO_INTEGRATION_ID)) throw new Error("This WASM host does not support time based play.");
       this.notify(snapshot);
       return snapshot;
     }

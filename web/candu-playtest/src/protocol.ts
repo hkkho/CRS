@@ -1,4 +1,5 @@
 export const DAILY_INTEGRATION_ID = "practice-daily-one-step-reference-zones-v2" as const;
+export const DEMO_INTEGRATION_ID = "practice-demo-batch-refuelling-v1" as const;
 export const PROTOCOL_VERSION = "candu-playtest-v2" as const;
 
 export const CORE_CHANNEL_COUNT = 380 as const;

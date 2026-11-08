@@ -2,7 +2,7 @@
 
 [Play CRS](https://hkkho.github.io/CRS/), a CANDU on-power refuelling game. Keep a seeded reactor within its operating limits while replacing fuel and building score.
 
-- Choose **Time based**, then **Start**. The game displays each simulated half-day over five seconds when the next solve is ready.
+- Choose **Time based**, then **Start**. Each simulated half-day takes 7.5 seconds when the next solve is ready. Choose **0.5×** for 10 seconds or **1.5×** for 5 seconds. Press the selected speed again to return to normal.
 - Double-click a channel, select it and press **Enter** or **R**, or use **Queue fuel**. Each order moves eight bundles. The next unsolved step takes the waiting orders together.
 - Use the map selector and liquid-zone trends to decide where to refuel. **Pause** freezes playback. **Retry seed** recreates the starting core and **New core** draws another seed.
 - Choose **Custom physics** to build a sandbox with edited power, absorption, poison, geometry, fuel coefficients or solver settings. The settings follow the run through retries and local update checkpoints.
@@ -24,4 +24,4 @@ npm run dev
 
 Run `./tools/Test-DotNet.ps1 -Configuration Release` and `./tools/Test-Browser.ps1 -Configuration Release` from the root. See [release and reproduction](docs/maintenance/hosting.md) for the Pages build, docs preview and smoke checks.
 
-The [v10 calibration](data/calibration/diffusion-v10/README.md) records the active model fit. The physics are authored gameplay approximations. Shutdown, scram, accidents, operator training and full plant operations are outside the game’s scope.
+The [v11 xenon calibration](docs/physics/xenon-calibration.md) and [v10 geometry fit](data/calibration/diffusion-v10/README.md) record the active model. The physics are authored gameplay approximations. Shutdown, scram, accidents, operator training and full plant operations are outside the game’s scope.

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using ReactorSim.Browser;
+using ReactorSim.Game;
 using Xunit;
 
 namespace ReactorSim.Browser.Tests;
@@ -13,6 +14,8 @@ public sealed class DemoModeTests
         var initial = Parse(runtime.Initialize("{\"protocol\":\"candu-playtest-v2\",\"pacingMode\":\"demo\",\"seed\":1001}"));
         Assert.True(initial.GetProperty("accepted").GetBoolean());
         Assert.Equal("demo", initial.GetProperty("snapshot").GetProperty("pacingMode").GetString());
+        Assert.Equal(GameSession.DemoIntegrationId,
+            initial.GetProperty("snapshot").GetProperty("physics").GetProperty("cadenceIdentity").GetString());
         var invalid = Send(runtime, "\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":380,\"directionId\":\"toward-end-a\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}");
         Assert.False(invalid.GetProperty("accepted").GetBoolean());
         Assert.Equal(0, invalid.GetProperty("snapshot").GetProperty("shift").GetProperty("fuelConsumed").GetInt32());

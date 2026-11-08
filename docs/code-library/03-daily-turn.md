@@ -20,12 +20,12 @@ path: src/ReactorSim.Game/GameSession.cs
 title: "Prepare the fuel moves on a detached session"
 language: csharp
 start: "public DailyTurnOperation BeginDay(uint expectedCompletedDays, IReadOnlyList<uint> channelIndices)"
-end: "            return new DailyTurnOperation(this, candidate, ordered, movements);"
+end: "                return new DailyTurnOperation(this, candidate, ordered, movements);"
 steps:
 - through: "            var movements = new List<RefuellingMovement>();"
   explanation: "Validate the batch, sort channels and fork the run clock and equilibrium solver. The live session remains available for observations."
-- through: "            return new DailyTurnOperation(this, candidate, ordered, movements);"
-  explanation: "Apply moves to the candidate. A numerical rejection discards it. A physical loss stops later orders and can still be committed."
+- through: "                return new DailyTurnOperation(this, candidate, ordered, movements);"
+  explanation: "Apply every move and solve the combined inventory. A numerical rejection discards the candidate. If the solved batch crosses a limit, all moves commit and the run ends before time advances."
 ```
 
 `CalculateDay` verifies that the live state is still the original. If the candidate is still operating, it integrates fission energy and poison once using post-fuelling readings, then solves the endpoint. Adoption includes the accepted movements, readings and score. See [shared step semantics](../gameplay/daily-turn-mode.md).

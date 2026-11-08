@@ -1,5 +1,11 @@
 .reactor-arcade.reactor-demo { max-width: none; padding: 20px max(12px, calc((100% - 520px) / 2)) 80px; background: #0b131c; }
 .reactor-demo header, .reactor-demo nav { flex-wrap: wrap; }
+.demo-playback { display: flex; gap: 6px; }
+.reactor-demo .demo-playback button { min-width: 48px; padding-inline: 8px; font-weight: 700; }
+.demo-playback svg { display: block; margin: auto; }
+.reactor-demo[data-running=true] [data-play-icon],
+.reactor-demo[data-running=false] [data-pause-icon] { display: none; }
+.reactor-demo .demo-playback button[aria-pressed=true] { background: #234c42; border-color: #80e5bc; color: #c9f9e6; }
 .reactor-arcade.reactor-demo h1 { font-size: clamp(24px, 4vw, 40px); }
 .reactor-arcade.reactor-demo header .arcade-kicker { font: 800 12px/1.4 system-ui, sans-serif; letter-spacing: .12em; }
 body:has(.reactor-demo) .player-toggle { display: none; }

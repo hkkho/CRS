@@ -1,6 +1,6 @@
 # Calibration and model provenance
 
-The game loads the project-authored [v10 diffusion pack](../../data/packs/candu6-two-group-diffusion-pack-v1.json) from an embedded copy. The [active calibration report](../../data/calibration/diffusion-v10/README.md) contains the fit, measured device worths and 100-day comparisons. These are surrogate gameplay measurements.
+The game loads the project-authored [xenon-v11 pack](../../data/packs/candu6-two-group-diffusion-pack-v1.json) from an embedded copy. The [v11 xenon calibration](xenon-calibration.md) records the capture and worth fit. The [v10 geometry report](../../data/calibration/diffusion-v10/README.md) contains the preceding fit and 100-day comparisons. These are surrogate gameplay measurements.
 
 ## Inputs carried into v10
 
@@ -19,6 +19,6 @@ The [literature register](../reference/candu-literature-digest-v1.md) and [sourc
 
 - [Axial sensitivity before v8](../../benchmarks/axial-boundary-2026-10-10/README.md) and [v8 acceptance](../../benchmarks/axial-marshak-v8-2026-10-10/README.md)
 - [Local absorber audit](../../benchmarks/bundle-absorption-2026-10-10/README.md) and [v9 radial comparison](../../benchmarks/radial-circle-v9-2026-10-30/README.md)
-- [V4 fuelling trials](../../benchmarks/fuelling-capability-2026-10-07/README.md) and [current v10 fit and campaigns](../../data/calibration/diffusion-v10/README.md)
+- [V4 fuelling trials](../../benchmarks/fuelling-capability-2026-10-07/README.md) and [v10 fit and campaigns](../../data/calibration/diffusion-v10/README.md)
 
 Each report retains its own pack, cadence, seed and scoring context. Use the [release guide](../maintenance/hosting.md) for current acceptance checks.

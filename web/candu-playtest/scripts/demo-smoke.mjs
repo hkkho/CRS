@@ -26,6 +26,14 @@ try {
   await page.screenshot({ path: 'artifacts/demo/ready.png', fullPage: true });
   await page.locator('[data-game-start]').click();
   await page.locator('.reactor-demo .arcade-map [data-channel="210"]').waitFor(waitOptions);
+  const slow = page.getByRole('button', { name: '0.5× speed (10 seconds per half-day)' });
+  const fast = page.getByRole('button', { name: '1.5× speed (5 seconds per half-day)' });
+  await slow.click();
+  if (await slow.getAttribute('aria-pressed') !== 'true') throw new Error('Slow speed was not selected');
+  await slow.click();
+  if (await slow.getAttribute('aria-pressed') !== 'false') throw new Error('Normal speed was not restored');
+  await fast.click();
+  if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Fast speed was not selected');
   console.log('Time based core ready.');
   for (const mode of ['ripple', 'burnup', 'paired-zones', 'power']) {
     await page.locator('select[data-map-mode]').selectOption(mode);
@@ -101,7 +109,9 @@ try {
   const cadenceDay = Number(await page.locator('.reactor-demo').getAttribute('data-days'));
   await page.waitForFunction(day => Number(document.querySelector('.reactor-demo')?.getAttribute('data-days')) > day, cadenceDay, waitOptions);
   const dayIntervalMs = Date.now() - start - dayMs;
-  await page.locator('.reactor-demo [data-action=pause]').click();
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume', exact: true }).waitFor();
+  if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Pause changed the selected speed');
   await page.waitForFunction(() => document.querySelector('.reactor-demo')?.getAttribute('data-solving') === 'false', undefined, waitOptions);
   const pausedDay = await page.locator('.reactor-demo').getAttribute('data-days');
   await page.waitForTimeout(5500);

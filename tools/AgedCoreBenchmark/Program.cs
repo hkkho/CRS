@@ -7,6 +7,17 @@ using ReactorSim.Core;
 using ReactorSim.Game;
 
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+if (args.Length > 0 && args[0] == "--xenon-tilt")
+{
+    if (args.Length > 6)
+        throw new ArgumentException("Usage: --xenon-tilt [OUTPUT.json] [SEED] [STEPS_PER_HOUR] [XE_ABSORPTION_MULTIPLIER] [PACK.json]");
+    XenonTiltBenchmark.Run(args.Length > 1 ? args[1] : "artifacts/xenon-tilt.json",
+        args.Length > 2 ? ulong.Parse(args[2], CultureInfo.InvariantCulture) : 1001,
+        args.Length > 3 ? int.Parse(args[3], CultureInfo.InvariantCulture) : 1,
+        args.Length > 4 ? double.Parse(args[4], CultureInfo.InvariantCulture) : 1,
+        args.Length > 5 ? args[5] : null);
+    return;
+}
 if (args.Length > 0 && (args[0] == "--fit-radial-circle" || args[0] == "--probe-radial-circle"))
 {
     if (args.Length != 4) throw new ArgumentException("Usage: --fit-radial-circle SOURCE_PACK OUTPUT_DIRECTORY EXTRAPOLATION_METRES");

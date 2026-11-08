@@ -116,7 +116,7 @@ namespace ReactorSim.Core
                         c.FissionGroup2PerM * solved.Value.Group2Flux[n];
                     double xe = (physics.GammaI + physics.GammaXe) * f /
                         (physics.LambdaXe + physics.SigmaFast * solved.Value.Group1Flux[n] +
-                         physics.SigmaThermal * solved.Value.Group2Flux[n]);
+                         physics.SigmaThermalCapture * solved.Value.Group2Flux[n]);
                     bool reverse = Candu6CoreTopologyFactoryV1.GetFlowDirection(
                         Candu6CoreTopologyFactoryV1.GetPosition(node.Node.ChannelId.Value)) == FlowDirection.EndBtoEndA;
                     int k = (int)node.Node.Position.Value;

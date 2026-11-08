@@ -8,4 +8,4 @@ Select a channel and use **Queue fuel**, double-click it, or press **Enter** or 
 
 - Look for high burnup and enough headroom in the paired liquid zones. Each discharged bundle scores according to its own burnup, so a channel average is a guide.
 - Check nearby power. Fresh fuel can increase power in the channel and its neighbours.
-- Spread orders when the core is near a limit. A move that crosses a limit ends the run and skips later orders in that batch.
+- Spread orders when the core is near a limit. All orders in a batch are applied together. If the combined result crosses a limit, the run ends.

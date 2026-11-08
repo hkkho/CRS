@@ -20,7 +20,8 @@ public sealed class AxialVacuumBoundaryTests
         double h = active.AxialCellLengthM;
         Assert.Equal(active.AxialConductance.Group1M2 * h / (h / 2 + distance), active.AxialVacuumBoundaryConductance.Group1M2, 14);
         Assert.Equal(active.AxialConductance.Group2M2 * h / (h / 2 + distance), active.AxialVacuumBoundaryConductance.Group2M2, 14);
-        double multiplier = calibration["productionMultiplier"]!.Value<double>();
+        const double xenonV11CriticalityNormalization = 1.0010823199232564;
+        double multiplier = calibration["productionMultiplier"]!.Value<double>() * xenonV11CriticalityNormalization;
         var before = Assert.Single(source.CoefficientTables).Rows;
         var after = Assert.Single(active.CoefficientTables).Rows;
         Assert.Equal(before.Count, after.Count);

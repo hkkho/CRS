@@ -169,10 +169,10 @@ namespace ReactorSim.Core
         }
 
         public static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadJson(
-            string json) => TryLoadJson(json, CustomPracticePhysics.Default);
+            string json) => TryLoadJson(json, null);
 
         private static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadJson(
-            string json, CustomPracticePhysics practicePhysics)
+            string json, JObject? practiceOverrides)
         {
             if (string.IsNullOrWhiteSpace(json))
             {
@@ -196,6 +196,24 @@ namespace ReactorSim.Core
             }
 
             ContractDiagnostic failure;
+            CustomPracticePhysics practicePhysics = practiceOverrides == null
+                ? CustomPracticePhysics.Default : new CustomPracticePhysics(practiceOverrides);
+            if (root["xenon_kinetics"] != null)
+            {
+                const string path = "xenon_kinetics";
+                if (!TryReadObject(root, path, path, out JObject kinetics, out failure) ||
+                    !TryReadDouble(kinetics, "iodine_yield", path + ".iodine_yield", out double iodineYield, out failure) ||
+                    !TryReadDouble(kinetics, "xenon_yield", path + ".xenon_yield", out double xenonYield, out failure) ||
+                    !TryReadDouble(kinetics, "thermal_capture_m2", path + ".thermal_capture_m2", out double thermalCapture, out failure) ||
+                    !TryReadDouble(kinetics, "thermal_worth_scale", path + ".thermal_worth_scale", out double thermalWorthScale, out failure))
+                    return Invalid(failure);
+                if (iodineYield < 0 || xenonYield < 0 || iodineYield + xenonYield > 1 ||
+                    thermalCapture <= 0 || thermalCapture > 1e-21 || thermalWorthScale <= 0 || thermalWorthScale > 1)
+                    return Invalid("FullCoreDiffusionDataPack.XenonKinetics.Invalid", path,
+                        "Xenon kinetics require nonnegative yields summing to at most one, thermal capture in (0, 1e-21] m², and a worth scale in (0, 1].");
+                practicePhysics = new CustomPracticePhysics(practiceOverrides ?? new JObject(), iodineYield, xenonYield,
+                    thermalCapture, thermalWorthScale);
+            }
             if (!TryReadUInt32(root, "schema_version", "schema_version", out uint schemaVersion, out failure))
             {
                 return Invalid(failure);

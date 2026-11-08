@@ -6,6 +6,7 @@ namespace ReactorSim.Core.Tests;
 
 public sealed class SingleCellReflectiveDiffusionFixtureTests
 {
+    private const double FreshInfiniteMultiplicationFactor = 1.1167943835107017;
     [Fact]
     public void FreshFixtureExposesOneNodeSixReflectiveFacesAndPackBoundCoefficients()
     {
@@ -58,9 +59,7 @@ public sealed class SingleCellReflectiveDiffusionFixtureTests
             (coefficients.AbsorptionGroup1PerM + coefficients.DownscatterGroup1To2PerM);
 
         Assert.Equal(1.25, thermalToFastFluxRatio, 12);
-        // V10 applies a common production normalization while keeping the
-        // material absorption and downscatter fixed.
-        Assert.Equal(1.115586961516128, kInfinite, 12);
+        Assert.Equal(FreshInfiniteMultiplicationFactor, kInfinite, 12);
         Assert.Equal(
             fixture.MaterialLookup.Coefficients.AbsorptionGroup1PerM,
             coefficients.AbsorptionGroup1PerM,
@@ -94,7 +93,7 @@ public sealed class SingleCellReflectiveDiffusionFixtureTests
         Assert.NotNull(result.FinalState);
         SpatialEigenIterationState state = result.FinalState!;
 
-        Assert.Equal(1.115586961516128, state.Eigenvalue, 10);
+        Assert.Equal(FreshInfiniteMultiplicationFactor, state.Eigenvalue, 10);
         Assert.Equal(1.0, state.TotalPowerW, 12);
         Assert.Equal(1.25, state.Group2Flux[0] / state.Group1Flux[0], 10);
         SpatialNodeCoefficients coefficients = Assert.Single(fixture.Coefficients.Nodes);

@@ -29,9 +29,8 @@ public sealed class AgedCoreSnapshotTests
         {
             var coefficients = table.TryLookup(burnups[index] * 8.64e10).Value.Coefficients;
             Assert.Equal(fissions[index], coefficients.FissionGroup2PerM, 12);
-            // Authored v10 production normalization changes nuSigma_f only;
-            // the independently checked Sigma_f tail and heating are retained.
-            Assert.Equal(2.444609265723635, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
+            // The criticality normalization changes neutron production while retaining fission and heating.
+            Assert.Equal(2.4472551150365045, coefficients.NuFissionGroup2PerM / coefficients.FissionGroup2PerM, 12);
             Assert.True(coefficients.FissionGroup2PerM > 0);
             Assert.True(coefficients.AbsorptionGroup2PerM >= coefficients.FissionGroup2PerM);
         }
