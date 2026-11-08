@@ -118,12 +118,24 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(cell.dataset.planned).toBe("true"); // Remains queued until the displayed endpoint.
   expect(second.dataset.planned).toBe("true");
   expect(view.element.querySelector('[data-message]')?.textContent).not.toContain("Power updated");
-  const mode = view.element.querySelector<HTMLSelectElement>('[data-map-mode]')!;
-  expect([...mode.options].map(o => o.value)).toEqual(["power", "ripple", "burnup", "inlet-zones"]);
+  const tabs = [...view.element.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+  expect(tabs.map(tab => tab.textContent)).toEqual(["Power", "Ripple", "Burnup", "Inlet zones"]);
+  const panel = view.element.querySelector('[role="tabpanel"]')!;
   for (const value of ["ripple", "burnup", "inlet-zones", "power"]) {
-    mode.value = value; mode.dispatchEvent(new Event("change", { bubbles: true }));
+    const tab = tabs.find(tab => tab.dataset.mapTab === value)!;
+    tab.click();
+    expect(tabs.filter(tab => tab.getAttribute("aria-selected") === "true")).toEqual([tab]);
+    expect(tabs.filter(tab => tab.tabIndex === 0)).toEqual([tab]);
+    expect(panel.getAttribute("aria-labelledby")).toBe(tab.id);
     expect(view.element.querySelector('.arcade-map')?.getAttribute('data-map-mode')).toBe(value);
     expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "Channel power (kW)" : value === "inlet-zones" ? "Inlet zone fill (%)" : value === "ripple" ? "Ripple" : "Average channel burnup");
+  }
+  tabs[0].focus();
+  for (const [key, index] of [["ArrowRight", 1], ["End", 3], ["ArrowRight", 0], ["ArrowLeft", 3], ["Home", 0]] as const) {
+    document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    expect(document.activeElement).toBe(tabs[index]);
+    expect(tabs[index].getAttribute("aria-selected")).toBe("true");
+    expect(panel.getAttribute("aria-labelledby")).toBe(tabs[index].id);
   }
 });
 

@@ -57,10 +57,10 @@ namespace ReactorSim.Browser
             return result.ToString();
         }
 
-        internal static string CanonicalizeJson(JsonElement value)
+        internal static string CanonicalizeJson(JsonElement value, bool omitRefuellingZoneFills = false)
         {
             StringBuilder builder = new StringBuilder();
-            AppendCanonicalJson(builder, value);
+            AppendCanonicalJson(builder, value, omitRefuellingZoneFills: omitRefuellingZoneFills);
             return builder.ToString();
         }
 
@@ -136,7 +136,8 @@ namespace ReactorSim.Browser
             return value.ToString().ToLowerInvariant();
         }
 
-        private static void AppendCanonicalJson(StringBuilder builder, JsonElement value)
+        private static void AppendCanonicalJson(StringBuilder builder, JsonElement value,
+            string? excludedProperty = null, bool omitRefuellingZoneFills = false)
         {
             switch (value.ValueKind)
             {
@@ -146,6 +147,7 @@ namespace ReactorSim.Browser
                     foreach (JsonProperty property in value.EnumerateObject()
                                  .OrderBy(item => item.Name, StringComparer.Ordinal))
                     {
+                        if (excludedProperty != null && property.NameEquals(excludedProperty)) continue;
                         if (!firstProperty)
                         {
                             builder.Append(',');
@@ -154,7 +156,8 @@ namespace ReactorSim.Browser
                         firstProperty = false;
                         builder.Append(JsonSerializer.Serialize(property.Name, PlaytestJsonContext.Default.String));
                         builder.Append(':');
-                        AppendCanonicalJson(builder, property.Value);
+                        AppendCanonicalJson(builder, property.Value,
+                            omitRefuellingZoneFills && property.NameEquals("lastDayResult") ? "refuellingZoneFills" : null);
                     }
 
                     builder.Append('}');

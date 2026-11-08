@@ -235,6 +235,7 @@ namespace ReactorSim.Game
                 if (!ReferenceEquals(live._runtime, originalClock) || live._runtime.Generation != originalGeneration || !ReferenceEquals(live._coreState, originalCore) ||
                     !ReferenceEquals(live.CurrentSpatialCandidate, originalProjection))
                 { Result = live.Rejected("GameSession.Day.StaleCandidate", "The reactor changed while calculating the day."); return; }
+                var afterFuel = next._practiceRrs.ZoneFills;
                 if (!next.IsRunTerminal && next._runtime.SimulationTimeSeconds < end)
                 {
                     var planned = next._runtime.TryPlanSimulationStep(end - next._runtime.SimulationTimeSeconds);
@@ -249,7 +250,8 @@ namespace ReactorSim.Game
                 }
                 if (next._runtime.SimulationTimeSeconds == end) next._completedDays = (uint)(end / 86_400);
                 next._lastDayResult = new DailyTurnResult(start, next.Snapshot, channels, movements,
-                    live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0);
+                    live._fuelConsumed, live._usefulBundlesDischarged, live._syntheticScore, live._thermalEnergyJoules / 3_600_000_000.0,
+                    live._practiceRrs.ZoneFills, afterFuel);
                 live.AdoptDailyCandidate(next);
                 Result = live.AcceptedMessage(live.IsRunTerminal ? "Day ended: " + live.RunEndReason :
                     "Day " + live._completedDays + " complete. " + movements.Count + " channels refuelled; choose the next day's plan.");

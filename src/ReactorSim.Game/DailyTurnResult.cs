@@ -9,7 +9,8 @@ namespace ReactorSim.Game
     {
         internal DailyTurnResult(double start, GameSessionSnapshot end, IReadOnlyList<uint> requested,
             IReadOnlyList<RefuellingMovement> movements, uint fuelBefore, uint usefulBefore,
-            double scoreBefore, double energyBefore)
+            double scoreBefore, double energyBefore, IReadOnlyList<double> beforeFuel,
+            IReadOnlyList<double> afterFuel)
         {
             StartSimulationTimeSeconds = start;
             EndSimulationTimeSeconds = end.SimulationTimeSeconds;
@@ -18,6 +19,8 @@ namespace ReactorSim.Game
             ExecutedChannels = Array.AsReadOnly(movements.Select(m => m.ChannelIndex).ToArray());
             UnexecutedChannels = Array.AsReadOnly(requested.Except(ExecutedChannels).ToArray());
             FuelUsed = end.Shift.FuelConsumed - fuelBefore;
+            if (FuelUsed > 0)
+                RefuellingZoneFills = new RefuellingZoneFills(beforeFuel, afterFuel, end.Rrs.Zones);
             UsefulBundlesDischarged = end.Shift.UsefulBundlesDischarged - usefulBefore;
             ScoreDelta = end.ScoreTotal - scoreBefore;
             ThermalEnergyMwh = end.Shift.ThermalEnergyMwh - energyBefore;
@@ -33,6 +36,7 @@ namespace ReactorSim.Game
         public IReadOnlyList<uint> UnexecutedChannels { get; }
         public IReadOnlyList<RefuellingMovement> Movements { get; }
         public uint FuelUsed { get; }
+        public RefuellingZoneFills? RefuellingZoneFills { get; }
         public uint UsefulBundlesDischarged { get; }
         public double ScoreDelta { get; }
         public double ThermalEnergyMwh { get; }
@@ -40,5 +44,21 @@ namespace ReactorSim.Game
         public double AverageLzcFillFraction { get; }
         public double AxialTiltFraction { get; }
         public string EndReason { get; }
+    }
+
+    /// <summary>Accepted zone fills in logical zone order at the three boundaries of a fuel step.</summary>
+    public sealed class RefuellingZoneFills
+    {
+        internal RefuellingZoneFills(IReadOnlyList<double> before, IReadOnlyList<double> after,
+            IReadOnlyList<GameRrsZonePresentationSnapshot> end)
+        {
+            Before = Array.AsReadOnly(before.ToArray());
+            After = Array.AsReadOnly(after.ToArray());
+            End = Array.AsReadOnly(end.OrderBy(zone => zone.LogicalZoneId).Select(zone => zone.FillFraction).ToArray());
+        }
+
+        public IReadOnlyList<double> Before { get; }
+        public IReadOnlyList<double> After { get; }
+        public IReadOnlyList<double> End { get; }
     }
 }

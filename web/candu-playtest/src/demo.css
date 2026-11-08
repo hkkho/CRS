@@ -23,9 +23,17 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 .demo-clock { width: 100%; height: 4px; display: block; accent-color: #80e5bc; margin-bottom: 12px; }
 .demo-workspace { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
 .demo-core { min-width: 0; }
-.demo-map-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-.demo-map-heading h2 { font-size: 17px; }
-.demo-map-heading small, .demo-map-heading [data-live] { color: #a7b8c9; font-size: 12px; }
+.demo-map-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px; }
+.demo-map-heading [data-live] { color: #a7b8c9; font-size: 12px; margin-left: auto; }
+.demo-map-tabs { display: grid; flex: 1 1 285px; min-width: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.reactor-arcade.reactor-demo .demo-map-tabs button {
+  min-height: 44px; padding: 6px 4px; border-radius: 6px 6px 2px 2px;
+  background: #101f2c; color: #c8d7e2; box-shadow: none; font: 700 13px/1.2 system-ui, sans-serif;
+}
+.reactor-arcade.reactor-demo .demo-map-tabs button:hover { border-color: #81aec8; background: #1b3748; }
+.reactor-arcade.reactor-demo .demo-map-tabs button[aria-selected=true] {
+  border-color: #68ddff; background: #1b3748; color: #effaff; box-shadow: inset 0 -3px #68ddff;
+}
 .reactor-arcade.reactor-demo .arcade-map-scroll { width: 100%; margin: 0; border-radius: 8px; overflow: hidden; }
 .reactor-demo .arcade-map { background: #101e2b; }
 .reactor-arcade.reactor-demo .arcade-map button { font-size: clamp(5px, .58vw, 9px); font-weight: 750; color: #fff; text-shadow: 0 1px 2px #000; border-radius: 15%; box-shadow: none; }
@@ -99,8 +107,6 @@ body:has(.reactor-demo) .player-toggle { display: none; }
   .reactor-demo [data-demo-alert=shake] { outline: 2px solid #fff; }
   .reactor-arcade.reactor-demo .arcade-map button { transition: none; }
 }
-.demo-map-heading select { max-width: 100%; min-height: 44px; padding: 8px 30px 8px 12px; border: 1px solid #58788f; border-radius: 5px; background: #101f2c; color: #eff4dd; font: 700 16px system-ui, sans-serif; }
-
 /* The order deck stays next to the board on TV and handheld layouts. */
 .reactor-arcade.reactor-demo {
   background: radial-gradient(ellipse at 48% 0, #1a3345, #0b131c 58%);
@@ -123,6 +129,9 @@ body:has(.reactor-demo) .player-toggle { display: none; }
 .demo-command-deck strong { color: #ffe59b; font-size: 14px; }
 .demo-command-deck p { margin: 0; color: #a4f0ce; font-size: 13px; }
 .demo-command-deck p:empty { display: none; }
+.demo-zone-receipt { flex-basis: 100%; font-size: 13px; color: #d3dfe8; }
+.reactor-demo .demo-zone-receipt summary { min-height: 0; padding: 6px 0; }
+.demo-zone-receipt p + p { margin-top: 4px; }
 .demo-controls { color: #c1d0dd; font-size: 12px; line-height: 2; }
 .demo-controls kbd {
   display: inline-block; margin: 0 4px 0 8px; padding: 0 6px;

@@ -358,6 +358,7 @@ export interface DailyTurnResult {
   startSimulationTimeSeconds: number; endSimulationTimeSeconds: number;
   requestedChannels: number[]; executedChannels: number[]; unexecutedChannels: number[];
   movements: FuelMovement[]; fuelUsed: number; usefulBundlesDischarged: number;
+  refuellingZoneFills?: { before: number[]; after: number[]; end: number[] };
   scoreDelta: number; thermalEnergyMwh: number; electricalEnergyMwhEstimate: number;
   averageLzcFillFraction: number; axialTiltFraction: number; endReason: string;
 }
@@ -1277,6 +1278,11 @@ function isDailyTurnResult(value: unknown): boolean {
       !Array.isArray(value.movements) || !value.movements.every(isFuelMovement) || !isString(value.endReason) ||
       !hasFiniteNumberFields(value, ["startSimulationTimeSeconds", "endSimulationTimeSeconds", "scoreDelta", "thermalEnergyMwh", "electricalEnergyMwhEstimate", "averageLzcFillFraction", "axialTiltFraction"]) ||
       !isNonNegativeInteger(value.fuelUsed) || !isNonNegativeInteger(value.usefulBundlesDischarged)) return false;
+  const fills = value.refuellingZoneFills;
+  const isZoneFillList = (list: unknown) => Array.isArray(list) && list.length === 14 &&
+    list.every(fill => isFiniteNumber(fill) && fill >= 0 && fill <= 1);
+  if (fills !== undefined && (!isRecord(fills) || value.fuelUsed === 0 ||
+      ![fills.before, fills.after, fills.end].every(isZoneFillList))) return false;
   const requested = value.requestedChannels as number[], executed = value.executedChannels as number[], skipped = value.unexecutedChannels as number[];
   return (value.startSimulationTimeSeconds as number) >= 0 && (value.endSimulationTimeSeconds as number) >= (value.startSimulationTimeSeconds as number) &&
     (value.endSimulationTimeSeconds as number) - (value.startSimulationTimeSeconds as number) <= 86400 &&

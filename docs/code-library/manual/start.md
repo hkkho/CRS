@@ -14,7 +14,7 @@ Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the st
 | --- | --- | --- | --- |
 | Inspect a channel | Select a channel | Arrow keys on the map | D-pad |
 | Queue or remove waiting fuel | Double-click or use **Queue fuel** or **Remove order** | Enter or R on the map | Bottom face button |
-| Change the map | Use the map selector | Focus and change the selector | Shoulder buttons |
+| Change the map | Select a map tab | Left or Right on the map tabs | Shoulder buttons |
 | Pause or resume | Use the playback button | Focus and activate the button | Start |
 
 ## Custom physics

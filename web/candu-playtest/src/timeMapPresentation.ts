@@ -69,6 +69,21 @@ export function channelZonePair(channel: CanduChannelSnapshot): [number | undefi
   return [endA.length === 1 ? endA[0] : undefined, endB.length === 1 ? endB[0] : undefined];
 }
 
+export function refuellingZoneReadings(snapshot: CanduSnapshot): string[] {
+  const step = snapshot.lastDayResult;
+  const fills = step?.refuellingZoneFills;
+  if (!fills) return [];
+  const zones = new Set<number>();
+  for (const { channelIndex } of step.movements) {
+    const channel = snapshot.core.channels.find(c => c.channelIndex === channelIndex);
+    if (!channel) continue;
+    for (const zone of channelZonePair(channel)) if (zone !== undefined) zones.add(zone);
+  }
+  const percent = (fill: number) => `${(fill * 100).toFixed(1)}%`;
+  return zoneDisplayOrder.filter(zone => zones.has(zone)).map(zone =>
+    `${timeZoneLabel(zone)} ${[fills.before, fills.after, fills.end].map(phase => percent(phase[zone])).join(" → ")}`);
+}
+
 export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapshot, mode: TimeMapMode): { background: string; reading: string } {
   if (mode === "power") {
     const kw = channelWatts(snapshot, channel) / 1000;

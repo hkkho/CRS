@@ -3,7 +3,7 @@ import { exitBurnup } from "./CoreMapInteraction";
 import type { DemoLoop } from "./DemoLoop";
 import { isRunTerminal, type CanduChannelSnapshot, type CanduSnapshot } from "./protocol";
 import { bundleLimit, channelLimit, channelWatts } from "./studio/powerReadings";
-import { timeMapCell, type TimeMapMode } from "./timeMapPresentation";
+import { refuellingZoneReadings, timeMapCell, type TimeMapMode } from "./timeMapPresentation";
 import "./demoTutorial.css";
 
 export const TUTORIAL_SEED = 1001;
@@ -24,7 +24,7 @@ const lessons: readonly { title: string; map: TimeMapMode; text: string }[] = [
   { title: "Compare two channels and refuel one", map: "burnup",
     text: "Look for high outgoing burnup with room below the power limits. Check ripple and inlet zone fill. Fresh fuel can raise power in nearby channels too. Engineers and physicists use core models to assess predicted power and burnup distributions against plant limits. Compare the current readings below, queue one channel and advance 12 hours." },
   { title: "Review the solved result", map: "power",
-    text: "Compare the result with the starting readings. Trends plot selected-channel power and zone fills over simulated time. The score includes outgoing burnup minus fuel cost, the zone balance after refuelling, and operating points from ripple and tilt. In regular play, each half-day takes 7.5 seconds at normal speed. Pause to inspect the core." },
+    text: "Compare the result with the starting readings. The zone response separates the immediate fuel move from the half-day that follows. The score includes outgoing burnup minus fuel cost, the zone balance after refuelling, and operating points from ripple and tilt. In regular play, each half-day takes 7.5 seconds at normal speed. Pause to inspect the core." },
 ];
 const exercise = lessons.length - 2;
 const result = lessons.length - 1;
@@ -199,7 +199,9 @@ export class DemoTutorialView {
         const oldChannel = before && channelAt(before, movement.channelIndex);
         const burnups = movement.bundles.filter(bundle => bundle.afterPosition == null).map(bundle => bundle.burnupMwdPerKg);
         const outgoing = burnups.length ? (burnups.reduce((sum, burnup) => sum + burnup, 0) / burnups.length).toFixed(2) : "—";
-        return `${moved ? gridCoordinateLabel(moved) : "Selected channel"} · ${step.fuelUsed} bundles delivered · ${outgoing} MWd/kg outgoing. Channel power ${oldChannel && before ? kw(channelWatts(before, oldChannel)) : "—"} → ${moved ? kw(channelWatts(snapshot, moved)) : "—"}. Average fill ${before ? pct(before.rrs.averageFillFraction) : "—"} → ${pct(snapshot.rrs.averageFillFraction)}. Step score ${step.scoreDelta.toFixed(2)}. ${isRunTerminal(snapshot) ? snapshot.runEndReason : "Core remains in play."}`;
+        const fills = refuellingZoneReadings(snapshot);
+        const response = fills.length ? ` Zone fills from before refuelling → after refuelling → end of step. ${fills.join(" · ")}.` : "";
+        return `${moved ? gridCoordinateLabel(moved) : "Selected channel"} · ${step.fuelUsed} bundles delivered · ${outgoing} MWd/kg outgoing. Channel power ${oldChannel && before ? kw(channelWatts(before, oldChannel)) : "—"} → ${moved ? kw(channelWatts(snapshot, moved)) : "—"}. Average fill ${before ? pct(before.rrs.averageFillFraction) : "—"} → ${pct(snapshot.rrs.averageFillFraction)}. Step score ${step.scoreDelta.toFixed(2)}. ${isRunTerminal(snapshot) ? snapshot.runEndReason : "Core remains in play."}${response}`;
       }
       default: return `Selected ${label}.`;
     }

@@ -18,6 +18,11 @@ public sealed class PracticeXenonGameTests
         Assert.True(before.Xenon.MeanXe135NumberDensityM3 > 0);
         Assert.All(before.Rrs.Zones, z => Assert.True(z.MeanXe135NumberDensityM3 > 0));
         Assert.False(session.CurrentXenonState.Overlay.IsZero);
+        var localEquilibrium = PracticeXenonStateV1.CreateEquilibrium(session.CoreState, session.CurrentSpatialCandidate, 0);
+        double tolerance = Math.Max(1e-7, 4 * session.CurrentSpatialCandidate.DataPack.ConvergencePolicy.SourceShapeTolerance);
+        foreach (var (actual, expected) in session.CurrentXenonState.Iodine.Zip(localEquilibrium.Iodine)
+            .Concat(session.CurrentXenonState.Xenon.Zip(localEquilibrium.Xenon)))
+            Assert.InRange(Math.Abs(actual - expected) / Math.Max(1, expected), 0, tolerance);
         Assert.InRange(Math.Abs(session.CurrentLiquidZoneRrs.CompensatedNetReactivity), 0,
             PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance);
         Assert.True(session.Pause().Accepted);

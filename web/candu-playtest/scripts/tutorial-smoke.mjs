@@ -97,6 +97,7 @@ try {
   assert.ok(await advance.isDisabled());
   await inspect.first().click();
   const first = await refuel(210);
+  assert.match(first, /Z14 34\.0% → 42\.0% → 34\.0%/);
   await page.screenshot({ path: `${captures}/result.png` });
   await button('Try the other channel').click();
   await advance.waitFor(wait);

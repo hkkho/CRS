@@ -36,8 +36,10 @@ try {
   if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Fast speed was not selected');
   console.log('Time based core ready.');
   for (const mode of ['ripple', 'burnup', 'inlet-zones', 'power']) {
-    await page.locator('select[data-map-mode]').selectOption(mode);
-    if (await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
+    const tab = page.locator(`[role=tab][data-map-tab="${mode}"]`);
+    await tab.click();
+    if (await tab.getAttribute('aria-selected') !== 'true' ||
+        await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
     if (mode === 'inlet-zones') {
       const channel = page.locator('.arcade-map [data-channel="210"]');
       const neighbor = page.locator('.arcade-map [data-channel="211"]');
@@ -111,6 +113,8 @@ try {
   if (fuelReadings.some(value => value !== 0 && value !== 16)) throw new Error(`Fuel batch was split across displayed steps: ${fuelReadings}`);
   if (fuelReadings.at(-1) !== 16) throw new Error('Both channels were not fuelled together');
   if (!/Burnup [+-][0-9.]+ .* Zones \+[0-9.]+ pts/.test(await page.locator('[data-fuel-receipt]').innerText())) throw new Error('Fuel receipt score components missing');
+  await page.locator('[data-fuel-zone-response] summary').click();
+  if (!/Z14 [\d.]+% → [\d.]+% → [\d.]+%/.test(await page.locator('[data-fuel-zone-values]').innerText())) throw new Error('Fuel receipt zone response missing');
   if (await page.locator('.reactor-demo [data-planned=true]').count()) throw new Error('Delivered batch retained queue outlines');
   const fuelMs = Date.now() - start;
   console.log(`Fuel response: ${fuelMs}ms.`);

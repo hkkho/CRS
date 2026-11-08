@@ -31,7 +31,7 @@ public sealed class DailyTurnBridgeTests
         var initial = Parse(runtime.Initialize("{\"protocol\":\"candu-playtest-v2\",\"seed\":1001}"));
         Assert.Equal("daily-turn", initial.GetProperty("snapshot").GetProperty("pacingMode").GetString());
         Assert.True(initial.GetProperty("snapshot").GetProperty("isPaused").GetBoolean());
-        var progress = Parse(runtime.BeginDailyDispatchJson("{\"protocol\":\"candu-playtest-v2\",\"responseMode\":\"compact\",\"baseSequence\":0,\"type\":\"commit-day\",\"expectedCompletedDays\":0,\"channelIndices\":[]}"));
+        var progress = Parse(runtime.BeginDailyDispatchJson("{\"protocol\":\"candu-playtest-v2\",\"responseMode\":\"compact\",\"baseSequence\":0,\"type\":\"commit-day\",\"expectedCompletedDays\":0,\"channelIndices\":[210]}"));
         Assert.False(progress.GetProperty("completed").GetBoolean());
         Assert.Equal(0, progress.GetProperty("simulationSecondsAdvanced").GetDouble());
         Assert.Equal(0, Parse(runtime.GetSnapshotJson()).GetProperty("simulationTimeSeconds").GetDouble());
@@ -46,12 +46,25 @@ public sealed class DailyTurnBridgeTests
         Assert.Equal(1, patch.GetProperty("completedDays").GetInt32());
         var full = Parse(runtime.GetSnapshotJson());
         Assert.Equal(patch.GetProperty("lastDayResult").GetRawText(), full.GetProperty("lastDayResult").GetRawText());
+        var fills = patch.GetProperty("lastDayResult").GetProperty("refuellingZoneFills");
+        foreach (string phase in new[] { "before", "after", "end" })
+            Assert.Equal(14, fills.GetProperty(phase).GetArrayLength());
         var repeat = Parse(runtime.DispatchJson("{\"protocol\":\"candu-playtest-v2\",\"type\":\"commit-day\",\"expectedCompletedDays\":0,\"channelIndices\":[]}"));
         Assert.False(repeat.GetProperty("accepted").GetBoolean());
         Assert.Equal(86400, repeat.GetProperty("snapshot").GetProperty("simulationTimeSeconds").GetDouble());
         var reset = Parse(runtime.DispatchJson("{\"protocol\":\"candu-playtest-v2\",\"type\":\"reset\"}"));
         Assert.Equal("daily-turn", reset.GetProperty("snapshot").GetProperty("pacingMode").GetString());
         Assert.Equal(0, reset.GetProperty("snapshot").GetProperty("completedDays").GetInt32());
+    }
+
+    [Fact]
+    public void FuelReceiptExtensionPreservesLegacyStateCanonicalization()
+    {
+        var legacy = Parse("""{"sequence":1,"lastDayResult":{"fuelUsed":8}}""");
+        var extended = Parse("""{"sequence":1,"lastDayResult":{"fuelUsed":8,"refuellingZoneFills":{"before":[0.34],"after":[0.42],"end":[0.34]}}}""");
+        Assert.Equal(PlaytestProtocolV2.CanonicalizeJson(legacy),
+            PlaytestProtocolV2.CanonicalizeJson(extended, omitRefuellingZoneFills: true));
+        Assert.NotEqual(PlaytestProtocolV2.CanonicalizeJson(legacy), PlaytestProtocolV2.CanonicalizeJson(extended));
     }
 
     [Theory]

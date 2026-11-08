@@ -24,6 +24,7 @@ public sealed class DailyTurnTests
         Assert.Equal(1u, day.Snapshot.CompletedDays);
         Assert.True(day.Snapshot.IsPaused);
         Assert.Empty(day.Snapshot.LastDayResult!.Movements);
+        Assert.Null(day.Snapshot.LastDayResult.RefuellingZoneFills);
         Assert.Equal(day.Snapshot.ScoreTotal, day.Snapshot.LastDayResult.ScoreDelta);
         Assert.InRange(day.Snapshot.Shift.OperatingPoints, 0, 24);
         Assert.Equal(2064 * 24, day.Snapshot.LastDayResult.ThermalEnergyMwh, 5);
@@ -90,6 +91,10 @@ public sealed class DailyTurnTests
         Assert.Equal(channels.OrderBy(channel => channel), receipt.ExecutedChannels);
         Assert.Empty(receipt.UnexecutedChannels);
         Assert.Equal(64u, receipt.FuelUsed);
+        var fills = Assert.IsType<RefuellingZoneFills>(receipt.RefuellingZoneFills);
+        Assert.Equal(initial.Rrs.Zones.Select(z => z.FillFraction), fills.Before);
+        Assert.Equal(step.Snapshot.Rrs.Zones.Select(z => z.FillFraction), fills.End);
+        Assert.False(fills.Before.SequenceEqual(fills.After));
         Assert.All(receipt.Movements, move =>
             Assert.Equal(receipt.Movements[0].Score.ZoneBalanceBonus, move.Score.ZoneBalanceBonus));
     }
@@ -112,6 +117,7 @@ public sealed class DailyTurnTests
         Assert.Empty(receipt.UnexecutedChannels);
         Assert.Equal(64u, receipt.FuelUsed);
         Assert.Equal(64u, session.Snapshot.Shift.FuelConsumed);
+        Assert.Equal(receipt.RefuellingZoneFills!.After, receipt.RefuellingZoneFills.End);
         Assert.False(session.CommitDay(0, Array.Empty<uint>()).Accepted);
     }
 

@@ -123,6 +123,9 @@ describe("candu-playtest-v2 protocol validation", () => {
       fuelUsed: 8, usefulBundlesDischarged: 0, thermalEnergyMwh: 1, electricalEnergyMwhEstimate: 1,
       averageLzcFillFraction: 0.5, axialTiltFraction: 0, endReason: "" };
     expect(isProtocolSnapshot({ ...snapshot, scoreTotal: -3, lastDayResult: result })).toBe(true);
+    const fills = { before: Array(14).fill(.5), after: Array(14).fill(.6), end: Array(14).fill(.55) };
+    expect(isProtocolSnapshot({ ...snapshot, lastDayResult: { ...result, refuellingZoneFills: fills } })).toBe(true);
+    expect(isProtocolSnapshot({ ...snapshot, lastDayResult: { ...result, refuellingZoneFills: { ...fills, after: [1.1] } } })).toBe(false);
     expect(isProtocolSnapshot({ ...snapshot, lastDayResult: { ...result, scoreDelta: -Infinity } })).toBe(false);
     expect(isProtocolSnapshot({ ...snapshot, refuellingPlans: [{ ...plan, dischargedPositions: [12] }] })).toBe(false);
     expect(isProtocolSnapshot({ ...snapshot, lastFuelMovement: { ...snapshot.lastFuelMovement,

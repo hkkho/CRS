@@ -24,6 +24,7 @@ A compact patch names its base sequence. The client must materialize it against 
 - `axialTiltFraction` is the signed first moment of thermal flux, negative toward End A and positive toward End B. `rrsReserveFraction` describes remaining control room.
 - `physics.reactivity` is the solved `(k - 1) / k`. `coreReactivity` and `compensatedNetReactivity` distinguish the uncompensated and zone-compensated readings.
 - `lastDayResult` carries the committed moves, unexecuted channels, score change and timing. The browser may interpolate continuous measurements for display. It reveals fuel movement and terminal outcomes at the accepted endpoint.
+- After a fuel batch, optional `lastDayResult.refuellingZoneFills` reports `before`, `after` and `end` fill fractions in logical zone order. The arrays represent the starting state, the post-refuelling solve and the interval endpoint. This presentation field is excluded from the existing full and compact state digests to preserve saved-run replay.
 - `shift` carries the seed, fuel use, energy and objective. Current launcher runs are endless free practice. Historical objective IDs remain supported for replay.
 - `lastRefuellingScore` is null before the first accepted move. It then carries discharge reward, early-discharge penalty (`freshFuelCost`), zone bonus and signed net points. `ripple` carries the peak ratio and ripple and tilt rates. See the [scoring policy](../gameplay/score-balance.md).
 

@@ -20,7 +20,9 @@ namespace ReactorSim.Browser
         {
             string snapshotJson = PlaytestProtocolV2.Serialize(snapshot);
             using JsonDocument document = JsonDocument.Parse(snapshotJson);
-            string canonical = PlaytestProtocolV2.CanonicalizeJson(document.RootElement);
+            // The optional fuel receipt extension is presentation data. Older
+            // checkpoints must replay to the same state digest.
+            string canonical = PlaytestProtocolV2.CanonicalizeJson(document.RootElement, omitRefuellingZoneFills: true);
             return PlaytestProtocolV2.ComputeDigest(canonical);
         }
 
@@ -37,7 +39,7 @@ namespace ReactorSim.Browser
             string canonical = PlaytestProtocolV2.CompactStateDigestAlgorithm +
                 "|sequence=" + runtime.Sequence.ToString(CultureInfo.InvariantCulture) +
                 "|mode=" + runtime.Mode +
-                "|patch=" + PlaytestProtocolV2.CanonicalizeJson(document.RootElement) +
+                "|patch=" + PlaytestProtocolV2.CanonicalizeJson(document.RootElement, omitRefuellingZoneFills: true) +
                 "|core=" + ComputeCompactCoreIdentity(runtime, game);
             return PlaytestProtocolV2.ComputeDigest(canonical);
         }
