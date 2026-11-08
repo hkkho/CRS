@@ -61,7 +61,7 @@ try {
       await page.screenshot({ path: 'artifacts/demo/inlet-map.png', fullPage: true });
     }
   }
-  if (await page.locator('.reactor-demo h1').innerText() !== 'Reactor Sumulator') throw new Error('Play-screen title is incorrect');
+  if (await page.locator('.reactor-demo h1').innerText() !== 'Reactor Simulator') throw new Error('Play-screen title is incorrect');
   if ((await page.locator('.reactor-demo header').innerText()).includes('DEMO')) throw new Error('Old demo label');
   if ((await page.locator('.demo-hud').innerText()).includes('sec')) throw new Error('Speed value is still visible');
   if (!/^Ripple [0-9.]+ .* Tilt [0-9.]+ pts\/h$/.test(await page.locator('[data-score-rate]').innerText())) throw new Error('Operating score components missing');

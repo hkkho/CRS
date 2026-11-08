@@ -44,7 +44,7 @@ export class DemoView {
   constructor(parent: HTMLElement, seed: number, private readonly leave: () => void, restore?: Promise<RunSave>,
     onStart?: () => void, customPhysics?: CustomPhysics, readonly isTutorial = false) {
     this.element.className = "reactor-arcade reactor-demo";
-    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Sumulator</h1></div><nav aria-label="Time based controls">
+    this.element.innerHTML = `<header><div><p class="arcade-kicker">CRS / TIME BASED</p><h1>Reactor Simulator</h1></div><nav aria-label="Time based controls">
       <div class="demo-playback" role="group" aria-label="Playback">
         <button type="button" data-action="slow" aria-label="0.5× speed (10 seconds per half-day)" aria-pressed="false" title="0.5× · 10 seconds per half-day. Press again for normal speed.">0.5×</button>
         <button type="button" data-action="pause" aria-label="Resume" title="Resume">
