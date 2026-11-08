@@ -4,6 +4,9 @@ import { gridCoordinateLabel } from "./channelCoordinates";
 import { channelZonePair, timeZoneLabel } from "./timeMapPresentation";
 import { nextTabIndex } from "./demoPresentation";
 
+const trendModes = ["power", "zones"] as const;
+export type DemoTrendMode = typeof trendModes[number];
+
 type Sample = { day: number; peak: number; powers: number[]; mean: number; zoneFills: number[] };
 const MAX_SAMPLES = 241;
 const SAMPLE_DAYS = .05;
@@ -15,6 +18,8 @@ export class DemoTrends {
   private seed?: number;
   private selected = -1;
   private activeTab = 0;
+  private readonly tabs: HTMLButtonElement[];
+  private readonly panels: HTMLElement[];
 
   constructor() {
     this.element.className = "demo-trends";
@@ -26,26 +31,30 @@ export class DemoTrends {
       </div>
       <section class="demo-trend-card" id="demo-trend-power-panel" role="tabpanel" aria-labelledby="demo-trend-power" tabindex="0"><h3>Channel power <small>kW</small></h3><p class="demo-trend-key"><span class="trend-selected" data-trend-channel>Selected</span><span class="trend-peak">Core peak</span></p><svg data-chart="power" viewBox="0 0 260 180" role="img" aria-label="Selected channel and peak power history"></svg><p data-power-trend-reading></p></section>
       <section class="demo-trend-card" id="demo-trend-zones-panel" role="tabpanel" aria-labelledby="demo-trend-zones" tabindex="0" hidden><h3>Liquid-zone fill <small>%</small></h3><p class="demo-trend-key"><span class="trend-mean">Core average</span><span class="trend-end-a" data-trend-end-a></span><span class="trend-end-b" data-trend-end-b></span></p><svg data-chart="zones" viewBox="0 0 260 180" role="img" aria-label="Core average and selected channel End A and End B liquid zone history, with 10 and 90 percent limits"></svg><p data-zone-trend-reading></p><p class="demo-trend-note">Dashed lines: 10% / 90% limits</p></section>`;
-    const tablist = this.element.querySelector('[role="tablist"]')!;
-    const tabs = [...tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
-    const panels = [...this.element.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
-    const selectTab = (index: number) => {
-      this.activeTab = index;
-      tabs.forEach((tab, i) => {
-        const selected = i === index;
-        tab.setAttribute("aria-selected", String(selected));
-        tab.tabIndex = selected ? 0 : -1;
-        panels[i].hidden = !selected;
-      });
-    };
-    tabs.forEach((tab, i) => tab.addEventListener("click", () => selectTab(i)));
+    const tablist = this.element.querySelector<HTMLElement>('[role="tablist"]')!;
+    this.tabs = [...tablist.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    this.panels = [...this.element.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    this.tabs.forEach((tab, i) => tab.addEventListener("click", () => this.selectTab(i)));
     tablist.addEventListener("keydown", event => {
-      const key = event as KeyboardEvent;
-      const next = nextTabIndex(key, this.activeTab, tabs.length);
+      const next = nextTabIndex(event, this.activeTab, this.tabs.length);
       if (next === undefined) return;
-      key.preventDefault();
-      selectTab(next);
-      tabs[next].focus();
+      event.preventDefault();
+      this.selectTab(next);
+      this.tabs[next].focus();
+    });
+  }
+
+  show(mode: DemoTrendMode): void {
+    this.selectTab(trendModes.indexOf(mode));
+  }
+
+  private selectTab(index: number): void {
+    this.activeTab = index;
+    this.tabs.forEach((tab, i) => {
+      const selected = i === index;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      this.panels[i].hidden = !selected;
     });
   }
 

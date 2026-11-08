@@ -109,11 +109,14 @@ export class DemoView {
       const controllerHint = this.field("[data-gamepad-hint]");
       controllerHint.lastChild?.remove();
       controllerHint.querySelector("kbd:last-of-type")?.remove();
-      this.tutorial = new DemoTutorialView(this.loop, this.field("[data-action=fuel]"), mode => this.setMapMode(mode), index => {
+      this.tutorial = new DemoTutorialView(this.loop, this.field("[data-action=fuel]"), (mode, trend) => {
+        this.trends.show(trend);
+        this.setMapMode(mode);
+      }, index => {
         this.selected = index;
         this.render();
       }, this.leave);
-      this.field(".demo-hud").before(this.tutorial.element);
+      this.field(".demo-workspace").prepend(this.tutorial.element);
     }
     this.loop.setVisible(document.visibilityState !== "hidden");
     this.loading = new GameLoadingView(this.element, () => {

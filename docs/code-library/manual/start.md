@@ -8,7 +8,7 @@ If the run ends, the result dialog gives the reason and offers **Retry seed**, *
 
 ## Tutorial
 
-Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the starting state while you explore the readings and game limits. After comparing two channels, queue one and advance 12 simulated hours. Use **Try the other channel** to repeat the exercise from the same starting state and compare the outcomes.
+Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the starting state while you explore the HUD, map tabs, zone gauges, and trend tabs. The lesson sits beside the map on wider screens and above it on smaller screens. After comparing two channels, queue one and advance 12 simulated hours. Use **Try the other channel** to repeat the exercise from the same starting state and compare the outcomes.
 
 ## Controls
 

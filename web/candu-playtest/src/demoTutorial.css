@@ -1,9 +1,13 @@
 .reactor-arcade.reactor-tutorial > header { padding: 10px 12px; }
 .reactor-tutorial .demo-selected-hud { flex-basis: auto; }
+.reactor-tutorial .demo-workspace { grid-template-areas: "lesson" "map" "readout"; }
+.reactor-tutorial .demo-core { grid-area: map; }
+.reactor-tutorial .demo-readout { grid-area: readout; }
 .demo-tutorial {
   display: grid;
   gap: 10px;
-  margin: 16px 0;
+  grid-area: lesson;
+  min-width: 0;
   padding: clamp(14px, 3vw, 24px);
   border: 1px solid #547187;
   border-top: 3px solid #ffcc6a;
@@ -33,6 +37,12 @@
 .reactor-tutorial .demo-tutorial-examples [aria-pressed=true] { border-color: #ffcc6a; }
 .demo-tutorial-controls { display: flex; gap: 10px; flex-wrap: wrap; }
 .reactor-tutorial .demo-tutorial-controls .arcade-primary { width: auto; min-height: 44px; }
-@media (min-width: 610px) {
+@media (min-width: 460px) {
   .demo-tutorial-examples { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) {
+  .reactor-tutorial .demo-workspace {
+    grid-template-areas: "map lesson" "map readout";
+    grid-template-rows: auto 1fr;
+  }
 }

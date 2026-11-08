@@ -1,6 +1,7 @@
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { exitBurnup } from "./CoreMapInteraction";
 import type { DemoLoop } from "./DemoLoop";
+import type { DemoTrendMode } from "./DemoTrends";
 import { isRunTerminal, type CanduChannelSnapshot, type CanduSnapshot } from "./protocol";
 import { bundleLimit, channelLimit, channelWatts } from "./studio/powerReadings";
 import { refuellingZoneReadings, timeMapCell, type TimeMapMode } from "./timeMapPresentation";
@@ -8,23 +9,23 @@ import "./demoTutorial.css";
 
 export const TUTORIAL_SEED = 1001;
 const candidates = [210, 211] as const;
-const lessons: readonly { title: string; map: TimeMapMode; text: string }[] = [
+const lessons: readonly { title: string; map: TimeMapMode; trend?: DemoTrendMode; text: string }[] = [
   { title: "Read channel and bundle power", map: "power",
-    text: "Select a channel on the map or use the arrow keys. Channel power adds the heat from its twelve bundles. The peak bundle is the hottest one. Compare both readings because a channel can have room below its limit while one bundle is already hot." },
+    text: "The map tabs sit above the core. Select a channel on the Power map, or focus the map and use the arrow keys. Peak Channel in the top readout is the highest channel total in the core. A channel’s power sums its twelve bundles. Check the hottest bundle too, since it can approach its own limit first." },
   { title: "Read ripple against the reference", map: "ripple",
-    text: "Ripple compares a channel’s power with its fixed time-average reference. At 100% it matches that reference. A channel below its reference may have room for fresh fuel, but check its absolute power and its neighbours too. The game awards operating points for keeping the highest ripple low." },
+    text: "The Ripple tab compares a channel’s power with its fixed time-average reference. At 100% it matches that reference. A channel below its reference may have room for fresh fuel, but check its absolute power and its neighbours too. The game awards operating points for keeping the highest ripple low." },
   { title: "Follow the outgoing fuel", map: "burnup",
-    text: "Burnup is accumulated thermal energy per kilogram of heavy metal. The map averages all twelve bundles. A move pushes eight bundles out in the channel’s flow direction and shifts the four retained bundles to new positions. Use the outgoing average to compare candidates. Each outgoing bundle scores its burnup in MWd/kg minus 6." },
-  { title: "Read liquid-zone headroom", map: "inlet-zones",
-    text: "Each map cell shows the inlet zone. Flow alternates between neighbours, and six of the eight fresh bundles go into the inlet half. The regulator varies water fill to absorb neutrons. Look for room to add water near the fresh fuel and check the core average. The trends show both ends." },
+    text: "Burnup is accumulated thermal energy per kilogram of heavy metal. The Burnup tab averages all twelve bundles. A move pushes eight bundles out in the channel’s flow direction and shifts the four retained bundles to new positions. Use the outgoing average to compare candidates. Each outgoing bundle scores its burnup in MWd/kg minus 6." },
+  { title: "Read liquid-zone headroom", map: "inlet-zones", trend: "zones",
+    text: "The Inlet zones tab shows the inlet half, where six of the eight fresh bundles land. Avg. Zone Fill sits between Peak Channel and Score in the top readout. Check the individual gauges alongside the map for room to add water. The Zone fills trend below the gauges plots the core average and both ends of your selected channel." },
   { title: "Read tilt, multiplication and poison", map: "power",
     text: "Global axial tilt shows which end carries more thermal flux. Positive means End B and negative means End A. Keff measures neutron multiplication. At 1 the neutron population is steady. Iodine decays into neutron-absorbing xenon, which changes reactivity and the power distribution as its concentration changes." },
   { title: "Check all four operating limits", map: "power",
-    text: "Check the whole core before committing. The game checks the solved fuel batch and the half-day endpoint. Equality at a limit is allowed. A solved state outside a limit ends the run, and a numerical rejection leaves the previous state available for inspection." },
+    text: "Check the whole core before committing. The game checks the solved fuel batch and the half-day endpoint. Equality at a limit is allowed. In regular play, crossing a limit opens the Run ended dialog with the reason. Retry seed repeats that core and New core draws a different one. A rejected solve leaves the previous state available for inspection." },
   { title: "Compare two channels and refuel one", map: "burnup",
-    text: "Look for high outgoing burnup with room below the power limits. Check ripple and inlet zone fill. Fresh fuel can raise power in nearby channels too. Engineers and physicists use core models to assess predicted power and burnup distributions against plant limits. Compare the current readings below, queue one channel and advance 12 hours." },
-  { title: "Review the solved result", map: "power",
-    text: "Compare the result with the starting readings. The zone response separates the immediate fuel move from the half-day that follows. The score includes outgoing burnup minus fuel cost, the zone balance after refuelling, and operating points from ripple and tilt. In regular play, each half-day takes 7.5 seconds at normal speed. Pause to inspect the core." },
+    text: "Look for high outgoing burnup with room below the power limits. Check ripple and inlet zone fill. Fresh fuel can raise power in nearby channels too. Engineers and physicists use core models to assess predicted power and burnup distributions against plant limits. Compare the two channel cards, then use Queue fuel here and advance 12 hours. In regular play, Queue fuel is beside Selected Channel in the top readout." },
+  { title: "Review the solved result", map: "power", trend: "zones",
+    text: "Compare the starting and final readings. In Live trends, switch between Power and Zone fills to see each change over time. Under the map, Zone response to last fuel batch separates the immediate fuel move from the half-day endpoint. The score combines outgoing burnup minus fuel cost, zone balance, and operating points from ripple and tilt. Regular play advances automatically. Use Pause to inspect the core." },
 ];
 const exercise = lessons.length - 2;
 const result = lessons.length - 1;
@@ -50,7 +51,7 @@ export class DemoTutorialView {
   private step = 0;
   private startingSnapshot?: CanduSnapshot;
 
-  constructor(private readonly loop: DemoLoop, private readonly fuel: HTMLButtonElement, private readonly showMap: (map: TimeMapMode) => void,
+  constructor(private readonly loop: DemoLoop, private readonly fuel: HTMLButtonElement, private readonly showViews: (map: TimeMapMode, trend: DemoTrendMode) => void,
     private readonly select: (index: number) => void, private readonly finish: () => void) {
     this.element.className = "demo-tutorial";
     this.element.hidden = true;
@@ -159,7 +160,7 @@ export class DemoTutorialView {
     this.caption.textContent = `LESSON ${step + 1} / ${lessons.length} · SEED ${TUTORIAL_SEED}`;
     this.heading.textContent = lesson.title;
     this.instruction.textContent = lesson.text;
-    this.showMap(lesson.map);
+    this.showViews(lesson.map, lesson.trend ?? "power");
     this.heading.focus();
   }
 

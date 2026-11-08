@@ -14,6 +14,8 @@ const button = name => tutorial.getByRole('button', { name, exact: true });
 const advance = button('Advance 12 hours');
 const queue = button('Queue fuel');
 const map = page.locator('.arcade-map');
+const mapTabs = page.getByRole('tablist', { name: 'Core map' });
+const trendTabs = page.getByRole('tablist', { name: 'Live trends' });
 const cell = index => map.locator(`[data-channel="${index}"]`);
 const selected = () => map.locator('[aria-pressed=true]').getAttribute('data-channel');
 const caption = tutorial.locator('.demo-tutorial-kicker');
@@ -26,6 +28,18 @@ async function checkLayout(selector, widths, name) {
     await page.setViewportSize({ width, height: width < 700 ? 844 : 1000 });
     const root = page.locator(selector);
     assert.ok(await root.evaluate(element => element.scrollWidth <= element.clientWidth), `${name} overflow at ${width}px`);
+    if (name === 'practice') {
+      const lesson = await tutorial.boundingBox();
+      const board = await mapTabs.boundingBox();
+      const readout = await root.locator('.demo-readout').boundingBox();
+      if (width >= 960) {
+        assert.ok(lesson.x >= board.x + board.width && Math.abs(lesson.y - board.y) < 1, 'The lesson should sit beside the board');
+        assert.equal(readout.x, lesson.x);
+        assert.ok(readout.y >= lesson.y + lesson.height, 'The readout should sit below the lesson');
+      } else {
+        assert.ok(board.y >= lesson.y + lesson.height, 'The lesson should sit above the board on mobile');
+      }
+    }
     await root.evaluate(element => { element.scrollTop = 0; });
     await page.screenshot({ path: `${captures}/${name}-${width}.png` });
   }
@@ -40,6 +54,7 @@ async function refuel(index) {
   await button('See result').waitFor(wait);
   await button('See result').click();
   assert.match(await heading.innerText(), /solved result/);
+  assert.equal(await trendTabs.getByRole('tab', { selected: true }).innerText(), 'Zone fills');
   assert.equal(await view.getAttribute('data-time-seconds'), '43200');
   assert.equal(await view.getAttribute('data-fuel-consumed'), '8');
   assert.equal(await map.locator('[data-planned=true]').count(), 0);
@@ -68,12 +83,15 @@ try {
   assert.equal(await caption.innerText(), 'LESSON 1 / 8 · SEED 1001');
   assert.ok(await heading.evaluate(element => element === document.activeElement));
   assert.equal(await view.getAttribute('data-running'), 'false');
+  assert.equal(await view.locator('.demo-hud > div:nth-child(3) [data-zone-mean]').count(), 1);
   await cell(210).focus();
   await page.keyboard.press('Enter');
   assert.equal(await map.locator('[data-planned=true]').count(), 0);
   for (const mode of ['ripple', 'burnup', 'inlet-zones', 'power', 'power', 'burnup']) {
     await button('Next lesson').click();
     assert.equal(await map.getAttribute('data-map-mode'), mode);
+    assert.equal(await mapTabs.getByRole('tab', { selected: true }).getAttribute('data-map-tab'), mode);
+    assert.equal(await trendTabs.getByRole('tab', { selected: true }).innerText(), mode === 'inlet-zones' ? 'Zone fills' : 'Power');
     assert.notEqual(await readings.innerText(), '');
   }
   assert.match(await heading.innerText(), /Compare two channels/);
