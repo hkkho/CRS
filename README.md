@@ -28,3 +28,5 @@ npm run dev
 Run `./tools/Test-DotNet.ps1 -Configuration Release` and `./tools/Test-Browser.ps1 -Configuration Release` from the root. See [release and reproduction](docs/maintenance/hosting.md) for the Pages build, docs preview and smoke checks.
 
 The [v11 xenon calibration](docs/physics/xenon-calibration.md) and [v10 geometry fit](data/calibration/diffusion-v10/README.md) record the active model. The physics are authored gameplay approximations. Shutdown, scram, accidents, operator training and full plant operations are outside the game’s scope.
+
+The neutron diffusion paper derives the discrete solver, explains its verification, and measures half-day command latency against the five-second playback interval. [Read on GitHub](docs/physics/neutron-diffusion-paper.md) · [LaTeX source](docs/physics/neutron-diffusion-paper.tex)
