@@ -55,13 +55,43 @@ try {
     const power = editor.getByRole('spinbutton', { name: /Thermal power/ });
     await power.fill('0.98');
     await page.screenshot({ path: join(root, 'custom-editor.png') });
+    const section = editor.getByRole('combobox', { name: 'Section' });
+    const hasProfiles = await editor.getByRole('button', { name: 'Save profile' }).count() > 0;
+    if (hasProfiles) {
+      await section.selectOption('fuel');
+      check(await editor.getByRole('table', { name: 'Fuel and xenon coefficients by burnup' }).isVisible(), 'Fuel table was not shown.');
+      check(await editor.evaluate(element => element.scrollWidth <= element.clientWidth), 'Fuel table expands the narrow editor.');
+      await section.selectOption('operating');
+    }
     await page.keyboard.press('Escape');
     check(await page.getByRole('button', { name: 'Custom physics' }).evaluate(button => document.activeElement === button), 'Closing the editor lost keyboard focus.');
     await page.getByRole('button', { name: 'Custom physics' }).click();
     check(await power.inputValue() === '1', 'Cancel kept an uncommitted edit.');
     await power.fill('0.98');
-    await editor.getByText('Solver tolerances and iteration limits').click();
+    if (hasProfiles) {
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        editor.getByRole('button', { name: 'Save profile' }).click(),
+      ]);
+      const savedProfile = await readFile(await download.path());
+      const profile = JSON.parse(savedProfile);
+      check(profile.parameters.practice.thermal_power_multiplier === 0.98, 'Saved profile lost the power edit.');
+      const file = editor.locator('input[type=file]');
+      await file.setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') });
+      await editor.getByRole('status').getByText('Open a valid JSON physics profile.').waitFor();
+      check(await power.inputValue() === '0.98', 'A failed import changed the draft.');
+      await editor.getByRole('button', { name: 'Restore defaults' }).click();
+      await file.setInputFiles({ name: 'saved.json', mimeType: 'application/json', buffer: savedProfile });
+      await editor.getByRole('status').getByText(/Loaded saved.json/).waitFor();
+      check(await power.inputValue() === '0.98', 'Loading the saved profile did not restore the edit.');
+    }
     const iterations = editor.getByRole('spinbutton', { name: 'Maximum iterations', exact: true });
+    async function showSolver() {
+      if (await iterations.isVisible()) return;
+      if (hasProfiles) await section.selectOption('solver');
+      else await editor.getByText('Solver tolerances and iteration limits').click();
+    }
+    await showSolver();
     await iterations.fill('1');
     await editor.getByRole('button', { name: 'Build custom core' }).click();
     await page.getByRole('dialog', { name: 'Preparing game' }).getByText(/Custom core could not initialize/).waitFor({ timeout });
@@ -69,6 +99,7 @@ try {
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'Custom physics' }).click();
     check(await power.inputValue() === '0.98', 'The failed build lost the custom draft.');
+    await showSolver();
     await iterations.fill('1600');
     await editor.getByRole('button', { name: 'Build custom core' }).click();
     await page.setViewportSize({ width: 1440, height: 1000 });

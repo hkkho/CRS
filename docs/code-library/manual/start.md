@@ -21,7 +21,7 @@ Choose **Tutorial** below **Start game**. The tutorial holds seed 1001 at the st
 
 ## Custom physics
 
-Choose **Custom physics** on the launcher to set up a sandbox. Edit nominal power, device absorption, iodine and xenon kinetics, diffusion and boundary geometry, fuel coefficients and solver settings. **Restore defaults** clears the draft. **Build custom core** validates the settings and solves the starting state. If the core cannot settle, choose **Back** and revise your draft. The run uses the chosen settings through retries and local update restores.
+Choose **Custom physics** on the launcher to set up a sandbox. Use the section menu to edit power, poisons, geometry, adjusters and solver settings. Edit fuel coefficients and included xenon in the burnup table. **Save profile** downloads your edits as JSON. **Load profile** fills the editor from a file for this base pack. The core seed is selected separately. **Restore defaults** clears the draft. **Build custom core** validates the settings and solves the starting state. If the core cannot settle, choose **Back** and revise your draft. The run uses the chosen settings through retries and local update restores.
 
 ## Updates and recovery
 

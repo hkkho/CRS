@@ -1,4 +1,5 @@
 import { randomCoreSeed } from "./coreSeed";
+import { makePhysicsProfile } from "./physicsProfile";
 import { CUSTOM_PHYSICS_PACK_PREFIX, type CustomPhysics } from "./customPhysics";
 import {
   CORE_BUNDLE_POSITION_COUNT,
@@ -141,7 +142,8 @@ export class WasmProtocolBridge implements CanduPlaytestBridge {
     }
 
     const callStarted = nowMs();
-    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed, pacingMode, customPhysics }));
+    const raw = await this.exports.initialize(JSON.stringify({ protocol: PROTOCOL_VERSION, mode, seed, pacingMode,
+      customPhysics: customPhysics && makePhysicsProfile(customPhysics) }));
     const callDuration = nowMs() - callStarted;
     const parseStarted = nowMs();
     try {

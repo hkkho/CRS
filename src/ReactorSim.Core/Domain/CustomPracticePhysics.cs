@@ -60,12 +60,19 @@ namespace ReactorSim.Core
         // Numeric overrides can only address existing active fields. Matching Xe
         // burnup knots are derived from the fuel knots, as required by the loader.
         public static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadPracticeOverrides(
-            IReadOnlyDictionary<string, double> overrides)
+            IReadOnlyDictionary<string, double> overrides) => TryLoadPracticeOverrides(overrides, null);
+
+        private static ContractValidationResult<FullCoreDiffusionDataPackV1> TryLoadPracticeOverrides(
+            IReadOnlyDictionary<string, double> overrides, string? requiredBasePack)
         {
             using var stream = typeof(FullCoreDiffusionDataPackV1).Assembly.GetManifestResourceStream(EmbeddedResourceName);
             if (stream == null) return TryLoadEmbeddedCandu6();
             using var reader = new StreamReader(stream, Encoding.UTF8, true);
             var root = JObject.Parse(reader.ReadToEnd());
+            string? activeBasePack = (string?)root["data_pack_version"];
+            if (requiredBasePack != null && requiredBasePack != activeBasePack)
+                return Invalid("CustomPhysics.Profile.BasePack", "basePack",
+                    "This profile requires " + requiredBasePack + ", but the active base pack is " + activeBasePack + ".");
             var practice = new JObject
             {
                 ["thermal_power_multiplier"] = 1.0,

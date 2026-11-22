@@ -214,6 +214,7 @@ jobs:
           npm run smoke:tutorial -- "$PLAYTEST_URL" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/tutorial-smoke.log"
           if [[ "$REUSE_VALIDATION" != true ]]; then
             npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/upgrade" 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/upgrade-smoke.log"
+            npm run smoke:upgrade -- "$PLAYTEST_CAPTURE_DIR/physics-upgrade" --custom-physics 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/physics-upgrade-smoke.log"
             npm run benchmark -- --bridge=direct --label=pages-predeploy --warm-samples=1 2>&1 | tee "$PLAYTEST_CAPTURE_DIR/benchmark.log"
           fi
       - name: Upload Pages site

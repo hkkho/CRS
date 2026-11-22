@@ -6,6 +6,8 @@ The authoritative C# bridge accepts JSON commands with `protocol: candu-playtest
 
 Initialize accepts `mode: play`, an unsigned 32-bit `seed`, optional `shiftId`, and `pacingMode`. Reset retains the current seed, shift and pacing unless explicitly changed.
 
+Time-based free practice also accepts `customPhysics` as a [versioned physics profile](../IMPLEMENTATION_GUIDE.md#physics-profile-format-and-extension-path) or a legacy numeric override map. Core validates the input before a candidate run replaces the current one. Reset retains the resolved physics pack.
+
 | Pacing | Command and interval |
 | --- | --- |
 | `demo` | Public time-based play. `commit-day` solves a half-day, then the browser displays it at the selected playback speed when ready. The managed clock stays paused between steps. The bridge also supports direct `commit-refuel`. |

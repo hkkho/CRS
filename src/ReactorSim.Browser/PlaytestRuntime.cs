@@ -194,19 +194,27 @@ namespace ReactorSim.Browser
                         if (pacing != "demo" || shiftId != ShiftProgress.PracticeId)
                             return CustomPhysicsError("initialize", "Custom physics requires a time-based free practice run.");
                         if (physics.ValueKind != JsonValueKind.Object)
-                            return CustomPhysicsError("initialize", "Custom physics must be an object of numeric overrides.");
-                        var overrides = new Dictionary<string, double>(StringComparer.Ordinal);
-                        foreach (var field in physics.EnumerateObject())
-                        {
-                            if (overrides.Count >= 512 || field.Name.Length > 100)
-                                return CustomPhysicsError("initialize", "Too many custom physics parameters or a parameter name is too long.");
-                            if (field.Value.ValueKind != JsonValueKind.Number || !field.Value.TryGetDouble(out double value) ||
-                                !overrides.TryAdd(field.Name, value))
-                                return CustomPhysicsError("initialize", "Invalid or duplicate custom physics parameter: " + field.Name);
-                        }
+                            return CustomPhysicsError("initialize", "Custom physics must be a physics profile or an object of numeric overrides.");
                         try
                         {
-                            var pack = FullCoreDiffusionDataPackV1.TryLoadPracticeOverrides(overrides);
+                            ContractValidationResult<FullCoreDiffusionDataPackV1> pack;
+                            if (physics.TryGetProperty("format", out _))
+                            {
+                                pack = FullCoreDiffusionDataPackV1.TryLoadPracticeProfile(physics.GetRawText());
+                            }
+                            else
+                            {
+                                var overrides = new Dictionary<string, double>(StringComparer.Ordinal);
+                                foreach (var field in physics.EnumerateObject())
+                                {
+                                    if (overrides.Count >= 512 || field.Name.Length > 100)
+                                        return CustomPhysicsError("initialize", "Too many custom physics parameters or a parameter name is too long.");
+                                    if (field.Value.ValueKind != JsonValueKind.Number || !field.Value.TryGetDouble(out double value) ||
+                                        !overrides.TryAdd(field.Name, value))
+                                        return CustomPhysicsError("initialize", "Invalid or duplicate custom physics parameter: " + field.Name);
+                                }
+                                pack = FullCoreDiffusionDataPackV1.TryLoadPracticeOverrides(overrides);
+                            }
                             if (!pack.IsValid) return CustomPhysicsError("initialize", pack.FirstDiagnostic.ToString());
                             customPack = pack.Value;
                             customPhysicsJson = PlaytestProtocolV2.CanonicalizeJson(physics);

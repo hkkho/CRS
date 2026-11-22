@@ -1,37 +1,116 @@
 .custom-physics {
   box-sizing: border-box;
-  width: min(47rem, calc(100% - 1.5rem));
+  width: min(70rem, calc(100% - 1.5rem));
   max-height: calc(100dvh - 1.5rem);
-  overflow: auto;
-  scroll-padding-block-end: 7rem;
+  overflow: hidden;
   color: #edf4f5;
   background: #10222b;
   border: 1px solid #4b6973;
   border-radius: .8rem;
-  padding: clamp(.8rem, 3vw, 1.5rem);
+  padding: 0;
 }
+
 .custom-physics::backdrop { background: #030b13c9; }
-.custom-physics h2 { margin: .3rem 0; }
-.custom-physics p { line-height: 1.45; }
-.custom-physics details {
-  border-top: 1px solid #36505a;
-  padding: .25rem 0;
-}
-.custom-physics details details { margin-inline-start: .65rem; }
-.custom-physics summary {
-  cursor: pointer;
-  padding: .55rem .25rem;
-  font-weight: 650;
-}
-.custom-physics .physics-field {
+
+.custom-physics form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(8rem, 14rem);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  max-height: calc(100dvh - 1.5rem - 2px);
+}
+
+.custom-physics .physics-header,
+.custom-physics footer { padding: .8rem clamp(.75rem, 2vw, 1.35rem); }
+.custom-physics .physics-header { border-bottom: 1px solid #36505a; }
+.custom-physics footer { border-top: 1px solid #36505a; }
+.custom-physics h2 { margin: 0; }
+.custom-physics h3 { margin: 0 0 .75rem; font-size: 1.15rem; }
+.custom-physics p { margin: .35rem 0; line-height: 1.45; }
+.custom-physics button { min-height: 2.75rem; }
+.custom-physics .physics-title,
+.custom-physics footer {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: .4rem .8rem;
-  padding: .3rem .25rem;
+  flex-wrap: wrap;
+  gap: .35rem .8rem;
+}
+
+.custom-physics .physics-seed {
+  display: grid;
+  grid-template-columns: auto minmax(0, 7.5rem);
+  align-items: center;
+  gap: .55rem;
+}
+
+.custom-physics .physics-file-actions,
+.custom-physics .physics-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.custom-physics .physics-file-actions { margin-top: .65rem; }
+.custom-physics .physics-status {
+  overflow: auto;
+  max-height: 4.5rem;
+  overflow-wrap: anywhere;
+  color: #c1dfdf;
+}
+.custom-physics .physics-status:empty { margin: 0; }
+.custom-physics .physics-status.physics-error { color: #ffc8b7; }
+
+.custom-physics .physics-workspace {
+  display: grid;
+  grid-template-columns: minmax(10rem, 13.5rem) minmax(0, 1fr);
+  min-height: 0;
+}
+.custom-physics nav {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  border-inline-end: 1px solid #36505a;
+  padding: .75rem;
+  background: #0b1a23;
+  overflow: auto;
+}
+.custom-physics nav button { text-align: start; white-space: normal; }
+.custom-physics nav [aria-pressed="true"] {
+  border-color: #89c4c7;
+  background: #244651;
+  color: #fff;
+}
+.custom-physics .physics-section-picker { display: none; }
+.custom-physics .physics-panels {
+  overflow: auto;
+  min-width: 0;
+  padding: 1rem clamp(.75rem, 2vw, 1.35rem);
+  scrollbar-color: #6c959b #0b1a23;
+}
+
+.custom-physics fieldset {
+  min-inline-size: 0;
+  border: 1px solid #36505a;
+  border-radius: .35rem;
+  padding: 0 .65rem .25rem;
+  margin: 0 0 .75rem;
+}
+.custom-physics legend { padding: 0 .35rem; font-weight: 650; }
+.custom-physics .physics-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(6rem, 9rem) minmax(7rem, 10rem);
+  align-items: center;
+  gap: .35rem .65rem;
+  min-height: 2.6rem;
+  border-bottom: 1px solid #2a414c;
+  padding: .3rem .15rem;
   overflow-wrap: anywhere;
 }
-.custom-physics input {
+.custom-physics .physics-row:last-child { border-bottom: 0; }
+.custom-physics .physics-column-names,
+.custom-physics .physics-default { color: #b9d0d6; font-size: .85rem; }
+.custom-physics .physics-column-names { min-height: 1.65rem; font-weight: 650; }
+
+.custom-physics input[type="number"],
+.custom-physics select {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -43,16 +122,95 @@
   font: inherit;
   font-variant-numeric: tabular-nums;
 }
-.custom-physics footer {
-  position: sticky;
-  bottom: -1px;
-  background: #10222b;
-  border-top: 1px solid #36505a;
-  padding: .3rem 0;
+.custom-physics input[type="number"].physics-edited {
+  border-color: #a7d9d6;
+  background: #193e46;
+  font-weight: 650;
 }
-.custom-physics footer p { margin: .35rem 0; }
-.custom-physics .physics-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
-.custom-physics button { min-height: 2.75rem; }
-@media (max-width: 420px) {
-  .custom-physics .physics-field { grid-template-columns: 1fr; }
+
+#physics-panel-fuel:not([hidden]) {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+}
+
+.custom-physics .physics-table-scroll {
+  overflow: auto;
+  min-height: 0;
+  border: 1px solid #4b6973;
+  border-radius: .35rem;
+  margin: .7rem 0;
+}
+.custom-physics table {
+  border-spacing: 0;
+  text-align: start;
+  font-variant-numeric: tabular-nums;
+}
+.custom-physics th, .custom-physics td {
+  padding: .35rem .45rem;
+  border-bottom: 1px solid #36505a;
+  border-inline-end: 1px solid #36505a;
+}
+.custom-physics thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #1d3947;
+}
+.custom-physics thead tr > :first-child { z-index: 3; }
+.custom-physics th small { display: block; color: #c1d9de; font-weight: 400; }
+.custom-physics td, .custom-physics th { min-width: 10.75rem; }
+.custom-physics tr > :first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  background: #1d3947;
+  min-width: 6.25rem;
+}
+.custom-physics tbody th { z-index: 1; }
+.custom-physics tbody tr:last-child > * { border-bottom: none; }
+
+@media (max-width: 670px) {
+  .custom-physics .physics-workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .custom-physics nav { display: none; }
+  .custom-physics .physics-section-picker {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem .75rem;
+    background: #0b1a23;
+  }
+  .custom-physics .physics-row {
+    grid-template-columns: minmax(0, 1fr) minmax(4.75rem, 6rem) minmax(5.75rem, 7rem);
+  }
+}
+
+@media (max-width: 390px) {
+  .custom-physics .physics-header, .custom-physics footer { padding-block: .5rem; }
+  .custom-physics .physics-title { flex-wrap: nowrap; }
+  .custom-physics h2 { font-size: 1.1rem; }
+  .custom-physics .physics-seed {
+    grid-template-columns: minmax(0, 6.75rem);
+    gap: .15rem;
+    font-size: .75rem;
+  }
+  .custom-physics .physics-file-actions { margin-top: .4rem; }
+  .custom-physics .physics-panels h3 { display: none; }
+  .custom-physics .physics-row {
+    grid-template-columns: minmax(0, 1fr) minmax(6rem, 1fr);
+  }
+  .custom-physics .physics-column-names > :first-child { display: none; }
+  .custom-physics .physics-row label { grid-column: 1 / -1; }
+  .custom-physics footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: .3rem;
+    font-size: .8rem;
+  }
+  .custom-physics footer .physics-actions { display: contents; }
+  .custom-physics footer button { padding: .35rem .45rem; min-height: 2.75rem; }
+  .custom-physics footer [type="submit"] { grid-column: 1 / -1; }
 }

@@ -36,7 +36,15 @@ public sealed partial class PlaytestBridgeTests
         Assert.Equal(snapshot.GetProperty("core").GetRawText(), reset.GetProperty("snapshot").GetProperty("core").GetRawText());
 
         var replay = new PlaytestRuntime();
-        AssertAccepted(Parse(replay.Initialize(CustomPhysicsRequest(overrides))));
+        const string profile = """
+            {"format":"crs-physics-profile","version":1,
+             "model":"candu6-two-group-full-core-diffusion-v1",
+             "basePack":"candu6-two-group-diffusion-v1-xenon-v11","units":"SI-v1",
+             "parameters":{"practice":{"iodine_half_life_multiplier":1.05,"thermal_power_multiplier":0.98}}}
+            """;
+        var reloaded = Parse(replay.Initialize(CustomPhysicsRequest(profile)));
+        AssertAccepted(reloaded);
+        Assert.Equal(initialized.GetProperty("stateDigest").GetString(), reloaded.GetProperty("stateDigest").GetString());
         Assert.Equal(advanced.GetProperty("stateDigest").GetString(),
             Parse(replay.Dispatch(day)).GetProperty("stateDigest").GetString());
     }

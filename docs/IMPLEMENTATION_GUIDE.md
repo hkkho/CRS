@@ -26,6 +26,32 @@ The [v10 geometry fit](../data/calibration/diffusion-v10/README.md) uses circula
 
 Custom physics applies numeric overrides to the embedded pack and per-pack practice settings before startup. The shared loader validates the parameters and Game recomputes the reference and initial equilibrium. Custom runs have modified sandbox provenance and a content-based pack ID. They retain the settings across seed resets and local update checkpoints.
 
+### Physics profile format and extension path
+
+The editor loads and saves UTF-8 JSON profiles up to 64 KiB. A profile declares its format, schema version, model, base pack revision and units. It stores only edited values. The example changes nominal thermal power and the energy per fission at fuel knot 1 (zero-based).
+
+```json
+{
+  "format": "crs-physics-profile",
+  "version": 1,
+  "model": "candu6-two-group-full-core-diffusion-v1",
+  "basePack": "candu6-two-group-diffusion-v1-xenon-v11",
+  "units": "SI-v1",
+  "parameters": {
+    "practice": { "thermal_power_multiplier": 0.98 },
+    "fuel_rows": { "1": { "energy_per_fission_j": 3.2e-11 } }
+  }
+}
+```
+
+The version 1 reader accepts `practice`, `geometry`, `adjusters`, `solver`, `fuel_rows` and `xenon_rows`. Rows refer to zero-based indices in the pinned base pack. Geometry retains the pack's named subsections. A profile with no edits uses `"parameters": {}`. Duplicate properties, unknown fields, unsupported model or units, and mismatched base revisions are rejected. The Core loader resolves the same overrides as older clients and maintains derived xenon knots, modified provenance and content identity. A base pack change requires a revision bump and an explicit migration if older profile files are to be carried forward.
+
+JSON lets the browser and .NET read small files with their existing parsers, and text diffs show the exact changes. YAML also supports structured text and adds features such as aliases and tags that this editor does not need. HDF5 supports typed multidimensional datasets and chunking, which becomes useful when data must be read in slices. [JSON specification](https://www.rfc-editor.org/rfc/rfc8259) · [YAML specification](https://yaml.org/spec/1.2.2/) · [HDF5 dataset layout](https://support.hdfgroup.org/documentation/hdf5/latest/_l_b_dset_layout.html)
+
+When the simulator gains a second model, introduce a typed payload and Core reader for that model, with an explicit topology and solver compatibility check. Give meshes, energy groups and fuel tables stable IDs. Carry ordered axes and units with coefficient tables so group order, coordinate conventions and array shapes are verifiable. Connect each payload to a dedicated editor section or table backed by the same model contract.
+
+Define scenario inputs separately when a supported time-dependent model needs them. A scenario should reference its compatible reactor and fuel data and identify its time axis, initial conditions and permitted inputs. Keep generated power and isotope histories with run outputs. For large mesh, kinetics or history arrays, evaluate an HDF5 dataset linked from a versioned manifest by content hash, dataset name, units and axis order. Agree on those datasets when a model needs them.
+
 ## Presentation and lifecycle
 
 Render accepted readings, including terminal reasons and diagnostics, without inventing intermediate physical states. Preserve keyboard access, 320px layouts, reduced motion and focus on recovery. Dispose worker, listeners and timers when leaving a run.
