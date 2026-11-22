@@ -37,7 +37,7 @@ it("waits through initialization and readiness until Start, then begins the cloc
   expect(view.element.querySelector("dialog[open]")).toBeNull();
   await vi.advanceTimersByTimeAsync(50);
   expect(bridge.dispatch).toHaveBeenCalledTimes(1);
-  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-day" }), { responseMode: "compact" });
+  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-day" }), { responseMode: "compact", demoReadings: true });
   expect(leave).not.toHaveBeenCalled();
 });
 
@@ -75,7 +75,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   vi.mocked(createCanduPlaytestBridge).mockReturnValue(bridge);
   view = new DemoView(document.body, 1001, vi.fn());
   expect(view.element.querySelector(".game-loading-dialog[open]")).not.toBeNull();
-  await vi.advanceTimersByTimeAsync(10_000);
+  vi.advanceTimersByTime(500);
   expect(bridge.dispatch).not.toHaveBeenCalled();
   expect(view.element.dataset.running).toBe("false");
   view.element.querySelector<HTMLButtonElement>("[data-game-start]")!.click();
@@ -95,7 +95,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(second.dataset.planned).toBe("true");
   expect(bridge.dispatch).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(50);
-  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-day", channelIndices: [210, 211] }), { responseMode: "compact" });
+  expect(bridge.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: "commit-day", channelIndices: [210, 211] }), { responseMode: "compact", demoReadings: true });
   expect(cell.disabled).toBe(false);
   expect(cell.textContent).toBe(text); // No fabricated power response while solving.
   expect(cell.dataset.planned).toBe("true");
@@ -122,7 +122,7 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
   expect(second.dataset.planned).toBe("true");
   expect(view.element.querySelector('[data-message]')?.textContent).not.toContain("Power updated");
   const tabs = [...view.element.querySelectorAll<HTMLButtonElement>(".demo-map-tabs [role=tab]")];
-  expect(tabs.map(tab => tab.textContent)).toEqual(["Power", "Ripple", "Burnup", "Inlet zones"]);
+  expect(tabs.map(tab => tab.textContent)).toEqual(["Power", "Max bundle power", "Ripple", "Burnup", "Inlet zones", "Fuelling history"]);
   const panel = view.element.querySelector('[role="tabpanel"]')!;
   for (const value of ["ripple", "burnup", "inlet-zones", "power"]) {
     const tab = tabs.find(tab => tab.dataset.mapTab === value)!;
@@ -133,13 +133,40 @@ it("queues fuel without blocking the map, shows all zones and never advertises s
     expect(view.element.querySelector('.arcade-map')?.getAttribute('data-map-mode')).toBe(value);
     expect(view.element.querySelector('[data-legend]')?.textContent).toContain(value === "power" ? "Channel power (kW)" : value === "inlet-zones" ? "Inlet zone fill (%)" : value === "ripple" ? "Ripple" : "Average channel burnup");
   }
+  tabs[5].click();
+  const historyRow = view.element.querySelector("[data-fuel-history] tr");
+  const writeCellAttribute = vi.spyOn(cell, "setAttribute");
+  vi.advanceTimersByTime(50);
+  expect(writeCellAttribute).not.toHaveBeenCalled();
+  expect(view.element.querySelector("[data-fuel-history] tr")).toBe(historyRow);
+  tabs[0].click();
+  expect(writeCellAttribute).toHaveBeenCalled();
+  writeCellAttribute.mockRestore();
   tabs[0].focus();
-  for (const [key, index] of [["ArrowRight", 1], ["End", 3], ["ArrowRight", 0], ["ArrowLeft", 3], ["Home", 0]] as const) {
+  for (const [key, index] of [["ArrowRight", 1], ["End", 5], ["ArrowRight", 0], ["ArrowLeft", 5], ["Home", 0]] as const) {
     document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
     expect(document.activeElement).toBe(tabs[index]);
     expect(tabs[index].getAttribute("aria-selected")).toBe("true");
-    expect(panel.getAttribute("aria-labelledby")).toBe(tabs[index].id);
+    expect(view.element.querySelector(index === 5 ? "#demo-history-panel" : "#demo-map-panel")?.getAttribute("aria-labelledby")).toBe(tabs[index].id);
   }
+});
+
+it("shows the unknown fuelling result when the only submitted order loses its response", async () => {
+  vi.useFakeTimers();
+  const snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo" };
+  vi.mocked(createCanduPlaytestBridge).mockReturnValue({
+    status: { source: "wasm", title: "", detail: "", isWasmAvailable: true, capabilities: [] },
+    getSnapshot: () => snapshot, subscribe: () => () => {},
+    initializeMode: async () => snapshot, whenReady: async () => snapshot,
+    dispatch: vi.fn(async () => { throw new Error("Worker disconnected"); }),
+  });
+  view = new DemoView(document.body, 1001, vi.fn());
+  view.element.querySelector<HTMLButtonElement>("[data-game-start]")!.click();
+  view.element.querySelector('[data-channel="210"]')!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+  await vi.advanceTimersByTimeAsync(50);
+  expect(view.element.querySelector("[data-fuel-queue]")?.textContent).toBe("1 with unknown result");
+  expect(view.element.querySelector("[data-message]")?.textContent).toContain("Retry the core");
+  expect(view.element.querySelector("[data-fuel-eta]")?.textContent).toBe("");
 });
 
 it("opens the result after Start and keeps restart choices available when a retry fails", async () => {
@@ -213,7 +240,7 @@ it("routes standard controller presses through the same map, fuel, and pause con
     buttons[5].pressed = true;
     await vi.advanceTimersByTimeAsync(40);
     expect(view.element.querySelector('[data-channel="211"]')?.getAttribute("aria-pressed")).toBe("true");
-    expect(view.element.dataset.mapMode).toBe("ripple");
+    expect(view.element.dataset.mapMode).toBe("bundle-power");
     buttons[0].pressed = true;
     await vi.advanceTimersByTimeAsync(40);
     expect(view.element.querySelector('[data-channel="211"]')?.getAttribute("data-planned")).toBe("true");

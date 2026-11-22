@@ -35,11 +35,12 @@ try {
   await fast.click();
   if (await fast.getAttribute('aria-pressed') !== 'true') throw new Error('Fast speed was not selected');
   console.log('Time based core ready.');
-  for (const mode of ['ripple', 'burnup', 'inlet-zones', 'power']) {
+  for (const mode of ['bundle-power', 'ripple', 'burnup', 'inlet-zones', 'power']) {
     const tab = page.locator(`[role=tab][data-map-tab="${mode}"]`);
     await tab.click();
     if (await tab.getAttribute('aria-selected') !== 'true' ||
         await page.locator('.arcade-map').getAttribute('data-map-mode') !== mode) throw new Error(`Map did not change to ${mode}`);
+    if (mode === 'bundle-power') await page.screenshot({ path: 'artifacts/demo/bundle-power.png', fullPage: true });
     if (mode === 'inlet-zones') {
       const channel = page.locator('.arcade-map [data-channel="210"]');
       const neighbor = page.locator('.arcade-map [data-channel="211"]');
@@ -54,6 +55,7 @@ try {
         throw new Error('Inlet zones are missing their alternating full-cell colors');
       }
       await channel.click();
+      await page.getByRole("tablist", { name: "Live trends" }).getByRole("tab", { name: "Zone fills" }).click();
       if (!(await page.locator('[data-selected-zone]').innerText()).includes('Inlet End B · Z14') ||
           await page.locator('[data-trend-end-a]').innerText() !== 'End A · Z7' ||
           await page.locator('[data-trend-end-b]').innerText() !== 'End B · Z14' ||
@@ -61,6 +63,7 @@ try {
         throw new Error('Zone chart does not show the selected channel pair');
       }
       await page.screenshot({ path: 'artifacts/demo/inlet-map.png', fullPage: true });
+      await page.getByRole("tablist", { name: "Live trends" }).getByRole("tab", { name: "Power" }).click();
     }
   }
   if (await page.locator('.reactor-demo h1').innerText() !== 'Reactor Simulator') throw new Error('Play-screen title is incorrect');
@@ -91,6 +94,7 @@ try {
   const queuedStyle = await page.locator('.reactor-demo [data-channel="210"]').evaluate(cell => ({ ring: getComputedStyle(cell).boxShadow, dot: getComputedStyle(cell, '::after').display }));
   if (!queuedStyle.ring.includes('inset') || !queuedStyle.ring.includes('3px') || queuedStyle.dot !== 'none') throw new Error('Queued channel is missing its full inset outline');
   await page.screenshot({ path: 'artifacts/demo/queued-batch.png', fullPage: true });
+  if (!(await page.locator('[data-fuel-eta]').innerText()).includes('simulated hours')) throw new Error('Queue ETA missing');
   const fuelReadings = [];
   // Selection remains interactive while a shared solver operation is in flight.
   await page.locator('.reactor-demo .arcade-map [data-channel="211"]').click();
@@ -120,6 +124,13 @@ try {
   await page.locator('[data-fuel-zone-response] summary').click();
   if (!/Z14 [\d.]+% → [\d.]+% → [\d.]+%/.test(await page.locator('[data-fuel-zone-values]').innerText())) throw new Error('Fuel receipt zone response missing');
   if (await page.locator('.reactor-demo [data-planned=true]').count()) throw new Error('Delivered batch retained queue outlines');
+  await page.getByRole('tab', { name: 'Fuelling history', exact: true }).click();
+  if (!await page.locator('#demo-history-panel').isVisible() || await page.locator('#demo-map-panel').isVisible()) throw new Error('History tab did not replace map');
+  const fuelledRows = page.locator('[data-fuel-history] tr').filter({ hasText: /Day / });
+  if (await fuelledRows.count() !== 2) throw new Error('History did not retain both fuelled channels');
+  if ((await fuelledRows.first().locator('td').last().innerText()) === '—') throw new Error('History score missing');
+  await page.screenshot({ path: 'artifacts/demo/fuel-history.png', fullPage: true });
+  await page.locator('[data-map-tab=power]').click();
   const fuelMs = Date.now() - start;
   console.log(`Fuel response: ${fuelMs}ms.`);
   await page.waitForFunction(day => Number(document.querySelector('.reactor-demo')?.getAttribute('data-days')) > day, initialDay, waitOptions);
@@ -162,6 +173,15 @@ try {
         scale.clientWidth >= map.width * .98 &&
         getComputedStyle(scale, '::before').backgroundImage.startsWith('linear-gradient');
     });
+    const fitsVessel = await page.locator('.arcade-map').evaluate(map => {
+      const box = map.getBoundingClientRect();
+      return [...map.querySelectorAll('button[data-channel]')].every(cell => {
+        const r = cell.getBoundingClientRect();
+        return [[r.left, r.top], [r.right, r.top], [r.left, r.bottom], [r.right, r.bottom]].every(([x, y]) =>
+          Math.hypot((x - box.left) / box.width * 560 - 280, (y - box.top) / box.height * 560 - 280) < 248);
+      });
+    });
+    if (!fitsVessel) throw new Error(`Reactor rim overlaps channels at ${width}px`);
     if (!layout) throw new Error(`Workspace panels or full-width heat bar missing at ${width}px`);
   }
   await page.setViewportSize({ width: 390, height: 844 });

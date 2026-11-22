@@ -24,7 +24,7 @@ header .arcade-kicker span { color: #a9c4da; font-size: 11px; }
 .arcade-map-toolbar select { min-height: 44px; padding: 8px; border: 1px solid #577b96; border-radius: 10px; background: #1a324b; color: #fff; font: inherit; }
 .arcade-map-scroll { overflow: auto; aspect-ratio: 1; border: 1px solid #375b72; border-radius: 20px; background: #081b2c; overscroll-behavior: contain; }
 .arcade-map { position: relative; width: 100%; aspect-ratio: 1; background: radial-gradient(circle, #153c4b 0 64%, #306d78 64.2% 64.5%, transparent 65%); }
-.reactor-arcade .arcade-map button { position: absolute; width: 3.9%; height: 3.9%; min-height: 0; padding: 0; border: 1px solid #0a2131; border-radius: 24%; box-shadow: none; font-size: 0; color: #051520; touch-action: manipulation; transition: none; }
+.reactor-arcade .arcade-map button { position: absolute; width: 3.12%; height: 3.12%; min-height: 0; padding: 0; border: 1px solid #0a2131; border-radius: 24%; box-shadow: none; font-size: 0; color: #051520; touch-action: manipulation; transition: none; }
 .reactor-arcade .arcade-map [data-planned="true"] { outline: 2px solid #ffd574; outline-offset: -1px; z-index: 1; }
 .reactor-arcade .arcade-map [aria-pressed="true"] { outline: 3px solid white; outline-offset: 0; z-index: 2; }
 .reactor-arcade .arcade-map [data-planned="true"]::after { content: ''; position: absolute; width: 35%; height: 35%; top: 32%; left: 32%; border-radius: 50%; background: #ffe18b; border: 1px solid #0b1c30; }

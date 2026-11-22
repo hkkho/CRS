@@ -137,60 +137,66 @@ namespace ReactorSim.Browser
                         PowerWatts = channel.PowerWatts,
                         LocalPowerFraction = channel.LocalPowerFraction,
                         LocalTiltFraction = channel.LocalTiltFraction,
-                        Xenon = new PlaytestXenonChannelDto
-                        {
-                            ChannelIndex = channel.Xenon.ChannelIndex,
-                            MeanI135NumberDensityM3 = channel.Xenon.MeanI135NumberDensityM3,
-                            MaxI135NumberDensityM3 = channel.Xenon.MaxI135NumberDensityM3,
-                            MeanXe135NumberDensityM3 = channel.Xenon.MeanXe135NumberDensityM3,
-                            MaxXe135NumberDensityM3 = channel.Xenon.MaxXe135NumberDensityM3,
-                            MeanDynamicAbsorptionGroup1PerM = channel.Xenon.MeanDynamicAbsorptionGroup1PerM,
-                            MaxDynamicAbsorptionGroup1PerM = channel.Xenon.MaxDynamicAbsorptionGroup1PerM,
-                            MeanDynamicAbsorptionGroup2PerM = channel.Xenon.MeanDynamicAbsorptionGroup2PerM,
-                            MaxDynamicAbsorptionGroup2PerM = channel.Xenon.MaxDynamicAbsorptionGroup2PerM
-                        },
+                        Xenon = CreateChannelXenon(channel),
                         Bundles = channel.Bundles
-                            .Select(bundle => new PlaytestBundleDto
+                            .Select(bundle =>
                             {
-                                Position = bundle.Position,
-                                BundleId = bundle.BundleId,
-                                FuelTypeId = bundle.FuelTypeId,
-                                CurrentBurnupMwdPerKg = bundle.CurrentBurnupMwDayPerKg,
-                                PowerWatts = bundle.PowerWatts,
-                                LocalPowerFraction = meanBundlePowerWatts <= 0.0
-                                    ? 0.0
-                                    : bundle.PowerWatts / meanBundlePowerWatts,
-                                InsertedAtSeconds = bundle.InsertedAtSeconds,
-                                StateVersion = bundle.StateVersion,
-                                IsFresh = bundle.IsFresh,
-                                HasFuel = runtime.PlaySession.IsFuelCell(
-                                    channel.ChannelIndex,
-                                    bundle.Position),
-                                ReflectiveFaces = runtime.PlaySession.GetReflectiveFaces(
+                                var binding = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
+                                    .GetNodeBinding(checked((int)channel.ChannelIndex * (int)GameCorePresentationConstants.BundlePositionCount + (int)bundle.Position));
+                                return new PlaytestBundleDto
+                                {
+                                    Position = bundle.Position,
+                                    BundleId = bundle.BundleId,
+                                    FuelTypeId = bundle.FuelTypeId,
+                                    CurrentBurnupMwdPerKg = bundle.CurrentBurnupMwDayPerKg,
+                                    PowerWatts = bundle.PowerWatts,
+                                    LocalPowerFraction = BundlePowerFraction(bundle.PowerWatts, meanBundlePowerWatts),
+                                    InsertedAtSeconds = bundle.InsertedAtSeconds,
+                                    StateVersion = bundle.StateVersion,
+                                    IsFresh = bundle.IsFresh,
+                                    HasFuel = runtime.PlaySession.IsFuelCell(
                                         channel.ChannelIndex,
-                                        bundle.Position)
-                                    .Select(TopologyFaceId)
-                                    .ToList(),
-                                Group1Flux = runtime.PlaySession.GetCellGroup1Flux(
-                                    channel.ChannelIndex,
-                                    bundle.Position),
-                                Group2Flux = runtime.PlaySession.GetCellGroup2Flux(
-                                    channel.ChannelIndex,
-                                    bundle.Position),
-                                LogicalZoneId = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping.GetLogicalZoneId(
-                                    new NodeKey(new ChannelId(channel.ChannelIndex), new BundlePosition(bundle.Position))),
-                                AbsorberZoneId = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
-                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).AbsorberZoneId,
-                                Group1AbsorptionPerMPerFillFraction = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
-                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).Group1AbsorptionPerMPerFillFraction,
-                                Group2AbsorptionPerMPerFillFraction = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping
-                                    .GetNodeBinding(checked((int)(channel.ChannelIndex * 12 + bundle.Position))).Group2AbsorptionPerMPerFillFraction
+                                        bundle.Position),
+                                    ReflectiveFaces = runtime.PlaySession.GetReflectiveFaces(
+                                            channel.ChannelIndex,
+                                            bundle.Position)
+                                        .Select(TopologyFaceId)
+                                        .ToList(),
+                                    Group1Flux = runtime.PlaySession.GetCellGroup1Flux(
+                                        channel.ChannelIndex,
+                                        bundle.Position),
+                                    Group2Flux = runtime.PlaySession.GetCellGroup2Flux(
+                                        channel.ChannelIndex,
+                                        bundle.Position),
+                                    LogicalZoneId = runtime.PlaySession.CurrentLiquidZoneRrs.Mapping.GetLogicalZoneId(
+                                        new NodeKey(new ChannelId(channel.ChannelIndex), new BundlePosition(bundle.Position))),
+                                    AbsorberZoneId = binding.AbsorberZoneId,
+                                    Group1AbsorptionPerMPerFillFraction = binding.Group1AbsorptionPerMPerFillFraction,
+                                    Group2AbsorptionPerMPerFillFraction = binding.Group2AbsorptionPerMPerFillFraction
+                                };
                             })
                             .ToList()
                     })
                     .ToList()
             };
         }
+
+        private static double BundlePowerFraction(double watts, double meanWatts) =>
+            meanWatts <= 0.0 ? 0.0 : watts / meanWatts;
+
+        private static PlaytestXenonChannelDto CreateChannelXenon(GameChannelPresentationSnapshot channel) =>
+            new PlaytestXenonChannelDto
+            {
+                ChannelIndex = channel.Xenon.ChannelIndex,
+                MeanI135NumberDensityM3 = channel.Xenon.MeanI135NumberDensityM3,
+                MaxI135NumberDensityM3 = channel.Xenon.MaxI135NumberDensityM3,
+                MeanXe135NumberDensityM3 = channel.Xenon.MeanXe135NumberDensityM3,
+                MaxXe135NumberDensityM3 = channel.Xenon.MaxXe135NumberDensityM3,
+                MeanDynamicAbsorptionGroup1PerM = channel.Xenon.MeanDynamicAbsorptionGroup1PerM,
+                MaxDynamicAbsorptionGroup1PerM = channel.Xenon.MaxDynamicAbsorptionGroup1PerM,
+                MeanDynamicAbsorptionGroup2PerM = channel.Xenon.MeanDynamicAbsorptionGroup2PerM,
+                MaxDynamicAbsorptionGroup2PerM = channel.Xenon.MaxDynamicAbsorptionGroup2PerM
+            };
 
         private static PlaytestSnapshotPatchDto CreateSnapshotPatch(
             BridgeRuntime runtime,

@@ -41,7 +41,7 @@ export class ReactorFrame {
   update(snapshot: CanduSnapshot, selected: number): void {
     const channel = snapshot.core.channels.find(c => c.channelIndex === selected);
     const position = (c: CanduChannelSnapshot) => this.arcade
-      ? { x: (c.gridColumn + 1.468) / 24 * 560, y: (c.gridRow + 1.468) / 24 * 560 }
+      ? { x: 56 + (c.gridColumn + 1.468) / 24 * 448, y: 56 + (c.gridRow + 1.468) / 24 * 448 }
       : { x: 70 + c.gridColumn * 20, y: 70 + c.gridRow * 20 };
     this.selection.style.display = channel ? "" : "none";
     if (channel) {

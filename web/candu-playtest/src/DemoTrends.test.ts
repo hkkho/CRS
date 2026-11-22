@@ -20,6 +20,8 @@ it("keeps bounded displayed history, changes channel traces, and resets on timel
   expect(trends.element.dataset.samples).toBe("241");
   trends.update(snapshot, 0, 1);
   expect(trends.element.dataset.samples).toBe("1");
+  expect(trends.element.querySelectorAll('[data-chart=zones] .trend-limit')).toHaveLength(0);
+  trends.show("zones");
   expect(trends.element.querySelectorAll('[data-chart=zones] .trend-limit')).toHaveLength(2);
   trends.update({ ...snapshot, runStatus: "ended", rrs: { ...snapshot.rrs, averageFillFraction: .09 } }, 0, 1);
   expect(trends.element.dataset.samples).toBe("1");
@@ -54,6 +56,7 @@ it("switches both selected zone histories immediately, retaining the core averag
     targetPowerFraction: 0, measuredPowerFraction: 0, shapeError: 0,
   }));
   const trends = new DemoTrends();
+  trends.show("zones");
   const zoneChart = trends.element.querySelector('[data-chart="zones"]')!;
   const paths = () => [...zoneChart.querySelectorAll(".trend-line")].map(path => path.getAttribute("d"));
   trends.update(snapshot, 0, 0);

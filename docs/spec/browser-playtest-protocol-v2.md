@@ -20,6 +20,8 @@ For `demo` free practice, initialization may include `customPhysics`, a map of p
 
 A compact patch names its base sequence. The client must materialize it against that exact snapshot or resynchronize. Both response forms include authoritative operation acceptance and diagnostics, state and replay digests, and the active sequence. The compact response can replace detailed core readings as needed.
 
+A client with a validated base can set `demoReadings: true` alongside `responseMode: compact` and `baseSequence` in a demo `commit-day` envelope. The response may provide `demoReadings` in place of a core replacement. The channel readings and bundle columns include the solved readings and inventory state. The bundle columns use index `channelIndex * 12 + position` with zero-based positions. A sparse list replaces bundle identity, fuel type and insertion time at changed positions. Geometry comes from the base snapshot. The encoding leaves the command payload, state digest and replay digest intact. Clients can still read the original full and compact forms.
+
 - `runStatus` and `runEndReason` describe the run. Treat terminal status separately from `rrs.isGameOver`, which reports physical regulator exhaustion.
 - `axialTiltFraction` is the signed first moment of thermal flux, negative toward End A and positive toward End B. `rrsReserveFraction` describes remaining control room.
 - `physics.reactivity` is the solved `(k - 1) / k`. `coreReactivity` and `compensatedNetReactivity` distinguish the uncompensated and zone-compensated readings.

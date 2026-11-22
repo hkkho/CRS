@@ -1,4 +1,4 @@
-import { isRunTerminal, type CanduSnapshot } from "./protocol";
+import { isRunTerminal, type CanduChannelSnapshot, type CanduSnapshot } from "./protocol";
 import { channelWatts } from "./studio/powerReadings";
 import { gridCoordinateLabel } from "./channelCoordinates";
 import { channelZonePair, timeZoneLabel } from "./timeMapPresentation";
@@ -17,6 +17,8 @@ export class DemoTrends {
   private samples: Sample[] = [];
   private seed?: number;
   private selected = -1;
+  private channel?: CanduChannelSnapshot;
+  private sampledSnapshot?: CanduSnapshot;
   private activeTab = 0;
   private readonly tabs: HTMLButtonElement[];
   private readonly panels: HTMLElement[];
@@ -56,6 +58,7 @@ export class DemoTrends {
       tab.tabIndex = selected ? 0 : -1;
       this.panels[i].hidden = !selected;
     });
+    this.renderActiveTab();
   }
 
   update(snapshot: CanduSnapshot, day: number, selected: number, paused = false): void {
@@ -65,7 +68,9 @@ export class DemoTrends {
     const last = this.samples.at(-1);
     const changedSelection = this.selected !== selected;
     this.selected = selected;
-    if (!last || day - last.day >= SAMPLE_DAYS - 1e-6 || isRunTerminal(snapshot) || paused) {
+    if (!last || day - last.day >= SAMPLE_DAYS - 1e-6 ||
+        (isRunTerminal(snapshot) || paused) && (last.day !== day || this.sampledSnapshot !== snapshot)) {
+      this.sampledSnapshot = snapshot;
       const powers: number[] = [];
       for (const c of snapshot.core.channels) powers[c.channelIndex] = channelWatts(snapshot, c) / 1000;
       const zoneFills: number[] = [];
@@ -77,12 +82,26 @@ export class DemoTrends {
       else this.samples.push(sample);
       if (this.samples.length > MAX_SAMPLES) this.samples.shift();
     } else if (!changedSelection) return;
-    const channel = snapshot.core.channels.find(c => c.channelIndex === selected);
+    this.channel = snapshot.core.channels.find(c => c.channelIndex === selected);
+    this.renderActiveTab();
+    this.element.dataset.samples = String(this.samples.length);
+  }
+
+  private renderActiveTab(): void {
+    const latest = this.samples.at(-1);
+    if (!latest) return;
+    const { channel, selected } = this;
     const label = channel ? gridCoordinateLabel(channel) : "Selected";
-    this.element.querySelector("[data-trend-channel]")!.textContent = label;
-    const latest = this.samples.at(-1)!;
-    const selectedPower = latest.powers[selected];
-    this.element.querySelector("[data-power-trend-reading]")!.textContent = `${label}: ${selectedPower?.toFixed(0) ?? "—"} · Peak: ${latest.peak.toFixed(0)} kW`;
+    if (this.activeTab === 0) {
+      this.element.querySelector("[data-trend-channel]")!.textContent = label;
+      this.element.querySelector("[data-power-trend-reading]")!.textContent =
+        `${label}: ${latest.powers[selected]?.toFixed(0) ?? "—"} · Peak: ${latest.peak.toFixed(0)} kW`;
+      const powerValues = this.samples.flatMap(s => [s.peak, s.powers[selected]]).filter(Number.isFinite);
+      this.draw("power", Math.floor(Math.min(5000, ...powerValues) / 100) * 100, Math.ceil(Math.max(7100, ...powerValues) / 100) * 100,
+        [{ values: this.samples.map(s => s.peak), color: "#ffc262" }, { values: this.samples.map(s => s.powers[selected]), color: "#68ddff" }], [6500, 7100]);
+      return;
+    }
+
     const [endA, endB] = channel ? channelZonePair(channel) : [];
     this.element.querySelector("[data-trend-end-a]")!.textContent = endA === undefined ? "End A" : `End A · ${timeZoneLabel(endA)}`;
     this.element.querySelector("[data-trend-end-b]")!.textContent = endB === undefined ? "End B" : `End B · ${timeZoneLabel(endB)}`;
@@ -91,14 +110,10 @@ export class DemoTrends {
       return Number.isFinite(fill) ? `${fill.toFixed(1)}%` : "—";
     };
     this.element.querySelector("[data-zone-trend-reading]")!.textContent = `${latest.mean.toFixed(1)}% core average · ${label} End A: ${zoneReading(endA)} · End B: ${zoneReading(endB)}`;
-    const powerValues = this.samples.flatMap(s => [s.peak, s.powers[selected]]).filter(Number.isFinite);
-    this.draw("power", Math.floor(Math.min(5000, ...powerValues) / 100) * 100, Math.ceil(Math.max(7100, ...powerValues) / 100) * 100,
-      [{ values: this.samples.map(s => s.peak), color: "#ffc262" }, { values: this.samples.map(s => s.powers[selected]), color: "#68ddff" }], [6500, 7100]);
     const zoneLines = [{ values: this.samples.map(s => s.mean), color: "#52efbc" }];
     if (endA !== undefined) zoneLines.push({ values: this.samples.map(s => s.zoneFills[endA]), color: "#68ddff" });
     if (endB !== undefined) zoneLines.push({ values: this.samples.map(s => s.zoneFills[endB]), color: "#ffc262" });
     this.draw("zones", 0, 100, zoneLines, [10, 90]);
-    this.element.dataset.samples = String(this.samples.length);
   }
 
   private draw(name: string, low: number, high: number, lines: { values: number[]; color: string }[], limits: number[]): void {

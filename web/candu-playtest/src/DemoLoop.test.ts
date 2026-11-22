@@ -13,6 +13,7 @@ function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3],
   let snapshot: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", scorePolicyId: "test-policy", completedDays: 0, simulationTimeSeconds: 0, shift: { ...createShift(), fuelConsumed: 0 }, ripple: undefined };
   snapshot.core.channels[211].flowDirection = "toward-end-b";
   const calls: CanduCommand[] = [];
+  let rejectDispatch: (error: Error) => void = () => {};
   let complete: (accepted?: boolean, terminal?: boolean) => void = () => {};
   let notify: Parameters<CanduPlaytestBridgeLifecycle["subscribe"]>[0] = () => {};
   const bridge: CanduPlaytestBridgeLifecycle = {
@@ -20,7 +21,8 @@ function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3],
     getSnapshot: () => snapshot, initializeMode: async () => snapshot, subscribe: listener => { notify = listener; return () => {}; }, dispose: vi.fn(),
     dispatch: command => {
       calls.push(command);
-      return new Promise<CanduCommandResponse>(resolve => {
+      return new Promise<CanduCommandResponse>((resolve, reject) => {
+        rejectDispatch = reject;
         complete = (accepted = true, terminal = false) => {
           if (accepted && command.type === "commit-day") snapshot = { ...snapshot,
             completedDays: Math.floor((snapshot.simulationTimeSeconds + 43200) / 86400), simulationTimeSeconds: snapshot.simulationTimeSeconds + 43200,
@@ -37,7 +39,8 @@ function setup(createRecoveryBridge?: ConstructorParameters<typeof DemoLoop>[3],
     },
   };
   loop = new DemoLoop(bridge, () => Date.now(), false, createRecoveryBridge, undefined, singleStep);
-  return { calls, bridge, complete: (accepted = true, terminal = false) => complete(accepted, terminal),
+  return { calls, bridge, setResult: (result: CanduSnapshot["lastDayResult"]) => { snapshot = { ...snapshot, lastDayResult: result }; }, complete: (accepted = true, terminal = false) => complete(accepted, terminal),
+    disconnect: () => rejectDispatch(new Error("Worker disconnected")),
     fail: () => {
       Object.assign(bridge.status, { source: "unavailable", isWasmAvailable: false });
       notify(bridge.status, snapshot);
@@ -310,4 +313,91 @@ it.each([
   expect(loop.message).toContain(reason);
   expect(loop.message).toContain("checkpoint is still stored");
   expect(bridge.dispatch).not.toHaveBeenCalled();
+});
+
+it("estimates waiting batches beyond the solve ahead and freezes estimates while paused", async () => {
+  const h = setup();
+  expect(loop.fuelEtaHours()).toBe(0);
+  await vi.advanceTimersByTimeAsync(50);
+  expect(loop.fuelEtaHours()).toBe(12);
+  h.complete(); await vi.advanceTimersByTimeAsync(50);
+  h.complete(); await vi.advanceTimersByTimeAsync(3750);
+  loop.fuel(211);
+  expect(loop.fuelEtaHours(211)).toBeCloseTo(18);
+  loop.togglePause();
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(loop.fuelEtaHours(211)).toBeCloseTo(18);
+});
+
+it("records batch history only at display completion, keeps the latest score, and clears on retry", async () => {
+  const h = setup();
+  const movement = (channelIndex: number, operationId: number, netPoints: number) => ({ channelIndex, operationId,
+    plan: { directionId: "toward-end-a" as const, shiftCount: 8 as const, incomingEnd: "B" as const, outgoingEnd: "A" as const,
+      insertedPositions: [], dischargedPositions: [], retainedFromPositions: [], retainedToPositions: [] },
+    score: { policyId: "test", dischargeReward: netPoints, freshFuelCost: 0, netPoints }, bundles: [] });
+  const result = { startSimulationTimeSeconds: 0, endSimulationTimeSeconds: 43200,
+    requestedChannels: [210, 211], executedChannels: [210, 211], unexecutedChannels: [],
+    movements: [movement(210, 1, 12), movement(211, 2, -4)], fuelUsed: 16, usefulBundlesDischarged: 0,
+    scoreDelta: 8, thermalEnergyMwh: 0, electricalEnergyMwhEstimate: 0, averageLzcFillFraction: .5, axialTiltFraction: 0, endReason: "" };
+  const initial = h.bridge.getSnapshot();
+  loop.fuel(210); loop.fuel(211);
+  await vi.advanceTimersByTimeAsync(50);
+  h.setResult(result); h.complete(); await vi.advanceTimersByTimeAsync(50);
+  expect(loop.fuelHistory.size).toBe(0);
+  h.setResult({ ...result, startSimulationTimeSeconds: 43200, endSimulationTimeSeconds: 86400,
+    movements: [movement(210, 3, 20)] });
+  h.complete(); await vi.advanceTimersByTimeAsync(7500);
+  expect(loop.fuelHistory.get(210)).toEqual({ operationId: 1, timeSeconds: 0, score: 12 });
+  expect(loop.fuelHistory.get(211)?.score).toBe(-4);
+  h.complete(); await vi.advanceTimersByTimeAsync(7500);
+  expect(loop.fuelHistory.get(210)).toEqual({ operationId: 3, timeSeconds: 43200, score: 20 });
+  loop.togglePause(); h.complete(); await vi.advanceTimersByTimeAsync(0);
+  const write = vi.fn<(seed: number, save?: RunSave) => Promise<void>>();
+  (await loop.checkpoint(write))();
+  const save = write.mock.calls[0][1]!;
+  const final = h.bridge.getSnapshot();
+  const restart = loop.restart(1001); h.complete(); await restart;
+  expect(loop.fuelHistory.size).toBe(0);
+  loop.destroy();
+  let replayIndex = 0;
+  const bridge = { ...h.bridge, getSnapshot: () => initial, whenReady: async () => initial,
+    dispatch: async (command: CanduCommand): Promise<CanduCommandResponse> => ({ protocol: "candu-playtest-v2",
+      command, accepted: true, message: "", diagnostics: [], sequence: ++replayIndex, stateDigest: save.stateDigest,
+      snapshot: replayIndex === 1 ? { ...final, lastDayResult: result } : final }) };
+  loop = new DemoLoop(bridge, () => Date.now(), true, undefined, Promise.resolve(save));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(loop.loadError).toBeUndefined();
+  expect(loop.fuelHistory.get(210)).toEqual({ operationId: 3, timeSeconds: 43200, score: 20 });
+  expect(loop.fuelHistory.get(211)).toEqual({ operationId: 2, timeSeconds: 0, score: -4 });
+});
+
+it("leaves only waiting and confirmed batches pending when an in-flight outcome is unknown", async () => {
+  const h = setup();
+  loop.fuel(210);
+  await vi.advanceTimersByTimeAsync(50);
+  h.complete();
+  await vi.advanceTimersByTimeAsync(0);
+  loop.fuel(211);
+  await vi.advanceTimersByTimeAsync(50);
+  loop.fuel(212);
+  h.disconnect();
+  await vi.advanceTimersByTimeAsync(0);
+  expect(loop.unconfirmedFuel).toEqual([211]);
+  expect(loop.pendingFuel).toEqual([210, 212]);
+  expect([...loop.waitingFuel]).toEqual([212]);
+  expect(loop.message).toContain("Fuelling result unknown");
+  expect(loop.running).toBe(false);
+  await vi.advanceTimersByTimeAsync(9_000);
+  expect(h.calls).toHaveLength(2);
+});
+
+it("holds the endpoint without emitting repeated renders while an unresolved solve is pending", async () => {
+  const h = setup();
+  const render = vi.fn();
+  loop.subscribe(render);
+  await vi.advanceTimersByTimeAsync(50);
+  render.mockClear();
+  await vi.advanceTimersByTimeAsync(1_000);
+  expect(h.calls).toHaveLength(1);
+  expect(render).not.toHaveBeenCalled();
 });

@@ -8,7 +8,6 @@ tmp/
 
 # Browser WASM output is generated locally by tools/Build-BrowserWasm.ps1.
 web/candu-playtest/public/wasm/*
-!web/candu-playtest/public/wasm/.gitkeep
 web/candu-playtest/dist/
 web/candu-playtest/dist-pages/
 web/candu-playtest/node_modules/

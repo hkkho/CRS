@@ -7,6 +7,7 @@ A Stylized Simulator demo made by ChatGPT and Gemini.
 - Choose **Start game**, then **Start**. Each simulated half-day takes 7.5 seconds when the next solve is ready. Choose **0.5×** for 10 seconds or **1.5×** for 5 seconds. Press the selected speed again to return to normal.
 - Choose **Tutorial** for a guided tour of the readings and limits, then compare two fuel channels on seed 1001.
 - Double-click a channel, select it and press **Enter** or **R**, or use **Queue fuel**. Each order moves eight bundles. Repeat the action or choose **Remove order** to cancel a waiting order, including while paused.
+- Compare **Max bundle power** across channels, or open **Fuelling history** for the latest in-game fuelling time and net fuel-move score per channel. Fuel orders show their estimated wait in simulated hours; results appear at the step endpoint.
 - Use **Inlet zone fill** and the liquid-zone trends to decide where to refuel. **Pause** freezes playback. **Retry seed** recreates the starting core and **New core** draws another seed.
 - Choose **Custom physics** to build a sandbox with edited power, absorption, poison, geometry, fuel coefficients or solver settings. The settings follow the run through retries and local update checkpoints.
 

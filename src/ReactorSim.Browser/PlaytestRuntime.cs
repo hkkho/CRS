@@ -432,6 +432,7 @@ namespace ReactorSim.Browser
                     PlaytestSnapshotPatchDto? snapshotPatch = null;
                     PlaytestCoreDto? coreReplacement = null;
                     PlaytestCoreMeasurementsDto? coreMeasurements = null;
+                    PlaytestDemoReadingsDto? demoReadings = null;
                     string stateDigest;
                     if (returnCompact)
                     {
@@ -439,7 +440,14 @@ namespace ReactorSim.Browser
                             _runtime,
                             game,
                             previousScoreForResponse);
-                        if (execution.Accepted &&
+                        if (execution.Accepted && commandType == "commit-day" &&
+                            game.PacingMode == "demo" && requestedBaseSequence.HasValue &&
+                            PlaytestInput.TryGetProperty(root, out JsonElement encoding, "demoReadings") &&
+                            encoding.ValueKind == JsonValueKind.True)
+                        {
+                            demoReadings = CreateDemoReadings(_runtime, game, previousGame);
+                        }
+                        else if (execution.Accepted &&
                             (commandType == "commit-refuel" || detailedProjectionChanged || previousAmplitude != game.Physics.PowerAmplitude))
                         {
                             coreReplacement = CreateCoreSnapshot(
@@ -448,7 +456,7 @@ namespace ReactorSim.Browser
                                 game.Physics.MeanBundlePowerWatts);
                         }
 
-                        if (execution.Accepted && coreReplacement == null && game.SimulationTimeSeconds != previousGame.SimulationTimeSeconds)
+                        if (execution.Accepted && coreReplacement == null && demoReadings == null && game.SimulationTimeSeconds != previousGame.SimulationTimeSeconds)
                             coreMeasurements = new PlaytestCoreMeasurementsDto
                             {
                                 BundleBurnupMwdPerKg = game.Core.Channels.SelectMany(c => c.Bundles).Select(b => b.CurrentBurnupMwDayPerKg).ToArray(),
@@ -518,6 +526,7 @@ namespace ReactorSim.Browser
                             SnapshotPatch = snapshotPatch!,
                             CoreReplacement = coreReplacement,
                             CoreMeasurements = coreMeasurements,
+                            DemoReadings = demoReadings,
                             StateDigest = stateDigest,
                             ReplayDigest = ComputeReplayDigest(_runtime),
                             Diagnostics = execution.Diagnostics

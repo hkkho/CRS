@@ -47,7 +47,10 @@ npm run smoke:docs -- http://127.0.0.1:4175/CRS/
 npm run smoke:upgrade
 npm run smoke:upgrade -- ../../tmp/custom-physics-upgrade --custom-physics
 npm run benchmark -- http://127.0.0.1:4175/CRS/ --bridge=direct --label=pages-local --warm-samples=1
+node scripts/benchmark-demo-latency.mjs http://127.0.0.1:4175/CRS/ 1 --verify-legacy
 ```
+
+The upgrade smoke can take `--previous-build=PATH` to start from a prior production build and verify that its checkpoint restores on the candidate.
 
 ## Maintain the physics inputs
 

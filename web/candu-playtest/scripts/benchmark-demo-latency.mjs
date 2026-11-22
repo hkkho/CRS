@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { build } from "esbuild";
 
 const url = process.argv[2];
 if (!url) throw new Error("Pass the URL of a production build or preview.");
@@ -11,6 +12,7 @@ if (!Number.isInteger(blocks) || blocks < 1 || blocks > 3) {
 const batches = [[], [], [210], [45, 324], [], [105], [75, 270], [], [180], [25, 352]]
   .slice(0, 1 + 3 * blocks);
 const seeds = [1001, 1002, 1003];
+const verifyLegacy = process.argv.includes("--verify-legacy");
 const browser = await chromium.launch({ headless: true });
 try {
   const page = await browser.newPage();
@@ -22,7 +24,14 @@ try {
   await page.goto(url, { waitUntil: "domcontentloaded" });
   const buildInfoUrl = new URL("wasm/build-info.json", page.url());
   const buildInfo = await (await page.request.get(buildInfoUrl.href)).json();
-  const runs = await page.evaluate(async ({ seeds, batches }) => {
+  if (verifyLegacy) {
+    const parser = await build({
+      stdin: { contents: "export { canonicalJson, parseProtocolResponse } from './src/protocol';", resolveDir: process.cwd() },
+      bundle: true, write: false, format: "iife", globalName: "demoWireProtocol",
+    });
+    await page.addScriptTag({ content: parser.outputFiles[0].text });
+  }
+  const runs = await page.evaluate(async ({ seeds, batches, verifyLegacy }) => {
     const entry = document.querySelector('script[type="module"][src]').src;
     const source = await (await fetch(entry)).text();
     const workerAsset = source.match(/wasmWorker-[A-Za-z0-9_-]+\.js/)?.[0];
@@ -30,6 +39,22 @@ try {
 
     const runs = [];
     for (const seed of seeds) {
+      const checkThisSeed = verifyLegacy && seed === seeds[0];
+      const compact = await run(seed, true, checkThisSeed);
+      if (checkThisSeed) {
+        const legacy = await run(seed, false, true);
+        for (const [index, sample] of compact.samples.entries()) {
+          const original = legacy.samples[index];
+          if (sample.snapshotHash !== original.snapshotHash || sample.stateDigest !== original.stateDigest ||
+              sample.replayDigest !== original.replayDigest) throw new Error(`Wire parity failed for seed ${seed}, step ${index + 1}.`);
+          sample.legacyBytes = original.bytes;
+        }
+      }
+      runs.push(compact);
+    }
+    return runs;
+
+    async function run(seed, demoReadings, materialize) {
       const worker = new Worker(new URL(workerAsset, entry), { type: "module" });
       let id = 0;
       function exchange(request) {
@@ -62,6 +87,7 @@ try {
             initialResult.snapshot.core.bundlePositionCount !== 12) {
           throw new Error(`Seed ${seed} did not initialize the expected core.`);
         }
+        let materialized = materialize ? demoWireProtocol.parseProtocolResponse(initial.resultJson).snapshot : undefined;
         let { sequence } = initialResult;
         let { completedDays, simulationTimeSeconds } = initialResult.snapshot;
         let fuelConsumed = initialResult.snapshot.shift.fuelConsumed;
@@ -74,12 +100,21 @@ try {
               protocol: "candu-playtest-v2",
               type: "command",
               responseMode: "compact",
+              ...(demoReadings ? { demoReadings: true } : {}),
               baseSequence: sequence,
               payload: { type: "commit-day", expectedCompletedDays: completedDays, channelIndices: channels },
             }),
           });
           const result = JSON.parse(response.resultJson);
           const elapsedMs = performance.now() - start;
+          if (demoReadings && (!result.demoReadings || result.coreReplacement))
+            throw new Error(`Seed ${seed}, step ${index + 1} did not use the demo readings encoding.`);
+          let snapshotHash;
+          if (materialized) {
+            materialized = demoWireProtocol.parseProtocolResponse(response.resultJson, materialized).snapshot;
+            const bytes = new TextEncoder().encode(demoWireProtocol.canonicalJson(materialized));
+            snapshotHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), byte => byte.toString(16).padStart(2, "0")).join("");
+          }
           const endpoint = result.snapshotPatch;
           if (!result.accepted || !["paused", "running"].includes(endpoint?.runStatus) ||
               result.sequence !== sequence + 1 ||
@@ -95,20 +130,20 @@ try {
           samples.push({
             channels, warmup: index === 0, elapsedMs, workerMs: response.wasmCallDurationMs,
             bytes: response.returnedUtf8PayloadBytes, simulationTimeSeconds, stateDigest: result.stateDigest,
+            replayDigest: result.replayDigest, snapshotHash,
             endpointOuterIterations: endpoint.physics.solverIterationCount,
             endpointResidual: endpoint.physics.solverResidualRelativeInfinity,
             endpointCandidateSolves: endpoint.rrs.candidateSolveCount,
           });
         }
-        runs.push({ seed, dataPackId: initialResult.snapshot.dataPackId, samples });
+        return { seed, dataPackId: initialResult.snapshot.dataPackId, samples };
       } finally {
         worker.terminate();
       }
     }
-    return runs;
-  }, { seeds, batches });
+  }, { seeds, batches, verifyLegacy });
   if (errors.length) throw new Error(errors.join(" | "));
-  console.log(JSON.stringify({ url, chromium: browser.version(), buildInfo, runs }, null, 2));
+  console.log(JSON.stringify({ url, chromium: browser.version(), buildInfo, verifiedLegacyParity: verifyLegacy, runs }, null, 2));
 } finally {
   await browser.close();
 }

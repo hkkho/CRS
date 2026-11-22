@@ -86,3 +86,15 @@ it("distinguishes nearby readings inside the benchmarked operating bands", () =>
   snapshot.rrs.zones[1].fillFraction = .505;
   expect(shade("inlet-zones")).not.toBe(halfFull);
 });
+
+it("maps the hottest published bundle rather than the channel total or average", () => {
+  const snapshot = createSnapshot(), channel = snapshot.core.channels[0];
+  channel.bundles.forEach(b => { b.powerWatts = 400000; });
+  channel.bundles[3].powerWatts = 875000;
+  expect(timeMapCell(snapshot, channel, "bundle-power").reading).toBe("Maximum bundle 875 kW");
+  const shade = timeMapCell(snapshot, channel, "bundle-power").background;
+  channel.bundles[3].powerWatts = 650000;
+  expect(timeMapCell(snapshot, channel, "bundle-power").background).not.toBe(shade);
+  channel.bundles = [];
+  expect(timeMapCell(snapshot, channel, "bundle-power").reading).toBe("Bundle power unavailable");
+});

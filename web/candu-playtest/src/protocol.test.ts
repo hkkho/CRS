@@ -42,6 +42,46 @@ describe("candu-playtest-v2 protocol validation", () => {
     expect(isProtocolSnapshot(snapshot)).toBe(false);
   });
 
+  it("applies demo measurements and sparse identities against the exact base sequence", () => {
+    const base: CanduSnapshot = { ...createSnapshot(), pacingMode: "demo", isPaused: true, completedDays: 0 };
+    const nodeCount = CORE_CHANNEL_COUNT * CORE_BUNDLE_POSITION_COUNT;
+    const index = 210 * CORE_BUNDLE_POSITION_COUNT + 4;
+    const identity = { index, bundleId: "new-bundle", fuelTypeId: "new-fuel", insertedAtSeconds: 43200 };
+    const demoReadings = {
+      channels: base.core.channels.map(channel => ({
+        averageBurnupMwdPerKg: 1.5, powerWatts: 900, localPowerFraction: 0.9,
+        localTiltFraction: -0.1, xenon: channel.xenon,
+      })),
+      bundleBurnupMwdPerKg: Array(nodeCount).fill(1.5),
+      bundlePowerWatts: Array(nodeCount).fill(75),
+      bundleLocalPowerFractions: Array(nodeCount).fill(.9),
+      group1Flux: Array(nodeCount).fill(2), group2Flux: Array(nodeCount).fill(3),
+      bundleStateVersions: Array(nodeCount).fill(42), bundleIsFresh: Array(nodeCount).fill(false),
+      bundleIdentities: [identity],
+    };
+    const envelope = { ...responseEnvelope(base, 1), responseKind: "compact", baseSequence: base.sequence,
+      command: { type: "commit-day", expectedCompletedDays: 0, channelIndices: [] },
+      snapshotPatch: { ...patchFor(base), pacingMode: "demo", completedDays: 0 }, demoReadings };
+    expect(parseProtocolResponse({ ...envelope, demoReadings: null }, base).snapshot.core).toBe(base.core);
+    const updated = parseProtocolResponse(envelope, base).snapshot.core.channels[210];
+    expect(updated).toMatchObject({ powerWatts: 900, localTiltFraction: -.1 });
+    expect(updated.bundles[4]).toMatchObject({
+      bundleId: identity.bundleId, fuelTypeId: identity.fuelTypeId, insertedAtSeconds: 43200,
+      currentBurnupMwdPerKg: 1.5, powerWatts: 75, localPowerFraction: .9,
+      group1Flux: 2, group2Flux: 3, stateVersion: 42, isFresh: false,
+    });
+    expect(updated.bundles[3].bundleId).toBe(base.core.channels[210].bundles[3].bundleId);
+    expect(updated.bundles[4].reflectiveFaces).toBe(base.core.channels[210].bundles[4].reflectiveFaces);
+    expect(base.core.channels[210].bundles[4].bundleId).not.toBe(identity.bundleId);
+    expect(() => parseProtocolResponse({ ...envelope, demoReadings: { ...demoReadings,
+      bundleIdentities: [identity, identity] } }, base)).toThrow("demo readings are malformed");
+    expect(() => parseProtocolResponse({ ...envelope, demoReadings: { ...demoReadings,
+      bundleIdentities: [{ ...identity, index: nodeCount }] } }, base)).toThrow("demo readings are malformed");
+    expect(() => parseProtocolResponse({ ...envelope, demoReadings: { ...demoReadings,
+      group2Flux: [3] } }, base)).toThrow("demo readings are malformed");
+    expect(() => parseProtocolResponse({ ...envelope, baseSequence: base.sequence + 1 }, base)).toThrow();
+  });
+
   it("updates immutable bundle burnup between solves from authoritative compact measurements", () => {
     const base = createSnapshot();
     const measurements = { bundleBurnupMwdPerKg: Array(4560).fill(1.5), bundleStateVersions: Array(4560).fill(42),

@@ -1,9 +1,0 @@
-.player-toggle { position: fixed; bottom: .4rem; right: .6rem; z-index: 30; padding: .5rem .7rem; border: 1px solid #a7b0d1; background: #101c68; color: #f4f5ff; font: 13px system-ui; cursor: pointer; }
-.player-panel { box-sizing: border-box; width: min(46rem, calc(100vw - 1rem)); max-height: 88vh; overflow: auto; border: 1px solid #a7b0d1; background: #101c68; color: #f4f5ff; padding: 1.3rem; font: 15px/1.5 system-ui; }
-.player-panel::backdrop { background: #000b; }
-.player-panel button { padding: .55rem .7rem; color: inherit; background: #213888; border: 1px solid #a7b0d1; font: inherit; cursor: pointer; }
-.player-panel button:disabled { opacity: .5; cursor: default; }
-.player-panel button:focus-visible, .player-toggle:focus-visible { outline: 3px solid #ffe49a; outline-offset: 3px; }
-.player-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
-.player-panel [data-message] { color: #ffe49a; }
-.player-panel [data-runs] p { border-bottom: 1px solid #6c7db4; padding-bottom: .75rem; overflow-wrap: anywhere; }

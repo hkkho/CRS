@@ -12,6 +12,8 @@ param(
     [string]$WasmEnableSIMD = 'default'
 )
 
+$ErrorActionPreference = 'Stop'
+
 $repoRoot = [IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
 $projectPath = Join-Path $repoRoot 'src/ReactorSim.BrowserHost/ReactorSim.BrowserHost.csproj'
 $webRoot = Join-Path $repoRoot 'web/candu-playtest'
@@ -111,18 +113,14 @@ if (-not (Test-Path -LiteralPath (Join-Path $stagingPath 'main.mjs') -PathType L
     throw "Browser WASM publish did not produce the expected main.mjs and wwwroot outputs."
 }
 
-# Keep the checked-in .gitkeep, but never let stale generated assets survive a
-# later publish when the SDK changes a content hash.
+# Clear stale generated assets when a later SDK publish changes a content hash.
 Get-ChildItem -LiteralPath $targetPath -Force |
-    Where-Object { $_.Name -ne '.gitkeep' } |
     Remove-Item -Recurse -Force
 
 function Copy-PublishedFiles {
     param(
         [Parameter(Mandatory = $true)]
         [string]$SourceRoot,
-        [string]$RelativeBase = ''
-        ,
         [switch]$Recurse
     )
 
@@ -132,12 +130,7 @@ function Copy-PublishedFiles {
         }
 
         $relativePath = $_.FullName.Substring($SourceRoot.Length).TrimStart('\', '/')
-        $combinedRelativePath = if ([string]::IsNullOrEmpty($RelativeBase)) {
-            $relativePath
-        } else {
-            Join-Path $RelativeBase $relativePath
-        }
-        $destinationPath = Join-Path $targetPath $combinedRelativePath
+        $destinationPath = Join-Path $targetPath $relativePath
         $destinationDirectory = Split-Path -Parent $destinationPath
         New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
         Copy-Item -LiteralPath $_.FullName -Destination $destinationPath -Force
@@ -146,8 +139,8 @@ function Copy-PublishedFiles {
 
 # The WebAssembly SDK places the custom main module and runtime config at the
 # publish root while the boot/runtime assets live below wwwroot.
-Copy-PublishedFiles -SourceRoot $stagingPath -RelativeBase ''
-Copy-PublishedFiles -SourceRoot $publishedWebRoot -RelativeBase '' -Recurse
+Copy-PublishedFiles -SourceRoot $stagingPath
+Copy-PublishedFiles -SourceRoot $publishedWebRoot -Recurse
 
 if ([string]::IsNullOrWhiteSpace($CommitSha)) {
     try {

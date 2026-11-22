@@ -159,3 +159,11 @@ body:has(.reactor-demo) .player-toggle { display: none; }
   .demo-selected-hud { flex-basis: auto; margin-left: auto; padding: 0 0 0 24px; border-top: 0; border-left: 1px solid #38546b; }
   .demo-workspace { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 20px; }
 }
+
+.demo-map-tabs { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.demo-history-scroll { max-height: 540px; overflow: auto; }
+.demo-history-scroll table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.demo-history-scroll th, .demo-history-scroll td { padding: 10px 6px; text-align: left; border-bottom: 1px solid #38546b; }
+.demo-history-scroll th { position: sticky; top: 0; background: #101f2c; }
+.demo-history-scroll td:last-child { text-align: right; }
+[data-fuel-eta], #demo-history-panel > p { color: #b6c8d8; font-size: 13px; }

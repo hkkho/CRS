@@ -8,10 +8,12 @@ import { offlinePlugin } from '../offlinePlugin.ts';
 // The candidate has new HTML/JS identities and unchanged authoritative physics.
 const args = process.argv.slice(2);
 const customPhysics = args.includes('--custom-physics');
-const root = resolve(args.find(arg => arg !== '--custom-physics') ?? '../../tmp/game-upgrade');
+const previousBuild = args.find(arg => arg.startsWith('--previous-build='))?.slice('--previous-build='.length);
+const root = resolve(args.find(arg => !arg.startsWith('--')) ?? '../../tmp/game-upgrade');
 const first = join(root, 'first'), next = join(root, 'next');
 await mkdir(root, { recursive: true });
-await cp('dist-pages', first, { recursive: true }); await cp('dist-pages', next, { recursive: true });
+await cp(previousBuild ?? 'dist-pages', first, { recursive: true });
+await cp('dist-pages', next, { recursive: true });
 const candidateSha = '7'.repeat(40);
 const info = JSON.parse(await readFile(join(next, 'wasm/build-info.json'), 'utf8'));
 info.gitCommitSha = candidateSha; await writeFile(join(next, 'wasm/build-info.json'), JSON.stringify(info));

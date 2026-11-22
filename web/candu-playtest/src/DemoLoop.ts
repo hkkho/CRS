@@ -18,6 +18,10 @@ export class DemoLoop {
   visible = true;
   busy = false;
   message = "Preparing the core…";
+  private readonly history = new Map<number, { operationId: number; timeSeconds: number; score: number }>();
+  private inFlight?: { fuel: readonly number[]; startSeconds: number };
+  private unknownFuel: readonly number[] = [];
+  private historyRevision = 0;
   readonly waitingFuel = new Set<number>();
   private solved: CanduSnapshot;
   private from: CanduSnapshot;
@@ -65,9 +69,10 @@ export class DemoLoop {
       let snapshot = initial, digest: string | undefined;
       for (const record of save.commands) {
         if (this.disposed) return;
-        const response = await bridge.dispatch(record.command, { responseMode: record.responseMode });
+        const response = await bridge.dispatch(record.command, { responseMode: record.responseMode, demoReadings: record.command.type === "commit-day" });
         if (response.accepted !== record.accepted) throw new Error("The saved commands could not be replayed.");
         snapshot = response.snapshot; digest = response.stateDigest;
+        if (response.accepted) this.recordFuelHistory(snapshot);
       }
       if (this.disposed) return;
       if (digest !== save.stateDigest) throw new Error("The saved reactor state could not be verified.");
@@ -111,11 +116,13 @@ export class DemoLoop {
     return bridge.subscribe((status, snapshot) => {
       if (this.disposed) return;
       // Dispatch subscriptions must never leak the ahead-of-display endpoint.
-      if (!this.restoring && !this.ready && status.isWasmAvailable && snapshot.pacingMode === "demo") this.initialize(snapshot);
-      else if (!status.isWasmAvailable && status.source !== "loading") {
+      if (!this.restoring && !this.ready && status.isWasmAvailable && snapshot.pacingMode === "demo") {
+        this.initialize(snapshot);
+        this.emit();
+      } else if (!status.isWasmAvailable && status.source !== "loading" && (!this.faulted || this.message !== status.detail)) {
         this.running = false; this.faulted = true; this.message = status.detail;
+        this.emit();
       }
-      this.emit();
     });
   }
 
@@ -132,7 +139,34 @@ export class DemoLoop {
     const start = this.from.simulationTimeSeconds / 86400;
     return this.active ? start + (this.active.snapshot.simulationTimeSeconds / 86400 - start) * this.dayProgress : this.snapshot.simulationTimeSeconds / 86400;
   }
+  get fuelHistory(): ReadonlyMap<number, { operationId: number; timeSeconds: number; score: number }> { return this.history; }
+  get fuelHistoryRevision(): number { return this.historyRevision; }
+  private recordFuelHistory(snapshot: CanduSnapshot): void {
+    const result = snapshot.lastDayResult;
+    if (!result) return;
+    for (const movement of result.movements) {
+      const previous = this.history.get(movement.channelIndex);
+      if (!previous || movement.operationId > previous.operationId) {
+        this.history.set(movement.channelIndex, {
+          operationId: movement.operationId, timeSeconds: result.startSimulationTimeSeconds, score: movement.score.netPoints,
+        });
+        this.historyRevision++;
+      }
+    }
+  }
+  /** Simulation hours until the scheduled move, not wall-clock solve latency. */
+  fuelEtaHours(index?: number): number {
+    let time = this.solved.simulationTimeSeconds;
+    if (index !== undefined && !this.waitingFuel.has(index)) {
+      const step = [this.active, this.buffered].find(step => step?.fuel.includes(index));
+      time = step?.snapshot.lastDayResult?.startSimulationTimeSeconds ?? (this.inFlight?.fuel.includes(index) ? this.inFlight.startSeconds : undefined) ?? time;
+    } else if (this.inFlight) {
+      time = this.inFlight.startSeconds + 43200;
+    }
+    return Math.max(0, time / 3600 - this.playbackDay * 24);
+  }
   get pendingFuel(): number[] { return [...this.pending]; }
+  get unconfirmedFuel(): readonly number[] { return this.unknownFuel; }
   private get canOperate(): boolean {
     return this.ready && !this.disposed && !this.checkpointing && !this.resetting && !this.faulted;
   }
@@ -210,6 +244,9 @@ export class DemoLoop {
         this.journal.record({ type: "reset", seed, shiftId: "free-practice", pacingMode: "demo" }, result, "compact");
       }
       if (this.disposed) return false;
+      this.history.clear();
+      this.historyRevision++;
+      this.unknownFuel = [];
       this.waitingFuel.clear(); this.pending.clear(); this.initialize(snapshot);
       this.running = !this.singleStep && !isRunTerminal(snapshot);
       return true;
@@ -223,13 +260,16 @@ export class DemoLoop {
   private pump(): void {
     const now = this.now(), delta = Math.max(0, now - this.lastTime); this.lastTime = now;
     if (this.disposed || this.checkpointing || !this.ready || !this.running || !this.visible) return;
-    if (this.active) {
+    let changed = false;
+    if (this.active && delta > 0) {
+      changed = true;
       const duration = stepDurationMs[this.speed];
       this.elapsed = Math.min(duration, this.elapsed + delta);
       this.snapshot = interpolateDemo(this.from, this.active.snapshot, this.dayProgress);
       if (this.elapsed === duration) {
         for (const index of this.active.fuel) this.pending.delete(index);
         this.message = "";
+        this.recordFuelHistory(this.snapshot);
         this.from = this.snapshot; this.active = undefined;
         if (isRunTerminal(this.snapshot)) {
           this.running = false; this.waitingFuel.clear(); this.pending.clear();
@@ -239,11 +279,12 @@ export class DemoLoop {
     }
     if (!this.active && this.buffered) {
       this.active = this.buffered; this.buffered = undefined; this.elapsed = 0;
+      changed = true;
     }
     // Compute the next time step while the current solved pair is displayed.
     // A slow solve holds the endpoint; no extrapolation or catch-up burst.
     if (!this.busy && !this.buffered && !isRunTerminal(this.solved)) void this.advance();
-    this.emit();
+    else if (changed) this.emit();
   }
 
   private async advance(): Promise<void> {
@@ -252,16 +293,18 @@ export class DemoLoop {
     const fuel = [...this.waitingFuel];
     this.waitingFuel.clear();
     this.busy = true;
-    if (this.singleStep) this.emit();
+    this.inFlight = { fuel, startSeconds: this.solved.simulationTimeSeconds };
+    this.emit();
     try {
       const command = { type: "commit-day", expectedCompletedDays: this.solved.completedDays ?? 0, channelIndices: fuel } as const;
-      const result = await this.bridge.dispatch(command, { responseMode: "compact" });
+      const result = await this.bridge.dispatch(command, { responseMode: "compact", demoReadings: true });
       if (this.disposed) return;
       if (result.accepted) {
         this.journal.record(command, result, "compact");
         this.solved = result.snapshot;
         if (this.singleStep) {
           this.snapshot = this.from = result.snapshot;
+          this.recordFuelHistory(result.snapshot);
           for (const index of fuel) this.pending.delete(index);
           this.message = "Half-day result ready.";
         } else {
@@ -272,8 +315,19 @@ export class DemoLoop {
         this.running = false; this.faulted = true; this.message = result.message;
       }
     } catch (error) {
-      if (!this.disposed) { this.running = false; this.faulted = true; this.message = `Connection interrupted. Retry the core to continue. ${String(error)}`; }
-    } finally { this.busy = false; if (!this.disposed) this.emit(); }
+      if (!this.disposed) {
+        for (const index of fuel) this.pending.delete(index);
+        this.unknownFuel = fuel;
+        this.running = false;
+        this.faulted = true;
+        const unknown = fuel.length === 0 ? "" : " Fuelling result unknown.";
+        this.message = `Connection interrupted.${unknown} Retry the core to continue. ${String(error)}`;
+      }
+    } finally {
+      this.inFlight = undefined;
+      this.busy = false;
+      if (!this.disposed) this.emit();
+    }
   }
 
   private emit(): void { for (const listener of this.listeners) listener(); }

@@ -29,8 +29,8 @@ export class ArcadeMap {
     for (const channel of snapshot.core.channels) {
       const cell = document.createElement("button");
       cell.type = "button"; cell.dataset.channel = String(channel.channelIndex);
-      cell.style.left = `${(channel.gridColumn + 1) / 24 * 100}%`;
-      cell.style.top = `${(channel.gridRow + 1) / 24 * 100}%`;
+      cell.style.left = `${10 + (channel.gridColumn + 1) / 24 * 80}%`;
+      cell.style.top = `${10 + (channel.gridRow + 1) / 24 * 80}%`;
       cell.textContent = instantFuel ? "" : gridCoordinateLabel(channel);
       this.cells.set(channel.channelIndex, cell); this.element.append(cell);
     }
@@ -43,7 +43,7 @@ export class ArcadeMap {
     this.frame.update(snapshot, selected);
     const readings = new Map<number, string>();
     this.element.dataset.mapMode = mode;
-    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", ripple: "Ripple", burnup: "Burnup", "inlet-zones": "Inlet zone fill" })[mode]} map. Arrow keys inspect. Enter, Space, R or double-click queues fuel or removes a waiting order.`);
+    if (this.instantFuel) this.element.setAttribute("aria-label", `${({ power: "Channel power", "bundle-power": "Maximum bundle power", ripple: "Ripple", burnup: "Burnup", "inlet-zones": "Inlet zone fill" })[mode]} map. Arrow keys inspect. Enter, Space, R or double-click queues fuel or removes a waiting order.`);
     this.snapshot = snapshot; this.selected = selected; this.locked = locked;
     for (const channel of snapshot.core.channels) {
       const cell = this.cells.get(channel.channelIndex);

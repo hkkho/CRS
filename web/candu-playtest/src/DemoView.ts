@@ -15,7 +15,7 @@ import { nextTabIndex, zoneAlert } from "./demoPresentation";
 import "./arcade.css";
 import "./demo.css";
 
-const maps = [["power", "Power"], ["ripple", "Ripple"], ["burnup", "Burnup"], ["inlet-zones", "Inlet zones"]] as const;
+const maps = [["power", "Power"], ["bundle-power", "Max bundle power"], ["ripple", "Ripple"], ["burnup", "Burnup"], ["inlet-zones", "Inlet zones"], ["fuel-history", "Fuelling history"]] as const;
 const mapModes = maps.map(([mode]) => mode);
 const padDirections = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"] as const;
 
@@ -35,6 +35,8 @@ export class DemoView {
   private map?: ArcadeMap;
   private readonly trends = new DemoTrends();
   private selected = 0;
+  private selectedTab: typeof mapModes[number] = "power";
+  private historyRevision = -1;
   private mapMode: TimeMapMode = "power";
   private lastMapKey = "";
   private legendMode?: TimeMapMode;
@@ -64,12 +66,16 @@ export class DemoView {
       <progress class="demo-clock" max="1" value="0" aria-label="Time step progress"></progress>
       <section class="demo-workspace"><div class="demo-core"><div class="demo-map-heading">
         <div class="demo-tabs demo-map-tabs" role="tablist" aria-label="Core map">${maps.map(([mode, label]) => `
-          <button type="button" role="tab" id="demo-map-${mode}" data-action="map" data-map-tab="${mode}" aria-controls="demo-map-panel" aria-selected="${mode === this.mapMode}" tabindex="${mode === this.mapMode ? 0 : -1}">${label}</button>`).join("")}</div>
+          <button type="button" role="tab" id="demo-map-${mode}" data-action="map" data-map-tab="${mode}" aria-controls="${mode === "fuel-history" ? "demo-history-panel" : "demo-map-panel"}" aria-selected="${mode === this.mapMode}" tabindex="${mode === this.mapMode ? 0 : -1}">${label}</button>`).join("")}</div>
         <span data-live>Preparing core…</span></div>
         <div id="demo-map-panel" role="tabpanel" aria-labelledby="demo-map-power">
           <div class="arcade-map-scroll" data-map></div><div class="demo-map-scale" data-scale role="group"></div><p class="arcade-legend" data-legend></p>
         </div>
-        <div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-receipt role="status"></p><p data-message role="status"></p></div><p class="demo-queue-key"><span>Yellow inset: waiting</span> &middot; <span>Blue inset: submitted</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue or remove <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue or remove <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
+        <div id="demo-history-panel" role="tabpanel" aria-labelledby="demo-map-fuel-history" hidden>
+          <p>Latest fuelling in this game. Score is the net points from that channel’s last fuel move; ongoing ripple and tilt points are separate.</p>
+          <div class="demo-history-scroll" tabindex="0" role="region" aria-label="Channel fuelling history"><table><thead><tr><th scope="col">Channel</th><th scope="col">Last fuelled</th><th scope="col">Score (pts)</th></tr></thead><tbody data-fuel-history></tbody></table></div>
+        </div>
+        <div class="demo-command-deck" aria-label="Fuel orders"><div><span class="demo-deck-label">FUEL ORDERS</span><strong data-fuel-queue>Queue empty</strong></div><p data-fuel-eta></p><p data-fuel-receipt role="status"></p><p data-message role="status"></p></div><p class="demo-queue-key"><span>Yellow inset: waiting</span> &middot; <span>Blue inset: submitted</span> &middot; White outline: selected</p><p class="demo-controls"><kbd>Arrows</kbd> Inspect <kbd>Enter</kbd> Queue or remove <span data-gamepad-hint hidden><kbd>D-pad</kbd> Inspect <kbd>Bottom button</kbd> Queue or remove <kbd>Shoulders</kbd> Change map <kbd>Start</kbd> Pause</span></p></div>
         <div class="demo-readout">
           <section class="demo-zones" aria-label="14 liquid zone levels"><h2>Liquid zones <small>14 levels</small></h2>
             <div class="demo-zone-grid">${zoneDisplayOrder.map((id, i) => `<div class="demo-zone" data-zone="${id}"><span>Z${i + 1}</span><div class="demo-zone-track"><i></i></div><strong>—</strong><small>—</small></div>`).join("")}</div>
@@ -167,8 +173,18 @@ export class DemoView {
       ? `Ripple ${ripple.ripplePointsPerHour.toFixed(2)} · Tilt ${ripple.tiltPointsPerHour.toFixed(2)} pts/h`
       : "");
     this.text("[data-message]", ended ? "" : loop.message);
-    const waiting = loop.waitingFuel.size, pending = loop.pendingFuel.length;
-    this.text("[data-fuel-queue]", pending ? `${waiting} waiting · ${pending - waiting} submitted` : "Queue empty");
+    const pendingFuel = loop.pendingFuel;
+    const waiting = loop.waitingFuel.size, pending = pendingFuel.length;
+    const unknown = loop.unconfirmedFuel.length;
+    const queue = pending ? `${waiting} waiting · ${pending - waiting} submitted` : "";
+    const unknownText = unknown ? `${unknown} with unknown result` : "";
+    this.text("[data-fuel-queue]", [queue, unknownText].filter(Boolean).join(" · ") || "Queue empty");
+    const eta = (index?: number) => `${loop.fuelEtaHours(index).toFixed(1)} simulated hours`;
+    this.text("[data-fuel-eta]", ended || loop.loadError ? "" : `${loop.running ? "" : "Paused · "}${pending ? pendingFuel.map(index => {
+      const channel = snapshot.core.channels.find(c => c.channelIndex === index);
+      return `${channel ? gridCoordinateLabel(channel) : index}: in ${eta(index)}`;
+    }).join(" · ") : `Next fuel batch: in ${eta()}`} · Results shown at step end${pending ? "; subject to the run continuing" : ""}`);
+    if (this.selectedTab === "fuel-history" && loop.isReady) this.renderFuelHistory(snapshot);
     this.renderFuelReceipt(snapshot);
     const playbackDisabled = !this.started || !loop.canTogglePause;
     const pause = this.field<HTMLButtonElement>("[data-action=pause]");
@@ -192,7 +208,7 @@ export class DemoView {
     const selected = snapshot.core.channels.find(c => c.channelIndex === this.selected);
     const fuel = this.field<HTMLButtonElement>("[data-action=fuel]");
     const removal = !this.tutorial && loop.waitingFuel.has(this.selected);
-    const submitted = !removal && loop.pendingFuel.includes(this.selected);
+    const submitted = !removal && pendingFuel.includes(this.selected);
     const fuelLabel = removal ? "Remove order" : submitted && !this.tutorial ? "Order submitted" : "Queue fuel";
     if (fuel.textContent !== fuelLabel) fuel.textContent = fuelLabel;
     fuel.disabled = !this.started || (removal ? !loop.canRemoveFuel(this.selected)
@@ -208,9 +224,10 @@ export class DemoView {
       this.legendMode = this.mapMode;
     }
     this.trends.update(snapshot, loop.playbackDay, this.selected, !loop.running);
-    const key = `${this.mapMode}:${this.selected}:${loop.pendingFuel}:${waiting}:${ended}`;
+    const key = `${this.mapMode}:${this.selected}:${pendingFuel}:${waiting}:${ended}`;
     if (snapshot !== this.lastSnapshot || key !== this.lastMapKey) {
-      this.map.update(snapshot, this.selected, loop.pendingFuel, this.mapMode, ended, loop.waitingFuel);
+      if (this.selectedTab !== "fuel-history")
+        this.map.update(snapshot, this.selected, pendingFuel, this.mapMode, ended, loop.waitingFuel);
       this.lastSnapshot = snapshot; this.lastMapKey = key;
       this.text("[data-peak]", `${(Math.max(...snapshot.core.channels.map(c => channelWatts(snapshot, c))) / 1000).toFixed(0)} kW`);
       this.text("[data-legend]", timeMapLegend(snapshot, this.mapMode));
@@ -218,7 +235,7 @@ export class DemoView {
       this.text("[data-power]", selected ? (channelWatts(snapshot, selected) / 1000).toFixed(0) : "—");
       this.text("[data-channel-limit]", `Limit ${(channelLimit(snapshot) / 1000).toLocaleString("en-US")} kW`);
       const zoneReading = this.field("[data-selected-zone]");
-      zoneReading.hidden = this.mapMode !== "inlet-zones" || !selected;
+      zoneReading.hidden = !["inlet-zones", "bundle-power"].includes(this.mapMode) || !selected;
       if (!zoneReading.hidden && selected) zoneReading.textContent = timeMapCell(snapshot, selected, this.mapMode).reading;
       this.renderZones(snapshot);
     }
@@ -277,6 +294,21 @@ export class DemoView {
     response.hidden = fills.length === 0;
     this.text("[data-fuel-zone-values]", fills.join(" · "));
   }
+  private renderFuelHistory(snapshot: CanduSnapshot): void {
+    if (this.loop.fuelHistoryRevision === this.historyRevision) return;
+    this.historyRevision = this.loop.fuelHistoryRevision;
+    const channels = [...snapshot.core.channels].sort((a, b) =>
+      (this.loop.fuelHistory.get(b.channelIndex)?.operationId ?? -1) - (this.loop.fuelHistory.get(a.channelIndex)?.operationId ?? -1) || a.channelIndex - b.channelIndex);
+    const rows = channels.map(channel => {
+      const entry = this.loop.fuelHistory.get(channel.channelIndex);
+      const row = document.createElement("tr");
+      for (const value of [gridCoordinateLabel(channel), entry ? shiftTime(Math.floor(entry.timeSeconds / 60)) : "Not fuelled this game", entry ? entry.score.toFixed(1) : "—"]) {
+        const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+      }
+      return row;
+    });
+    this.field("[data-fuel-history]").replaceChildren(...rows);
+  }
   private renderZones(snapshot: CanduSnapshot): void {
     const mean = snapshot.rrs.averageFillFraction;
     this.text("[data-zone-mean]", `${(mean * 100).toFixed(1)}%`);
@@ -296,20 +328,24 @@ export class DemoView {
     }
   }
   private readonly onMapTabKey = (event: KeyboardEvent): void => {
-    const next = nextTabIndex(event, mapModes.indexOf(this.mapMode), mapModes.length);
+    const next = nextTabIndex(event, mapModes.indexOf(this.selectedTab), mapModes.length);
     if (next === undefined) return;
     event.preventDefault();
     this.setMapMode(mapModes[next]);
     this.mapTabs[next].focus();
   };
-  private setMapMode(mode: TimeMapMode): void {
-    this.mapMode = mode;
+  private setMapMode(mode: typeof mapModes[number]): void {
+    this.selectedTab = mode;
+    this.lastMapKey = "";
+    if (mode !== "fuel-history") this.mapMode = mode;
+    this.field("#demo-map-panel").hidden = mode === "fuel-history";
+    this.field("#demo-history-panel").hidden = mode !== "fuel-history";
     for (const tab of this.mapTabs) {
       const active = tab.dataset.mapTab === mode;
       tab.setAttribute("aria-selected", String(active));
       tab.tabIndex = active ? 0 : -1;
     }
-    this.field("#demo-map-panel").setAttribute("aria-labelledby", `demo-map-${mode}`);
+    if (mode !== "fuel-history") this.field("#demo-map-panel").setAttribute("aria-labelledby", `demo-map-${mode}`);
     this.render();
   }
   private canQueue(index: number): boolean {
@@ -346,11 +382,11 @@ export class DemoView {
         if (pressed(0) || pressed(9)) this.showEndDialog();
       } else {
         const direction = padDirections.find((_, index) => pressed(index + 12));
-        if (direction) this.map?.moveSelection(direction);
+        if (direction && this.selectedTab !== "fuel-history") this.map?.moveSelection(direction);
         if (pressed(9)) this.loop.togglePause();
         else if (pressed(0)) this.editFuel(this.selected);
         const offset = Number(pressed(5) === true) - Number(pressed(4) === true);
-        if (offset) this.setMapMode(mapModes[(mapModes.indexOf(this.mapMode) + offset + mapModes.length) % mapModes.length]);
+        if (offset) this.setMapMode(mapModes[(mapModes.indexOf(this.selectedTab) + offset + mapModes.length) % mapModes.length]);
       }
     }
     this.gamepadIndex = pad?.index;

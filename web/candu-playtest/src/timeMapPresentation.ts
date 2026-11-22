@@ -1,7 +1,7 @@
 import type { CanduChannelSnapshot, CanduSnapshot } from "./protocol";
-import { channelLimit, channelWatts } from "./studio/powerReadings";
+import { bundleLimit, channelLimit, channelWatts } from "./studio/powerReadings";
 
-export type TimeMapMode = "power" | "ripple" | "burnup" | "inlet-zones";
+export type TimeMapMode = "power" | "bundle-power" | "ripple" | "burnup" | "inlet-zones";
 const unavailable = "#657080";
 type Stop = readonly [value: number, red: number, green: number, blue: number];
 
@@ -17,6 +17,7 @@ const scales: Record<TimeMapMode, { unit: string; stops: readonly Stop[] }> = {
     [3900, 35, 53, 116], [4500, 52, 100, 192], [5000, 36, 153, 195], [5500, 48, 199, 154],
     [6000, 185, 218, 88], [6450, 255, 176, 68], [7100, 240, 67, 83],
   ] },
+  "bundle-power": { unit: "kW", stops: [[300, 35, 53, 116], [400, 52, 100, 192], [500, 36, 153, 195], [600, 48, 199, 154], [700, 185, 218, 88], [800, 255, 176, 68], [900, 240, 67, 83]] },
   ripple: { unit: "%", stops: [
     [94, 43, 60, 128], [97, 56, 113, 201], [99, 104, 197, 224], [100, 221, 234, 222],
     [101, 249, 205, 120], [103, 241, 130, 67], [107, 170, 53, 92],
@@ -89,6 +90,12 @@ export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapsh
     const kw = channelWatts(snapshot, channel) / 1000;
     return { background: color(mode, kw), reading: Number.isFinite(kw) ? `${kw.toFixed(0)} kW` : "Power unavailable" };
   }
+  if (mode === "bundle-power") {
+    let peakWatts = -Infinity;
+    for (const bundle of channel.bundles) peakWatts = Math.max(peakWatts, bundle.powerWatts);
+    const kw = peakWatts / 1000;
+    return { background: color(mode, kw), reading: Number.isFinite(kw) ? `Maximum bundle ${kw.toFixed(0)} kW` : "Bundle power unavailable" };
+  }
   if (mode === "burnup") {
     const burnup = channel.averageBurnupMwdPerKg;
     return { background: color(mode, burnup), reading: Number.isFinite(burnup) ? `Burnup ${burnup.toFixed(2)} MWd/kg` : "Burnup unavailable" };
@@ -109,6 +116,7 @@ export function timeMapCell(snapshot: CanduSnapshot, channel: CanduChannelSnapsh
 
 export function timeMapLegend(snapshot: CanduSnapshot, mode: TimeMapMode): string {
   if (mode === "power") return `Channel power (kW) · Above 6,500 pulses · Above 7,000 shakes · Limit ${(channelLimit(snapshot) / 1000).toLocaleString("en-US")} kW`;
+  if (mode === "bundle-power") return `Maximum bundle power per channel (kW) · Latest solved reading · Limit ${(bundleLimit(snapshot) / 1000).toLocaleString("en-US")} kW`;
   if (mode === "inlet-zones") return "Inlet zone fill (%) · Six of eight fresh bundles go into this half · Grey = unavailable";
   if (mode === "ripple") return "Ripple · Percent of reference · 100% is the channel reference";
   return "Average channel burnup (MWd/kg)";

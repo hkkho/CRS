@@ -43,6 +43,46 @@ public sealed class DemoModeTests
         Assert.False(Send(runtime, "\"type\":\"commit-refuel\",\"request\":{\"channelIndex\":210,\"directionId\":\"toward-end-a\",\"shiftCount\":8,\"fuelTypeId\":\"NAT-U-SYNTHETIC\"}").GetProperty("accepted").GetBoolean());
     }
 
+    [Fact]
+    public void DemoReadingsPreserveDigestsAndTerminalTransition()
+    {
+        const string request = """{"protocol":"candu-playtest-v2","pacingMode":"demo","seed":1001,"shiftId":"useful-fuel-day-v1"}""";
+        var legacy = new PlaytestRuntime();
+        var modern = new PlaytestRuntime();
+        Assert.True(Parse(legacy.Initialize(request)).GetProperty("accepted").GetBoolean());
+        Assert.True(Parse(modern.Initialize(request)).GetProperty("accepted").GetBoolean());
+
+        for (int sequence = 0; sequence < 2; sequence++)
+        {
+            var channels = sequence == 0 ? new[] { 210, 211 } : System.Array.Empty<int>();
+            string command = JsonSerializer.Serialize(new
+            {
+                protocol = "candu-playtest-v2",
+                responseMode = "compact",
+                baseSequence = sequence,
+                payload = new { type = "commit-day", expectedCompletedDays = 0, channelIndices = channels }
+            });
+            string demoCommand = command.Insert(1, "\"demoReadings\":true,");
+            var original = Parse(legacy.DispatchJson(command));
+            var compact = Parse(modern.DispatchJson(demoCommand));
+            Assert.True(original.GetProperty("accepted").GetBoolean());
+            Assert.True(compact.GetProperty("accepted").GetBoolean());
+            Assert.Equal(original.GetProperty("stateDigest").GetString(), compact.GetProperty("stateDigest").GetString());
+            Assert.Equal(original.GetProperty("replayDigest").GetString(), compact.GetProperty("replayDigest").GetString());
+            Assert.Equal(original.GetProperty("snapshotPatch").GetRawText(), compact.GetProperty("snapshotPatch").GetRawText());
+            Assert.True(original.TryGetProperty("coreReplacement", out _));
+            Assert.False(compact.TryGetProperty("coreReplacement", out _));
+            Assert.True(compact.GetRawText().Length < original.GetRawText().Length / 2);
+            var readings = compact.GetProperty("demoReadings");
+            Assert.Equal(380 * 12, readings.GetProperty("bundlePowerWatts").GetArrayLength());
+            Assert.Equal(sequence == 0 ? 24 : 0, readings.GetProperty("bundleIdentities").GetArrayLength());
+        }
+
+        var end = Parse(modern.GetSnapshotJson());
+        Assert.True(end.GetProperty("runStatus").GetString() is "ended" or "completed");
+        Assert.Equal(legacy.GetSnapshotJson(), modern.GetSnapshotJson());
+    }
+
     private static JsonElement Send(PlaytestRuntime runtime, string command) => Parse(runtime.DispatchJson("{\"protocol\":\"candu-playtest-v2\"," + command + "}"));
     private static JsonElement Parse(string json) { using var doc = JsonDocument.Parse(json); return doc.RootElement.Clone(); }
 }

@@ -44,6 +44,7 @@ namespace ReactorSim.Browser
 
         public PlaytestCoreDto? CoreReplacement { get; set; }
         public PlaytestCoreMeasurementsDto? CoreMeasurements { get; set; }
+        public PlaytestDemoReadingsDto? DemoReadings { get; set; }
 
         public string StateDigest { get; set; } = string.Empty;
 

@@ -23,6 +23,7 @@ export type ResponseKind = "full" | "compact";
 export interface CanduDispatchOptions {
   responseMode?: ResponseKind;
   baseSequence?: number;
+  demoReadings?: boolean;
 }
 
 export interface BridgeStatus {
@@ -654,6 +655,7 @@ export function serializeProtocolCommand(
     type: "command",
     ...(options.responseMode !== undefined ? { responseMode: options.responseMode } : {}),
     ...(options.baseSequence !== undefined ? { baseSequence: options.baseSequence } : {}),
+    ...(options.demoReadings === true ? { demoReadings: true } : {}),
     payload: command,
   });
 }
@@ -1574,6 +1576,56 @@ export function parseProtocolResponseWithSnapshot(
   return parseProtocolResponseWithBase(raw, previousSnapshot, resyncSnapshot);
 }
 
+function applyDemoReadings(base: CanduCoreSnapshot, value: unknown): CanduCoreSnapshot {
+  const nodeCount = CORE_CHANNEL_COUNT * CORE_BUNDLE_POSITION_COUNT;
+  const invalid = () => new Error("candu-playtest-v2 demo readings are malformed.");
+  const column = <T>(input: unknown, validate: (item: unknown) => item is T): T[] => {
+    if (!Array.isArray(input) || input.length !== nodeCount || !input.every(validate)) throw invalid();
+    return input;
+  };
+  if (!isRecord(value) || !Array.isArray(value.channels) || value.channels.length !== CORE_CHANNEL_COUNT ||
+      !Array.isArray(value.bundleIdentities) || value.bundleIdentities.length > nodeCount) throw invalid();
+  const burnup = column(value.bundleBurnupMwdPerKg, isFiniteNumber);
+  const watts = column(value.bundlePowerWatts, isFiniteNumber);
+  const localPower = column(value.bundleLocalPowerFractions, isFiniteNumber);
+  const group1 = column(value.group1Flux, isFiniteNumber);
+  const group2 = column(value.group2Flux, isFiniteNumber);
+  const versions = column(value.bundleStateVersions, isNonNegativeInteger);
+  const fresh = column(value.bundleIsFresh, isBoolean);
+
+  const identities = new Map<number, Pick<CanduBundleSnapshot, "bundleId" | "fuelTypeId" | "insertedAtSeconds">>();
+  for (const row of value.bundleIdentities) {
+    if (!isRecord(row) || !isNonNegativeInteger(row.index) || row.index >= nodeCount || identities.has(row.index) ||
+        !isString(row.bundleId) || !isString(row.fuelTypeId) || !isFiniteNumber(row.insertedAtSeconds) ||
+        row.insertedAtSeconds < 0) throw invalid();
+    identities.set(row.index, {
+      bundleId: row.bundleId, fuelTypeId: row.fuelTypeId, insertedAtSeconds: row.insertedAtSeconds,
+    });
+  }
+
+  const channels = value.channels;
+  return { ...base, channels: base.channels.map(channel => {
+    const reading: unknown = channels[channel.channelIndex];
+    if (!isRecord(reading) || !isFiniteNumber(reading.averageBurnupMwdPerKg) ||
+        !isFiniteNumber(reading.powerWatts) || !isFiniteNumber(reading.localPowerFraction) ||
+        !isFiniteNumber(reading.localTiltFraction) || !isCanduXenonChannelSnapshot(reading.xenon, channel.channelIndex))
+      throw invalid();
+    const bundles = channel.bundles.map(bundle => {
+      const index = channel.channelIndex * CORE_BUNDLE_POSITION_COUNT + bundle.position;
+      return {
+        ...bundle, ...identities.get(index), currentBurnupMwdPerKg: burnup[index], powerWatts: watts[index],
+        localPowerFraction: localPower[index], group1Flux: group1[index], group2Flux: group2[index],
+        stateVersion: versions[index], isFresh: fresh[index],
+      };
+    });
+    return {
+      ...channel, averageBurnupMwdPerKg: reading.averageBurnupMwdPerKg, powerWatts: reading.powerWatts,
+      localPowerFraction: reading.localPowerFraction, localTiltFraction: reading.localTiltFraction,
+      xenon: reading.xenon, bundles,
+    };
+  }) };
+}
+
 export function materializeCompactSnapshot(
   base: CanduSnapshot,
   response: Record<string, unknown>,
@@ -1584,6 +1636,13 @@ export function materializeCompactSnapshot(
   }
 
   let core = base.core;
+  if (response.demoReadings != null) {
+    if (response.accepted !== true || !isRecord(response.command) || response.command.type !== "commit-day" ||
+        response.coreReplacement != null || response.coreMeasurements != null ||
+        base.pacingMode !== "demo" || patchValue.pacingMode !== "demo")
+      throw new Error("candu-playtest-v2 demo readings require an unchanged demo session.");
+    core = applyDemoReadings(core, response.demoReadings);
+  }
   if (hasOwn(response, "coreReplacement")) {
     if (!isCanduCoreSnapshot(response.coreReplacement)) {
       if (response.coreReplacement !== null) {
