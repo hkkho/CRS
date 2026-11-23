@@ -1,6 +1,6 @@
 # Web game roadmap
 
-See the [implementation guide](IMPLEMENTATION_GUIDE.md) for the current game and its boundaries.
+This roadmap lists planned work for the browser game. See the [implementation guide](IMPLEMENTATION_GUIDE.md) for the current behavior and its boundaries.
 
 ## Next work
 

@@ -37,17 +37,15 @@ not an external playtest or evidence of general creative ability.
 | Standalone scaffold | Generated “Copper Moon Workshop”, factory, seed 73. Its page kept the factory despite `?pattern=council`, hid library navigation and changed output after a real hand-press click. |
 | Layout | Desktop scenes for all ten patterns were visually inspected. At viewport widths 320 and 640, document widths were 305 and 625: no document-wide horizontal overflow. The narrow library uses intentional horizontal navigation. |
 
-The browser inspection exposed an invalid `.mjs` MIME association in the standard
-Windows static server. The package now supplies explicit module MIME types and
-no-store responses; startup succeeded after that repair. The factory drawing was
-also changed so an unpurchased automatic press does not continuously stroke:
-manual work triggers feedback and automatic work requires an active machine,
-ore and free output space.
+The package serves explicit `.mjs` MIME types and no-store responses. In the
+factory drawing, manual work triggers feedback; automatic work requires an
+active machine, ore and free output space.
 
-The in-app browser sometimes delivered frames slowly. The updated loop permits
-up to one second of visible elapsed time, advanced in bounded 1/30-second steps,
-and discards hidden-tab elapsed time. No cross-device frame-rate benchmark or
-low-end performance claim was established.
+The in-app browser sometimes delivered frames slowly. The implementation permits
+up to one second of visible elapsed time, advanced in bounded 1/30-second steps.
+Source inspection indicates that it discards hidden-tab elapsed time; that behavior
+was not measured in a timed browser lifecycle experiment. No cross-device frame-rate
+benchmark or low-end performance claim was established.
 
 ## What remains unverified
 

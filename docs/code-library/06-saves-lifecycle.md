@@ -1,6 +1,6 @@
 # 6. Checkpoints and updates
 
-The Pages game checkpoints on automatic updates. The replay journal stores commands and the last authoritative state digest in IndexedDB. A session storage entry carries the seed, journal ID and any custom settings. Wait for other game tabs to close before switching builds.
+The Pages game creates a checkpoint for an automatic update. The replay journal stores commands and the last authoritative state digest in IndexedDB. Session storage carries the seed, journal ID and any custom settings. When prompted, close other game tabs before switching builds.
 
 ```annotated-source
 path: web/candu-playtest/src/DemoLoop.ts

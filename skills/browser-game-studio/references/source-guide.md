@@ -1,8 +1,8 @@
 # Read the starter from its entry point
 
-The starter is deliberately small enough to trace without a framework. Its rule
-model is a teaching implementation for these examples. An existing game's
-authoritative simulation should remain in charge when applying the skill there.
+The starter is small enough to trace without a framework. Its rule model is a
+teaching implementation for these examples. When applying the skill to an
+existing game, keep its authoritative simulation in charge.
 
 | Read in this order | Responsibility and connection |
 | --- | --- |
@@ -17,9 +17,10 @@ authoritative simulation should remain in charge when applying the skill there.
 
 ## Startup
 
-The HTML supplies stable element IDs. The module loads configuration, validates
-its seed and chooses a pattern. In lab mode, a recognized `pattern` query selects
-a study; in standalone game mode the saved configuration wins. `createState`
+The HTML supplies stable element IDs. The module loads configuration, uses seed
+42 if the configured seed is invalid, and chooses a pattern. In lab mode, a recognized `pattern` query selects
+a study; in standalone game mode `project.json` selects the pattern and the query
+cannot override it. `createState`
 constructs that pattern's initial resources and seed. The application creates
 navigation and action buttons, fills the design notes, mounts readable state
 values and starts the animation loop. A resize observer scales the canvas to
@@ -32,8 +33,9 @@ calls `act`, which passes both to `command`. The model validates the operation
 before changing costs or benefits. A rejection returns the original state and
 an explanation. Acceptance returns replacement state plus a feedback kind.
 
-`act` adopts accepted state, writes the status message and adds a short-lived
-visual effect for work, delivery or an upgrade. It then refreshes the DOM readings.
+`act` adopts accepted state and adds a short-lived visual effect for accepted
+commands other than selection. It writes the status message and refreshes the DOM
+readings for both accepted and rejected commands.
 `drawScene` sees the new state on the next frame. There is one accepted purchase,
 even when several frames depict its response. Buttons also let keyboard and
 touch users perform actions that have a pointer-based canvas alternative.
@@ -48,8 +50,8 @@ Turn-based patterns simply keep their state until a command arrives.
 
 Decorative time controls waves, gait poses, scene movement and brief effects.
 Reduced motion freezes decorative movement while the same model steps still
-produce valid outcomes. Pause stops those steps; commands remain available for
-planning. A visibility change clears accumulated time and pointer activity,
+produce valid outcomes. Pause stops those steps; available commands execute
+immediately against the paused state. A visibility change clears accumulated time and pointer activity,
 preventing hidden time from unexpectedly producing resources. Production games
 that promise offline progress need an explicit, separately tested policy.
 

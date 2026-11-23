@@ -33,17 +33,16 @@ group 2 is thermal.
 | `chi2` | `0.0` | dimensionless | Derived as `1 - chi1` |
 | `E_fission` | `3.204353268e-11` | J/fission | Power conversion |
 
-The pack node volume is `V = 0.04044276185625 m^3`. The pack also carries the finite-volume
-conductances used by the 380-channel by 12-position model:
+The pack node volume is `V = 0.04044276185625 m^3`. The following conductances are used by the 380-channel by 12-position model. Interior values come directly from the pack; boundary values are calculated from its geometry and interior conductances.
 
 | Face relation | Group 1 | Group 2 | Units |
 | --- | ---: | ---: | --- |
-| Axial interior edge | `0.0024728365384615385` | `0.0012364182692307692` | m^2 |
+| Axial interior edge | `0.0024728365384615383` | `0.0012364182692307692` | m^2 |
 | Transverse interior edge | `0.0074295` | `0.00371475` | m^2 |
 | Radial circle face at distance d (m) | `0.0074295 * 0.28575 / d` | `0.00371475 * 0.28575 / d` | m^2 |
 | Axial extrapolated zero-flux face | `0.0026190440233080296` | `0.0013095220116540148` | m^2 |
 
-The [v10 geometry fit](../../data/calibration/diffusion-v10/README.md) uses effective fast and thermal diffusion coefficients of 0.015 m and 0.0075 m. The radial circle radius is 5.55 m. Each exposed face uses the distance from its node centre to the circle along the outward X/Y ray. See the [v11 xenon calibration](xenon-calibration.md) for the updated capture, worth and neutron production.
+The [geometry calibration](../../data/calibration/diffusion-v10/README.md) uses effective fast and thermal diffusion coefficients of 0.015 m and 0.0075 m. The radial circle radius is 5.55 m. Each exposed face uses the distance from its node centre to the circle along the outward X/Y ray. See the [xenon calibration](xenon-calibration.md) for capture, worth and neutron production.
 See [calibration provenance](calibration-provenance.md) for the source geometry,
 device absorption, fitted boundary leakage, and the included xenon reference.
 
@@ -102,8 +101,7 @@ edge current contribution. A vacuum boundary contributes its conductance times
 the node flux. A reflective boundary contributes zero. At nonreflective axial ends, flux is
 extrapolated to zero 0.22 m beyond the end face. With cell length
 `h = 0.4953 m`, `D_g = C_interior,g h^2/V` and `A = V/h`, the node-centred end
-conductance is `C_end,g = D_g A/(h/2 + 0.22 m)`. The older Marshak pack uses
-`2D_g` in place of the authored extrapolation distance. Every removal and
+conductance is `C_end,g = D_g A/(h/2 + 0.22 m)`. Every removal and
 leakage term has the same volumetric source units after division by volume.
 
 The fission production source is
@@ -145,12 +143,15 @@ phi_g,i^(m+1) = phi_g,i^m
 
 where `S_1 = chi1 * F / k` and
 `S_2 = Sigma_s12 * phi_1 + chi2 * F / k`. The inner iteration accepts when
-the infinity norm of `L(phi) - S` is below the absolute tolerance or when the
-relative value is below the relative tolerance. The relative denominator is
-the maximum over rows of `abs(L(phi)) + abs(S)`.
+the infinity norm of `L(phi) - S` is at most the absolute tolerance or when the
+relative value is at most the relative tolerance. The relative denominator is
+the maximum over rows of `abs(L(phi)) + abs(S)`; a zero denominator gives a
+relative residual of zero. Non-finite residuals fail the solve.
 
 The outer `SpatialEigenSolve` starts with a positive eigenvalue and a unit
-flux seed when the caller does not supply a warm start. Each outer step:
+flux seed when the caller does not supply a warm start. The iteration normalizes
+either supplied or default initial flux to the target power before the first
+outer step. Each outer step:
 
 1. Computes `F` from the current normalized flux.
 2. Solves group 1 with the fission source divided by the current `k`.

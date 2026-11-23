@@ -1,6 +1,6 @@
 # 2. Browser commands and transport
 
-[bridge.ts](../../web/candu-playtest/src/bridge.ts) serializes requests and tracks their IDs. [wasmWorker.ts](../../web/candu-playtest/src/wasmWorker.ts) loads the staged WASM module and calls the [managed exports](../../src/ReactorSim.BrowserHost/BrowserExports.cs). The instance [PlaytestRuntime](../../src/ReactorSim.Browser/PlaytestRuntime.cs) owns the session, sequences and replay digest.
+[bridge.ts](../../web/candu-playtest/src/bridge.ts) serializes requests and tracks their IDs. [wasmWorker.ts](../../web/candu-playtest/src/wasmWorker.ts) loads the staged WASM module and calls the [managed exports](../../src/ReactorSim.BrowserHost/BrowserExports.cs). Each [PlaytestRuntime](../../src/ReactorSim.Browser/PlaytestRuntime.cs) instance owns a session, its sequence and replay digest.
 
 ```annotated-source
 path: web/candu-playtest/src/wasmWorker.ts

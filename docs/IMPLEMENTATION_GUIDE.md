@@ -1,6 +1,6 @@
 # CANDU web game implementation guide
 
-Develop `web/candu-playtest` and verify it on the GitHub Pages path. The public launcher offers time-based free practice and Custom physics. Shutdown, scram, accidents, operator training and full plant operations are outside scope.
+This guide defines the responsibilities and acceptance path for `web/candu-playtest`. The public launcher offers time-based free practice, a tutorial and Custom physics. Verify changes on the GitHub Pages path. Shutdown, scram, accidents, operator training and full plant operations are outside scope.
 
 ## Architecture and ownership
 
@@ -22,7 +22,7 @@ Game applies its operating limits to the solved readings. Numerical failure disc
 
 ## Physics and custom runs
 
-The [v10 geometry fit](../data/calibration/diffusion-v10/README.md) uses circular radial leakage and axial zero-flux extrapolation 0.22 m beyond each end. [Core's solver](physics/active-two-group-solver.md) binds fuel coefficients by burnup and carries poison with bundle identity. The [v11 xenon calibration](physics/xenon-calibration.md) fits capture and equilibrium worth separately. Startup solves the aged inventory against a [time-average reference](physics/channel-power-reference.md) derived with zones at half fill, then settles xenon and regulation without spending fuel or time.
+The [geometry fit](../data/calibration/diffusion-v10/README.md) uses circular radial leakage and axial zero-flux extrapolation 0.22 m beyond each end. [Core's solver](physics/active-two-group-solver.md) binds fuel coefficients by burnup and carries poison with bundle identity. The [xenon calibration](physics/xenon-calibration.md) fits capture and equilibrium worth separately. Startup solves the aged inventory against a [time-average reference](physics/channel-power-reference.md) derived with zones at half fill, then settles xenon and regulation without spending fuel or time.
 
 Custom physics applies numeric overrides to the embedded pack and per-pack practice settings before startup. The shared loader validates the parameters and Game recomputes the reference and initial equilibrium. Custom runs have modified sandbox provenance and a content-based pack ID. They retain the settings across seed resets and local update checkpoints.
 
@@ -54,7 +54,7 @@ Define scenario inputs separately when a supported time-dependent model needs th
 
 ## Presentation and lifecycle
 
-Render accepted readings, including terminal reasons and diagnostics, without inventing intermediate physical states. Preserve keyboard access, 320px layouts, reduced motion and focus on recovery. Dispose worker, listeners and timers when leaving a run.
+Interpolate continuous readings between accepted endpoints for display; do not treat the interpolation as a solved physical state. Show fuel movements and terminal outcomes at the accepted endpoint. Preserve keyboard access, 320px layouts, reduced motion and focus on recovery. Dispose worker, listeners and timers when leaving a run.
 
 Update checkpoints store the latest solved endpoint as replayable inputs plus waiting orders. IndexedDB holds the journal and session storage holds its pointer and custom settings. Restore verifies pack, scoring policy, cadence, command acceptance and the final state digest before enabling Start. Failed writes prevent reload. Incompatible checkpoints and older daily saves remain stored.
 

@@ -61,4 +61,18 @@ describe("simulator manual", () => {
     expect(link.target).toBe("_blank");
     expect(link.rel).toBe("noopener");
   });
+
+  it("opens external references separately and includes them in the focus loop", () => {
+    const { manual, opener } = setup(); opener.click();
+    manual.element.querySelector<HTMLButtonElement>('[data-manual-chapter="physics"]')!.click();
+    const reference = manual.element.querySelector<HTMLAnchorElement>('#manual-physics a[href^="https://"]')!;
+    const close = manual.element.querySelector<HTMLButtonElement>("[data-manual-close]")!;
+    expect(reference.target).toBe("_blank");
+    expect(reference.rel).toBe("noopener");
+    reference.focus();
+    reference.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(close);
+    close.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(reference);
+  });
 });

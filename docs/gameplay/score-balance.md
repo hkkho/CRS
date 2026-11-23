@@ -1,7 +1,6 @@
 # Practice limits and scoring
 
-`practice-burnup-zone-ripple-tilt-v4` adds the points from committed fuel moves and
-accepted simulated operating intervals. A run or step can have a negative score.
+The `practice-burnup-zone-ripple-tilt-v4` scoring policy adds points from committed fuel moves and accepted simulated operating intervals. A run or step can have a negative score.
 
 | Scored when | Factor | Points |
 | --- | --- | --- |
@@ -12,17 +11,13 @@ accepted simulated operating intervals. A run or step can have a negative score.
 
 Each channel's ripple ratio is its thermal power divided by its fixed time-average
 reference. The nominal reference totals 2,064 MW thermal. Operating points use the
-accepted shape and the interval's actual power amplitude. See the
+post-refuelling shape and the interval's actual power amplitude. See the
 [reference derivation](../physics/channel-power-reference.md).
 
-The zone bonus for each time-based fuel order uses the combined post-batch solution.
-Retained daily mode uses the committed solution of each move. The browser shows the operating rate and the latest fuel
-batch's burnup and zone points. The wire field `freshFuelCost` carries the early
-discharge penalty. Checkpoints are compared within the same scoring policy. Pre-v4
-checkpoints remain stored under their original scoring identity.
+The zone bonus for each time-based fuel order uses the combined post-batch solution. Daily mode uses the committed solution of each move. The browser shows separate ripple and tilt rates and the latest fuel batch's burnup and zone points. The wire field `freshFuelCost` sums the magnitude of negative bundle scores; `dischargeReward` sums positive bundle scores. Checkpoints retain their scoring identity and are compared within the same policy.
 
 ## Operating limits
 
-A run ends outside 10–90% average liquid-zone fill, beyond ±20% global axial tilt, above 7,100 kW/channel or above 900 kW/bundle. Equality is allowed. Peak channel and bundle limits are independent and use the accepted thermal powers at the applied amplitude. Ripple affects score separately.
+A run ends outside 10–90% average liquid-zone fill, beyond ±20% global axial tilt, above 7,100 kW/channel or above 900 kW/bundle. Equality is allowed. For average fill, the comparison permits a tolerance of `1e-12` in fill fraction to account for floating-point summation. Peak channel and bundle limits are independent and use the accepted thermal powers at the applied amplitude. Ripple affects score separately.
 
-A physical loss during time-based play commits the violating batch or interval endpoint. Numerical rejection preserves the previous accepted state. See [shared step semantics](daily-turn-mode.md) and [PracticeOperatingLimits](../../src/ReactorSim.Game/PracticeOperatingLimits.cs).
+A physical loss during time-based play commits the violating batch or interval endpoint. In daily mode, a violating move commits and stops the remaining orders; an endpoint loss commits the interval. Numerical rejection preserves the last accepted state. See [shared step semantics](daily-turn-mode.md) and [PracticeOperatingLimits](../../src/ReactorSim.Game/PracticeOperatingLimits.cs).

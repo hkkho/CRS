@@ -1,7 +1,6 @@
 # Circular radial boundary verification
 
-The [calibration history](../../docs/physics/calibration-provenance.md) describes
-the circular geometry carried into the current model.
+This record compares the v8 and v9 radial boundary calibrations. The [calibration provenance](../../docs/physics/calibration-provenance.md) describes how the circular geometry is used by the current model.
 
 Both campaigns use seed 1001, normal 2,064 MW thermal / 650 MW electrical
 browser defaults, unlimited fuel, atomic one-day integration, and the same
@@ -28,7 +27,7 @@ times are not a controlled performance comparison.
 | Highest observed channel power, kW | 6,135.083 | 6,859.532 |
 | Highest observed bundle power, kW | 790.224 | 853.666 |
 
-Final Keff stays within 0.999987586–1.000032667. The intended radial redistribution
+The v9 campaign's sampled day-boundary Keff ranges from 0.999987586 to 1.000032667. The radial redistribution
 raises peak powers, while fuel demand, discharge burnup, score, energy, control
 range and axial tilt stay close to the baseline. These results establish this
 seed/policy's 100-day survival, not all possible player actions.
@@ -56,7 +55,7 @@ were accepted; cold/warm digests matched and no browser errors were reported.
 This verifies the uncommitted working tree at the recorded base commit and pack
 hash; it is not a published deployment or an AOT performance measurement.
 
-Reproduce a final campaign with a new output prefix:
+To repeat the campaign configuration, use the recorded v9 working tree and pack. The current checkout runs its current pack, so the following command alone does not reproduce the recorded figures. Use a new output prefix:
 
 ```powershell
 dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest-lzc --channels-per-day=2 --days=100 --seed=1001 --output=tmp/radial-v9-seed1001
@@ -80,8 +79,7 @@ sample rank after sorting.
 | Average channel burnup, MWd/kg | 1.48 | 3.35 | 5.23 |
 | Individual zone fill, % | 39.56 | 49.99 | 60.06 |
 
-The old 5,000 kW floor flattened 30.9% of sampled powers to one color, and
-99.7% of sampled ripple fell into the old 95–105% band. The 100-day daily-turn
+The sampled power and ripple distributions inform the map scales. The 100-day daily-turn
 campaign corroborates the power and ripple ranges and shows lower zone fills
 over longer play (5th–95th percentile 36.47–55.35%). The time-based display
 uses fixed piecewise gradients with denser stops around these observed

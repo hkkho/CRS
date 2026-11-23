@@ -1,6 +1,6 @@
 # 4. Core state and physics
 
-Core keeps 380 channels with twelve positions each. Per-node arrays are channel-major, with fast before thermal for two-group values. Channel and position indices are zero-based. A position identifies a physical slot, while the bundle ID follows the fuel. Adjacency, boundaries and flow direction come from the validated topology.
+`ReactorSim.Core` represents 380 channels with twelve positions each. Per-node arrays are channel-major; two-group values put fast before thermal. Channel and position indices are zero-based. A position identifies a physical slot, while a bundle ID follows the fuel. Validated topology supplies adjacency, boundaries and flow direction.
 
 ## Fuel moves and exposure
 
@@ -23,7 +23,7 @@ steps:
   explanation: '**Map surviving bundle positions.** The remaining `12 - shiftCount` bundles move by exactly the shift length. Adding shifts toward B; subtracting shifts toward A. Identity follows the retained bundle even though its slot changes.'
 ```
 
-Core applies the same move map that it publishes for previews. A shift toward End B inserts eight bundles in positions 0–7, shifts four retained bundles to positions 8–11 and discharges positions 4–11 from the old inventory. End A reverses the mapping.
+Core applies the same move map that it publishes for previews. A shift toward End B inserts eight bundles in positions 0–7, shifts the original positions 0–3 to 8–11 and discharges original positions 4–11. A shift toward End A inserts fresh bundles in positions 4–11, moves original positions 8–11 to 0–3 and discharges original positions 0–7.
 
 ```annotated-source
 path: src/ReactorSim.Core/Domain/GameRefuellingContracts.cs
@@ -95,7 +95,7 @@ end: 'Array.Copy(candidate, solution, solution.Length);
   }'
 steps:
 - through: double next = solution[nodeIndex] + correction;
-  explanation: '**Form a Jacobi correction.** The outer loop is bounded by numerical policy. For each node, subtract the current
+  explanation: '**Form a Jacobi correction.** The inner loop is bounded by numerical policy. For each node, subtract the current
     operator result from the required source, divide by the diagonal coefficient and add that correction to the current flux.
     Each node reads the previous iteration''s `applied` values.'
 - through: '"The deterministic Jacobi update produced a non-finite flux.");

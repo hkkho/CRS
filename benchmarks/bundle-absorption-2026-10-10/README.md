@@ -2,7 +2,7 @@
 
 ![Bundle absorption](bundle-absorption.png)
 
-Channel **M11**, index 200, from the initial seed-1001 aged browser core using
+This record measures channel **M11**, index 200, from the initial seed-1001 aged browser core using
 `candu6-two-group-diffusion-v1-lzc-tubes-v7`. It overlaps adjusters 4, 11 and 18,
 and LZC compartments Z4/Z11 at 49.946195% fill.
 
@@ -36,11 +36,10 @@ is 3.12 × 10⁻¹⁷ m⁻¹. CSV values retain full precision.
 - [Vector plot](bundle-absorption.svg)
 - [Plot source](plot_absorption.py)
 
-Reproduce from the repository root:
+The following command runs the export from the repository root without overwriting the recorded data. Matching these figures requires the recorded v7 pack and code; the current checkout uses its current model. The plot script reads the checked-in JSON and rewrites the plots and CSV beside it; run it only when intentionally regenerating those artifacts.
 
 ```powershell
-dotnet run --project tools/AgedCoreBenchmark -c Release -- --bundle-absorption benchmarks/bundle-absorption-2026-10-10/bundle-absorption.json 1001
-python -X utf8 benchmarks/bundle-absorption-2026-10-10/plot_absorption.py
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --bundle-absorption tmp/bundle-absorption.json 1001
 ```
 
 ## Bundle power with adjusters in and out
@@ -67,6 +66,7 @@ The measured whole-core adjuster worth is 16.999887 mk; both residuals are below
 - [Power plot source](plot_power_adjusters.py)
 
 ```powershell
-dotnet run --project tools/AgedCoreBenchmark -c Release -- --bundle-power-adjusters benchmarks/bundle-absorption-2026-10-10/bundle-power-adjusters.json 1001 200
-python -X utf8 benchmarks/bundle-absorption-2026-10-10/plot_power_adjusters.py
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --bundle-power-adjusters tmp/bundle-power-adjusters.json 1001 200
 ```
+
+The `plot_power_adjusters.py` script reads the checked-in absorption and power JSON files and rewrites the corresponding checked-in plot and CSV files.

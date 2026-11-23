@@ -213,16 +213,16 @@ void Save()
             calibratedTotalWorthMk = PracticeLiquidZoneRrsIdentityV1.CalibratedTotalZoneWorthMk,
             fastAbsorptionPerMPerUnitFill = PracticeLiquidZoneRrsIdentityV1.Group1AbsorptionPerMPerFillFraction,
             thermalAbsorptionPerMPerUnitFill = PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction,
-            configuration = "Factory default: independent region and absorber IDs, same IDs at every node; effective homogenized absorption covers all 4560 nodes. Positive-only absorption fitted to 6.5 mk and reference fuel production rebalanced for seed 1001 at 50% fill."
+            configuration = "Factory practice mapping; measurement regions and water absorber geometry are represented separately. See the active pack and mapping identity for the configured model."
         },
         referencePowerWatts = PracticeGameSessionFactory.PracticeReferencePowerWatts,
         referenceElectricalPowerWatts = PracticeGameSessionFactory.PracticeReferenceElectricalPowerWatts,
         requestedDays = 3,
         samplingIntervalSeconds = PracticeGameSessionFactory.FullCoreDiffusionRecomputeIntervalSeconds,
-        method = "Authoritative native GameSession browser factory; normal 1x pacing and RRS; no user refuelling or power commands. Stock scripted initial targets remain (95% at 120s, 100% at 360s). No xenon dynamics. Stop on native terminal state.",
-        reactivityDefinition = "rho=(k-1)/k; unregulated RRS CoreReactivity comes from the no-overlay empty-zone base solve using the live burned inventory. Decay is rho(start)-rho(end), positive means lost reactivity. milli-k=1000*rho. Day is 86400 simulation seconds.",
+        method = "Authoritative native GameSession browser factory; normal 1x pacing and RRS; no user refuelling or power commands. Iodine and xenon evolve. Stop on native terminal state.",
+        reactivityDefinition = "rho=(k-1)/k; unregulated RRS CoreReactivity is the empty-zone base solve with the live inventory and xenon background. Decay is rho(start)-rho(end), positive means lost reactivity. milli-k=1000*rho. Day is 86400 simulation seconds.",
         peakDefinition = "Maximum across all 380 channels / 4560 bundles and all half-hour samples including startup; channel and bundle IDs are zero-based. Zone mean is unweighted across 14 fills.",
-        offlineProbeDefinition = "Same live start/end inventories and unchanged coefficient tables, no zone overlay; independent cold-start Core solves. Only convergence tolerances tightened: k abs 1e-8, k rel 1e-7, residual 2e-6, source shape 1e-6, inner abs 1e-12, inner rel 1e-9, 256 inner / 4000 outer iterations. Probes never mutate the live session.",
+        offlineProbeDefinition = "Independent cold-start Core solves of the live start/end fuel inventories with no zone or live-xenon overlay; the pack's included reference remains in the fuel coefficients. Tightened tolerances: k abs 1e-8, k rel 1e-7, residual 2e-6, source shape 1e-6, inner abs 1e-12, inner rel 1e-9, 256 inner / 4000 outer iterations. Probes never mutate the live session.",
         summaries
     };
     File.WriteAllText(Path.Combine(outputDirectory, "report.json"), JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
@@ -404,7 +404,7 @@ static void AuditZones(string outputPath)
                 Thermal = PracticeLiquidZoneRrsIdentityV1.Group2AbsorptionPerMPerFillFraction
             },
             referenceFill = PracticeLiquidZoneRrsIdentityV1.AbsorptionReferenceFillFraction,
-            method = "Native 72-hour trajectories; tighter endpoint solves with actual initial/final zone patterns; +/-1 percentage-point central differences, clipped to physical bounds with actual perturbation denominator (one-sided at a fill limit). Uniform coefficient changes all 14 fills together. Individual coefficients change one zone. Positive drain means fill falls. Exact frozen-inventory decomposition separates burnup loss from zone movement.",
+            method = "Native 72-hour trajectories; independent tighter endpoint solves use the initial/final fuel inventories and zone patterns without a live-xenon overlay. +/-1 percentage-point central differences are clipped to physical bounds with actual perturbation denominator (one-sided at a fill limit). Uniform coefficient changes all 14 fills together. Individual coefficients change one zone. Positive drain means fill falls. The frozen-inventory decomposition applies to these independent probes.",
             results
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"Seed {seed}: coefficient={finalCoefficient:F4} mk/pp; burn loss={burnLossMk:F4} mk; expected drain={burnLossMk / -finalCoefficient:F3} pp; actual mean drain={row.ActualMeanDrainPercentagePoints:F3} pp; zone gain={zoneGainMk:F4} mk; residual start/end={row.InitialTightControlledRhoMk:F3}/{row.FinalTightControlledRhoMk:F3} mk");
@@ -474,7 +474,7 @@ static void AuditZoneGeometry(string outputPath)
     {
         format = "zone-geometry-audit-v1",
         dataPack = PracticeGameSessionFactory.DiffusionDataPackVersion,
-        method = "Tighter frozen starting-inventory solves at 0%, 50%, 100% fill. Empty failures recorded; direct empty-to-full worth when valid. Full-range extrapolation also recorded as twice 50%-100% worth. Exploratory scaling retained as a diagnostic, without changing runtime or pack. Synthetic homogenized absorption, not physical tube geometry.",
+        method = "Tighter frozen starting-inventory solves at 0%, 50%, 100% fill. The diagnostic reconstructs a scaled static-mask mapping from node weights and logical zone IDs; it does not retain tube water-column overlap or separate absorber-zone IDs. Empty failures recorded; direct empty-to-full worth when valid. Full-range extrapolation also recorded as twice 50%-100% worth. Exploratory scaling does not change the runtime or pack.",
         totalNodes = nodes.Length,
         absorbingNodes = mapping.Nodes.Count(n => n.Group1AbsorptionPerMPerFillFraction > 0 || n.Group2AbsorptionPerMPerFillFraction > 0),
         regionNodeCounts = mapping.NodeIndicesByZone.Select(n => n.Count).ToArray(),
@@ -603,7 +603,7 @@ static void AuditRefuelWorth(string outputPath)
         seed = 1001,
         hour = 14,
         dataPack = PracticeGameSessionFactory.DiffusionDataPackVersion,
-        method = "Replay authoritative hour-14 benchmark operations: oldest channel in each discharge direction, eight fresh bundles each. Tight independent same-inventory solves before/after. Frozen initial nonuniform zone fills isolate fuel worth; empty-zone solves also reported. No burn time elapses during refuelling. Live-zone probes separate controller response.",
+        method = "Replay hour-14 benchmark operations: select the highest-average-burnup channel in each group defined by the higher-burnup eight-bundle end window (ties to End B), then insert eight fresh bundles along each channel's actual flow. Tight independent same-inventory solves before/after omit the live-xenon overlay. Frozen initial nonuniform zone fills isolate fuel worth; empty-zone solves also reported. No burn time elapses during refuelling. Live-zone probes separate controller response.",
         initialZoneFills = initialFills,
         observations
     }, new JsonSerializerOptions { WriteIndented = true }));
@@ -639,8 +639,8 @@ static void BenchmarkRefuelResponse(string outputPath, ulong seed)
             Capture(fuelNow ? "before-refuel" : "equilibrium");
             if (fuelNow)
             {
-                // Select one old channel for each discharge direction from the
-                // actual inventory, without prescribing a new reactor rule.
+                // Select the highest-average-burnup channel in each group
+                // defined by comparing the eight-bundle end windows (ties to End B).
                 var choices = session.Snapshot.Core.Channels.Select(c => new
                 {
                     channel = c,
@@ -648,7 +648,7 @@ static void BenchmarkRefuelResponse(string outputPath, ulong seed)
                         ? "toward-end-b" : "toward-end-a"
                 }).GroupBy(c => c.direction).OrderBy(g => g.Key)
                     .Select(g => g.OrderByDescending(c => c.channel.AverageBurnupMwDayPerKg).ThenBy(c => c.channel.ChannelIndex).First()).ToArray();
-                if (choices.Length != 2) throw new InvalidOperationException("Expected two opposite discharge directions.");
+                if (choices.Length != 2) throw new InvalidOperationException("Expected both end-window comparison groups.");
                 foreach (var choice in choices)
                 {
                     var pre = rows[^1];
@@ -688,7 +688,7 @@ static void BenchmarkRefuelResponse(string outputPath, ulong seed)
         criticalityToleranceMk = 1000 * PracticeLiquidZoneRrsIdentityV1.CriticalityTolerance,
         referencePowerWatts = PracticeGameSessionFactory.PracticeReferencePowerWatts,
         referenceElectricalPowerWatts = PracticeGameSessionFactory.PracticeReferenceElectricalPowerWatts,
-        method = "Two authoritative browser-factory GameSession runs to 72h, identical seed and normal RRS. One no-refuel control; one refuels the oldest channel for each discharge direction at exactly 14h, eight fresh bundles each. Directions select the older eight-bundle outlet from live inventory. Two sequential accepted transactions at the same clock time; sampled before and after each. Half-hour equilibrium sampling, no extra user power commands, stock startup events retained. No xenon dynamics.",
+        method = "Two authoritative browser-factory GameSession runs to 72h, identical seed and normal RRS. One no-refuel control; one selects the highest-average-burnup channel in each group defined by the higher-burnup eight-bundle end window (ties to End B) and refuels at exactly 14h along actual channel flow, eight fresh bundles each. Event direction labels record the grouping heuristic. Two sequential accepted transactions at the same clock time; sampled before and after each. Half-hour equilibrium sampling, no extra user power commands. Iodine and xenon evolve.",
         zonePairDefinition = "Z1/Z8, Z2/Z9, ..., Z7/Z14; End A then End B in the same transverse region.",
         refuellingEvents = events,
         samples = rows,

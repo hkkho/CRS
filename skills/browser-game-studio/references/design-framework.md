@@ -1,7 +1,7 @@
 # From an idea to an engaging browser game
 
-This framework is a synthesis of the case studies, not a formula proving that any
-idea will be fun. It works by producing a small, falsifiable design: a player can
+This framework synthesizes the case studies; it does not prove that an
+idea will be fun. Use it to produce a small, testable design: a player can
 make a choice, see a consequence and decide what to do next. Its core vocabulary
 also applies to action and puzzle games, but those genres need their own reference
 study and control/level-design work.
@@ -15,8 +15,8 @@ Write: **I am [role], I repeatedly [verb], because I want [visible change], whil
 repair kits between a garden, observatory and docking bay before the next supply
 ship” supplies a decision. If the fantasy is creative, replace scarcity with
 composition: “I arrange a little floating settlement, then watch its residents
-make use of what I built.” Gourdlets and Evolution show why every game does not
-need debt, combat or a score.
+make use of what I built.” Gourdlets and Evolution show why not every game needs
+debt, combat or a score.
 
 Give the player an immediately understandable object: a parcel, creature, card,
 plant or building. Let its appearance expose relevant state. An address label

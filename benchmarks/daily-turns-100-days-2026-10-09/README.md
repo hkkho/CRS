@@ -1,9 +1,10 @@
 # Single-step daily campaign — 100 days
 
-**Passed:** seed 1001, two highest-burnup eligible channels refuelled per day,
-normal endless browser practice. Each turn uses one 86,400-second exposure/poison
-interval and one final equilibrium/RRS solve (`practice-daily-one-step-v1`). No
-physics, scoring, inventory or power overrides were applied.
+This recorded native bridge campaign completed 100 days for seed 1001, refuelling two highest-burnup eligible channels per day. Each turn uses one 86,400-second exposure/poison
+interval and one final equilibrium/RRS solve (`practice-daily-one-step-v1`). The
+recorded pack is `candu6-two-group-diffusion-v1-lzc-tubes-v7` and the scoring
+policy is `practice-channel-ripple-v3`. No physics, scoring, inventory or power
+overrides were applied.
 
 | Result | Value |
 | --- | --- |
@@ -43,16 +44,14 @@ Artifacts:
   actual xenon measured a 0.347430 mk/FPD reactivity loss. This isolates fuel
   depletion and is not the net regulated reactivity trend of the 100-day campaign.
 
-Reproduce from the repository root:
+Run the same policy from the repository root with a new output prefix. Reproducing the recorded numbers also requires the pack and assemblies identified in the report; a current checkout uses its current model.
 
 ```powershell
-dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest --channels-per-day=2 --days=100 --seed=1001 --output=benchmarks/daily-turns-100-days-2026-10-09/single-step-oldest-2-seed1001
+dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest --channels-per-day=2 --days=100 --seed=1001 --output=tmp/single-step-oldest-2-seed1001
 ```
 
 Recorded elapsed time was 337.8 seconds with concurrent tests/builds; it is not
 an isolated latency benchmark. The report timestamp is UTC (October 10); the
 campaign ran October 9 in the user's America/New_York timezone.
 
-The `oldest-2-seed1001.*` artifacts describe the interrupted two-day campaign
-using the earlier subdivided model. They are superseded and are not evidence for
-the corrected 100-day result.
+The `oldest-2-seed1001.*` artifacts describe a separate interrupted two-day campaign with a subdivided integration cadence. Use the `single-step` artifacts above for the 100-day result.

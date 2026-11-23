@@ -1,0 +1,3665 @@
+{
+  "dataPack": "custom-practice-v1-d8c847d5966f6c74ed54e5279e60912c1b9f4b566dc2da0ed774ba93983b98bb",
+  "baseDataPack": "candu6-two-group-diffusion-v1-xenon-v11",
+  "overrides": {
+    "solver.absolute_residual_tolerance": 1E-12,
+    "solver.relative_residual_tolerance": 1E-09,
+    "solver.k_absolute_tolerance": 2E-09,
+    "solver.k_relative_tolerance": 2E-09,
+    "solver.residual_tolerance": 2E-07,
+    "solver.source_shape_tolerance": 1E-07,
+    "practice.xenon_thermal_absorption_multiplier": 1
+  },
+  "seed": 1001,
+  "thermalPowerWatts": 2064000000,
+  "xenonAbsorptionMultiplier": 1,
+  "xenonThermalAbsorptionM2": 4.7E-23,
+  "xenonThermalCaptureM2": 9.4E-23,
+  "xenonDecayPerSecond": 2.1065742176025568E-05,
+  "equilibriumXenonWorthMk": -27.747775735182387,
+  "stepSeconds": 900,
+  "sampleIntervalSeconds": 3600,
+  "releaseHour": 8,
+  "leftNodeCount": 2280,
+  "rightNodeCount": 2280,
+  "method": "Fixed burnup, inventory and full thermal power. The 80/20 step starts at hour zero with spatial regulation disabled. The released trace branches from the held run and samples the release hour immediately after all zones return to 50%.",
+  "zones": [
+    {
+      "zone": 1,
+      "horizontalCentreM": -1.7145000000000001,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.8,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 2,
+      "horizontalCentreM": -1.7145000000000001,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.8,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 3,
+      "horizontalCentreM": 0,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 4,
+      "horizontalCentreM": 0,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 5,
+      "horizontalCentreM": 0,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 6,
+      "horizontalCentreM": 1.7145000000000001,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.2,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 7,
+      "horizontalCentreM": 1.7145000000000001,
+      "axialCentreM": 1.4859,
+      "tiltedFill": 0.2,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 8,
+      "horizontalCentreM": -1.7145000000000001,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.8,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 9,
+      "horizontalCentreM": -1.7145000000000001,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.8,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 10,
+      "horizontalCentreM": 0,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 11,
+      "horizontalCentreM": 0,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 12,
+      "horizontalCentreM": 0,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.5,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 13,
+      "horizontalCentreM": 1.7145000000000001,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.2,
+      "neutralFill": 0.5
+    },
+    {
+      "zone": 14,
+      "horizontalCentreM": 1.7145000000000001,
+      "axialCentreM": 4.4577,
+      "tiltedFill": 0.2,
+      "neutralFill": 0.5
+    }
+  ],
+  "baseline": {
+    "hour": 0,
+    "left": {
+      "powerWatts": 1025583350.9064219,
+      "meanI135NumberDensityM3": 7.580142309659768E+20,
+      "meanXe135NumberDensityM3": 1.128636897898944E+20,
+      "meanThermalFluxPerM2Second": 2.008345374125189E+18
+    },
+    "right": {
+      "powerWatts": 1038416649.0935795,
+      "meanI135NumberDensityM3": 7.674991932633937E+20,
+      "meanXe135NumberDensityM3": 1.130244369886879E+20,
+      "meanThermalFluxPerM2Second": 2.0328198391038584E+18
+    },
+    "tiltPercent": 0.6217683230212027,
+    "effectiveK": 1.0000039872898945,
+    "residual": 1.7328969205622764E-07
+  },
+  "frozenPoisonHeldTilt": {
+    "hour": 0,
+    "left": {
+      "powerWatts": 972602311.2717874,
+      "meanI135NumberDensityM3": 7.580142309659768E+20,
+      "meanXe135NumberDensityM3": 1.128636897898944E+20,
+      "meanThermalFluxPerM2Second": 1.9042773922812127E+18
+    },
+    "right": {
+      "powerWatts": 1091397688.7282054,
+      "meanI135NumberDensityM3": 7.674991932633937E+20,
+      "meanXe135NumberDensityM3": 1.130244369886879E+20,
+      "meanThermalFluxPerM2Second": 2.1369740174953738E+18
+    },
+    "tiltPercent": 5.75558999304353,
+    "effectiveK": 1.000119943689779,
+    "residual": 1.981884049603423E-07
+  },
+  "held": {
+    "minimumSwingPercentagePoints": 0.05,
+    "extrema": [
+      {
+        "hour": 4,
+        "tiltPercent": 12.640272531073299,
+        "isPeak": true
+      },
+      {
+        "hour": 15,
+        "tiltPercent": 2.9194605439068173,
+        "isPeak": false
+      },
+      {
+        "hour": 26,
+        "tiltPercent": 6.1150369105273725,
+        "isPeak": true
+      },
+      {
+        "hour": 38,
+        "tiltPercent": 5.0760802601633115,
+        "isPeak": false
+      },
+      {
+        "hour": 50,
+        "tiltPercent": 5.404742757945252,
+        "isPeak": true
+      },
+      {
+        "hour": 62,
+        "tiltPercent": 5.292778407364134,
+        "isPeak": false
+      }
+    ],
+    "cycles": [
+      {
+        "startHour": 4,
+        "oppositeExtremumHour": 15,
+        "endHour": 26,
+        "periodHours": 22,
+        "startsAtPeak": true,
+        "dampingPerHour": null
+      },
+      {
+        "startHour": 15,
+        "oppositeExtremumHour": 26,
+        "endHour": 38,
+        "periodHours": 23,
+        "startsAtPeak": false,
+        "dampingPerHour": null
+      },
+      {
+        "startHour": 26,
+        "oppositeExtremumHour": 38,
+        "endHour": 50,
+        "periodHours": 24,
+        "startsAtPeak": true,
+        "dampingPerHour": null
+      },
+      {
+        "startHour": 38,
+        "oppositeExtremumHour": 50,
+        "endHour": 62,
+        "periodHours": 24,
+        "startsAtPeak": false,
+        "dampingPerHour": null
+      }
+    ],
+    "samples": [
+      {
+        "hour": 0,
+        "left": {
+          "powerWatts": 972602311.2717874,
+          "meanI135NumberDensityM3": 7.580142309659768E+20,
+          "meanXe135NumberDensityM3": 1.128636897898944E+20,
+          "meanThermalFluxPerM2Second": 1.9042773922812127E+18
+        },
+        "right": {
+          "powerWatts": 1091397688.7282054,
+          "meanI135NumberDensityM3": 7.674991932633937E+20,
+          "meanXe135NumberDensityM3": 1.130244369886879E+20,
+          "meanThermalFluxPerM2Second": 2.1369740174953738E+18
+        },
+        "tiltPercent": 5.75558999304353,
+        "effectiveK": 1.000119943689779,
+        "residual": 1.981884049603423E-07
+      },
+      {
+        "hour": 1,
+        "left": {
+          "powerWatts": 941178063.0177233,
+          "meanI135NumberDensityM3": 7.531491951069009E+20,
+          "meanXe135NumberDensityM3": 1.1595066870023581E+20,
+          "meanThermalFluxPerM2Second": 1.8426683157638167E+18
+        },
+        "right": {
+          "powerWatts": 1122821936.9822822,
+          "meanI135NumberDensityM3": 7.72364229122472E+20,
+          "meanXe135NumberDensityM3": 1.1010439219782445E+20,
+          "meanThermalFluxPerM2Second": 2.198684067186934E+18
+        },
+        "tiltPercent": 8.80057528898054,
+        "effectiveK": 1.0002332386246915,
+        "residual": 1.9746193488873574E-07
+      },
+      {
+        "hour": 2,
+        "left": {
+          "powerWatts": 919107013.9333391,
+          "meanI135NumberDensityM3": 7.467084019680796E+20,
+          "meanXe135NumberDensityM3": 1.1839438151377281E+20,
+          "meanThermalFluxPerM2Second": 1.7993916375908124E+18
+        },
+        "right": {
+          "powerWatts": 1144892986.0666575,
+          "meanI135NumberDensityM3": 7.788050222612922E+20,
+          "meanXe135NumberDensityM3": 1.0810801966303961E+20,
+          "meanThermalFluxPerM2Second": 2.2420304110669379E+18
+        },
+        "tiltPercent": 10.939242835916607,
+        "effectiveK": 1.0003067343026053,
+        "residual": 1.9679451222946762E-07
+      },
+      {
+        "hour": 3,
+        "left": {
+          "powerWatts": 906237355.6773895,
+          "meanI135NumberDensityM3": 7.395441250224019E+20,
+          "meanXe135NumberDensityM3": 1.2005279217110716E+20,
+          "meanThermalFluxPerM2Second": 1.77414705525088E+18
+        },
+        "right": {
+          "powerWatts": 1157762644.3226106,
+          "meanI135NumberDensityM3": 7.859692992069677E+20,
+          "meanXe135NumberDensityM3": 1.0699535642477573E+20,
+          "meanThermalFluxPerM2Second": 2.2673014592450092E+18
+        },
+        "tiltPercent": 12.186302744439006,
+        "effectiveK": 1.0003283023047842,
+        "residual": 1.9591798407861603E-07
+      },
+      {
+        "hour": 4,
+        "left": {
+          "powerWatts": 901552387.4793218,
+          "meanI135NumberDensityM3": 7.323844427196031E+20,
+          "meanXe135NumberDensityM3": 1.2086947277227654E+20,
+          "meanThermalFluxPerM2Second": 1.7649447402949455E+18
+        },
+        "right": {
+          "powerWatts": 1162447612.5206742,
+          "meanI135NumberDensityM3": 7.931289815097682E+20,
+          "meanXe135NumberDensityM3": 1.0663259430611098E+20,
+          "meanThermalFluxPerM2Second": 2.2764930861720118E+18
+        },
+        "tiltPercent": 12.640272531073299,
+        "effectiveK": 1.000308321769711,
+        "residual": 1.9607141869952207E-07
+      },
+      {
+        "hour": 5,
+        "left": {
+          "powerWatts": 903627424.4444317,
+          "meanI135NumberDensityM3": 7.257951942517494E+20,
+          "meanXe135NumberDensityM3": 1.2088628283079973E+20,
+          "meanThermalFluxPerM2Second": 1.7689964447937518E+18
+        },
+        "right": {
+          "powerWatts": 1160372575.5555727,
+          "meanI135NumberDensityM3": 7.997182299776212E+20,
+          "meanXe135NumberDensityM3": 1.0685996925967734E+20,
+          "meanThermalFluxPerM2Second": 2.2724068914508554E+18
+        },
+        "tiltPercent": 12.439203057710298,
+        "effectiveK": 1.0002647582128998,
+        "residual": 1.9899944171258786E-07
+      },
+      {
+        "hour": 6,
+        "left": {
+          "powerWatts": 910987055.8221415,
+          "meanI135NumberDensityM3": 7.201781871197521E+20,
+          "meanXe135NumberDensityM3": 1.2022305879507578E+20,
+          "meanThermalFluxPerM2Second": 1.7834131452641088E+18
+        },
+        "right": {
+          "powerWatts": 1153012944.1778626,
+          "meanI135NumberDensityM3": 8.053352371096196E+20,
+          "meanXe135NumberDensityM3": 1.0752706870582872E+20,
+          "meanThermalFluxPerM2Second": 2.2579452680302428E+18
+        },
+        "tiltPercent": 11.726060482350805,
+        "effectiveK": 1.000214005460108,
+        "residual": 1.9737556904756384E-07
+      },
+      {
+        "hour": 7,
+        "left": {
+          "powerWatts": 922118987.4301039,
+          "meanI135NumberDensityM3": 7.157839004290033E+20,
+          "meanXe135NumberDensityM3": 1.1904933578281188E+20,
+          "meanThermalFluxPerM2Second": 1.8052324098085276E+18
+        },
+        "right": {
+          "powerWatts": 1141881012.5698972,
+          "meanI135NumberDensityM3": 8.09729523800369E+20,
+          "meanXe135NumberDensityM3": 1.0850194777815102E+20,
+          "meanThermalFluxPerM2Second": 2.2360811450575314E+18
+        },
+        "tiltPercent": 10.647384938943468,
+        "effectiveK": 1.0001677319054558,
+        "residual": 1.968163908014506E-07
+      },
+      {
+        "hour": 8,
+        "left": {
+          "powerWatts": 935567789.5966785,
+          "meanI135NumberDensityM3": 7.127274803052895E+20,
+          "meanXe135NumberDensityM3": 1.1755593450008381E+20,
+          "meanThermalFluxPerM2Second": 1.8316014930853391E+18
+        },
+        "right": {
+          "powerWatts": 1128432210.403311,
+          "meanI135NumberDensityM3": 8.127859439240822E+20,
+          "meanXe135NumberDensityM3": 1.0966932254037703E+20,
+          "meanThermalFluxPerM2Second": 2.2096737093486612E+18
+        },
+        "tiltPercent": 9.34420643442992,
+        "effectiveK": 1.00013201937421,
+        "residual": 1.9589884066414983E-07
+      },
+      {
+        "hour": 9,
+        "left": {
+          "powerWatts": 949948711.2357692,
+          "meanI135NumberDensityM3": 7.110066262988836E+20,
+          "meanXe135NumberDensityM3": 1.1592974957190862E+20,
+          "meanThermalFluxPerM2Second": 1.8598047738730888E+18
+        },
+        "right": {
+          "powerWatts": 1114051288.764228,
+          "meanI135NumberDensityM3": 8.145067979304879E+20,
+          "meanXe135NumberDensityM3": 1.1092615598138465E+20,
+          "meanThermalFluxPerM2Second": 2.1814412762473958E+18
+        },
+        "tiltPercent": 7.950706275603642,
+        "effectiveK": 1.000108244596806,
+        "residual": 1.986087003723628E-07
+      },
+      {
+        "hour": 10,
+        "left": {
+          "powerWatts": 963998786.675033,
+          "meanI135NumberDensityM3": 7.105198578862132E+20,
+          "meanXe135NumberDensityM3": 1.1433472929457578E+20,
+          "meanThermalFluxPerM2Second": 1.887364288590241E+18
+        },
+        "right": {
+          "powerWatts": 1100001213.3249729,
+          "meanI135NumberDensityM3": 8.149935663431567E+20,
+          "meanXe135NumberDensityM3": 1.1217827774699726E+20,
+          "meanThermalFluxPerM2Second": 2.1538616400436554E+18
+        },
+        "tiltPercent": 6.589264857070713,
+        "effectiveK": 1.000094545671743,
+        "residual": 1.9653652032142729E-07
+      },
+      {
+        "hour": 11,
+        "left": {
+          "powerWatts": 976649103.339145,
+          "meanI135NumberDensityM3": 7.110874428034624E+20,
+          "meanXe135NumberDensityM3": 1.1289923130907378E+20,
+          "meanThermalFluxPerM2Second": 1.912181926127339E+18
+        },
+        "right": {
+          "powerWatts": 1087350896.6608524,
+          "meanI135NumberDensityM3": 8.144259814259099E+20,
+          "meanXe135NumberDensityM3": 1.1334045273154429E+20,
+          "meanThermalFluxPerM2Second": 2.1290310669267402E+18
+        },
+        "tiltPercent": 5.363458978764905,
+        "effectiveK": 1.0000875219883172,
+        "residual": 1.9675202099979582E-07
+      },
+      {
+        "hour": 12,
+        "left": {
+          "powerWatts": 987097984.5402653,
+          "meanI135NumberDensityM3": 7.124757514219884E+20,
+          "meanXe135NumberDensityM3": 1.1171020692512186E+20,
+          "meanThermalFluxPerM2Second": 1.932683490294581E+18
+        },
+        "right": {
+          "powerWatts": 1076902015.4597328,
+          "meanI135NumberDensityM3": 8.130376728073823E+20,
+          "meanXe135NumberDensityM3": 1.1433983944086151E+20,
+          "meanThermalFluxPerM2Second": 2.1085214391722053E+18
+        },
+        "tiltPercent": 4.35097049028428,
+        "effectiveK": 1.000083796740829,
+        "residual": 1.973079367430066E-07
+      },
+      {
+        "hour": 13,
+        "left": {
+          "powerWatts": 994855642.2792177,
+          "meanI135NumberDensityM3": 7.144239137142622E+20,
+          "meanXe135NumberDensityM3": 1.1081376619997438E+20,
+          "meanThermalFluxPerM2Second": 1.9479067713347098E+18
+        },
+        "right": {
+          "powerWatts": 1069144357.7207824,
+          "meanI135NumberDensityM3": 8.110895105151073E+20,
+          "meanXe135NumberDensityM3": 1.151213531319979E+20,
+          "meanThermalFluxPerM2Second": 2.0932931153005965E+18
+        },
+        "tiltPercent": 3.599259469068056,
+        "effectiveK": 1.0000810820205466,
+        "residual": 1.9600038358463346E-07
+      },
+      {
+        "hour": 14,
+        "left": {
+          "powerWatts": 999745975.6868731,
+          "meanI135NumberDensityM3": 7.166699487173058E+20,
+          "meanXe135NumberDensityM3": 1.1022065070160952E+20,
+          "meanThermalFluxPerM2Second": 1.957505377999368E+18
+        },
+        "right": {
+          "powerWatts": 1064254024.3131311,
+          "meanI135NumberDensityM3": 8.088434755120675E+20,
+          "meanXe135NumberDensityM3": 1.1565260670506928E+20,
+          "meanThermalFluxPerM2Second": 2.0836915424357786E+18
+        },
+        "tiltPercent": 3.1253899528225717,
+        "effectiveK": 1.0000785412551816,
+        "residual": 1.9704428534572174E-07
+      },
+      {
+        "hour": 15,
+        "left": {
+          "powerWatts": 1001871167.1868812,
+          "meanI135NumberDensityM3": 7.189732717861006E+20,
+          "meanXe135NumberDensityM3": 1.0991436386216701E+20,
+          "meanThermalFluxPerM2Second": 1.9616793329064133E+18
+        },
+        "right": {
+          "powerWatts": 1062128832.8131179,
+          "meanI135NumberDensityM3": 8.065401524432733E+20,
+          "meanXe135NumberDensityM3": 1.1592637347117099E+20,
+          "meanThermalFluxPerM2Second": 2.079516603811616E+18
+        },
+        "tiltPercent": 2.9194605439068173,
+        "effectiveK": 1.0000765240738243,
+        "residual": 1.95012843417088E-07
+      },
+      {
+        "hour": 16,
+        "left": {
+          "powerWatts": 1001571278.7363333,
+          "meanI135NumberDensityM3": 7.211320167357278E+20,
+          "meanXe135NumberDensityM3": 1.0985935032383726E+20,
+          "meanThermalFluxPerM2Second": 1.961095514170623E+18
+        },
+        "right": {
+          "powerWatts": 1062428721.2636651,
+          "meanI135NumberDensityM3": 8.043814074936442E+20,
+          "meanXe135NumberDensityM3": 1.1596000607860949E+20,
+          "meanThermalFluxPerM2Second": 2.080101775946076E+18
+        },
+        "tiltPercent": 2.948519502293211,
+        "effectiveK": 1.000075931164735,
+        "residual": 1.9735999030915774E-07
+      },
+      {
+        "hour": 17,
+        "left": {
+          "powerWatts": 999286910.1394619,
+          "meanI135NumberDensityM3": 7.229931544910117E+20,
+          "meanXe135NumberDensityM3": 1.1000901912794818E+20,
+          "meanThermalFluxPerM2Second": 1.9566186202344356E+18
+        },
+        "right": {
+          "powerWatts": 1064713089.8605404,
+          "meanI135NumberDensityM3": 8.025202697383587E+20,
+          "meanXe135NumberDensityM3": 1.1579052051438427E+20,
+          "meanThermalFluxPerM2Second": 2.084582760032424E+18
+        },
+        "tiltPercent": 3.169873048501862,
+        "effectiveK": 1.0000775950664937,
+        "residual": 1.9828078646050843E-07
+      },
+      {
+        "hour": 18,
+        "left": {
+          "powerWatts": 995574671.5034413,
+          "meanI135NumberDensityM3": 7.244550410378593E+20,
+          "meanXe135NumberDensityM3": 1.1031213941503187E+20,
+          "meanThermalFluxPerM2Second": 1.949340495937256E+18
+        },
+        "right": {
+          "powerWatts": 1068425328.4965471,
+          "meanI135NumberDensityM3": 8.010583831915131E+20,
+          "meanXe135NumberDensityM3": 1.1546755055313473E+20,
+          "meanThermalFluxPerM2Second": 2.0918677289752215E+18
+        },
+        "tiltPercent": 3.5295860946272373,
+        "effectiveK": 1.0000818663981328,
+        "residual": 1.996998166970868E-07
+      },
+      {
+        "hour": 19,
+        "left": {
+          "powerWatts": 991005587.6741235,
+          "meanI135NumberDensityM3": 7.254682300409972E+20,
+          "meanXe135NumberDensityM3": 1.1071593639296008E+20,
+          "meanThermalFluxPerM2Second": 1.9403812564493606E+18
+        },
+        "right": {
+          "powerWatts": 1072994412.3258783,
+          "meanI135NumberDensityM3": 8.000451941883749E+20,
+          "meanXe135NumberDensityM3": 1.1504736459159242E+20,
+          "meanThermalFluxPerM2Second": 2.100836073171344E+18
+        },
+        "tiltPercent": 3.9723267757633076,
+        "effectiveK": 1.0000884249901032,
+        "residual": 1.9546585050621907E-07
+      },
+      {
+        "hour": 20,
+        "left": {
+          "powerWatts": 986119452.2185446,
+          "meanI135NumberDensityM3": 7.260298628705469E+20,
+          "meanXe135NumberDensityM3": 1.1116996629545145E+20,
+          "meanThermalFluxPerM2Second": 1.930799635296852E+18
+        },
+        "right": {
+          "powerWatts": 1077880547.7814584,
+          "meanI135NumberDensityM3": 7.99483561358822E+20,
+          "meanXe135NumberDensityM3": 1.1458525140247583E+20,
+          "meanThermalFluxPerM2Second": 2.110428109022287E+18
+        },
+        "tiltPercent": 4.445789513707057,
+        "effectiveK": 1.000096404414734,
+        "residual": 1.9716142393863535E-07
+      },
+      {
+        "hour": 21,
+        "left": {
+          "powerWatts": 981383187.8678309,
+          "meanI135NumberDensityM3": 7.261754467058394E+20,
+          "meanXe135NumberDensityM3": 1.1162881738637463E+20,
+          "meanThermalFluxPerM2Second": 1.9215113742256356E+18
+        },
+        "right": {
+          "powerWatts": 1082616812.1321738,
+          "meanI135NumberDensityM3": 7.993379775235339E+20,
+          "meanXe135NumberDensityM3": 1.1412984684237237E+20,
+          "meanThermalFluxPerM2Second": 2.119726899982691E+18
+        },
+        "tiltPercent": 4.90472985776854,
+        "effectiveK": 1.0001046659941144,
+        "residual": 1.9886293910585245E-07
+      },
+      {
+        "hour": 22,
+        "left": {
+          "powerWatts": 977163858.5671313,
+          "meanI135NumberDensityM3": 7.259687873978696E+20,
+          "meanXe135NumberDensityM3": 1.1205431277974826E+20,
+          "meanThermalFluxPerM2Second": 1.9132363602682714E+18
+        },
+        "right": {
+          "powerWatts": 1086836141.4328675,
+          "meanI135NumberDensityM3": 7.99544636831501E+20,
+          "meanXe135NumberDensityM3": 1.1371942049738652E+20,
+          "meanThermalFluxPerM2Second": 2.128011386066386E+18
+        },
+        "tiltPercent": 5.313579596208154,
+        "effectiveK": 1.0001121152990529,
+        "residual": 1.9545592759228435E-07
+      },
+      {
+        "hour": 23,
+        "left": {
+          "powerWatts": 973715777.0024346,
+          "meanI135NumberDensityM3": 7.254913004064495E+20,
+          "meanXe135NumberDensityM3": 1.1241716893910183E+20,
+          "meanThermalFluxPerM2Second": 1.9064733959699502E+18
+        },
+        "right": {
+          "powerWatts": 1090284222.997563,
+          "meanI135NumberDensityM3": 8.00022123822924E+20,
+          "meanXe135NumberDensityM3": 1.1338025242912632E+20,
+          "meanThermalFluxPerM2Second": 2.13478184684099E+18
+        },
+        "tiltPercent": 5.647696026895756,
+        "effectiveK": 1.0001179543385874,
+        "residual": 1.9738481007880621E-07
+      },
+      {
+        "hour": 24,
+        "left": {
+          "powerWatts": 971178751.8086958,
+          "meanI135NumberDensityM3": 7.248317839775465E+20,
+          "meanXe135NumberDensityM3": 1.1269798720653463E+20,
+          "meanThermalFluxPerM2Second": 1.901496802434173E+18
+        },
+        "right": {
+          "powerWatts": 1092821248.1913025,
+          "meanI135NumberDensityM3": 8.006816402518244E+20,
+          "meanXe135NumberDensityM3": 1.1312679549326952E+20,
+          "meanThermalFluxPerM2Second": 2.1397634425182638E+18
+        },
+        "tiltPercent": 5.893531801482889,
+        "effectiveK": 1.0001218105129075,
+        "residual": 1.9558525440413277E-07
+      },
+      {
+        "hour": 25,
+        "left": {
+          "powerWatts": 969589992.521738,
+          "meanI135NumberDensityM3": 7.240775023596287E+20,
+          "meanXe135NumberDensityM3": 1.1288742594611385E+20,
+          "meanThermalFluxPerM2Second": 1.8983797434891712E+18
+        },
+        "right": {
+          "powerWatts": 1094410007.478269,
+          "meanI135NumberDensityM3": 8.014359218697423E+20,
+          "meanXe135NumberDensityM3": 1.1296311343452417E+20,
+          "meanThermalFluxPerM2Second": 2.1428829154340541E+18
+        },
+        "tiltPercent": 6.04748134479315,
+        "effectiveK": 1.0001237262447722,
+        "residual": 1.9950788925109316E-07
+      },
+      {
+        "hour": 26,
+        "left": {
+          "powerWatts": 968892819.0833575,
+          "meanI135NumberDensityM3": 7.233070746515314E+20,
+          "meanXe135NumberDensityM3": 1.1298558750433816E+20,
+          "meanThermalFluxPerM2Second": 1.89701135007658E+18
+        },
+        "right": {
+          "powerWatts": 1095107180.9166424,
+          "meanI135NumberDensityM3": 8.022063495778408E+20,
+          "meanXe135NumberDensityM3": 1.1288493049749709E+20,
+          "meanThermalFluxPerM2Second": 2.1442514121683546E+18
+        },
+        "tiltPercent": 6.1150369105273725,
+        "effectiveK": 1.0001240644212928,
+        "residual": 1.9791768926591448E-07
+      },
+      {
+        "hour": 27,
+        "left": {
+          "powerWatts": 968977127.3280404,
+          "meanI135NumberDensityM3": 7.225850232760254E+20,
+          "meanXe135NumberDensityM3": 1.1300082870621317E+20,
+          "meanThermalFluxPerM2Second": 1.8971758289310902E+18
+        },
+        "right": {
+          "powerWatts": 1095022872.6719646,
+          "meanI135NumberDensityM3": 8.029284009533461E+20,
+          "meanXe135NumberDensityM3": 1.1288167599674506E+20,
+          "meanThermalFluxPerM2Second": 2.1440852044486748E+18
+        },
+        "tiltPercent": 6.106867506973061,
+        "effectiveK": 1.00012333593506,
+        "residual": 1.9758064477620274E-07
+      },
+      {
+        "hour": 28,
+        "left": {
+          "powerWatts": 969694628.5871174,
+          "meanI135NumberDensityM3": 7.219604761035508E+20,
+          "meanXe135NumberDensityM3": 1.1294661055373874E+20,
+          "meanThermalFluxPerM2Second": 1.8985824703409303E+18
+        },
+        "right": {
+          "powerWatts": 1094305371.4128869,
+          "meanI135NumberDensityM3": 8.035529481258208E+20,
+          "meanXe135NumberDensityM3": 1.1293973968565027E+20,
+          "meanThermalFluxPerM2Second": 2.1426755769436265E+18
+        },
+        "tiltPercent": 6.037342191170986,
+        "effectiveK": 1.0001220228732106,
+        "residual": 1.976073022660639E-07
+      },
+      {
+        "hour": 29,
+        "left": {
+          "powerWatts": 970867426.4036213,
+          "meanI135NumberDensityM3": 7.214655373882073E+20,
+          "meanXe135NumberDensityM3": 1.1284014427616412E+20,
+          "meanThermalFluxPerM2Second": 1.9008824768631557E+18
+        },
+        "right": {
+          "powerWatts": 1093132573.5963826,
+          "meanI135NumberDensityM3": 8.040478868411642E+20,
+          "meanXe135NumberDensityM3": 1.1304337341533464E+20,
+          "meanThermalFluxPerM2Second": 2.1403718979324564E+18
+        },
+        "tiltPercent": 5.923698991897339,
+        "effectiveK": 1.0001205168769078,
+        "residual": 1.9849533146456246E-07
+      },
+      {
+        "hour": 30,
+        "left": {
+          "powerWatts": 972315550.7260962,
+          "meanI135NumberDensityM3": 7.211157914486331E+20,
+          "meanXe135NumberDensityM3": 1.1270007327442408E+20,
+          "meanThermalFluxPerM2Second": 1.9037228715445117E+18
+        },
+        "right": {
+          "powerWatts": 1091684449.2738967,
+          "meanI135NumberDensityM3": 8.043976327807394E+20,
+          "meanXe135NumberDensityM3": 1.1317625185468064E+20,
+          "meanThermalFluxPerM2Second": 2.137527621983472E+18
+        },
+        "tiltPercent": 5.783376867626015,
+        "effectiveK": 1.0001190501818247,
+        "residual": 1.9835121081690215E-07
+      },
+      {
+        "hour": 31,
+        "left": {
+          "powerWatts": 973870827.2160734,
+          "meanI135NumberDensityM3": 7.209121974439412E+20,
+          "meanXe135NumberDensityM3": 1.1254438280976722E+20,
+          "meanThermalFluxPerM2Second": 1.906773732715506E+18
+        },
+        "right": {
+          "powerWatts": 1090129172.7839243,
+          "meanI135NumberDensityM3": 8.046012267854283E+20,
+          "meanXe135NumberDensityM3": 1.1332275304242576E+20,
+          "meanThermalFluxPerM2Second": 2.134473026490479E+18
+        },
+        "tiltPercent": 5.632671781388134,
+        "effectiveK": 1.0001177025662455,
+        "residual": 1.962826164634022E-07
+      },
+      {
+        "hour": 32,
+        "left": {
+          "powerWatts": 975388016.8402761,
+          "meanI135NumberDensityM3": 7.208437719245926E+20,
+          "meanXe135NumberDensityM3": 1.1238884029273748E+20,
+          "meanThermalFluxPerM2Second": 1.909750073969574E+18
+        },
+        "right": {
+          "powerWatts": 1088611983.1597226,
+          "meanI135NumberDensityM3": 8.046696523047801E+20,
+          "meanXe135NumberDensityM3": 1.134689105754691E+20,
+          "meanThermalFluxPerM2Second": 2.131493337986309E+18
+        },
+        "tiltPercent": 5.485657282918921,
+        "effectiveK": 1.0001164489077594,
+        "residual": 1.9593342163774003E-07
+      },
+      {
+        "hour": 33,
+        "left": {
+          "powerWatts": 976752244.3248692,
+          "meanI135NumberDensityM3": 7.208907147820659E+20,
+          "meanXe135NumberDensityM3": 1.1224601156345325E+20,
+          "meanThermalFluxPerM2Second": 1.9124264478741245E+18
+        },
+        "right": {
+          "powerWatts": 1087247755.675137,
+          "meanI135NumberDensityM3": 8.046227094473066E+20,
+          "meanXe135NumberDensityM3": 1.1360312259214066E+20,
+          "meanThermalFluxPerM2Second": 2.1288141547275256E+18
+        },
+        "tiltPercent": 5.353464697202885,
+        "effectiveK": 1.0001152225579928,
+        "residual": 1.9582678510341064E-07
+      },
+      {
+        "hour": 34,
+        "left": {
+          "powerWatts": 977882343.0216702,
+          "meanI135NumberDensityM3": 7.210276511955647E+20,
+          "meanXe135NumberDensityM3": 1.1212483311319513E+20,
+          "meanThermalFluxPerM2Second": 1.9146435397531254E+18
+        },
+        "right": {
+          "powerWatts": 1086117656.9783301,
+          "meanI135NumberDensityM3": 8.04485773033806E+20,
+          "meanXe135NumberDensityM3": 1.1371663690964243E+20,
+          "meanThermalFluxPerM2Second": 2.126594883515069E+18
+        },
+        "tiltPercent": 5.243959009528095,
+        "effectiveK": 1.0001139723449877,
+        "residual": 1.9745354078957583E-07
+      },
+      {
+        "hour": 35,
+        "left": {
+          "powerWatts": 978732259.3548385,
+          "meanI135NumberDensityM3": 7.21226721872467E+20,
+          "meanXe135NumberDensityM3": 1.1203064122705307E+20,
+          "meanThermalFluxPerM2Second": 1.9163109332805706E+18
+        },
+        "right": {
+          "powerWatts": 1085267740.6451657,
+          "meanI135NumberDensityM3": 8.042867023569048E+20,
+          "meanXe135NumberDensityM3": 1.1380381241264723E+20,
+          "meanThermalFluxPerM2Second": 2.1249259927709276E+18
+        },
+        "tiltPercent": 5.161602775694136,
+        "effectiveK": 1.000112697256383,
+        "residual": 1.9991817203818892E-07
+      },
+      {
+        "hour": 36,
+        "left": {
+          "powerWatts": 979294374.3991838,
+          "meanI135NumberDensityM3": 7.214605100506685E+20,
+          "meanXe135NumberDensityM3": 1.119653945415914E+20,
+          "meanThermalFluxPerM2Second": 1.9174135868745316E+18
+        },
+        "right": {
+          "powerWatts": 1084705625.6008172,
+          "meanI135NumberDensityM3": 8.040529141787032E+20,
+          "meanXe135NumberDensityM3": 1.138622708721205E+20,
+          "meanThermalFluxPerM2Second": 2.1238225368310098E+18
+        },
+        "tiltPercent": 5.10713426364503,
+        "effectiveK": 1.0001114372514845,
+        "residual": 1.9711447851009104E-07
+      },
+      {
+        "hour": 37,
+        "left": {
+          "powerWatts": 979580088.3137999,
+          "meanI135NumberDensityM3": 7.21704619131792E+20,
+          "meanXe135NumberDensityM3": 1.119280902764106E+20,
+          "meanThermalFluxPerM2Second": 1.9179738946686367E+18
+        },
+        "right": {
+          "powerWatts": 1084419911.6862016,
+          "meanI135NumberDensityM3": 8.038088050975796E+20,
+          "meanXe135NumberDensityM3": 1.1389275726091585E+20,
+          "meanThermalFluxPerM2Second": 2.1232621156304182E+18
+        },
+        "tiltPercent": 5.0794488068024055,
+        "effectiveK": 1.000110250451865,
+        "residual": 1.982010844982302E-07
+      },
+      {
+        "hour": 38,
+        "left": {
+          "powerWatts": 979614851.7151142,
+          "meanI135NumberDensityM3": 7.2193806792037E+20,
+          "meanXe135NumberDensityM3": 1.1191628140469725E+20,
+          "meanThermalFluxPerM2Second": 1.9180418525872056E+18
+        },
+        "right": {
+          "powerWatts": 1084385148.284885,
+          "meanI135NumberDensityM3": 8.035753563090019E+20,
+          "meanXe135NumberDensityM3": 1.1389775590778266E+20,
+          "meanThermalFluxPerM2Second": 2.1231946916835095E+18
+        },
+        "tiltPercent": 5.0760802601633115,
+        "effectiveK": 1.0001092398251867,
+        "residual": 1.9824853676020675E-07
+      },
+      {
+        "hour": 39,
+        "left": {
+          "powerWatts": 979445007.7442317,
+          "meanI135NumberDensityM3": 7.221446156970647E+20,
+          "meanXe135NumberDensityM3": 1.1192608101160739E+20,
+          "meanThermalFluxPerM2Second": 1.9177083864088584E+18
+        },
+        "right": {
+          "powerWatts": 1084554992.2557638,
+          "meanI135NumberDensityM3": 8.033688085323067E+20,
+          "meanXe135NumberDensityM3": 1.138815269327879E+20,
+          "meanThermalFluxPerM2Second": 2.1235292386862797E+18
+        },
+        "tiltPercent": 5.092538009279665,
+        "effectiveK": 1.0001084774512785,
+        "residual": 1.9592648555462967E-07
+      },
+      {
+        "hour": 40,
+        "left": {
+          "powerWatts": 979123433.9462643,
+          "meanI135NumberDensityM3": 7.223132907548276E+20,
+          "meanXe135NumberDensityM3": 1.119526818932128E+20,
+          "meanThermalFluxPerM2Second": 1.9170772597951442E+18
+        },
+        "right": {
+          "powerWatts": 1084876566.05374,
+          "meanI135NumberDensityM3": 8.03200133474541E+20,
+          "meanXe135NumberDensityM3": 1.1384942234868377E+20,
+          "meanThermalFluxPerM2Second": 2.1241618436447839E+18
+        },
+        "tiltPercent": 5.123698261021102,
+        "effectiveK": 1.0001079984167862,
+        "residual": 1.9714096230271568E-07
+      },
+      {
+        "hour": 41,
+        "left": {
+          "powerWatts": 978704336.3026623,
+          "meanI135NumberDensityM3": 7.224382006958171E+20,
+          "meanXe135NumberDensityM3": 1.119909231379928E+20,
+          "meanThermalFluxPerM2Second": 1.916254842290914E+18
+        },
+        "right": {
+          "powerWatts": 1085295663.6973324,
+          "meanI135NumberDensityM3": 8.030752235335532E+20,
+          "meanXe135NumberDensityM3": 1.1380710998228265E+20,
+          "meanThermalFluxPerM2Second": 2.124985953221115E+18
+        },
+        "tiltPercent": 5.164308497803798,
+        "effectiveK": 1.0001077995318037,
+        "residual": 1.9643433548935708E-07
+      },
+      {
+        "hour": 42,
+        "left": {
+          "powerWatts": 978238717.3160923,
+          "meanI135NumberDensityM3": 7.225179875397241E+20,
+          "meanXe135NumberDensityM3": 1.1203572459442985E+20,
+          "meanThermalFluxPerM2Second": 1.9153412139567365E+18
+        },
+        "right": {
+          "powerWatts": 1085761282.6838992,
+          "meanI135NumberDensityM3": 8.029954366896442E+20,
+          "meanXe135NumberDensityM3": 1.1375996698624193E+20,
+          "meanThermalFluxPerM2Second": 2.1259012918676058E+18
+        },
+        "tiltPercent": 5.209426616657333,
+        "effectiveK": 1.0001078506569314,
+        "residual": 1.9789833251591229E-07
+      },
+      {
+        "hour": 43,
+        "left": {
+          "powerWatts": 977770917.4912498,
+          "meanI135NumberDensityM3": 7.225550288626339E+20,
+          "meanXe135NumberDensityM3": 1.1208243650968994E+20,
+          "meanThermalFluxPerM2Second": 1.9144233809647258E+18
+        },
+        "right": {
+          "powerWatts": 1086229082.5087566,
+          "meanI135NumberDensityM3": 8.029583953667391E+20,
+          "meanXe135NumberDensityM3": 1.137126502005316E+20,
+          "meanThermalFluxPerM2Second": 2.126820674230155E+18
+        },
+        "tiltPercent": 5.254756057049733,
+        "effectiveK": 1.0001081109036836,
+        "residual": 1.9659954683342213E-07
+      },
+      {
+        "hour": 44,
+        "left": {
+          "powerWatts": 977337177.6182553,
+          "meanI135NumberDensityM3": 7.225545211096405E+20,
+          "meanXe135NumberDensityM3": 1.1212709983360043E+20,
+          "meanThermalFluxPerM2Second": 1.9135724509766643E+18
+        },
+        "right": {
+          "powerWatts": 1086662822.381739,
+          "meanI135NumberDensityM3": 8.02958903119731E+20,
+          "meanXe135NumberDensityM3": 1.1366886346157905E+20,
+          "meanThermalFluxPerM2Second": 2.1276728524125153E+18
+        },
+        "tiltPercent": 5.2967851145098805,
+        "effectiveK": 1.0001085434949235,
+        "residual": 1.958992406851991E-07
+      },
+      {
+        "hour": 45,
+        "left": {
+          "powerWatts": 976966257.4783144,
+          "meanI135NumberDensityM3": 7.225236093314256E+20,
+          "meanXe135NumberDensityM3": 1.121665796555346E+20,
+          "meanThermalFluxPerM2Second": 1.912844834816313E+18
+        },
+        "right": {
+          "powerWatts": 1087033742.521687,
+          "meanI135NumberDensityM3": 8.029898148979468E+20,
+          "meanXe135NumberDensityM3": 1.136313338123742E+20,
+          "meanThermalFluxPerM2Second": 2.1284013301704596E+18
+        },
+        "tiltPercent": 5.332726988535492,
+        "effectiveK": 1.0001091171882168,
+        "residual": 1.9709679183020425E-07
+      },
+      {
+        "hour": 46,
+        "left": {
+          "powerWatts": 976663350.4966207,
+          "meanI135NumberDensityM3": 7.224703417084024E+20,
+          "meanXe135NumberDensityM3": 1.1219882518982977E+20,
+          "meanThermalFluxPerM2Second": 1.9122508370201894E+18
+        },
+        "right": {
+          "powerWatts": 1087336649.5033877,
+          "meanI135NumberDensityM3": 8.030430825209703E+20,
+          "meanXe135NumberDensityM3": 1.1360169073146564E+20,
+          "meanThermalFluxPerM2Second": 2.1289958006742774E+18
+        },
+        "tiltPercent": 5.362078440250319,
+        "effectiveK": 1.0001098270964708,
+        "residual": 1.9683589062653976E-07
+      },
+      {
+        "hour": 47,
+        "left": {
+          "powerWatts": 976436905.5330645,
+          "meanI135NumberDensityM3": 7.224020193231577E+20,
+          "meanXe135NumberDensityM3": 1.1222328084664602E+20,
+          "meanThermalFluxPerM2Second": 1.9118069796539356E+18
+        },
+        "right": {
+          "powerWatts": 1087563094.46693,
+          "meanI135NumberDensityM3": 8.031114049062154E+20,
+          "meanXe135NumberDensityM3": 1.1358017772578752E+20,
+          "meanThermalFluxPerM2Second": 2.129439755933711E+18
+        },
+        "tiltPercent": 5.384020781679542,
+        "effectiveK": 1.0001106821610255,
+        "residual": 1.9647443794520704E-07
+      },
+      {
+        "hour": 48,
+        "left": {
+          "powerWatts": 976292890.3487071,
+          "meanI135NumberDensityM3": 7.223261497188977E+20,
+          "meanXe135NumberDensityM3": 1.12239540803617E+20,
+          "meanThermalFluxPerM2Second": 1.9115249166912947E+18
+        },
+        "right": {
+          "powerWatts": 1087707109.651292,
+          "meanI135NumberDensityM3": 8.031872745104748E+20,
+          "meanXe135NumberDensityM3": 1.1356705921062417E+20,
+          "meanThermalFluxPerM2Second": 2.1297215957046362E+18
+        },
+        "tiltPercent": 5.397975741404315,
+        "effectiveK": 1.0001116432428057,
+        "residual": 1.9839765047022592E-07
+      },
+      {
+        "hour": 49,
+        "left": {
+          "powerWatts": 976224800.8731618,
+          "meanI135NumberDensityM3": 7.222494178235677E+20,
+          "meanXe135NumberDensityM3": 1.1224799726793633E+20,
+          "meanThermalFluxPerM2Second": 1.911391880104201E+18
+        },
+        "right": {
+          "powerWatts": 1087775199.1268451,
+          "meanI135NumberDensityM3": 8.032640064058018E+20,
+          "meanXe135NumberDensityM3": 1.1356191324250772E+20,
+          "meanThermalFluxPerM2Second": 2.129854166354516E+18
+        },
+        "tiltPercent": 5.404573558802468,
+        "effectiveK": 1.0001126618880996,
+        "residual": 1.9832541541420305E-07
+      },
+      {
+        "hour": 50,
+        "left": {
+          "powerWatts": 976223054.7380072,
+          "meanI135NumberDensityM3": 7.22177276766742E+20,
+          "meanXe135NumberDensityM3": 1.1224961727017139E+20,
+          "meanThermalFluxPerM2Second": 1.911389029296605E+18
+        },
+        "right": {
+          "powerWatts": 1087776945.2619975,
+          "meanI135NumberDensityM3": 8.033361474626286E+20,
+          "meanXe135NumberDensityM3": 1.1356378643614522E+20,
+          "meanThermalFluxPerM2Second": 2.129856389459211E+18
+        },
+        "tiltPercent": 5.404742757945252,
+        "effectiveK": 1.0001136639034502,
+        "residual": 1.9694383622493186E-07
+      },
+      {
+        "hour": 51,
+        "left": {
+          "powerWatts": 976275620.3716033,
+          "meanI135NumberDensityM3": 7.221138451833389E+20,
+          "meanXe135NumberDensityM3": 1.1224566249848942E+20,
+          "meanThermalFluxPerM2Second": 1.9114927055991818E+18
+        },
+        "right": {
+          "powerWatts": 1087724379.6283984,
+          "meanI135NumberDensityM3": 8.033995790460302E+20,
+          "meanXe135NumberDensityM3": 1.1357138043532357E+20,
+          "meanThermalFluxPerM2Second": 2.1297519977832668E+18
+        },
+        "tiltPercent": 5.399649188798211,
+        "effectiveK": 1.0001145569603442,
+        "residual": 1.97847594648824E-07
+      },
+      {
+        "hour": 52,
+        "left": {
+          "powerWatts": 976369348.0413507,
+          "meanI135NumberDensityM3": 7.220619004032818E+20,
+          "meanXe135NumberDensityM3": 1.1223748443660532E+20,
+          "meanThermalFluxPerM2Second": 1.911677053209188E+18
+        },
+        "right": {
+          "powerWatts": 1087630651.9586468,
+          "meanI135NumberDensityM3": 8.03451523826087E+20,
+          "meanXe135NumberDensityM3": 1.1358318546864701E+20,
+          "meanThermalFluxPerM2Second": 2.129566910629172E+18
+        },
+        "tiltPercent": 5.390567050256598,
+        "effectiveK": 1.0001152459384515,
+        "residual": 1.9615681682998638E-07
+      },
+      {
+        "hour": 53,
+        "left": {
+          "powerWatts": 976491011.1364135,
+          "meanI135NumberDensityM3": 7.220229614198227E+20,
+          "meanXe135NumberDensityM3": 1.1222638147268973E+20,
+          "meanThermalFluxPerM2Second": 1.9119160721096259E+18
+        },
+        "right": {
+          "powerWatts": 1087508988.8635933,
+          "meanI135NumberDensityM3": 8.034904628095498E+20,
+          "meanXe135NumberDensityM3": 1.1359760768665172E+20,
+          "meanThermalFluxPerM2Second": 2.1293271829095862E+18
+        },
+        "tiltPercent": 5.378777990657923,
+        "effectiveK": 1.0001156511677485,
+        "residual": 1.9956452747369768E-07
+      },
+      {
+        "hour": 54,
+        "left": {
+          "powerWatts": 976627946.8414413,
+          "meanI135NumberDensityM3": 7.219974307717837E+20,
+          "meanXe135NumberDensityM3": 1.1221352204602448E+20,
+          "meanThermalFluxPerM2Second": 1.9121848860358894E+18
+        },
+        "right": {
+          "powerWatts": 1087372053.1585605,
+          "meanI135NumberDensityM3": 8.035159934575874E+20,
+          "meanXe135NumberDensityM3": 1.1361309331179071E+20,
+          "meanThermalFluxPerM2Second": 2.1290577393824494E+18
+        },
+        "tiltPercent": 5.365509026992206,
+        "effectiveK": 1.000115726679871,
+        "residual": 1.9616906424988415E-07
+      },
+      {
+        "hour": 55,
+        "left": {
+          "powerWatts": 976765728.4589865,
+          "meanI135NumberDensityM3": 7.219847252541131E+20,
+          "meanXe135NumberDensityM3": 1.1219995401030338E+20,
+          "meanThermalFluxPerM2Second": 1.9124552081141158E+18
+        },
+        "right": {
+          "powerWatts": 1087234271.5410125,
+          "meanI135NumberDensityM3": 8.035286989752584E+20,
+          "meanXe135NumberDensityM3": 1.1362821399520254E+20,
+          "meanThermalFluxPerM2Second": 2.1287869153978094E+18
+        },
+        "tiltPercent": 5.352158095059402,
+        "effectiveK": 1.000115474565423,
+        "residual": 1.9744621426656115E-07
+      },
+      {
+        "hour": 56,
+        "left": {
+          "powerWatts": 976901675.7663577,
+          "meanI135NumberDensityM3": 7.219832467855157E+20,
+          "meanXe135NumberDensityM3": 1.1218671985459621E+20,
+          "meanThermalFluxPerM2Second": 1.9127217108990042E+18
+        },
+        "right": {
+          "powerWatts": 1087098324.2336426,
+          "meanI135NumberDensityM3": 8.035301774438563E+20,
+          "meanXe135NumberDensityM3": 1.1364167088863884E+20,
+          "meanThermalFluxPerM2Second": 2.128520058590392E+18
+        },
+        "tiltPercent": 5.338984906360703,
+        "effectiveK": 1.0001149455506757,
+        "residual": 1.9593005330017804E-07
+      },
+      {
+        "hour": 57,
+        "left": {
+          "powerWatts": 977032930.8806653,
+          "meanI135NumberDensityM3": 7.219920782396191E+20,
+          "meanXe135NumberDensityM3": 1.1217387274081994E+20,
+          "meanThermalFluxPerM2Second": 1.9129788187580283E+18
+        },
+        "right": {
+          "powerWatts": 1086967069.1193395,
+          "meanI135NumberDensityM3": 8.035213459897512E+20,
+          "meanXe135NumberDensityM3": 1.1365334687846357E+20,
+          "meanThermalFluxPerM2Second": 2.1282627725999035E+18
+        },
+        "tiltPercent": 5.326266387532651,
+        "effectiveK": 1.0001141645430567,
+        "residual": 1.990923686938585E-07
+      },
+      {
+        "hour": 58,
+        "left": {
+          "powerWatts": 977146656.0339398,
+          "meanI135NumberDensityM3": 7.220092500785672E+20,
+          "meanXe135NumberDensityM3": 1.121622073344911E+20,
+          "meanThermalFluxPerM2Second": 1.9132014434830812E+18
+        },
+        "right": {
+          "powerWatts": 1086853343.9660635,
+          "meanI135NumberDensityM3": 8.035041741508056E+20,
+          "meanXe135NumberDensityM3": 1.1366254172276977E+20,
+          "meanThermalFluxPerM2Second": 2.128040164379885E+18
+        },
+        "tiltPercent": 5.315246508339316,
+        "effectiveK": 1.0001132394306989,
+        "residual": 1.9910225901367828E-07
+      },
+      {
+        "hour": 59,
+        "left": {
+          "powerWatts": 977239951.4943221,
+          "meanI135NumberDensityM3": 7.220325572712934E+20,
+          "meanXe135NumberDensityM3": 1.121522953732145E+20,
+          "meanThermalFluxPerM2Second": 1.9133839275574129E+18
+        },
+        "right": {
+          "powerWatts": 1086760048.505675,
+          "meanI135NumberDensityM3": 8.034808669580782E+20,
+          "meanXe135NumberDensityM3": 1.136689981558811E+20,
+          "meanThermalFluxPerM2Second": 2.1278578817595576E+18
+        },
+        "tiltPercent": 5.306206250550057,
+        "effectiveK": 1.0001122671583889,
+        "residual": 1.9850626133402756E-07
+      },
+      {
+        "hour": 60,
+        "left": {
+          "powerWatts": 977310323.7967322,
+          "meanI135NumberDensityM3": 7.220597947930022E+20,
+          "meanXe135NumberDensityM3": 1.1214452341587116E+20,
+          "meanThermalFluxPerM2Second": 1.9135214300114522E+18
+        },
+        "right": {
+          "powerWatts": 1086689676.2032762,
+          "meanI135NumberDensityM3": 8.034536294363702E+20,
+          "meanXe135NumberDensityM3": 1.1367277393201219E+20,
+          "meanThermalFluxPerM2Second": 2.1277207343569969E+18
+        },
+        "tiltPercent": 5.299387228999201,
+        "effectiveK": 1.0001113366686796,
+        "residual": 1.961905128877156E-07
+      },
+      {
+        "hour": 61,
+        "left": {
+          "powerWatts": 977356540.3605839,
+          "meanI135NumberDensityM3": 7.220888319056731E+20,
+          "meanXe135NumberDensityM3": 1.1213912866413573E+20,
+          "meanThermalFluxPerM2Second": 1.9136115816058655E+18
+        },
+        "right": {
+          "powerWatts": 1086643459.63942,
+          "meanI135NumberDensityM3": 8.034245923237003E+20,
+          "meanXe135NumberDensityM3": 1.1367410542600025E+20,
+          "meanThermalFluxPerM2Second": 2.1276310411757007E+18
+        },
+        "tiltPercent": 5.294908879788562,
+        "effectiveK": 1.0001105206462129,
+        "residual": 1.96037777168232E-07
+      },
+      {
+        "hour": 62,
+        "left": {
+          "powerWatts": 977378526.8359994,
+          "meanI135NumberDensityM3": 7.22117691885509E+20,
+          "meanXe135NumberDensityM3": 1.1213619550673882E+20,
+          "meanThermalFluxPerM2Second": 1.9136542784710897E+18
+        },
+        "right": {
+          "powerWatts": 1086621473.1639948,
+          "meanI135NumberDensityM3": 8.033957323438646E+20,
+          "meanXe135NumberDensityM3": 1.1367332230764464E+20,
+          "meanThermalFluxPerM2Second": 2.1275888447782495E+18
+        },
+        "tiltPercent": 5.292778407364134,
+        "effectiveK": 1.0001098735766718,
+        "residual": 1.9799645331357175E-07
+      },
+      {
+        "hour": 63,
+        "left": {
+          "powerWatts": 977377311.8613942,
+          "meanI135NumberDensityM3": 7.221446221752803E+20,
+          "meanXe135NumberDensityM3": 1.1213565311108234E+20,
+          "meanThermalFluxPerM2Second": 1.9136515710122555E+18
+        },
+        "right": {
+          "powerWatts": 1086622688.1385965,
+          "meanI135NumberDensityM3": 8.033688020540899E+20,
+          "meanXe135NumberDensityM3": 1.1367079330842172E+20,
+          "meanThermalFluxPerM2Second": 2.1275920323284516E+18
+        },
+        "tiltPercent": 5.292896137461379,
+        "effectiveK": 1.0001094321117454,
+        "residual": 1.9792892446608505E-07
+      },
+      {
+        "hour": 64,
+        "left": {
+          "powerWatts": 977355037.23686,
+          "meanI135NumberDensityM3": 7.22168152536266E+20,
+          "meanXe135NumberDensityM3": 1.1213728854853154E+20,
+          "meanThermalFluxPerM2Second": 1.913607682333833E+18
+        },
+        "right": {
+          "powerWatts": 1086644962.7631397,
+          "meanI135NumberDensityM3": 8.033452716931052E+20,
+          "meanXe135NumberDensityM3": 1.1366689727615004E+20,
+          "meanThermalFluxPerM2Second": 2.1276363265982484E+18
+        },
+        "tiltPercent": 5.295054531312,
+        "effectiveK": 1.0001092178029911,
+        "residual": 1.9890606348146654E-07
+      },
+      {
+        "hour": 65,
+        "left": {
+          "powerWatts": 977315951.2319374,
+          "meanI135NumberDensityM3": 7.221871620437627E+20,
+          "meanXe135NumberDensityM3": 1.1214076158071728E+20,
+          "meanThermalFluxPerM2Second": 1.9135309465842284E+18
+        },
+        "right": {
+          "powerWatts": 1086684048.768064,
+          "meanI135NumberDensityM3": 8.03326262185607E+20,
+          "meanXe135NumberDensityM3": 1.1366202875277505E+20,
+          "meanThermalFluxPerM2Second": 2.1277133539359224E+18
+        },
+        "tiltPercent": 5.298841934889851,
+        "effectiveK": 1.0001092368361437,
+        "residual": 1.966454213727033E-07
+      },
+      {
+        "hour": 66,
+        "left": {
+          "powerWatts": 977266696.619381,
+          "meanI135NumberDensityM3": 7.222012531312123E+20,
+          "meanXe135NumberDensityM3": 1.1214542105307415E+20,
+          "meanThermalFluxPerM2Second": 1.9134343827237578E+18
+        },
+        "right": {
+          "powerWatts": 1086733303.3806121,
+          "meanI135NumberDensityM3": 8.033121710981575E+20,
+          "meanXe135NumberDensityM3": 1.1365682045681988E+20,
+          "meanThermalFluxPerM2Second": 2.127810084286674E+18
+        },
+        "tiltPercent": 5.30361466866432,
+        "effectiveK": 1.0001094603187846,
+        "residual": 1.9889361410608202E-07
+      },
+      {
+        "hour": 67,
+        "left": {
+          "powerWatts": 977197662.0996526,
+          "meanI135NumberDensityM3": 7.222094967594939E+20,
+          "meanXe135NumberDensityM3": 1.12151374123019E+20,
+          "meanThermalFluxPerM2Second": 1.9132992248135757E+18
+        },
+        "right": {
+          "powerWatts": 1086802337.9003408,
+          "meanI135NumberDensityM3": 8.033039274698751E+20,
+          "meanXe135NumberDensityM3": 1.136510974092324E+20,
+          "meanThermalFluxPerM2Second": 2.1279452888415324E+18
+        },
+        "tiltPercent": 5.3103040601108775,
+        "effectiveK": 1.0001099147079209,
+        "residual": 1.9803897741198165E-07
+      },
+      {
+        "hour": 68,
+        "left": {
+          "powerWatts": 977124534.6246132,
+          "meanI135NumberDensityM3": 7.222116988998682E+20,
+          "meanXe135NumberDensityM3": 1.1215807082835575E+20,
+          "meanThermalFluxPerM2Second": 1.9131561251255939E+18
+        },
+        "right": {
+          "powerWatts": 1086875465.3753881,
+          "meanI135NumberDensityM3": 8.033017253295029E+20,
+          "meanXe135NumberDensityM3": 1.136453729710427E+20,
+          "meanThermalFluxPerM2Second": 2.128088318638808E+18
+        },
+        "tiltPercent": 5.317390055754598,
+        "effectiveK": 1.0001105472519234,
+        "residual": 1.9757194630793216E-07
+      },
+      {
+        "hour": 69,
+        "left": {
+          "powerWatts": 977050632.3549868,
+          "meanI135NumberDensityM3": 7.222082172348927E+20,
+          "meanXe135NumberDensityM3": 1.1216498873946835E+20,
+          "meanThermalFluxPerM2Second": 1.913011586629541E+18
+        },
+        "right": {
+          "powerWatts": 1086949367.64502,
+          "meanI135NumberDensityM3": 8.033052069944791E+20,
+          "meanXe135NumberDensityM3": 1.1364011465498146E+20,
+          "meanThermalFluxPerM2Second": 2.1282326945922565E+18
+        },
+        "tiltPercent": 5.3245511283930655,
+        "effectiveK": 1.0001113036692757,
+        "residual": 1.9613767280585347E-07
+      },
+      {
+        "hour": 70,
+        "left": {
+          "powerWatts": 976980968.3050716,
+          "meanI135NumberDensityM3": 7.221997071529679E+20,
+          "meanXe135NumberDensityM3": 1.121716928878373E+20,
+          "meanThermalFluxPerM2Second": 1.912875403168722E+18
+        },
+        "right": {
+          "powerWatts": 1087019031.6949275,
+          "meanI135NumberDensityM3": 8.03313717076401E+20,
+          "meanXe135NumberDensityM3": 1.1363566934456798E+20,
+          "meanThermalFluxPerM2Second": 2.1283686491477563E+18
+        },
+        "tiltPercent": 5.331301520826353,
+        "effectiveK": 1.00011211342249,
+        "residual": 1.9624797937045073E-07
+      },
+      {
+        "hour": 71,
+        "left": {
+          "powerWatts": 976920141.5669712,
+          "meanI135NumberDensityM3": 7.221871186744206E+20,
+          "meanXe135NumberDensityM3": 1.1217778124858455E+20,
+          "meanThermalFluxPerM2Second": 1.9127565508013128E+18
+        },
+        "right": {
+          "powerWatts": 1087079858.4330256,
+          "meanI135NumberDensityM3": 8.0332630555495E+20,
+          "meanXe135NumberDensityM3": 1.1363229753261421E+20,
+          "meanThermalFluxPerM2Second": 2.1284872323988372E+18
+        },
+        "tiltPercent": 5.337195584595668,
+        "effectiveK": 1.0001128974078488,
+        "residual": 1.9831265181794392E-07
+      },
+      {
+        "hour": 72,
+        "left": {
+          "powerWatts": 976872008.7119259,
+          "meanI135NumberDensityM3": 7.221716294108008E+20,
+          "meanXe135NumberDensityM3": 1.1218288776596875E+20,
+          "meanThermalFluxPerM2Second": 1.912662548891593E+18
+        },
+        "right": {
+          "powerWatts": 1087127991.2880712,
+          "meanI135NumberDensityM3": 8.033417948185712E+20,
+          "meanXe135NumberDensityM3": 1.1363015548857803E+20,
+          "meanThermalFluxPerM2Second": 2.128580949133763E+18
+        },
+        "tiltPercent": 5.341859620937279,
+        "effectiveK": 1.0001135767185567,
+        "residual": 1.988561763949649E-07
+      },
+      {
+        "hour": 73,
+        "left": {
+          "powerWatts": 976839401.6887485,
+          "meanI135NumberDensityM3": 7.22154556148855E+20,
+          "meanXe135NumberDensityM3": 1.1218670010878216E+20,
+          "meanThermalFluxPerM2Second": 1.9125989123342848E+18
+        },
+        "right": {
+          "powerWatts": 1087160598.3112478,
+          "meanI135NumberDensityM3": 8.033588680805133E+20,
+          "meanXe135NumberDensityM3": 1.13629282359545E+20,
+          "meanThermalFluxPerM2Second": 2.1286443067987092E+18
+        },
+        "tiltPercent": 5.345019216206373,
+        "effectiveK": 1.0001140836740425,
+        "residual": 1.986652732465196E-07
+      },
+      {
+        "hour": 74,
+        "left": {
+          "powerWatts": 976823893.1676161,
+          "meanI135NumberDensityM3": 7.221372588565964E+20,
+          "meanXe135NumberDensityM3": 1.121889830265755E+20,
+          "meanThermalFluxPerM2Second": 1.9125686966562493E+18
+        },
+        "right": {
+          "powerWatts": 1087176106.8323846,
+          "meanI135NumberDensityM3": 8.033761653727763E+20,
+          "meanXe135NumberDensityM3": 1.1362960660739993E+20,
+          "meanThermalFluxPerM2Second": 2.1286742709863393E+18
+        },
+        "tiltPercent": 5.346521979882191,
+        "effectiveK": 1.000114371263246,
+        "residual": 1.9918171017482071E-07
+      },
+      {
+        "hour": 75,
+        "left": {
+          "powerWatts": 976825390.1548446,
+          "meanI135NumberDensityM3": 7.221210362914822E+20,
+          "meanXe135NumberDensityM3": 1.1218960918498617E+20,
+          "meanThermalFluxPerM2Second": 1.9125717070159132E+18
+        },
+        "right": {
+          "powerWatts": 1087174609.8451545,
+          "meanI135NumberDensityM3": 8.033923879378909E+20,
+          "meanXe135NumberDensityM3": 1.136309629487653E+20,
+          "meanThermalFluxPerM2Second": 2.1286710570128768E+18
+        },
+        "tiltPercent": 5.346376922980133,
+        "effectiveK": 1.000114419731113,
+        "residual": 1.97159599472114E-07
+      },
+      {
+        "hour": 76,
+        "left": {
+          "powerWatts": 976836597.669491,
+          "meanI135NumberDensityM3": 7.221068550545062E+20,
+          "meanXe135NumberDensityM3": 1.1218870988670247E+20,
+          "meanThermalFluxPerM2Second": 1.9125936906493773E+18
+        },
+        "right": {
+          "powerWatts": 1087163402.3305137,
+          "meanI135NumberDensityM3": 8.034065691748641E+20,
+          "meanXe135NumberDensityM3": 1.1363299629315616E+20,
+          "meanThermalFluxPerM2Second": 2.1286489353391951E+18
+        },
+        "tiltPercent": 5.345290923499148,
+        "effectiveK": 1.000114264217855,
+        "residual": 1.9748878700181008E-07
+      },
+      {
+        "hour": 77,
+        "left": {
+          "powerWatts": 976872498.854447,
+          "meanI135NumberDensityM3": 7.220956727911049E+20,
+          "meanXe135NumberDensityM3": 1.1218627054767245E+20,
+          "meanThermalFluxPerM2Second": 1.912663888537718E+18
+        },
+        "right": {
+          "powerWatts": 1087127501.1455572,
+          "meanI135NumberDensityM3": 8.034177514382662E+20,
+          "meanXe135NumberDensityM3": 1.1363564057597438E+20,
+          "meanThermalFluxPerM2Second": 2.128578667627376E+18
+        },
+        "tiltPercent": 5.341812126507263,
+        "effectiveK": 1.0001138972533115,
+        "residual": 1.9690086012413288E-07
+      },
+      {
+        "hour": 78,
+        "left": {
+          "powerWatts": 976916806.7292098,
+          "meanI135NumberDensityM3": 7.220884638728023E+20,
+          "meanXe135NumberDensityM3": 1.1218241331877023E+20,
+          "meanThermalFluxPerM2Second": 1.9127505175915203E+18
+        },
+        "right": {
+          "powerWatts": 1087083193.2707977,
+          "meanI135NumberDensityM3": 8.034249603565684E+20,
+          "meanXe135NumberDensityM3": 1.1363877071384196E+20,
+          "meanThermalFluxPerM2Second": 2.1284920554639695E+18
+        },
+        "tiltPercent": 5.337518727790094,
+        "effectiveK": 1.0001133765646877,
+        "residual": 1.9661743016562431E-07
+      },
+      {
+        "hour": 79,
+        "left": {
+          "powerWatts": 976968493.348645,
+          "meanI135NumberDensityM3": 7.220854895996396E+20,
+          "meanXe135NumberDensityM3": 1.1217761303363546E+20,
+          "meanThermalFluxPerM2Second": 1.9128515549352008E+18
+        },
+        "right": {
+          "powerWatts": 1087031506.6513574,
+          "meanI135NumberDensityM3": 8.034279346297307E+20,
+          "meanXe135NumberDensityM3": 1.1364202701239094E+20,
+          "meanThermalFluxPerM2Second": 2.12839111792059E+18
+        },
+        "tiltPercent": 5.332510334433736,
+        "effectiveK": 1.0001127632546127,
+        "residual": 1.9579244018882029E-07
+      },
+      {
+        "hour": 80,
+        "left": {
+          "powerWatts": 977023118.0375582,
+          "meanI135NumberDensityM3": 7.220867490138587E+20,
+          "meanXe135NumberDensityM3": 1.121723228105735E+20,
+          "meanThermalFluxPerM2Second": 1.9129583258709809E+18
+        },
+        "right": {
+          "powerWatts": 1086976881.9624383,
+          "meanI135NumberDensityM3": 8.034266752155101E+20,
+          "meanXe135NumberDensityM3": 1.1364517760297437E+20,
+          "meanThermalFluxPerM2Second": 2.1282845183503744E+18
+        },
+        "tiltPercent": 5.327217244422497,
+        "effectiveK": 1.0001121215428705,
+        "residual": 1.9928740750786107E-07
+      },
+      {
+        "hour": 81,
+        "left": {
+          "powerWatts": 977076161.8574065,
+          "meanI135NumberDensityM3": 7.220919060975009E+20,
+          "meanXe135NumberDensityM3": 1.1216702020473636E+20,
+          "meanThermalFluxPerM2Second": 1.9130620019674355E+18
+        },
+        "right": {
+          "powerWatts": 1086923838.1425889,
+          "meanI135NumberDensityM3": 8.03421518131868E+20,
+          "meanXe135NumberDensityM3": 1.136480184979264E+20,
+          "meanThermalFluxPerM2Second": 2.1281810646607644E+18
+        },
+        "tiltPercent": 5.3220773393983825,
+        "effectiveK": 1.0001115106374543,
+        "residual": 1.9650352973150642E-07
+      },
+      {
+        "hour": 82,
+        "left": {
+          "powerWatts": 977123308.7373644,
+          "meanI135NumberDensityM3": 7.22100328249075E+20,
+          "meanXe135NumberDensityM3": 1.1216215801962981E+20,
+          "meanThermalFluxPerM2Second": 1.913154150577685E+18
+        },
+        "right": {
+          "powerWatts": 1086876691.2626321,
+          "meanI135NumberDensityM3": 8.034130959802971E+20,
+          "meanXe135NumberDensityM3": 1.1365037351549357E+20,
+          "meanThermalFluxPerM2Second": 2.128089161927468E+18
+        },
+        "tiltPercent": 5.317508843278484,
+        "effectiveK": 1.000110981355629,
+        "residual": 1.9668547348077414E-07
+      },
+      {
+        "hour": 83,
+        "left": {
+          "powerWatts": 977160916.1599233,
+          "meanI135NumberDensityM3": 7.221111449406483E+20,
+          "meanXe135NumberDensityM3": 1.1215812334612726E+20,
+          "meanThermalFluxPerM2Second": 1.9132276538822766E+18
+        },
+        "right": {
+          "powerWatts": 1086839083.8400824,
+          "meanI135NumberDensityM3": 8.034022792887239E+20,
+          "meanXe135NumberDensityM3": 1.1365209620450866E+20,
+          "meanThermalFluxPerM2Second": 2.1280158984983263E+18
+        },
+        "tiltPercent": 5.313864713185988,
+        "effectiveK": 1.0001105730536735,
+        "residual": 1.971754571689795E-07
+      },
+      {
+        "hour": 84,
+        "left": {
+          "powerWatts": 977186253.9243258,
+          "meanI135NumberDensityM3": 7.221233266118453E+20,
+          "meanXe135NumberDensityM3": 1.1215520647710713E+20,
+          "meanThermalFluxPerM2Second": 1.9132771765722365E+18
+        },
+        "right": {
+          "powerWatts": 1086813746.075676,
+          "meanI135NumberDensityM3": 8.033900976175266E+20,
+          "meanXe135NumberDensityM3": 1.1365307889725227E+20,
+          "meanThermalFluxPerM2Second": 2.127966582563981E+18
+        },
+        "tiltPercent": 5.311409503456882,
+        "effectiveK": 1.0001103134333784,
+        "residual": 1.9807142093847835E-07
+      },
+      {
+        "hour": 85,
+        "left": {
+          "powerWatts": 977197817.3912532,
+          "meanI135NumberDensityM3": 7.221357773754047E+20,
+          "meanXe135NumberDensityM3": 1.1215358208336966E+20,
+          "meanThermalFluxPerM2Second": 1.913299778434817E+18
+        },
+        "right": {
+          "powerWatts": 1086802182.6087434,
+          "meanI135NumberDensityM3": 8.033776468539659E+20,
+          "meanXe135NumberDensityM3": 1.13653267185473E+20,
+          "meanThermalFluxPerM2Second": 2.1279441334150674E+18
+        },
+        "tiltPercent": 5.310289012475309,
+        "effectiveK": 1.0001102177451089,
+        "residual": 1.9898467082319238E-07
+      },
+      {
+        "hour": 86,
+        "left": {
+          "powerWatts": 977198157.3683712,
+          "meanI135NumberDensityM3": 7.221474655820458E+20,
+          "meanXe135NumberDensityM3": 1.1215327994680517E+20,
+          "meanThermalFluxPerM2Second": 1.9133004366040594E+18
+        },
+        "right": {
+          "powerWatts": 1086801842.631625,
+          "meanI135NumberDensityM3": 8.033659586473236E+20,
+          "meanXe135NumberDensityM3": 1.1365269622525262E+20,
+          "meanThermalFluxPerM2Second": 2.1279435639635346E+18
+        },
+        "tiltPercent": 5.310256068956099,
+        "effectiveK": 1.0001102784610452,
+        "residual": 1.8959752740242573E-07
+      },
+      {
+        "hour": 87,
+        "left": {
+          "powerWatts": 977182379.4189326,
+          "meanI135NumberDensityM3": 7.221576113943582E+20,
+          "meanXe135NumberDensityM3": 1.1215416828047884E+20,
+          "meanThermalFluxPerM2Second": 1.9132696069508306E+18
+        },
+        "right": {
+          "powerWatts": 1086817620.5810738,
+          "meanI135NumberDensityM3": 8.033558128350133E+20,
+          "meanXe135NumberDensityM3": 1.1365151311296163E+20,
+          "meanThermalFluxPerM2Second": 2.1279744211949816E+18
+        },
+        "tiltPercent": 5.311784940026206,
+        "effectiveK": 1.0001104815593496,
+        "residual": 1.9862344774164598E-07
+      },
+      {
+        "hour": 88,
+        "left": {
+          "powerWatts": 977155428.4347913,
+          "meanI135NumberDensityM3": 7.221652278918426E+20,
+          "meanXe135NumberDensityM3": 1.1215627400965834E+20,
+          "meanThermalFluxPerM2Second": 1.9132169384334134E+18
+        },
+        "right": {
+          "powerWatts": 1086844571.5652103,
+          "meanI135NumberDensityM3": 8.033481963375293E+20,
+          "meanXe135NumberDensityM3": 1.136496646826083E+20,
+          "meanThermalFluxPerM2Second": 2.1280270494917962E+18
+        },
+        "tiltPercent": 5.314396469497041,
+        "effectiveK": 1.0001108282407356,
+        "residual": 1.9604036074743205E-07
+      },
+      {
+        "hour": 89,
+        "left": {
+          "powerWatts": 977119815.5137262,
+          "meanI135NumberDensityM3": 7.221698232692116E+20,
+          "meanXe135NumberDensityM3": 1.1215931565938224E+20,
+          "meanThermalFluxPerM2Second": 1.9131473434467151E+18
+        },
+        "right": {
+          "powerWatts": 1086880184.486275,
+          "meanI135NumberDensityM3": 8.033436009601612E+20,
+          "meanXe135NumberDensityM3": 1.13647412022426E+20,
+          "meanThermalFluxPerM2Second": 2.1280965511136494E+18
+        },
+        "tiltPercent": 5.317847333941311,
+        "effectiveK": 1.0001112787947712,
+        "residual": 1.9581000585093364E-07
+      },
+      {
+        "hour": 90,
+        "left": {
+          "powerWatts": 977079062.583247,
+          "meanI135NumberDensityM3": 7.221711550651584E+20,
+          "meanXe135NumberDensityM3": 1.1216299802123544E+20,
+          "meanThermalFluxPerM2Second": 1.9130677043855107E+18
+        },
+        "right": {
+          "powerWatts": 1086920937.4167478,
+          "meanI135NumberDensityM3": 8.033422691642131E+20,
+          "meanXe135NumberDensityM3": 1.1364499004344117E+20,
+          "meanThermalFluxPerM2Second": 2.128176056673604E+18
+        },
+        "tiltPercent": 5.32179626131304,
+        "effectiveK": 1.0001117876544958,
+        "residual": 1.9874937770019848E-07
+      },
+      {
+        "hour": 91,
+        "left": {
+          "powerWatts": 977036992.7631555,
+          "meanI135NumberDensityM3": 7.221692770774874E+20,
+          "meanXe135NumberDensityM3": 1.1216698517594343E+20,
+          "meanThermalFluxPerM2Second": 1.912985491049076E+18
+        },
+        "right": {
+          "powerWatts": 1086963007.2368484,
+          "meanI135NumberDensityM3": 8.033441471518833E+20,
+          "meanXe135NumberDensityM3": 1.1364263393074844E+20,
+          "meanThermalFluxPerM2Second": 2.128258110927177E+18
+        },
+        "tiltPercent": 5.325872794268057,
+        "effectiveK": 1.0001123040337454,
+        "residual": 1.9904556206716833E-07
+      },
+      {
+        "hour": 92,
+        "left": {
+          "powerWatts": 976997408.4921892,
+          "meanI135NumberDensityM3": 7.221645228486657E+20,
+          "meanXe135NumberDensityM3": 1.1217092431071396E+20,
+          "meanThermalFluxPerM2Second": 1.912908131751304E+18
+        },
+        "right": {
+          "powerWatts": 1087002591.5078044,
+          "meanI135NumberDensityM3": 8.03348901380705E+20,
+          "meanXe135NumberDensityM3": 1.1364055567011217E+20,
+          "meanThermalFluxPerM2Second": 2.1283353004078403E+18
+        },
+        "tiltPercent": 5.3297084794387395,
+        "effectiveK": 1.0001127762816806,
+        "residual": 1.9838368184855845E-07
+      },
+      {
+        "hour": 93,
+        "left": {
+          "powerWatts": 976963719.7460868,
+          "meanI135NumberDensityM3": 7.221574638674954E+20,
+          "meanXe135NumberDensityM3": 1.1217447339213547E+20,
+          "meanThermalFluxPerM2Second": 1.9128422877460534E+18
+        },
+        "right": {
+          "powerWatts": 1087036280.2539105,
+          "meanI135NumberDensityM3": 8.033559603618763E+20,
+          "meanXe135NumberDensityM3": 1.1363892292907783E+20,
+          "meanThermalFluxPerM2Second": 2.1284009780524918E+18
+        },
+        "tiltPercent": 5.332972892820923,
+        "effectiveK": 1.0001131580526217,
+        "residual": 1.9927074761524926E-07
+      },
+      {
+        "hour": 94,
+        "left": {
+          "powerWatts": 976938645.0927069,
+          "meanI135NumberDensityM3": 7.221488493917678E+20,
+          "meanXe135NumberDensityM3": 1.121773293821396E+20,
+          "meanThermalFluxPerM2Second": 1.9127932700434557E+18
+        },
+        "right": {
+          "powerWatts": 1087061354.9072917,
+          "meanI135NumberDensityM3": 8.03364574837604E+20,
+          "meanXe135NumberDensityM3": 1.1363784673639947E+20,
+          "meanThermalFluxPerM2Second": 2.1284498459697984E+18
+        },
+        "tiltPercent": 5.335402607295776,
+        "effectiveK": 1.0001134138527634,
+        "residual": 1.9949627597175018E-07
+      },
+      {
+        "hour": 95,
+        "left": {
+          "powerWatts": 976923995.8795805,
+          "meanI135NumberDensityM3": 7.221395299145468E+20,
+          "meanXe135NumberDensityM3": 1.1217925792927316E+20,
+          "meanThermalFluxPerM2Second": 1.9127646182315425E+18
+        },
+        "right": {
+          "powerWatts": 1087076004.1204135,
+          "meanI135NumberDensityM3": 8.033738943148239E+20,
+          "meanXe135NumberDensityM3": 1.1363737583667187E+20,
+          "meanThermalFluxPerM2Second": 2.1284783765738668E+18
+        },
+        "tiltPercent": 5.33682210469154,
+        "effectiveK": 1.0001135232846539,
+        "residual": 1.9931491926667994E-07
+      },
+      {
+        "hour": 96,
+        "left": {
+          "powerWatts": 976920261.3666047,
+          "meanI135NumberDensityM3": 7.22130373981471E+20,
+          "meanXe135NumberDensityM3": 1.1218011801839128E+20,
+          "meanThermalFluxPerM2Second": 1.912757291300311E+18
+        },
+        "right": {
+          "powerWatts": 1087079738.6333945,
+          "meanI135NumberDensityM3": 8.033830502478988E+20,
+          "meanXe135NumberDensityM3": 1.1363749935407632E+20,
+          "meanThermalFluxPerM2Second": 2.128485619993818E+18
+        },
+        "tiltPercent": 5.33718397610416,
+        "effectiveK": 1.0001134849523594,
+        "residual": 1.9401543025334632E-07
+      }
+    ]
+  },
+  "released": {
+    "minimumSwingPercentagePoints": 0.05,
+    "extrema": [
+      {
+        "hour": 13,
+        "tiltPercent": -8.47258629433597,
+        "isPeak": false
+      },
+      {
+        "hour": 24,
+        "tiltPercent": 3.7246413814569865,
+        "isPeak": true
+      },
+      {
+        "hour": 35,
+        "tiltPercent": -0.4216888262957959,
+        "isPeak": false
+      },
+      {
+        "hour": 46,
+        "tiltPercent": 0.9592225972963008,
+        "isPeak": true
+      },
+      {
+        "hour": 58,
+        "tiltPercent": 0.5139154986770644,
+        "isPeak": false
+      },
+      {
+        "hour": 71,
+        "tiltPercent": 0.6660762810646886,
+        "isPeak": true
+      },
+      {
+        "hour": 83,
+        "tiltPercent": 0.5932039999034209,
+        "isPeak": false
+      }
+    ],
+    "cycles": [
+      {
+        "startHour": 13,
+        "oppositeExtremumHour": 24,
+        "endHour": 35,
+        "periodHours": 22,
+        "startsAtPeak": false,
+        "dampingPerHour": -0.09841429395382134
+      },
+      {
+        "startHour": 24,
+        "oppositeExtremumHour": 35,
+        "endHour": 46,
+        "periodHours": 22,
+        "startsAtPeak": true,
+        "dampingPerHour": -0.10084789712750122
+      },
+      {
+        "startHour": 35,
+        "oppositeExtremumHour": 46,
+        "endHour": 58,
+        "periodHours": 23,
+        "startsAtPeak": false,
+        "dampingPerHour": -0.09867509135187048
+      },
+      {
+        "startHour": 46,
+        "oppositeExtremumHour": 58,
+        "endHour": 71,
+        "periodHours": 25,
+        "startsAtPeak": true,
+        "dampingPerHour": -0.0812106286711563
+      },
+      {
+        "startHour": 58,
+        "oppositeExtremumHour": 71,
+        "endHour": 83,
+        "periodHours": 25,
+        "startsAtPeak": false,
+        "dampingPerHour": -0.05314436258049278
+      }
+    ],
+    "samples": [
+      {
+        "hour": 8,
+        "left": {
+          "powerWatts": 987600319.4003793,
+          "meanI135NumberDensityM3": 7.127274803052895E+20,
+          "meanXe135NumberDensityM3": 1.1755593450008381E+20,
+          "meanThermalFluxPerM2Second": 1.9337467395236232E+18
+        },
+        "right": {
+          "powerWatts": 1076399680.599619,
+          "meanI135NumberDensityM3": 8.127859439240822E+20,
+          "meanXe135NumberDensityM3": 1.0966932254037703E+20,
+          "meanThermalFluxPerM2Second": 2.1073111056376223E+18
+        },
+        "tiltPercent": 4.3022946317461095,
+        "effectiveK": 0.9998865621335862,
+        "residual": 1.9852571415610217E-07
+      },
+      {
+        "hour": 9,
+        "left": {
+          "powerWatts": 1034037296.2482642,
+          "meanI135NumberDensityM3": 7.158114313639692E+20,
+          "meanXe135NumberDensityM3": 1.1279058528782284E+20,
+          "meanThermalFluxPerM2Second": 2.0248785279807263E+18
+        },
+        "right": {
+          "powerWatts": 1029962703.7517377,
+          "meanI135NumberDensityM3": 8.097019928654028E+20,
+          "meanXe135NumberDensityM3": 1.137795799044614E+20,
+          "meanThermalFluxPerM2Second": 2.0162271565672689E+18
+        },
+        "tiltPercent": -0.19741242715729052,
+        "effectiveK": 0.9999413528508513,
+        "residual": 1.9835661642878564E-07
+      },
+      {
+        "hour": 10,
+        "left": {
+          "powerWatts": 1071610050.0174409,
+          "meanI135NumberDensityM3": 7.217878340752934E+20,
+          "meanXe135NumberDensityM3": 1.0900275473736806E+20,
+          "meanThermalFluxPerM2Second": 2.0986440547034819E+18
+        },
+        "right": {
+          "powerWatts": 992389949.9825596,
+          "meanI135NumberDensityM3": 8.037255901540778E+20,
+          "meanXe135NumberDensityM3": 1.1735572954088889E+20,
+          "meanThermalFluxPerM2Second": 1.9425485568883505E+18
+        },
+        "tiltPercent": -3.838183141224871,
+        "effectiveK": 1.000040269525889,
+        "residual": 1.9516906707224045E-07
+      },
+      {
+        "hour": 11,
+        "left": {
+          "powerWatts": 1098342541.7282841,
+          "meanI135NumberDensityM3": 7.296455085243223E+20,
+          "meanXe135NumberDensityM3": 1.0639890108591132E+20,
+          "meanThermalFluxPerM2Second": 2.151135976217389E+18
+        },
+        "right": {
+          "powerWatts": 965657458.2717193,
+          "meanI135NumberDensityM3": 7.958679157050497E+20,
+          "meanXe135NumberDensityM3": 1.202280114345369E+20,
+          "meanThermalFluxPerM2Second": 1.8901226178305777E+18
+        },
+        "tiltPercent": -6.428540865143632,
+        "effectiveK": 1.0001085478019915,
+        "residual": 1.9806809529162434E-07
+      },
+      {
+        "hour": 12,
+        "left": {
+          "powerWatts": 1113949608.877482,
+          "meanI135NumberDensityM3": 7.383763662811493E+20,
+          "meanXe135NumberDensityM3": 1.0492941561700901E+20,
+          "meanThermalFluxPerM2Second": 2.1817806466688087E+18
+        },
+        "right": {
+          "powerWatts": 950050391.1225151,
+          "meanI135NumberDensityM3": 7.87137057948222E+20,
+          "meanXe135NumberDensityM3": 1.2220536592049422E+20,
+          "meanThermalFluxPerM2Second": 1.8595017798934546E+18
+        },
+        "tiltPercent": -7.9408535733995675,
+        "effectiveK": 1.0001245751683299,
+        "residual": 1.971164008654035E-07
+      },
+      {
+        "hour": 13,
+        "left": {
+          "powerWatts": 1119437090.5575502,
+          "meanI135NumberDensityM3": 7.470925745178111E+20,
+          "meanXe135NumberDensityM3": 1.0441951389910347E+20,
+          "meanThermalFluxPerM2Second": 2.1925507786446728E+18
+        },
+        "right": {
+          "powerWatts": 944562909.4424553,
+          "meanI135NumberDensityM3": 7.784208497115604E+20,
+          "meanXe135NumberDensityM3": 1.2318735961981962E+20,
+          "meanThermalFluxPerM2Second": 1.848717427355908E+18
+        },
+        "tiltPercent": -8.47258629433597,
+        "effectiveK": 1.000098094187842,
+        "residual": 1.9735987390496794E-07
+      },
+      {
+        "hour": 14,
+        "left": {
+          "powerWatts": 1116461064.6875205,
+          "meanI135NumberDensityM3": 7.55091847908447E+20,
+          "meanXe135NumberDensityM3": 1.0466162299567117E+20,
+          "meanThermalFluxPerM2Second": 2.186702229613448E+18
+        },
+        "right": {
+          "powerWatts": 947538935.3124777,
+          "meanI135NumberDensityM3": 7.704215763209246E+20,
+          "meanXe135NumberDensityM3": 1.2319881905849827E+20,
+          "meanThermalFluxPerM2Second": 1.8545292868841492E+18
+        },
+        "tiltPercent": -8.184211694527274,
+        "effectiveK": 1.000050628096274,
+        "residual": 1.9762539615590947E-07
+      },
+      {
+        "hour": 15,
+        "left": {
+          "powerWatts": 1106837648.683944,
+          "meanI135NumberDensityM3": 7.61870218758781E+20,
+          "meanXe135NumberDensityM3": 1.0546377837510292E+20,
+          "meanThermalFluxPerM2Second": 2.1678066587288576E+18
+        },
+        "right": {
+          "powerWatts": 957162351.3160549,
+          "meanI135NumberDensityM3": 7.636432054705902E+20,
+          "meanXe135NumberDensityM3": 1.2237263396709848E+20,
+          "meanThermalFluxPerM2Second": 1.873382361560219E+18
+        },
+        "tiltPercent": -7.251710143793077,
+        "effectiveK": 1.000002385633445,
+        "residual": 1.9853437056524225E-07
+      },
+      {
+        "hour": 16,
+        "left": {
+          "powerWatts": 1092457961.067589,
+          "meanI135NumberDensityM3": 7.671118267211548E+20,
+          "meanXe135NumberDensityM3": 1.0666093766427181E+20,
+          "meanThermalFluxPerM2Second": 2.139580639553526E+18
+        },
+        "right": {
+          "powerWatts": 971542038.9324147,
+          "meanI135NumberDensityM3": 7.584015975082183E+20,
+          "meanXe135NumberDensityM3": 1.209153716373589E+20,
+          "meanThermalFluxPerM2Second": 1.9015728235111393E+18
+        },
+        "tiltPercent": -5.8583295608127015,
+        "effectiveK": 0.999967019005527,
+        "residual": 1.9923058232759554E-07
+      },
+      {
+        "hour": 17,
+        "left": {
+          "powerWatts": 1075186359.9932868,
+          "meanI135NumberDensityM3": 7.706716069262299E+20,
+          "meanXe135NumberDensityM3": 1.0811064432022336E+20,
+          "meanThermalFluxPerM2Second": 2.1056852460906972E+18
+        },
+        "right": {
+          "powerWatts": 988813640.0067163,
+          "meanI135NumberDensityM3": 7.54841817303142E+20,
+          "meanXe135NumberDensityM3": 1.1906858569624227E+20,
+          "meanThermalFluxPerM2Second": 1.935446487561755E+18
+        },
+        "tiltPercent": -4.1847248055508945,
+        "effectiveK": 0.9999503024383517,
+        "residual": 1.9701820371779924E-07
+      },
+      {
+        "hour": 18,
+        "left": {
+          "powerWatts": 1056831951.282759,
+          "meanI135NumberDensityM3": 7.725557718157168E+20,
+          "meanXe135NumberDensityM3": 1.0968463434490832E+20,
+          "meanThermalFluxPerM2Second": 2.0696702168340593E+18
+        },
+        "right": {
+          "powerWatts": 1007168048.717243,
+          "meanI135NumberDensityM3": 7.529576524136528E+20,
+          "meanXe135NumberDensityM3": 1.1707320474244183E+20,
+          "meanThermalFluxPerM2Second": 1.9714548117513065E+18
+        },
+        "tiltPercent": -2.40619682972461,
+        "effectiveK": 0.999951184938584,
+        "residual": 1.9818571863053155E-07
+      },
+      {
+        "hour": 19,
+        "left": {
+          "powerWatts": 1039060610.7611569,
+          "meanI135NumberDensityM3": 7.72900387559462E+20,
+          "meanXe135NumberDensityM3": 1.1126283798250886E+20,
+          "meanThermalFluxPerM2Second": 2.0348023125919747E+18
+        },
+        "right": {
+          "powerWatts": 1024939389.2388448,
+          "meanI135NumberDensityM3": 7.526130366699084E+20,
+          "meanXe135NumberDensityM3": 1.1514086379337418E+20,
+          "meanThermalFluxPerM2Second": 2.006327821339986E+18
+        },
+        "tiltPercent": -0.6841677094143485,
+        "effectiveK": 0.9999639527731635,
+        "residual": 1.9981593511421606E-07
+      },
+      {
+        "hour": 20,
+        "left": {
+          "powerWatts": 1023268676.1346904,
+          "meanI135NumberDensityM3": 7.719443396621069E+20,
+          "meanXe135NumberDensityM3": 1.1273321952643233E+20,
+          "meanThermalFluxPerM2Second": 2.0038187454005343E+18
+        },
+        "right": {
+          "powerWatts": 1040731323.86531,
+          "meanI135NumberDensityM3": 7.535690845672636E+20,
+          "meanXe135NumberDensityM3": 1.134339846376653E+20,
+          "meanThermalFluxPerM2Second": 2.0373227203250662E+18
+        },
+        "tiltPercent": 0.8460585140804043,
+        "effectiveK": 0.9999810287803627,
+        "residual": 1.9884687380728714E-07
+      },
+      {
+        "hour": 21,
+        "left": {
+          "powerWatts": 1010464846.1020567,
+          "meanI135NumberDensityM3": 7.699954680929601E+20,
+          "meanXe135NumberDensityM3": 1.1399752692607156E+20,
+          "meanThermalFluxPerM2Second": 1.9786965740267297E+18
+        },
+        "right": {
+          "powerWatts": 1053535153.8979477,
+          "meanI135NumberDensityM3": 7.555179561364098E+20,
+          "meanXe135NumberDensityM3": 1.1205650454927242E+20,
+          "meanThermalFluxPerM2Second": 2.0624567604532562E+18
+        },
+        "tiltPercent": 2.0867397187931607,
+        "effectiveK": 0.9999957259395282,
+        "residual": 1.9905397611330836E-07
+      },
+      {
+        "hour": 22,
+        "left": {
+          "powerWatts": 1001212222.5442477,
+          "meanI135NumberDensityM3": 7.673929253371612E+20,
+          "meanXe135NumberDensityM3": 1.149801181544073E+20,
+          "meanThermalFluxPerM2Second": 1.9605396467355282E+18
+        },
+        "right": {
+          "powerWatts": 1062787777.4557543,
+          "meanI135NumberDensityM3": 7.581204988922089E+20,
+          "meanXe135NumberDensityM3": 1.1105563060939126E+20,
+          "meanThermalFluxPerM2Second": 2.0806220764010954E+18
+        },
+        "tiltPercent": 2.9833117689683375,
+        "effectiveK": 1.0000041250286895,
+        "residual": 1.9686881171082887E-07
+      },
+      {
+        "hour": 23,
+        "left": {
+          "powerWatts": 995648191.3364115,
+          "meanI135NumberDensityM3": 7.644711677756565E+20,
+          "meanXe135NumberDensityM3": 1.1563605041271475E+20,
+          "meanThermalFluxPerM2Second": 1.9496176969039375E+18
+        },
+        "right": {
+          "powerWatts": 1068351808.6635904,
+          "meanI135NumberDensityM3": 7.610422564537146E+20,
+          "meanXe135NumberDensityM3": 1.1043186440241673E+20,
+          "meanThermalFluxPerM2Second": 2.091547361286658E+18
+        },
+        "tiltPercent": 3.522462079805179,
+        "effectiveK": 1.0000055775497199,
+        "residual": 1.9640038120431712E-07
+      },
+      {
+        "hour": 24,
+        "left": {
+          "powerWatts": 993561700.9433638,
+          "meanI135NumberDensityM3": 7.615308911072754E+20,
+          "meanXe135NumberDensityM3": 1.1595501818199551E+20,
+          "meanThermalFluxPerM2Second": 1.945517646791529E+18
+        },
+        "right": {
+          "powerWatts": 1070438299.056636,
+          "meanI135NumberDensityM3": 7.639825331220931E+20,
+          "meanXe135NumberDensityM3": 1.1015292437499163E+20,
+          "meanThermalFluxPerM2Second": 2.0956463152448064E+18
+        },
+        "tiltPercent": 3.7246413814569865,
+        "effectiveK": 1.000001990177099,
+        "residual": 1.9699729887976126E-07
+      },
+      {
+        "hour": 25,
+        "left": {
+          "powerWatts": 994467164.8813739,
+          "meanI135NumberDensityM3": 7.588185987549347E+20,
+          "meanXe135NumberDensityM3": 1.159605432556912E+20,
+          "meanThermalFluxPerM2Second": 1.9472883118323717E+18
+        },
+        "right": {
+          "powerWatts": 1069532835.1186261,
+          "meanI135NumberDensityM3": 7.666948254744375E+20,
+          "meanXe135NumberDensityM3": 1.1016665104611808E+20,
+          "meanThermalFluxPerM2Second": 2.0938720759181123E+18
+        },
+        "tiltPercent": 3.6369026277738485,
+        "effectiveK": 0.9999965156046976,
+        "residual": 1.9639136554313542E-07
+      },
+      {
+        "hour": 26,
+        "left": {
+          "powerWatts": 997776234.7084616,
+          "meanI135NumberDensityM3": 7.56517140404188E+20,
+          "meanXe135NumberDensityM3": 1.1570260870470558E+20,
+          "meanThermalFluxPerM2Second": 1.9537763290071043E+18
+        },
+        "right": {
+          "powerWatts": 1066223765.2915362,
+          "meanI135NumberDensityM3": 7.689962838251829E+20,
+          "meanXe135NumberDensityM3": 1.1041240686207338E+20,
+          "meanThermalFluxPerM2Second": 2.0873802219480187E+18
+        },
+        "tiltPercent": 3.3162563266993526,
+        "effectiveK": 0.9999921784482889,
+        "residual": 1.9629578138318402E-07
+      },
+      {
+        "hour": 27,
+        "left": {
+          "powerWatts": 1002780567.0240203,
+          "meanI135NumberDensityM3": 7.547432866083448E+20,
+          "meanXe135NumberDensityM3": 1.1524902005162395E+20,
+          "meanThermalFluxPerM2Second": 1.9635929025986324E+18
+        },
+        "right": {
+          "powerWatts": 1061219432.9759781,
+          "meanI135NumberDensityM3": 7.707701376210281E+20,
+          "meanXe135NumberDensityM3": 1.1082740653457744E+20,
+          "meanThermalFluxPerM2Second": 2.0775613287033167E+18
+        },
+        "tiltPercent": 2.831340404649121,
+        "effectiveK": 0.999991034527778,
+        "residual": 1.9850971897246138E-07
+      },
+      {
+        "hour": 28,
+        "left": {
+          "powerWatts": 1008768781.4090132,
+          "meanI135NumberDensityM3": 7.535493872598179E+20,
+          "meanXe135NumberDensityM3": 1.1467577793983465E+20,
+          "meanThermalFluxPerM2Second": 1.9753425466036306E+18
+        },
+        "right": {
+          "powerWatts": 1055231218.5909797,
+          "meanI135NumberDensityM3": 7.719640369695541E+20,
+          "meanXe135NumberDensityM3": 1.1135007649080027E+20,
+          "meanThermalFluxPerM2Second": 2.0658117320037778E+18
+        },
+        "tiltPercent": 2.2510870727697045,
+        "effectiveK": 0.9999937139864243,
+        "residual": 1.9876406495784589E-07
+      },
+      {
+        "hour": 29,
+        "left": {
+          "powerWatts": 1015072217.2024537,
+          "meanI135NumberDensityM3": 7.529308260785597E+20,
+          "meanXe135NumberDensityM3": 1.1405690422439558E+20,
+          "meanThermalFluxPerM2Second": 1.9877129923433981E+18
+        },
+        "right": {
+          "powerWatts": 1048927782.7975425,
+          "meanI135NumberDensityM3": 7.725825981508127E+20,
+          "meanXe135NumberDensityM3": 1.1192274993399097E+20,
+          "meanThermalFluxPerM2Second": 2.053443576325428E+18
+        },
+        "tiltPercent": 1.6402890307698055,
+        "effectiveK": 0.9999995150813606,
+        "residual": 1.997872492223287E-07
+      },
+      {
+        "hour": 30,
+        "left": {
+          "powerWatts": 1021111283.0737174,
+          "meanI135NumberDensityM3": 7.528362441365464E+20,
+          "meanXe135NumberDensityM3": 1.1345658581937093E+20,
+          "meanThermalFluxPerM2Second": 1.9995662685546125E+18
+        },
+        "right": {
+          "powerWatts": 1042888716.926283,
+          "meanI135NumberDensityM3": 7.726771800928253E+20,
+          "meanXe135NumberDensityM3": 1.1249340800494993E+20,
+          "meanThermalFluxPerM2Second": 2.041593981633703E+18
+        },
+        "tiltPercent": 1.055108229290971,
+        "effectiveK": 1.0000068473610009,
+        "residual": 1.9880552845571126E-07
+      },
+      {
+        "hour": 31,
+        "left": {
+          "powerWatts": 1026430113.7525562,
+          "meanI135NumberDensityM3": 7.531798877563591E+20,
+          "meanXe135NumberDensityM3": 1.1292404776364692E+20,
+          "meanThermalFluxPerM2Second": 2.010006940970969E+18
+        },
+        "right": {
+          "powerWatts": 1037569886.2474513,
+          "meanI135NumberDensityM3": 7.723335364730118E+20,
+          "meanXe135NumberDensityM3": 1.1301749167366498E+20,
+          "meanThermalFluxPerM2Second": 2.0311572205904876E+18
+        },
+        "tiltPercent": 0.5397176596363885,
+        "effectiveK": 1.0000138449350136,
+        "residual": 1.9888025253397055E-07
+      },
+      {
+        "hour": 32,
+        "left": {
+          "powerWatts": 1030715911.12747,
+          "meanI135NumberDensityM3": 7.53854839852125E+20,
+          "meanXe135NumberDensityM3": 1.1249151018213345E+20,
+          "meanThermalFluxPerM2Second": 2.018420321834156E+18
+        },
+        "right": {
+          "powerWatts": 1033284088.8725274,
+          "meanI135NumberDensityM3": 7.716585843772469E+20,
+          "meanXe135NumberDensityM3": 1.1345979667091828E+20,
+          "meanThermalFluxPerM2Second": 2.022746936899601E+18
+        },
+        "tiltPercent": 0.12442721633029785,
+        "effectiveK": 1.0000189425096457,
+        "residual": 1.9978305209242346E-07
+      },
+      {
+        "hour": 33,
+        "left": {
+          "powerWatts": 1033801083.1851088,
+          "meanI135NumberDensityM3": 7.547459021681171E+20,
+          "meanXe135NumberDensityM3": 1.121748387252979E+20,
+          "meanThermalFluxPerM2Second": 2.0244768797037322E+18
+        },
+        "right": {
+          "powerWatts": 1030198916.814883,
+          "meanI135NumberDensityM3": 7.707675220612524E+20,
+          "meanXe135NumberDensityM3": 1.1379618319566329E+20,
+          "meanThermalFluxPerM2Second": 2.016692039661045E+18
+        },
+        "tiltPercent": -0.17452356444892447,
+        "effectiveK": 1.0000212529202186,
+        "residual": 1.998801213759482E-07
+      },
+      {
+        "hour": 34,
+        "left": {
+          "powerWatts": 1035650482.2996272,
+          "meanI135NumberDensityM3": 7.557408496992185E+20,
+          "meanXe135NumberDensityM3": 1.1197615358153435E+20,
+          "meanThermalFluxPerM2Second": 2.0281073047687396E+18
+        },
+        "right": {
+          "powerWatts": 1028349517.7003714,
+          "meanI135NumberDensityM3": 7.697725745301511E+20,
+          "meanXe135NumberDensityM3": 1.1401454270344521E+20,
+          "meanThermalFluxPerM2Second": 2.0130617474777956E+18
+        },
+        "tiltPercent": -0.35372890500270376,
+        "effectiveK": 1.0000206781767096,
+        "residual": 1.9509604388460679E-07
+      },
+      {
+        "hour": 35,
+        "left": {
+          "powerWatts": 1036351828.6873752,
+          "meanI135NumberDensityM3": 7.567396252105116E+20,
+          "meanXe135NumberDensityM3": 1.1188710143024521E+20,
+          "meanThermalFluxPerM2Second": 2.0294836047162908E+18
+        },
+        "right": {
+          "powerWatts": 1027648171.3126299,
+          "meanI135NumberDensityM3": 7.68773799018857E+20,
+          "meanXe135NumberDensityM3": 1.1411495597988076E+20,
+          "meanThermalFluxPerM2Second": 2.01168442472251E+18
+        },
+        "tiltPercent": -0.4216888262957959,
+        "effectiveK": 1.0000177772851473,
+        "residual": 1.9867484986026874E-07
+      },
+      {
+        "hour": 36,
+        "left": {
+          "powerWatts": 1036052483.2098436,
+          "meanI135NumberDensityM3": 7.576609787042229E+20,
+          "meanXe135NumberDensityM3": 1.1189225461036546E+20,
+          "meanThermalFluxPerM2Second": 2.0288952647608607E+18
+        },
+        "right": {
+          "powerWatts": 1027947516.7901571,
+          "meanI135NumberDensityM3": 7.678524455251461E+20,
+          "meanXe135NumberDensityM3": 1.1410843529119298E+20,
+          "meanThermalFluxPerM2Second": 2.0122711855813998E+18
+        },
+        "tiltPercent": -0.3926824815739609,
+        "effectiveK": 1.0000134042589122,
+        "residual": 1.9729495114714019E-07
+      },
+      {
+        "hour": 37,
+        "left": {
+          "powerWatts": 1034958802.5911591,
+          "meanI135NumberDensityM3": 7.584440568491652E+20,
+          "meanXe135NumberDensityM3": 1.1197322438952357E+20,
+          "meanThermalFluxPerM2Second": 2.026747530545822E+18
+        },
+        "right": {
+          "powerWatts": 1029041197.4088333,
+          "meanI135NumberDensityM3": 7.670693673802072E+20,
+          "meanXe135NumberDensityM3": 1.1401331078976966E+20,
+          "meanThermalFluxPerM2Second": 2.0144174151716265E+18
+        },
+        "tiltPercent": -0.2867056774382685,
+        "effectiveK": 1.000008529567609,
+        "residual": 1.9776425957142395E-07
+      },
+      {
+        "hour": 38,
+        "left": {
+          "powerWatts": 1033306357.8117429,
+          "meanI135NumberDensityM3": 7.590505368401067E+20,
+          "meanXe135NumberDensityM3": 1.1210975830086063E+20,
+          "meanThermalFluxPerM2Second": 2.0235029804013038E+18
+        },
+        "right": {
+          "powerWatts": 1030693642.1882578,
+          "meanI135NumberDensityM3": 7.664628873892658E+20,
+          "meanXe135NumberDensityM3": 1.1385340403288623E+20,
+          "meanThermalFluxPerM2Second": 2.0176610013097846E+18
+        },
+        "tiltPercent": -0.12658505927737826,
+        "effectiveK": 1.000003937656209,
+        "residual": 1.9823974394639928E-07
+      },
+      {
+        "hour": 39,
+        "left": {
+          "powerWatts": 1031332037.8697727,
+          "meanI135NumberDensityM3": 7.594635201694744E+20,
+          "meanXe135NumberDensityM3": 1.1228155625458681E+20,
+          "meanThermalFluxPerM2Second": 2.0196267331682598E+18
+        },
+        "right": {
+          "powerWatts": 1032667962.1302261,
+          "meanI135NumberDensityM3": 7.66049904059895E+20,
+          "meanXe135NumberDensityM3": 1.1365445222465836E+20,
+          "meanThermalFluxPerM2Second": 2.0215370159044667E+18
+        },
+        "tiltPercent": 0.06472501261886934,
+        "effectiveK": 1.0000001013100004,
+        "residual": 1.9762813424261955E-07
+      },
+      {
+        "hour": 40,
+        "left": {
+          "powerWatts": 1029255485.5855399,
+          "meanI135NumberDensityM3": 7.596849381501648E+20,
+          "meanXe135NumberDensityM3": 1.1246942262523581E+20,
+          "meanThermalFluxPerM2Second": 2.0155499799805558E+18
+        },
+        "right": {
+          "powerWatts": 1034744514.4144636,
+          "meanI135NumberDensityM3": 7.658284860792052E+20,
+          "meanXe135NumberDensityM3": 1.1344100430673184E+20,
+          "meanThermalFluxPerM2Second": 2.0256141826736507E+18
+        },
+        "tiltPercent": 0.26594131923079906,
+        "effectiveK": 0.999997179616749,
+        "residual": 1.9919157412212867E-07
+      },
+      {
+        "hour": 41,
+        "left": {
+          "powerWatts": 1027264277.9876045,
+          "meanI135NumberDensityM3": 7.597319484598648E+20,
+          "meanXe135NumberDensityM3": 1.1265611057612682E+20,
+          "meanThermalFluxPerM2Second": 2.0116409173881226E+18
+        },
+        "right": {
+          "powerWatts": 1036735722.012391,
+          "meanI135NumberDensityM3": 7.657814757695061E+20,
+          "meanXe135NumberDensityM3": 1.1323406476275007E+20,
+          "meanThermalFluxPerM2Second": 2.0295240280251108E+18
+        },
+        "tiltPercent": 0.45888779189857043,
+        "effectiveK": 0.999995111943529,
+        "residual": 1.9767537885537603E-07
+      },
+      {
+        "hour": 42,
+        "left": {
+          "powerWatts": 1025504417.6486659,
+          "meanI135NumberDensityM3": 7.59632733474956E+20,
+          "meanXe135NumberDensityM3": 1.1282706210711827E+20,
+          "meanThermalFluxPerM2Second": 2.008186120721398E+18
+        },
+        "right": {
+          "powerWatts": 1038495582.3513322,
+          "meanI135NumberDensityM3": 7.658806907544164E+20,
+          "meanXe135NumberDensityM3": 1.1304966374673182E+20,
+          "meanThermalFluxPerM2Second": 2.0329796361971315E+18
+        },
+        "tiltPercent": 0.6294168945090259,
+        "effectiveK": 0.9999937563460825,
+        "residual": 1.9580880794557021E-07
+      },
+      {
+        "hour": 43,
+        "left": {
+          "powerWatts": 1024076143.0123065,
+          "meanI135NumberDensityM3": 7.594221676724811E+20,
+          "meanXe135NumberDensityM3": 1.1297105859832373E+20,
+          "meanThermalFluxPerM2Second": 2.005382354394237E+18
+        },
+        "right": {
+          "powerWatts": 1039923856.9876938,
+          "meanI135NumberDensityM3": 7.660912565568938E+20,
+          "meanXe135NumberDensityM3": 1.1289840285520522E+20,
+          "meanThermalFluxPerM2Second": 2.0357839648763587E+18
+        },
+        "tiltPercent": 0.7678155995827196,
+        "effectiveK": 0.9999930134959246,
+        "residual": 1.9663295834320128E-07
+      },
+      {
+        "hour": 44,
+        "left": {
+          "powerWatts": 1023036021.1697016,
+          "meanI135NumberDensityM3": 7.591377814053401E+20,
+          "meanXe135NumberDensityM3": 1.1308068751561289E+20,
+          "meanThermalFluxPerM2Second": 2.0033406802911892E+18
+        },
+        "right": {
+          "powerWatts": 1040963978.8302943,
+          "meanI135NumberDensityM3": 7.663756428240316E+20,
+          "meanXe135NumberDensityM3": 1.1278583549336823E+20,
+          "meanThermalFluxPerM2Second": 2.037825821511359E+18
+        },
+        "tiltPercent": 0.8686025998349183,
+        "effectiveK": 0.9999928891448177,
+        "residual": 1.967169414152597E-07
+      },
+      {
+        "hour": 45,
+        "left": {
+          "powerWatts": 1022383807.7861707,
+          "meanI135NumberDensityM3": 7.588161165615179E+20,
+          "meanXe135NumberDensityM3": 1.1315270385210057E+20,
+          "meanThermalFluxPerM2Second": 2.0020608222362744E+18
+        },
+        "right": {
+          "powerWatts": 1041616192.2138345,
+          "meanI135NumberDensityM3": 7.666973076678554E+20,
+          "meanXe135NumberDensityM3": 1.1271319979193963E+20,
+          "meanThermalFluxPerM2Second": 2.03910551245948E+18
+        },
+        "tiltPercent": 0.93180157110774,
+        "effectiveK": 0.9999934788509391,
+        "residual": 1.9813946498761663E-07
+      },
+      {
+        "hour": 46,
+        "left": {
+          "powerWatts": 1022100822.7959067,
+          "meanI135NumberDensityM3": 7.584889305969778E+20,
+          "meanXe135NumberDensityM3": 1.1318835220998873E+20,
+          "meanThermalFluxPerM2Second": 2.0015061113466732E+18
+        },
+        "right": {
+          "powerWatts": 1041899177.2041024,
+          "meanI135NumberDensityM3": 7.670244936323946E+20,
+          "meanXe135NumberDensityM3": 1.1267794601122465E+20,
+          "meanThermalFluxPerM2Second": 2.0396598421796127E+18
+        },
+        "tiltPercent": 0.9592225972963008,
+        "effectiveK": 0.9999949317378342,
+        "residual": 1.9608052242200087E-07
+      },
+      {
+        "hour": 47,
+        "left": {
+          "powerWatts": 1022142972.0279074,
+          "meanI135NumberDensityM3": 7.581831422670324E+20,
+          "meanXe135NumberDensityM3": 1.1319133393465115E+20,
+          "meanThermalFluxPerM2Second": 2.001590020219505E+18
+        },
+        "right": {
+          "powerWatts": 1041857027.9720944,
+          "meanI135NumberDensityM3": 7.673302819623402E+20,
+          "meanXe135NumberDensityM3": 1.1267618063739706E+20,
+          "meanThermalFluxPerM2Second": 2.0395755366648302E+18
+        },
+        "tiltPercent": 0.9551383693889064,
+        "effectiveK": 0.9999973048067983,
+        "residual": 1.9855046579770993E-07
+      },
+      {
+        "hour": 48,
+        "left": {
+          "powerWatts": 1022443985.9967957,
+          "meanI135NumberDensityM3": 7.579188486710561E+20,
+          "meanXe135NumberDensityM3": 1.1316795564621144E+20,
+          "meanThermalFluxPerM2Second": 2.002182452922695E+18
+        },
+        "right": {
+          "powerWatts": 1041556014.0032057,
+          "meanI135NumberDensityM3": 7.675945755583165E+20,
+          "meanXe135NumberDensityM3": 1.127023661043668E+20,
+          "meanThermalFluxPerM2Second": 2.03898284341567E+18
+        },
+        "tiltPercent": 0.9259703491477708,
+        "effectiveK": 1.0000004969110068,
+        "residual": 1.992186771491071E-07
+      },
+      {
+        "hour": 49,
+        "left": {
+          "powerWatts": 1022930490.3301032,
+          "meanI135NumberDensityM3": 7.57708993132193E+20,
+          "meanXe135NumberDensityM3": 1.131258258527062E+20,
+          "meanThermalFluxPerM2Second": 2.0031392574245158E+18
+        },
+        "right": {
+          "powerWatts": 1041069509.6698904,
+          "meanI135NumberDensityM3": 7.678044310971763E+20,
+          "meanXe135NumberDensityM3": 1.1275001292527716E+20,
+          "meanThermalFluxPerM2Second": 2.038025973088502E+18
+        },
+        "tiltPercent": 0.8788284563850437,
+        "effectiveK": 1.000004216440129,
+        "residual": 1.977836814176109E-07
+      },
+      {
+        "hour": 50,
+        "left": {
+          "powerWatts": 1023528821.0400771,
+          "meanI135NumberDensityM3": 7.575597451402835E+20,
+          "meanXe135NumberDensityM3": 1.130726407382122E+20,
+          "meanThermalFluxPerM2Second": 2.0043156311713853E+18
+        },
+        "right": {
+          "powerWatts": 1040471178.9599133,
+          "meanI135NumberDensityM3": 7.6795367908909E+20,
+          "meanXe135NumberDensityM3": 1.1281215543423962E+20,
+          "meanThermalFluxPerM2Second": 2.0368496822603922E+18
+        },
+        "tiltPercent": 0.8208506744106706,
+        "effectiveK": 1.0000080145547516,
+        "residual": 1.9801324708435144E-07
+      },
+      {
+        "hour": 51,
+        "left": {
+          "powerWatts": 1024171148.8601302,
+          "meanI135NumberDensityM3": 7.574713391447614E+20,
+          "meanXe135NumberDensityM3": 1.130152350170781E+20,
+          "meanThermalFluxPerM2Second": 2.0055781815702707E+18
+        },
+        "right": {
+          "powerWatts": 1039828851.139872,
+          "meanI135NumberDensityM3": 7.6804208508461E+20,
+          "meanXe135NumberDensityM3": 1.1288173042212477E+20,
+          "meanThermalFluxPerM2Second": 2.0355872444112335E+18
+        },
+        "tiltPercent": 0.7586096065766351,
+        "effectiveK": 1.0000113747458934,
+        "residual": 1.9940739641690256E-07
+      },
+      {
+        "hour": 52,
+        "left": {
+          "powerWatts": 1024799862.3398001,
+          "meanI135NumberDensityM3": 7.574392361685647E+20,
+          "meanXe135NumberDensityM3": 1.1295899457800354E+20,
+          "meanThermalFluxPerM2Second": 2.0068135822364713E+18
+        },
+        "right": {
+          "powerWatts": 1039200137.6601985,
+          "meanI135NumberDensityM3": 7.680741880608067E+20,
+          "meanXe135NumberDensityM3": 1.1295198554734977E+20,
+          "meanThermalFluxPerM2Second": 2.034351852124216E+18
+        },
+        "tiltPercent": 0.6976877577712375,
+        "effectiveK": 1.000013829875032,
+        "residual": 1.9719202641630626E-07
+      },
+      {
+        "hour": 53,
+        "left": {
+          "powerWatts": 1025369802.8808905,
+          "meanI135NumberDensityM3": 7.574554351861092E+20,
+          "meanXe135NumberDensityM3": 1.129076746127876E+20,
+          "meanThermalFluxPerM2Second": 2.0079330132300352E+18
+        },
+        "right": {
+          "powerWatts": 1038630197.1191052,
+          "meanI135NumberDensityM3": 7.680579890432627E+20,
+          "meanXe135NumberDensityM3": 1.1301693316072884E+20,
+          "meanThermalFluxPerM2Second": 2.033232236757159E+18
+        },
+        "tiltPercent": 0.6424609611538158,
+        "effectiveK": 1.000015066137038,
+        "residual": 1.9704126500410687E-07
+      },
+      {
+        "hour": 54,
+        "left": {
+          "powerWatts": 1025846183.6067178,
+          "meanI135NumberDensityM3": 7.575097351218906E+20,
+          "meanXe135NumberDensityM3": 1.1286359004292661E+20,
+          "meanThermalFluxPerM2Second": 2.0088681387055124E+18
+        },
+        "right": {
+          "powerWatts": 1038153816.3932724,
+          "meanI135NumberDensityM3": 7.680036891074808E+20,
+          "meanXe135NumberDensityM3": 1.1307176590598713E+20,
+          "meanThermalFluxPerM2Second": 2.032296727450827E+18
+        },
+        "tiltPercent": 0.5963000381082671,
+        "effectiveK": 1.0000149860818621,
+        "residual": 1.9974956664605957E-07
+      },
+      {
+        "hour": 55,
+        "left": {
+          "powerWatts": 1026220046.6916101,
+          "meanI135NumberDensityM3": 7.575907665261514E+20,
+          "meanXe135NumberDensityM3": 1.12828034756796E+20,
+          "meanThermalFluxPerM2Second": 2.0096013011301274E+18
+        },
+        "right": {
+          "powerWatts": 1037779953.3083915,
+          "meanI135NumberDensityM3": 7.679226577032194E+20,
+          "meanXe135NumberDensityM3": 1.131131670793547E+20,
+          "meanThermalFluxPerM2Second": 2.031563068165081E+18
+        },
+        "tiltPercent": 0.5600729949990962,
+        "effectiveK": 1.000013739610092,
+        "residual": 1.9740434228948334E-07
+      },
+      {
+        "hour": 56,
+        "left": {
+          "powerWatts": 1026485719.3206964,
+          "meanI135NumberDensityM3": 7.576884867214533E+20,
+          "meanXe135NumberDensityM3": 1.1280073691222021E+20,
+          "meanThermalFluxPerM2Second": 2.0101215089728517E+18
+        },
+        "right": {
+          "powerWatts": 1037514280.6792983,
+          "meanI135NumberDensityM3": 7.678249375079158E+20,
+          "meanXe135NumberDensityM3": 1.1314041567766246E+20,
+          "meanThermalFluxPerM2Second": 2.0310423889325197E+18
+        },
+        "tiltPercent": 0.5343295231880792,
+        "effectiveK": 1.0000115609438827,
+        "residual": 1.9881685208394636E-07
+      },
+      {
+        "hour": 57,
+        "left": {
+          "powerWatts": 1026640779.866888,
+          "meanI135NumberDensityM3": 7.577928895303593E+20,
+          "meanXe135NumberDensityM3": 1.1278189980003279E+20,
+          "meanThermalFluxPerM2Second": 2.0104242120411046E+18
+        },
+        "right": {
+          "powerWatts": 1037359220.1331105,
+          "meanI135NumberDensityM3": 7.677205346990132E+20,
+          "meanXe135NumberDensityM3": 1.1315348336866025E+20,
+          "meanThermalFluxPerM2Second": 2.0307393795988923E+18
+        },
+        "tiltPercent": 0.5193042764642677,
+        "effectiveK": 1.000008821411132,
+        "residual": 1.9824457754664038E-07
+      },
+      {
+        "hour": 58,
+        "left": {
+          "powerWatts": 1026696392.053651,
+          "meanI135NumberDensityM3": 7.57895415769156E+20,
+          "meanXe135NumberDensityM3": 1.1277127074305715E+20,
+          "meanThermalFluxPerM2Second": 2.0105315030530547E+18
+        },
+        "right": {
+          "powerWatts": 1037303607.9463456,
+          "meanI135NumberDensityM3": 7.676180084602162E+20,
+          "meanXe135NumberDensityM3": 1.131539231635397E+20,
+          "meanThermalFluxPerM2Second": 2.0306320546262408E+18
+        },
+        "tiltPercent": 0.5139154986770644,
+        "effectiveK": 1.0000058945270873,
+        "residual": 1.9875117553776365E-07
+      },
+      {
+        "hour": 59,
+        "left": {
+          "powerWatts": 1026667630.4558812,
+          "meanI135NumberDensityM3": 7.579893012211009E+20,
+          "meanXe135NumberDensityM3": 1.1276830160177771E+20,
+          "meanThermalFluxPerM2Second": 2.0104731599419994E+18
+        },
+        "right": {
+          "powerWatts": 1037332369.5441154,
+          "meanI135NumberDensityM3": 7.675241230082706E+20,
+          "meanXe135NumberDensityM3": 1.1314427335530607E+20,
+          "meanThermalFluxPerM2Second": 2.0306906659964403E+18
+        },
+        "tiltPercent": 0.5167024752051456,
+        "effectiveK": 1.0000030887732247,
+        "residual": 1.9706520416910975E-07
+      },
+      {
+        "hour": 60,
+        "left": {
+          "powerWatts": 1026572090.8096919,
+          "meanI135NumberDensityM3": 7.580696566365757E+20,
+          "meanXe135NumberDensityM3": 1.1277215681602281E+20,
+          "meanThermalFluxPerM2Second": 2.0102838840376591E+18
+        },
+        "right": {
+          "powerWatts": 1037427909.1903133,
+          "meanI135NumberDensityM3": 7.674437675927954E+20,
+          "meanXe135NumberDensityM3": 1.1312747220711093E+20,
+          "meanThermalFluxPerM2Second": 2.0308804584810995E+18
+        },
+        "tiltPercent": 0.5259601928595642,
+        "effectiveK": 1.00000062023892,
+        "residual": 1.9718753909400128E-07
+      },
+      {
+        "hour": 61,
+        "left": {
+          "powerWatts": 1026428130.9021541,
+          "meanI135NumberDensityM3": 7.581334157798011E+20,
+          "meanXe135NumberDensityM3": 1.1278167797314324E+20,
+          "meanThermalFluxPerM2Second": 2.0099998365251282E+18
+        },
+        "right": {
+          "powerWatts": 1037571869.0978467,
+          "meanI135NumberDensityM3": 7.67380008449572E+20,
+          "meanXe135NumberDensityM3": 1.1310637930580007E+20,
+          "meanThermalFluxPerM2Second": 2.0311651538754084E+18
+        },
+        "tiltPercent": 0.5399097963029387,
+        "effectiveK": 0.9999986169483126,
+        "residual": 1.9882722279875418E-07
+      },
+      {
+        "hour": 62,
+        "left": {
+          "powerWatts": 1026253436.5703188,
+          "meanI135NumberDensityM3": 7.581791660102386E+20,
+          "meanXe135NumberDensityM3": 1.1279540973468982E+20,
+          "meanThermalFluxPerM2Second": 2.0096558253293868E+18
+        },
+        "right": {
+          "powerWatts": 1037746563.4296799,
+          "meanI135NumberDensityM3": 7.673342582191306E+20,
+          "meanXe135NumberDensityM3": 1.130834491065747E+20,
+          "meanThermalFluxPerM2Second": 2.0315098033657354E+18
+        },
+        "tiltPercent": 0.5568375416357103,
+        "effectiveK": 0.9999971476461922,
+        "residual": 1.9719462722140794E-07
+      },
+      {
+        "hour": 63,
+        "left": {
+          "powerWatts": 1026064146.4879136,
+          "meanI135NumberDensityM3": 7.582069037564292E+20,
+          "meanXe135NumberDensityM3": 1.1281171553121785E+20,
+          "meanThermalFluxPerM2Second": 2.0092835920004347E+18
+        },
+        "right": {
+          "powerWatts": 1037935853.5120864,
+          "meanI135NumberDensityM3": 7.67306520472944E+20,
+          "meanXe135NumberDensityM3": 1.1306059086676238E+20,
+          "meanThermalFluxPerM2Second": 2.0318825433983619E+18
+        },
+        "tiltPercent": 0.5751796038843403,
+        "effectiveK": 0.9999962551261405,
+        "residual": 1.9772326741223243E-07
+      },
+      {
+        "hour": 64,
+        "left": {
+          "powerWatts": 1025875567.0763648,
+          "meanI135NumberDensityM3": 7.582177780224148E+20,
+          "meanXe135NumberDensityM3": 1.128289471951658E+20,
+          "meanThermalFluxPerM2Second": 2.0089132072531786E+18
+        },
+        "right": {
+          "powerWatts": 1038124432.9236298,
+          "meanI135NumberDensityM3": 7.672956462069535E+20,
+          "meanXe135NumberDensityM3": 1.1303920928953169E+20,
+          "meanThermalFluxPerM2Second": 2.0322532335860664E+18
+        },
+        "tiltPercent": 0.5934528026775696,
+        "effectiveK": 0.9999959777087497,
+        "residual": 1.9671236021142782E-07
+      },
+      {
+        "hour": 65,
+        "left": {
+          "powerWatts": 1025698313.489224,
+          "meanI135NumberDensityM3": 7.582141063947214E+20,
+          "meanXe135NumberDensityM3": 1.1284547031964197E+20,
+          "meanThermalFluxPerM2Second": 2.0085655381815066E+18
+        },
+        "right": {
+          "powerWatts": 1038301686.5107672,
+          "meanI135NumberDensityM3": 7.672993178346493E+20,
+          "meanXe135NumberDensityM3": 1.1302051471119465E+20,
+          "meanThermalFluxPerM2Second": 2.032601007638678E+18
+        },
+        "tiltPercent": 0.6106285378654709,
+        "effectiveK": 0.999996329700427,
+        "residual": 1.9991338584690178E-07
+      },
+      {
+        "hour": 66,
+        "left": {
+          "powerWatts": 1025532252.393601,
+          "meanI135NumberDensityM3": 7.58197735842409E+20,
+          "meanXe135NumberDensityM3": 1.1286083591681072E+20,
+          "meanThermalFluxPerM2Second": 2.0082403576976812E+18
+        },
+        "right": {
+          "powerWatts": 1038467747.606398,
+          "meanI135NumberDensityM3": 7.67315688386961E+20,
+          "meanXe135NumberDensityM3": 1.1300462431267134E+20,
+          "meanThermalFluxPerM2Second": 2.0329261173334733E+18
+        },
+        "tiltPercent": 0.6267197293021828,
+        "effectiveK": 0.9999973456791904,
+        "residual": 1.963057076403259E-07
+      },
+      {
+        "hour": 67,
+        "left": {
+          "powerWatts": 1025391306.1456305,
+          "meanI135NumberDensityM3": 7.581714179703863E+20,
+          "meanXe135NumberDensityM3": 1.1287423377749587E+20,
+          "meanThermalFluxPerM2Second": 2.0079648808643075E+18
+        },
+        "right": {
+          "powerWatts": 1038608693.854366,
+          "meanI135NumberDensityM3": 7.673420062589836E+20,
+          "meanXe135NumberDensityM3": 1.129922858795625E+20,
+          "meanThermalFluxPerM2Second": 2.0332014303521068E+18
+        },
+        "tiltPercent": 0.6403773114697426,
+        "effectiveK": 0.9999989890088027,
+        "residual": 1.9742774315186383E-07
+      },
+      {
+        "hour": 68,
+        "left": {
+          "powerWatts": 1025278541.640925,
+          "meanI135NumberDensityM3": 7.581380853246617E+20,
+          "meanXe135NumberDensityM3": 1.1288537353162262E+20,
+          "meanThermalFluxPerM2Second": 2.0077450496893606E+18
+        },
+        "right": {
+          "powerWatts": 1038721458.3590766,
+          "meanI135NumberDensityM3": 7.673753389047086E+20,
+          "meanXe135NumberDensityM3": 1.1298398281049478E+20,
+          "meanThermalFluxPerM2Second": 2.0334210706166717E+18
+        },
+        "tiltPercent": 0.6513041045616065,
+        "effectiveK": 1.0000011408712368,
+        "residual": 1.9598933682316004E-07
+      },
+      {
+        "hour": 69,
+        "left": {
+          "powerWatts": 1025196369.6527555,
+          "meanI135NumberDensityM3": 7.581006031682298E+20,
+          "meanXe135NumberDensityM3": 1.128942672753808E+20,
+          "meanThermalFluxPerM2Second": 2.0075854572034081E+18
+        },
+        "right": {
+          "powerWatts": 1038803630.3472463,
+          "meanI135NumberDensityM3": 7.67412821061143E+20,
+          "meanXe135NumberDensityM3": 1.1297993651393346E+20,
+          "meanThermalFluxPerM2Second": 2.0335804845909734E+18
+        },
+        "tiltPercent": 0.659266506516026,
+        "effectiveK": 1.0000035979400748,
+        "residual": 1.995416435797697E-07
+      },
+      {
+        "hour": 70,
+        "left": {
+          "powerWatts": 1025145683.2769927,
+          "meanI135NumberDensityM3": 7.580616844281791E+20,
+          "meanXe135NumberDensityM3": 1.1290101195974966E+20,
+          "meanThermalFluxPerM2Second": 2.0074876856722166E+18
+        },
+        "right": {
+          "powerWatts": 1038854316.7230091,
+          "meanI135NumberDensityM3": 7.674517398011924E+20,
+          "meanXe135NumberDensityM3": 1.1298007256023679E+20,
+          "meanThermalFluxPerM2Second": 2.0336780930879877E+18
+        },
+        "tiltPercent": 0.6641779770356792,
+        "effectiveK": 1.0000060912226147,
+        "residual": 1.9611461247306377E-07
+      },
+      {
+        "hour": 71,
+        "left": {
+          "powerWatts": 1025126092.7794161,
+          "meanI135NumberDensityM3": 7.580237996983617E+20,
+          "meanXe135NumberDensityM3": 1.1290564366419481E+20,
+          "meanThermalFluxPerM2Second": 2.0074507873095803E+18
+        },
+        "right": {
+          "powerWatts": 1038873907.2205913,
+          "meanI135NumberDensityM3": 7.674896245310098E+20,
+          "meanXe135NumberDensityM3": 1.1298396531928192E+20,
+          "meanThermalFluxPerM2Second": 2.033714819157892E+18
+        },
+        "tiltPercent": 0.6660762810646886,
+        "effectiveK": 1.0000083247670855,
+        "residual": 1.9871185588722492E-07
+      },
+      {
+        "hour": 72,
+        "left": {
+          "powerWatts": 1025135927.5393236,
+          "meanI135NumberDensityM3": 7.57989106152173E+20,
+          "meanXe135NumberDensityM3": 1.1290807208870778E+20,
+          "meanThermalFluxPerM2Second": 2.0074713172406385E+18
+        },
+        "right": {
+          "powerWatts": 1038864072.4606694,
+          "meanI135NumberDensityM3": 7.675243180771985E+20,
+          "meanXe135NumberDensityM3": 1.1299084450302457E+20,
+          "meanThermalFluxPerM2Second": 2.033694073909644E+18
+        },
+        "tiltPercent": 0.6651233004528041,
+        "effectiveK": 1.0000100307533695,
+        "residual": 1.9913823947943506E-07
+      },
+      {
+        "hour": 73,
+        "left": {
+          "powerWatts": 1025172315.4268919,
+          "meanI135NumberDensityM3": 7.579593879687189E+20,
+          "meanXe135NumberDensityM3": 1.1290811119324116E+20,
+          "meanThermalFluxPerM2Second": 2.0075435133798536E+18
+        },
+        "right": {
+          "powerWatts": 1038827684.5731031,
+          "meanI135NumberDensityM3": 7.675540362606526E+20,
+          "meanXe135NumberDensityM3": 1.1299968276952583E+20,
+          "meanThermalFluxPerM2Second": 2.0336215994566175E+18
+        },
+        "tiltPercent": 0.6615973423551929,
+        "effectiveK": 1.0000110176789874,
+        "residual": 1.9686102250752873E-07
+      },
+      {
+        "hour": 74,
+        "left": {
+          "powerWatts": 1025230651.4346483,
+          "meanI135NumberDensityM3": 7.579359976004312E+20,
+          "meanXe135NumberDensityM3": 1.1290559221506423E+20,
+          "meanThermalFluxPerM2Second": 2.007658277131162E+18
+        },
+        "right": {
+          "powerWatts": 1038769348.5653517,
+          "meanI135NumberDensityM3": 7.675774266289407E+20,
+          "meanXe135NumberDensityM3": 1.1300934197740608E+20,
+          "meanThermalFluxPerM2Second": 2.0335065037822572E+18
+        },
+        "tiltPercent": 0.6559446284255547,
+        "effectiveK": 1.000011203292377,
+        "residual": 1.9935075679108196E-07
+      },
+      {
+        "hour": 75,
+        "left": {
+          "powerWatts": 1025302781.4776549,
+          "meanI135NumberDensityM3": 7.579195311850289E+20,
+          "meanXe135NumberDensityM3": 1.1290070027853754E+20,
+          "meanThermalFluxPerM2Second": 2.0077996327826058E+18
+        },
+        "right": {
+          "powerWatts": 1038697218.5223438,
+          "meanI135NumberDensityM3": 7.675938930443422E+20,
+          "meanXe135NumberDensityM3": 1.1301855384395738E+20,
+          "meanThermalFluxPerM2Second": 2.033364800908485E+18
+        },
+        "tiltPercent": 0.6489552831729084,
+        "effectiveK": 1.0000106514754892,
+        "residual": 1.9752162625570382E-07
+      },
+      {
+        "hour": 76,
+        "left": {
+          "powerWatts": 1025394827.7577622,
+          "meanI135NumberDensityM3": 7.579108244638052E+20,
+          "meanXe135NumberDensityM3": 1.1289322814703783E+20,
+          "meanThermalFluxPerM2Second": 2.0079795600214684E+18
+        },
+        "right": {
+          "powerWatts": 1038605172.2422373,
+          "meanI135NumberDensityM3": 7.676025997655658E+20,
+          "meanXe135NumberDensityM3": 1.1302696709136774E+20,
+          "meanThermalFluxPerM2Second": 2.0331845862140206E+18
+        },
+        "tiltPercent": 0.6400360699842607,
+        "effectiveK": 1.0000094610852932,
+        "residual": 1.9825356331698056E-07
+      },
+      {
+        "hour": 77,
+        "left": {
+          "powerWatts": 1025491966.547251,
+          "meanI135NumberDensityM3": 7.579099530738429E+20,
+          "meanXe135NumberDensityM3": 1.1288379714994189E+20,
+          "meanThermalFluxPerM2Second": 2.00816914451715E+18
+        },
+        "right": {
+          "powerWatts": 1038508033.4527484,
+          "meanI135NumberDensityM3": 7.676034711555294E+20,
+          "meanXe135NumberDensityM3": 1.130339400278259E+20,
+          "meanThermalFluxPerM2Second": 2.0329948271720942E+18
+        },
+        "tiltPercent": 0.630623396584178,
+        "effectiveK": 1.000007818476554,
+        "residual": 1.9757880087282326E-07
+      },
+      {
+        "hour": 78,
+        "left": {
+          "powerWatts": 1025589123.9970062,
+          "meanI135NumberDensityM3": 7.579163954910576E+20,
+          "meanXe135NumberDensityM3": 1.1287324985938202E+20,
+          "meanThermalFluxPerM2Second": 2.0083585385767514E+18
+        },
+        "right": {
+          "powerWatts": 1038410876.0029908,
+          "meanI135NumberDensityM3": 7.67597028738314E+20,
+          "meanXe135NumberDensityM3": 1.1303918219682872E+20,
+          "meanThermalFluxPerM2Second": 2.032805420850128E+18
+        },
+        "tiltPercent": 0.6212089150186377,
+        "effectiveK": 1.000005943259627,
+        "residual": 1.959760205964684E-07
+      },
+      {
+        "hour": 79,
+        "left": {
+          "powerWatts": 1025679945.3773189,
+          "meanI135NumberDensityM3": 7.579292398073937E+20,
+          "meanXe135NumberDensityM3": 1.128625388742956E+20,
+          "meanThermalFluxPerM2Second": 2.0085354077428593E+18
+        },
+        "right": {
+          "powerWatts": 1038320054.6226829,
+          "meanI135NumberDensityM3": 7.675841844219768E+20,
+          "meanXe135NumberDensityM3": 1.1304270879182276E+20,
+          "meanThermalFluxPerM2Second": 2.0326287150741238E+18
+        },
+        "tiltPercent": 0.6124083936707393,
+        "effectiveK": 1.000004040189379,
+        "residual": 1.9878488172606612E-07
+      },
+      {
+        "hour": 80,
+        "left": {
+          "powerWatts": 1025758574.878205,
+          "meanI135NumberDensityM3": 7.579472058795098E+20,
+          "meanXe135NumberDensityM3": 1.1285262619053685E+20,
+          "meanThermalFluxPerM2Second": 2.0086883888645696E+18
+        },
+        "right": {
+          "powerWatts": 1038241425.1217932,
+          "meanI135NumberDensityM3": 7.675662183498602E+20,
+          "meanXe135NumberDensityM3": 1.1304467949622097E+20,
+          "meanThermalFluxPerM2Second": 2.032476046946004E+18
+        },
+        "tiltPercent": 0.6047892559878014,
+        "effectiveK": 1.0000022772825088,
+        "residual": 1.9884008835472E-07
+      },
+      {
+        "hour": 81,
+        "left": {
+          "powerWatts": 1025820034.1149043,
+          "meanI135NumberDensityM3": 7.579687306451487E+20,
+          "meanXe135NumberDensityM3": 1.128443389439647E+20,
+          "meanThermalFluxPerM2Second": 2.0088078234027692E+18
+        },
+        "right": {
+          "powerWatts": 1038179965.8850977,
+          "meanI135NumberDensityM3": 7.675446935842247E+20,
+          "meanXe135NumberDensityM3": 1.1304528871261979E+20,
+          "meanThermalFluxPerM2Second": 2.032357016949018E+18
+        },
+        "tiltPercent": 0.5988339035946437,
+        "effectiveK": 1.0000007796504757,
+        "residual": 1.968510953338549E-07
+      },
+      {
+        "hour": 82,
+        "left": {
+          "powerWatts": 1025860601.1697502,
+          "meanI135NumberDensityM3": 7.579920732818912E+20,
+          "meanXe135NumberDensityM3": 1.128382652794899E+20,
+          "meanThermalFluxPerM2Second": 2.0088864961494303E+18
+        },
+        "right": {
+          "powerWatts": 1038139398.8302525,
+          "meanI135NumberDensityM3": 7.675213509474804E+20,
+          "meanXe135NumberDensityM3": 1.1304469470991358E+20,
+          "meanThermalFluxPerM2Second": 2.032278766930502E+18
+        },
+        "tiltPercent": 0.5949029874274369,
+        "effectiveK": 0.9999996341621402,
+        "residual": 1.9772420265680684E-07
+      },
+      {
+        "hour": 83,
+        "left": {
+          "powerWatts": 1025878134.7209997,
+          "meanI135NumberDensityM3": 7.580154349178627E+20,
+          "meanXe135NumberDensityM3": 1.1283471141934052E+20,
+          "meanThermalFluxPerM2Second": 2.0089202693460856E+18
+        },
+        "right": {
+          "powerWatts": 1038121865.2790064,
+          "meanI135NumberDensityM3": 7.674979893115079E+20,
+          "meanXe135NumberDensityM3": 1.1304300326951595E+20,
+          "meanThermalFluxPerM2Second": 2.0322453659914166E+18
+        },
+        "tiltPercent": 0.5932039999034209,
+        "effectiveK": 0.9999988990848173,
+        "residual": 1.9862510686484153E-07
+      },
+      {
+        "hour": 84,
+        "left": {
+          "powerWatts": 1025872430.0745894,
+          "meanI135NumberDensityM3": 7.580370899546517E+20,
+          "meanXe135NumberDensityM3": 1.1283371601167652E+20,
+          "meanThermalFluxPerM2Second": 2.008908779816796E+18
+        },
+        "right": {
+          "powerWatts": 1038127569.9254134,
+          "meanI135NumberDensityM3": 7.674763342747194E+20,
+          "meanXe135NumberDensityM3": 1.130403039861372E+20,
+          "meanThermalFluxPerM2Second": 2.0322571294971717E+18
+        },
+        "tiltPercent": 0.5937567757182162,
+        "effectiveK": 0.9999986118790949,
+        "residual": 1.9863124104203282E-07
+      },
+      {
+        "hour": 85,
+        "left": {
+          "powerWatts": 1025850325.4820801,
+          "meanI135NumberDensityM3": 7.580556731858403E+20,
+          "meanXe135NumberDensityM3": 1.12834987839196E+20,
+          "meanThermalFluxPerM2Second": 2.008865409078203E+18
+        },
+        "right": {
+          "powerWatts": 1038149674.5179217,
+          "meanI135NumberDensityM3": 7.674577510435316E+20,
+          "meanXe135NumberDensityM3": 1.1303685075045392E+20,
+          "meanThermalFluxPerM2Second": 2.0323006670225306E+18
+        },
+        "tiltPercent": 0.5958986935969754,
+        "effectiveK": 0.9999987738165691,
+        "residual": 1.9789988794574601E-07
+      },
+      {
+        "hour": 86,
+        "left": {
+          "powerWatts": 1025799874.5589434,
+          "meanI135NumberDensityM3": 7.58069878816019E+20,
+          "meanXe135NumberDensityM3": 1.1283841352301956E+20,
+          "meanThermalFluxPerM2Second": 2.0087668425801426E+18
+        },
+        "right": {
+          "powerWatts": 1038200125.4410594,
+          "meanI135NumberDensityM3": 7.674435454133541E+20,
+          "meanXe135NumberDensityM3": 1.1303267410231027E+20,
+          "meanThermalFluxPerM2Second": 2.03239927879422E+18
+        },
+        "tiltPercent": 0.600787348939726,
+        "effectiveK": 0.9999993862556388,
+        "residual": 1.9943477936328566E-07
+      },
+      {
+        "hour": 87,
+        "left": {
+          "powerWatts": 1025737034.9847065,
+          "meanI135NumberDensityM3": 7.580786110040295E+20,
+          "meanXe135NumberDensityM3": 1.1284367644362315E+20,
+          "meanThermalFluxPerM2Second": 2.008644239750424E+18
+        },
+        "right": {
+          "powerWatts": 1038262965.0152861,
+          "meanI135NumberDensityM3": 7.674348132253422E+20,
+          "meanXe135NumberDensityM3": 1.1302802365909674E+20,
+          "meanThermalFluxPerM2Second": 2.0325218448524716E+18
+        },
+        "tiltPercent": 0.6068764549699425,
+        "effectiveK": 1.0000004205824171,
+        "residual": 1.9813151468337896E-07
+      },
+      {
+        "hour": 88,
+        "left": {
+          "powerWatts": 1025664664.495515,
+          "meanI135NumberDensityM3": 7.580815137246823E+20,
+          "meanXe135NumberDensityM3": 1.1285027799203388E+20,
+          "meanThermalFluxPerM2Second": 2.0085031753036628E+18
+        },
+        "right": {
+          "powerWatts": 1038335335.5044835,
+          "meanI135NumberDensityM3": 7.674319105046881E+20,
+          "meanXe135NumberDensityM3": 1.1302341301352284E+20,
+          "meanThermalFluxPerM2Second": 2.0326628184747062E+18
+        },
+        "tiltPercent": 0.6138890992717287,
+        "effectiveK": 1.0000017887016976,
+        "residual": 1.9997921281521566E-07
+      },
+      {
+        "hour": 89,
+        "left": {
+          "powerWatts": 1025588900.1892385,
+          "meanI135NumberDensityM3": 7.580786368734604E+20,
+          "meanXe135NumberDensityM3": 1.1285774883668174E+20,
+          "meanThermalFluxPerM2Second": 2.0083556003821652E+18
+        },
+        "right": {
+          "powerWatts": 1038411099.8107673,
+          "meanI135NumberDensityM3": 7.674347873559094E+20,
+          "meanXe135NumberDensityM3": 1.130193014140626E+20,
+          "meanThermalFluxPerM2Second": 2.032810271249611E+18
+        },
+        "tiltPercent": 0.6212306018182514,
+        "effectiveK": 1.0000033606540437,
+        "residual": 1.961964607510382E-07
+      },
+      {
+        "hour": 90,
+        "left": {
+          "powerWatts": 1025516095.2385975,
+          "meanI135NumberDensityM3": 7.580704889358761E+20,
+          "meanXe135NumberDensityM3": 1.1286556552839699E+20,
+          "meanThermalFluxPerM2Second": 2.0082138706607483E+18
+        },
+        "right": {
+          "powerWatts": 1038483904.7614039,
+          "meanI135NumberDensityM3": 7.674429352934951E+20,
+          "meanXe135NumberDensityM3": 1.1301609035895752E+20,
+          "meanThermalFluxPerM2Second": 2.0329518586738163E+18
+        },
+        "tiltPercent": 0.6282853450972091,
+        "effectiveK": 1.0000049724572466,
+        "residual": 1.9776870557005216E-07
+      },
+      {
+        "hour": 91,
+        "left": {
+          "powerWatts": 1025452150.1024673,
+          "meanI135NumberDensityM3": 7.580579875121984E+20,
+          "meanXe135NumberDensityM3": 1.1287314607587182E+20,
+          "meanThermalFluxPerM2Second": 2.0080894487591844E+18
+        },
+        "right": {
+          "powerWatts": 1038547849.8975326,
+          "meanI135NumberDensityM3": 7.674554367171718E+20,
+          "meanXe135NumberDensityM3": 1.1301405112830614E+20,
+          "meanThermalFluxPerM2Second": 2.0330761178613092E+18
+        },
+        "tiltPercent": 0.6344815792182793,
+        "effectiveK": 1.0000064480270228,
+        "residual": 1.9739196245989574E-07
+      },
+      {
+        "hour": 92,
+        "left": {
+          "powerWatts": 1025402081.8516401,
+          "meanI135NumberDensityM3": 7.580423733160241E+20,
+          "meanXe135NumberDensityM3": 1.1287987270692417E+20,
+          "meanThermalFluxPerM2Second": 2.0079920720513836E+18
+        },
+        "right": {
+          "powerWatts": 1038597918.1483549,
+          "meanI135NumberDensityM3": 7.674710509133454E+20,
+          "meanXe135NumberDensityM3": 1.1301328045854866E+20,
+          "meanThermalFluxPerM2Second": 2.033173306729946E+18
+        },
+        "tiltPercent": 0.6393331539106015,
+        "effectiveK": 1.0000076243837384,
+        "residual": 1.9659065344134112E-07
+      },
+      {
+        "hour": 93,
+        "left": {
+          "powerWatts": 1025369576.7006692,
+          "meanI135NumberDensityM3": 7.580250984187096E+20,
+          "meanXe135NumberDensityM3": 1.1288514555877987E+20,
+          "meanThermalFluxPerM2Second": 2.0079288890392376E+18
+        },
+        "right": {
+          "powerWatts": 1038630423.299337,
+          "meanI135NumberDensityM3": 7.67488325810661E+20,
+          "meanXe135NumberDensityM3": 1.1301369845720469E+20,
+          "meanThermalFluxPerM2Second": 2.0332362761058143E+18
+        },
+        "tiltPercent": 0.6424828778424332,
+        "effectiveK": 1.0000083776838575,
+        "residual": 1.9880236687822881E-07
+      },
+      {
+        "hour": 94,
+        "left": {
+          "powerWatts": 1025356599.1565889,
+          "meanI135NumberDensityM3": 7.580076956747897E+20,
+          "meanXe135NumberDensityM3": 1.1288846171699112E+20,
+          "meanThermalFluxPerM2Second": 2.0079037042862653E+18
+        },
+        "right": {
+          "powerWatts": 1038643400.843413,
+          "meanI135NumberDensityM3": 7.675057285545814E+20,
+          "meanXe135NumberDensityM3": 1.1301508551154839E+20,
+          "meanThermalFluxPerM2Second": 2.0332612314394872E+18
+        },
+        "tiltPercent": 0.6437403918034919,
+        "effectiveK": 1.0000086426517822,
+        "residual": 1.9890949985296976E-07
+      },
+      {
+        "hour": 95,
+        "left": {
+          "powerWatts": 1025359853.3681172,
+          "meanI135NumberDensityM3": 7.579916109046054E+20,
+          "meanXe135NumberDensityM3": 1.1288952212462328E+20,
+          "meanThermalFluxPerM2Second": 2.0079100789397865E+18
+        },
+        "right": {
+          "powerWatts": 1038640146.6318871,
+          "meanI135NumberDensityM3": 7.675218133247627E+20,
+          "meanXe135NumberDensityM3": 1.1301712220825548E+20,
+          "meanThermalFluxPerM2Second": 2.0332546278222444E+18
+        },
+        "tiltPercent": 0.6434250612291588,
+        "effectiveK": 1.0000084353367396,
+        "residual": 1.9133042844296644E-07
+      },
+      {
+        "hour": 96,
+        "left": {
+          "powerWatts": 1025386684.6774577,
+          "meanI135NumberDensityM3": 7.579780170335745E+20,
+          "meanXe135NumberDensityM3": 1.1288830444360566E+20,
+          "meanThermalFluxPerM2Second": 2.007962361227444E+18
+        },
+        "right": {
+          "powerWatts": 1038613315.3225448,
+          "meanI135NumberDensityM3": 7.675354071957967E+20,
+          "meanXe135NumberDensityM3": 1.1301947835306027E+20,
+          "meanThermalFluxPerM2Second": 2.0332021662049441E+18
+        },
+        "tiltPercent": 0.6408251281534452,
+        "effectiveK": 1.000007812273015,
+        "residual": 1.9845306581922965E-07
+      }
+    ]
+  }
+}

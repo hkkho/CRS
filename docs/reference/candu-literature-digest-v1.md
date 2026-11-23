@@ -1,6 +1,6 @@
 # CANDU literature used by the game model
 
-The [source manifest](../../reference/manifests/candu-literature-sources-v1.json) records document identities, artifact checksums and access conditions. The current [calibration notes](../physics/calibration-provenance.md) explain how CRS uses these sources.
+This register identifies the publications used to inform the game model and the evidence taken from each. The [source manifest](../../reference/manifests/candu-literature-sources-v1.json) records document identities, artifact checksums and access conditions. The [calibration notes](../physics/calibration-provenance.md) explain how CRS uses these sources.
 
 | Source | Relevant evidence |
 | --- | --- |

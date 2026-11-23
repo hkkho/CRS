@@ -1,7 +1,7 @@
 # Graphics and animation that explain play
 
-The reference games use different engines and production methods. Reuse a
-relationship between action and feedback; create an art system that belongs to
+The reference games use different engines and production methods. Apply a
+relationship between action and feedback, and create an art system that belongs to
 the new game. The descriptions below are original implementation recipes. Their
 durations are proposed tuning ranges, not timings measured in the studied games.
 

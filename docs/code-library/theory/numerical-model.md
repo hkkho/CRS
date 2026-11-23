@@ -13,7 +13,7 @@ each node has a volume, neighboring nodes exchange leakage contributions, and
 exterior faces contribute an explicit boundary term. The active operator is
 matrix-free: it evaluates these relationships through the node and edge records.
 
-**Equation 3. Two-group balance and thermal fission power.** The notation below
+**Equation 3. Two-group balance and total thermal power.** The notation below
 summarizes the node balance and the sum of node powers. Spatial subscripts are
 omitted for readability:
 
@@ -28,9 +28,9 @@ P = sum(volume * E_fission * (Sigma_f1 * phi1 + Sigma_f2 * phi2))
 and spatial leakage; fast removal also includes downscatter. `chi1` and `chi2`
 partition fission neutrons between groups, and `k` is the effective multiplication
 eigenvalue. `Sigma_s12` supplies thermal neutrons by downscatter. `F` is neutron
-production from the neutron-yield-weighted coefficients `nuSigma_f1/2`.
+production from the neutron-yield-weighted coefficients `nuSigma_f1` and `nuSigma_f2`.
 
-In the last line, `Sigma_f1/2` turn flux into fission rate per volume. Multiplying
+In the last line, `Sigma_f1` and `Sigma_f2` turn flux into fission rate per volume. Multiplying
 by node volume and `E_fission`, the energy per fission, gives node power in watts.
 `sum(...)` adds those powers into total thermal power `P`. These are balance and
 normalization relationships, not executable code or a transient time-step solver.
@@ -49,12 +49,12 @@ work on a detached candidate does not partially replace the live reactor.
 
 ## Multiplication, power and boundaries
 
-Keff describes how neutron production balances removal and leakage for the solved shape. A value of 1 is critical, below 1 is subcritical and above 1 is supercritical. Reactivity is (k − 1) / k, and 1 mk is 0.001 in that dimensionless quantity. The solver normalizes the resulting shape to the run's nominal thermal power. Multiplication and actual thermal output describe different quantities.
+The effective multiplication factor `k` describes how neutron production balances removal and leakage for the solved shape. A value of 1 is critical, below 1 is subcritical and above 1 is supercritical. Reactivity is `(k - 1) / k`, and 1 mk is 0.001 in that dimensionless quantity. The solver normalizes the resulting shape to the run's nominal thermal power. Multiplication and actual thermal output describe different quantities.
 
-V10 extrapolates radial flux to zero on a concentric circle and axial flux to zero 0.22 m beyond each end face. Reflective faces have zero boundary conductance. See the [active solver equations](../../physics/active-two-group-solver.md) and [pack fit](../../../data/calibration/diffusion-v10/README.md).
+The active model extrapolates radial flux to zero on a concentric circle and axial flux to zero 0.22 m beyond each end face. Reflective faces have zero boundary conductance. See the [active solver equations](../../physics/active-two-group-solver.md) and [geometry calibration](../../../data/calibration/diffusion-v10/README.md).
 
 ## Time-based exposure
 
-After the waiting fuel batch, the shared model uses the accepted post-fuelling shape and flux to integrate energy, burnup and poison over 43,200 seconds. The next equilibrium solve produces the endpoint. Iterations improve the endpoint solution. They do not sample power inside the interval. The browser blends the readings for playback.
+In time-based play, after the waiting fuel batch, the shared model uses the accepted post-fuelling shape and flux to integrate energy, burnup and poison over 43,200 seconds. The next equilibrium solve produces the endpoint. Iterations improve the endpoint solution. They do not sample power inside the interval. The browser blends the readings for playback.
 
-The [shared step contract](../../gameplay/daily-turn-mode.md) explains adoption and failure. Retained daily and real-time comparison modes use separate integration cadences.
+The [shared step contract](../../gameplay/daily-turn-mode.md) explains adoption and failure. Daily and real-time comparison modes use separate integration cadences.

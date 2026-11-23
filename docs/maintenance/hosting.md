@@ -56,4 +56,4 @@ The upgrade smoke can take `--previous-build=PATH` to start from a prior product
 
 Canonical and embedded packs must match byte for byte. Use [Sync-PhysicsPacks.ps1](../../tools/Sync-PhysicsPacks.ps1) and preserve hashes, units, group ordering and provenance. Use `AgedCoreBenchmark` for calibration, `ChannelReferenceBenchmark` for ripple references, `LongRunPlaytest` for campaigns and `BrowserWireFixtures` to regenerate the shared wire fixture. Follow the [calibration records](../physics/calibration-provenance.md) for reproduction commands. External analysis tools support development and run offline.
 
-The public launcher stores time-based update checkpoints in the browser. The retained daily views and their compatibility tests still use the account/save components and the checked-in [environment example](../../web/candu-playtest/.env.example).
+The public launcher stores time-based update checkpoints in the browser. Daily views and their compatibility tests use the account/save components and the checked-in [environment example](../../web/candu-playtest/.env.example).

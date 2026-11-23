@@ -1,6 +1,6 @@
 # Player manual
 
-Keep the reactor within its limits and build score by choosing which channels to refuel as time advances.
+Keep the reactor within its limits and build score by choosing which channels to refuel as time advances. The pages below explain the public time-based game and its Custom physics sandbox.
 
 - [Quick start, controls and updates](start.md)
 - [Choosing channels and queuing fuel](fuel.md)

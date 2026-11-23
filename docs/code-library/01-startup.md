@@ -1,6 +1,6 @@
 # 1. Entry points and startup
 
-[index.html](../../web/candu-playtest/index.html) mounts [main.ts](../../web/candu-playtest/src/main.ts). The launcher selects a seed and opens the time-based view. Custom physics supplies different initialization inputs. The tutorial uses the same view and worker on a fixed seed and advances only when the player submits the exercise.
+[index.html](../../web/candu-playtest/index.html) mounts [main.ts](../../web/candu-playtest/src/main.ts). The launcher selects a seed and opens the time-based view. Custom physics supplies initialization overrides. The tutorial uses the same view and worker with a fixed seed and advances when the player submits the exercise.
 
 ### main.ts constructs the browser run
 

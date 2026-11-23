@@ -73,9 +73,10 @@ for zone in range(1, 15):
     plt.close(fig)
 
 half = next(r for r in fuelled if float(r["hours"]) == 14.5)
-lines = ["# Individual zone response", "", "Saved authoritative seed-1001 benchmark; no new simulation or smoothing.", "",
+channels = [event["channelIndex"] for event in report["refuellingEvents"]]
+lines = ["# Individual zone response", "", f"Saved authoritative seed-{report['seed']} benchmark; no new simulation or smoothing.", "",
          "![All fourteen zones](zones-individual.png)", "", "![Refuelling interval](zones-individual-event.png)", "",
-         "| Zone | Before % | After channel 75 % | After channel 324 % | At 14.5 h % | Individual plot |",
+         f"| Zone | Before % | After channel {channels[0]} % | After both (channel {channels[1]} second) % | At 14.5 h % | Individual plot |",
          "|---:|---:|---:|---:|---:|---|"]
 for zone in range(1, 15):
     field = f"z{zone}_percent"

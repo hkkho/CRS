@@ -1,7 +1,7 @@
 # Twelve browser-game design studies
 
-Research date: **24 October 2026**. Ten primary simulation games and two adjacent
-references were selected for established reception and different design problems.
+Research date: **24 October 2026**. These studies cover ten simulation games and two adjacent
+references, selected for established reception and different design problems.
 This is a set of useful exemplars, not a definitive ranking. Read
 [the evidence method](research-method.md) before treating an observation as a result.
 The proposed explanations of engagement are hypotheses; no retention study was run.

@@ -1,7 +1,6 @@
-# V8 axial Marshak acceptance
+# V8 axial Marshak benchmark
 
-The [calibration history](../../docs/physics/calibration-provenance.md) records
-how the v8 axial boundary relates to the current model.
+This record describes the v8 axial boundary and its measured campaigns. The [calibration provenance](../../docs/physics/calibration-provenance.md) describes the current model.
 
 ![M11 before and after](m11-before-after.png)
 
@@ -34,7 +33,7 @@ tests. The production AOT WASM `/CRS/` browser path passed default daily turns,
 terminal feedback, offline save/replay and narrow layout. All twelve reproduction
 rows matched across cold/warm samples, with no reported browser errors.
 
-Reproduce the feedback campaign using a new output prefix:
+Run the feedback policy with a new output prefix. Reproducing these figures requires the recorded v8 pack and working tree; the current checkout uses its current model.
 
 ```powershell
 dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest-lzc --channels-per-day=2 --days=100 --seed=1001 --output=tmp/v8-oldest-lzc-seed1001

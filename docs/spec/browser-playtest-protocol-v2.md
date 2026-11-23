@@ -4,19 +4,19 @@ The authoritative C# bridge accepts JSON commands with `protocol: candu-playtest
 
 ## Initialization and pacing
 
-Initialize accepts `mode: play`, an unsigned 32-bit `seed`, optional `shiftId`, and `pacingMode`. Reset retains the current seed, shift and pacing unless explicitly changed.
+Initialize accepts `mode: play`, an unsigned 32-bit `seed`, `shiftId`, and `pacingMode`; each is optional. Their defaults are `play`, `1001`, `free-practice`, and the runtime's configured default pacing, respectively. A new `PlaytestRuntime` defaults to `daily-turn`; the public client explicitly requests `demo`. Reset retains the current seed, shift and pacing unless explicitly changed.
 
 Time-based free practice also accepts `customPhysics` as a [versioned physics profile](../IMPLEMENTATION_GUIDE.md#physics-profile-format-and-extension-path) or a legacy numeric override map. Core validates the input before a candidate run replaces the current one. Reset retains the resolved physics pack.
 
 | Pacing | Command and interval |
 | --- | --- |
 | `demo` | Public time-based play. `commit-day` solves a half-day, then the browser displays it at the selected playback speed when ready. The managed clock stays paused between steps. The bridge also supports direct `commit-refuel`. |
-| `daily-turn` | Retained daily planning and replay. `commit-day` advances 86,400 simulated seconds. Direct refuelling and wall-clock advances are rejected. |
-| `real-time` | Retained comparison tools use explicit clock advances. |
+| `daily-turn` | Daily planning and replay. `commit-day` advances 86,400 simulated seconds. Direct refuelling and wall-clock advances are rejected. |
+| `real-time` | Comparison tools use explicit clock advances. |
 
-`commit-day` takes `expectedCompletedDays` and `channelIndices`. An empty list advances without fuelling. The [shared step contract](../gameplay/daily-turn-mode.md) explains ordering, loss and rollback.
+`commit-day` takes the integer `expectedCompletedDays` from the latest snapshot and `channelIndices`. An empty list advances without fuelling. In `demo`, consecutive half-day steps can use the same day counter until a whole-day boundary is reached. The [shared step contract](../gameplay/daily-turn-mode.md) explains ordering, loss and rollback.
 
-For `demo` free practice, initialization may include `customPhysics`, a map of pack-field paths to finite numeric overrides. Core validates it against the embedded defaults, and Game settles the custom core and reference. The resulting `dataPackId` has a `custom-practice-v1-` content identity and the snapshot carries modified sandbox provenance. Resets reuse the custom parameters. Custom runs support local update checkpoints.
+For `demo` free practice, initialization may include `customPhysics`, a map of pack-field paths to finite numeric overrides. The bridge accepts at most 512 entries, with field names at most 100 characters long. Core validates the overrides against the embedded defaults, and Game settles the custom core and reference. The resulting `dataPackId` has a `custom-practice-v1-` content identity and the snapshot carries modified sandbox provenance. Resets reuse the custom parameters and reject a pacing mode other than `demo` or an objective other than `free-practice`. Custom runs support local update checkpoints.
 
 ## Observations
 
@@ -25,11 +25,11 @@ A compact patch names its base sequence. The client must materialize it against 
 A client with a validated base can set `demoReadings: true` alongside `responseMode: compact` and `baseSequence` in a demo `commit-day` envelope. The response may provide `demoReadings` in place of a core replacement. The channel readings and bundle columns include the solved readings and inventory state. The bundle columns use index `channelIndex * 12 + position` with zero-based positions. A sparse list replaces bundle identity, fuel type and insertion time at changed positions. Geometry comes from the base snapshot. The encoding leaves the command payload, state digest and replay digest intact. Clients can still read the original full and compact forms.
 
 - `runStatus` and `runEndReason` describe the run. Treat terminal status separately from `rrs.isGameOver`, which reports physical regulator exhaustion.
-- `axialTiltFraction` is the signed first moment of thermal flux, negative toward End A and positive toward End B. `rrsReserveFraction` describes remaining control room.
+- `axialTiltFraction` is the signed first moment of thermal flux, negative toward End A and positive toward End B. `rrsReserveFraction` describes remaining control margin.
 - `physics.reactivity` is the solved `(k - 1) / k`. `coreReactivity` and `compensatedNetReactivity` distinguish the uncompensated and zone-compensated readings.
 - `lastDayResult` carries the committed moves, unexecuted channels, score change and timing. The browser may interpolate continuous measurements for display. It reveals fuel movement and terminal outcomes at the accepted endpoint.
 - After a fuel batch, optional `lastDayResult.refuellingZoneFills` reports `before`, `after` and `end` fill fractions in logical zone order. The arrays represent the starting state, the post-refuelling solve and the interval endpoint. This presentation field is excluded from the existing full and compact state digests to preserve saved-run replay.
-- `shift` carries the seed, fuel use, energy and objective. Current launcher runs are endless free practice. Historical objective IDs remain supported for replay.
+- `shift` carries the seed, fuel use, energy and objective. Launcher runs are endless free practice. Supported objective IDs also permit replay of runs with other objectives.
 - `lastRefuellingScore` is null before the first accepted move. It then carries discharge reward, early-discharge penalty (`freshFuelCost`), zone bonus and signed net points. `ripple` carries the peak ratio and ripple and tilt rates. See the [scoring policy](../gameplay/score-balance.md).
 
 ## Replay identity
@@ -41,6 +41,6 @@ D0 = H("sha256-chained-replay-v2|" + scorePolicyId + "|" + mode + "|" + initiali
 Dn = H(D(n-1) + "|" + canonicalCommandJson)
 ```
 
-Initialization hashes the exact successful request. Each sequence-advancing dispatch appends sorted-key canonical command JSON, including rejections handled by the dispatcher. Malformed requests, validation failures returned before dispatch, compact resync requests and snapshot reads do not advance the chain.
+Initialization hashes the exact successful request string, including its key order and whitespace, rather than canonicalizing it. Each sequence-advancing dispatch appends sorted-key canonical command JSON, including rejections handled by the dispatcher. Malformed requests, validation failures returned before dispatch, compact resync requests and snapshot reads do not advance the chain.
 
-Reset starts a new chain from the resolved seed and shift. Its initialization JSON also includes non-real-time pacing and, for a custom run, the original custom overrides in canonical form. The reset command becomes sequence 1. Replayers must record initialization and the sequence-advancing responses and commands. The bridge keeps the current digest rather than a replay archive.
+Reset starts a new chain using synthesized initialization JSON in this field order: `protocol`, `mode`, resolved `seed`, resolved `shiftId`, then `pacingMode` when it is not `real-time`, and `customPhysics` when present. Custom overrides use canonical JSON. The bridge hashes that initialization as `D0`, then appends the canonical reset command as `D1` at sequence 1. Replayers must record initialization and the sequence-advancing responses and commands. The bridge keeps the current digest rather than a replay archive.

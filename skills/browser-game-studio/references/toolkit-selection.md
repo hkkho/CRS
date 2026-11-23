@@ -1,7 +1,7 @@
 # Existing tools and what to start from
 
-Checked **24 October 2026**. Repository revisions and observed package versions
-are recorded in `toolkit-sources.json`. A repository's default-branch commit is
+Research date: **24 October 2026**. Repository revisions and observed package versions
+are recorded in [toolkit-sources.json](toolkit-sources.json). A repository's default-branch commit is
 a research snapshot, not a recommendation to depend on an unreleased branch.
 None of the third-party installers or paid generation pipelines was run for this
 study. Recommendations below are engineering judgments from source inspection,
@@ -14,8 +14,8 @@ verification workflow, original runnable pattern examples, and a choice of
 existing engines. For a **new sprite-heavy 2D game**, the official
 [Phaser TypeScript/Vite template](https://github.com/phaserjs/template-vite-ts)
 is the strongest small starting point in this comparison. For interface-heavy
-simulations or the existing CRS application, keep the current DOM/SVG/Canvas
-presentation and authoritative simulation boundaries. A different engine is not
+simulations or an existing DOM/SVG/Canvas application, keep its presentation and
+authoritative simulation boundaries. A different engine is not
 required to add better decisions or feedback.
 
 For a later automated asset-production experiment,

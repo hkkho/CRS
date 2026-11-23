@@ -72,20 +72,20 @@ and 910.54 kW immediately after it. Both axial extrapolation trials, 0.12 m
 and 0.22 m beyond each end face, completed the seed-1001 campaign. The 0.22 m
 trial gave more bundle power margin and was selected.
 
-The [active pack](../../packs/candu6-two-group-diffusion-pack-v1.json) keeps
-1.5 cm fast and 0.75 cm thermal diffusion, the v9 radial circle, the 190-day
-channel interval and the 16-bundle/day nominal fuel cycle. It uses an authored
-0.22 m effective extrapolation at each axial end. The distance is common to
-both groups and represents the game's effective end reflector. The pack
-still derives conductance from each group's diffusion coefficient.
+The [active xenon-v11 pack](../../packs/candu6-two-group-diffusion-pack-v1.json)
+retains this fit's 1.5 cm fast and 0.75 cm thermal diffusion, radial circle and
+0.22 m effective extrapolation at each axial end. The authored 190-day channel
+interval and 16-bundle/day nominal fuel cycle also remain in use. The common
+axial distance represents the game's effective end reflector; conductance is
+derived from each group's diffusion coefficient. The v11 xenon calibration and
+production coefficients differ from those in the v10 campaign recorded here.
 
-The [recorded fit](fit.json) applies the common production multiplier
+The [recorded seed-1001 fit](fit.json) applies the common production multiplier
 0.9458763247001912 to both groups across all burnup knots. Fission heating,
 fuel absorption, downscatter, and the xenon model retain their v9 values.
 The fit restores half-filled Keff to 1.000000454 and frozen-Xe adjuster and
 water worths to 17.00069 and 7.00003 mk. Frozen-Xe fuel loss measures 0.42716
-mk/full-power day. The scoring reference is recalculated from v10 and
-old physics checkpoints remain stored when replay is refused.
+mk/full-power day. The v10 scoring reference was recalculated for that pack.
 
 | Seed and pack | Days | Fresh bundles | Mean discharge, MWd/kg HM | Score | Peak channel, kW | Peak bundle, kW |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -96,18 +96,21 @@ old physics checkpoints remain stored when replay is refused.
 
 The [campaign summary](campaign-summary.json) records native Browser bridge
 daily-turn results with the same oldest-LZC policy. Peaks are sampled
-endpoints. The game enforces limits after each individual fuel move as well
-as at the end of the turn. V10 averaged 17.28–17.36 bundles/day under this
+endpoints. Daily mode enforces limits after each individual fuel move as well
+as at the end of the turn; the public time-based game checks the combined fuel batch. V10 averaged 17.28–17.36 bundles/day under this
 policy. The nominal 16 bundles/day is the energy-balanced cycle reference.
 Thermal energy was 4,953,600 MWh in every run. Sampled mean zone fills across
 the v10 runs stayed within 43.89–50.98%.
 
-In separate same-seed comparisons at the browser's 12-hour cadence, direct
+In separate same-seed comparisons using the v10 calibration at a 12-hour cadence, direct
 neighbours gained 3.32–7.01% immediately with normal regulation and
-2.74–6.03% at the half-day endpoint versus the no-fuel run. This uses the
-release calibration and seeds 1001–1003.
+2.74–6.03% at the half-day endpoint versus the no-fuel run. These measurements use seeds 1001–1003.
 
-Reproduce the fit and the seed-1001 campaign:
+Run the fit and seed-1001 campaign from the repository root. The fit reads the
+specified candidate; the campaign uses the pack embedded in the checked-out
+build. Reproducing the recorded campaign requires the v10 pack and matching
+source, not the current default pack. The final fit arguments specify radial and
+axial extrapolation distances in metres.
 
 ```powershell
 dotnet run --project tools/AgedCoreBenchmark -c Release -- --fit-diffusion data/calibration/diffusion-v10/candidate.json tmp/diffusion-fit 2.2 0.22
@@ -117,7 +120,9 @@ dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --p
 A native 12-hour pacing run also completed 20 half-day steps on each of
 seeds 1001–1003, fuelling the two oldest channels in the first half of each
 day. Peak endpoint powers across those runs were 6,735 kW/channel and
-856.26 kW/bundle.
+856.26 kW/bundle. Machine-readable summaries and per-step data for these
+12-hour runs and the separate neighbour comparisons are not included alongside
+this record, so those reported figures cannot be independently checked here.
 
 The local AOT build passed Pages-subpath gameplay, documentation, and
 same-pack update recovery. A separate checkpoint test verifies that a v9

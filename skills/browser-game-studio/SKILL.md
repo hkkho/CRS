@@ -5,8 +5,8 @@ description: Design, prototype and polish browser games using researched play pa
 
 # Browser Game Studio
 
-Turn the user's idea into a readable, satisfying playable loop, then prove the
-implemented actions and outcomes work. A themed dashboard, animation reel or
+Turn the user's idea into a readable, satisfying playable loop, then verify the
+implemented actions and outcomes. A themed dashboard, animation reel or
 collection of disconnected features is not a complete game. A sandbox can be
 complete without points or a win screen when creation and observation are the
 intended reward.

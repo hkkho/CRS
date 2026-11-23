@@ -14,6 +14,6 @@ Use the [release guide](../maintenance/hosting.md) for local setup, verification
 
 ## Maintain this library
 
-`mkdocs.yml` defines the published navigation. The retained F1 dialog bundles the same four manual chapters through [manualContent.ts](../../web/candu-playtest/src/manualContent.ts).
+`mkdocs.yml` defines the published navigation. The F1 dialog bundles the same four manual chapters through [manualContent.ts](../../web/candu-playtest/src/manualContent.ts). Follow the [documentation guide](../maintenance/documentation.md) when writing or revising a page.
 
 An `annotated-source` fence declares a file, exact start and end anchors and consecutive explanation groups. [The build hook](../../tools/docs/annotated_source.py) resolves those anchors against the current source and rejects missing anchors or uncovered lines. [The link hook](../../tools/docs/repository_links.py) validates checkout-relative links and rewrites links outside this site to the matching GitHub revision. Use `CRS_DOCS_REF` to identify that revision in a local build.

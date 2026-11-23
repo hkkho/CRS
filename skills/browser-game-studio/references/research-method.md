@@ -1,6 +1,6 @@
 # Research scope and evidence
 
-Research date: **24 October 2026**. The sample starts with itch.io's
+Research date: **24 October 2026**. The study starts with itch.io's
 [top-rated browser simulation listing](https://itch.io/games/top-rated/genre-simulation/platform-web),
 then deliberately adds different kinds of simulation: administration, logistics,
 infrastructure, incremental production, care, artificial life and creative building.

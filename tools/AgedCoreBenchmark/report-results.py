@@ -22,7 +22,7 @@ if len(sys.argv) > 2:
         raise ValueError("Zone audit and benchmark must use the same physics pack.")
     if not {s["Seed"] for s in summaries}.issubset({r["Seed"] for r in zone_audit["results"]}):
         raise ValueError("Zone audit must contain every benchmark seed.")
-has_probes = all("OfflineProbeReactivityLossMk" in s for s in summaries)
+has_probes = all("OfflineProbeReactivityLossMk" in s and "OfflineProbeMeanLossMkPerDay" in s for s in summaries)
 def loss(s):
     return s.get("OfflineProbeReactivityLossMk", s["ReactivityLossMk"])
 def rate(s):
@@ -33,11 +33,11 @@ with (directory / "samples.csv").open(encoding="utf-8", newline="") as stream:
 lines = ["# Three-day aged-core benchmark", "",
          f"{len(summaries)} seeded starts, up to 72 simulated hours, no refuelling; native authoritative GameSession with normal RRS. "
          "Samples are captured at half-hour equilibrium boundaries, including startup.", "",
-         f"Fission power uses the game's {thermal_mw:,.0f} MW thermal reference scale. Startup's stock script briefly requests 95% "
-         "at 120 seconds and returns to 100% at 360 seconds. Xenon dynamics are unavailable. "
+         f"Fission power uses a {thermal_mw:,.0f} MW thermal reference scale. The power schedule and "
+         "poison treatment depend on the recorded model. "
          "These are predictions of the synthetic model, not validated plant results.", "",
-         "## Whole-run power peaks and day-three zone fills", "",
-         "Power peaks include every half-hour sample. Zone statistics below are across all fourteen zones at hour 72.", "",
+         "## Whole-run power peaks and final zone fills", "",
+         "Power peaks include every half-hour sample. Zone statistics below are across all fourteen zones at each run's final sample.", "",
          "| Seed | Peak channel MW | Peak bundle kW | Zone avg % | Zone min % | Zone max % | Reactivity loss, milli-k | Loss, milli-k/day |",
          "|---:|---:|---:|---:|---:|---:|---:|---:|"]
 if "zoneModel" in report:
@@ -49,19 +49,23 @@ if verification_path.exists():
     verification = json.loads(verification_path.read_text(encoding="utf-8"))
     if verification.get("trajectoryCsvByteIdentical"):
         lines[2:2] = [f"Repeat verification: all {verification['totalSamples']} trajectory samples are byte-identical "
-                      "to the previous benchmark. Power peaks, endpoint fills and tighter-solve decay also match exactly. "
+                      "to the comparison benchmark. "
                       "See [repeat-verification.json](repeat-verification.json) for the baseline and checksum.", ""]
 for s in summaries:
     lines.append(f"| {s['Seed']} | {s['PeakChannelMw']:.3f} | {s['PeakBundleKw']:.1f} | "
                  f"{s['FinalZoneMeanPercent']:.2f} | {s['FinalZoneMinPercent']:.2f} | {s['FinalZoneMaxPercent']:.2f} | "
                  f"{loss(s):.3f} | {rate(s):.3f} |")
 
-lines += ["", "Decay is `rho(start) - rho(end)` from the unregulated base core solve, with `rho=(k-1)/k`. "
-          "A positive loss means burnup reduced reactivity; 1 milli-k = 0.001 rho. This separates burnup "
-          "from the changing liquid-zone absorption. Rates are three-day means, not constant future slopes.", "",
-          ("The headline decay values use tighter independent start/end inventory solves. The live gameplay "
-           "trajectories below retain the normal, coarser solver tolerances. Coefficients and burned inventories are identical." if has_probes else ""), "",
+lines += ["", "Decay is `rho(start) - rho(end)`, with `rho=(k-1)/k`. "
+          "A positive loss indicates decreasing reactivity; 1 milli-k = 0.001 rho. Interpret the loss in light of "
+          "the reported pack and poison treatment. Rates cover each run's elapsed time, not a constant future slope.", "",
+          ("The headline decay values use tighter independent start/end fuel-inventory solves with no "
+           "zone or live-xenon overlay. The live gameplay trajectory uses the normal solver; "
+           "its poison treatment depends on the recorded model and can differ from the probes." if has_probes else
+           "Each headline value uses the tighter endpoint probe when present and otherwise uses the gameplay measurement."), "",
           "## Daily checkpoints", "",
+          "Power columns are spatial maxima at each checkpoint, not maxima over the preceding day. "
+          "Reactivity columns are live trajectory readings; their start-to-end changes can differ from independent probe losses when those are shown above.", "",
           "| Seed | Day | Max channel MW | Max bundle kW | Zone avg % | Min % | Max % | Unregulated rho, milli-k | Regulated rho, milli-k |",
           "|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
 for s in summaries:
@@ -78,28 +82,30 @@ for s in summaries:
                  f"{s['TrajectoryZoneMaxPercent']:.2f} | {s['PeakChannelIndex']} / {s['PeakChannelHour']:g} | "
                  f"{s['PeakBundleChannelIndex']} / {s['PeakBundlePositionIndex']} / {s['PeakBundleHour']:g} |")
 lines += ["", "Channel and bundle indices above are zero-based.", "",
-          "## First-day linear prediction compared with the three-day calculation", "",
-          "| Seed | Day-one gameplay slope extrapolated to 3 days, milli-k loss | Gameplay 3-day loss, milli-k | Tighter endpoint loss, milli-k |",
+          "## First-day linear prediction and recorded endpoint", "",
+          ("| Seed | Day-one gameplay slope extrapolated to 3 days, milli-k loss | Gameplay endpoint loss, milli-k | "
+           + ("Tighter endpoint loss" if has_probes else "Selected endpoint loss") + ", milli-k |"),
           "|---:|---:|---:|---:|"]
 for s in summaries:
     prediction = s["DayOneLinearPredictionOfThreeDayLossMk"]
     predicted = f"{prediction:.3f}" if prediction is not None else "unavailable"
     lines.append(f"| {s['Seed']} | {predicted} | {s['ReactivityLossMk']:.3f} | {loss(s):.3f} |")
-lines += ["", "The first-day extrapolation misses later changes in exposure and power shape, especially for seed 1001. "
-          "Use the full three-day result for this interval.", "",
+lines += ["", "Compare the extrapolation with each run's recorded duration and endpoint. Exposure and power shape can change over time.", "",
           f"Pack: `{report['dataPack']}`. Completed days by seed: " +
           ", ".join(f"{s['Seed']}: {s['CompletedDays']:g}" for s in summaries) + ". "
-          "fresh stock remained 128 and accepted refuelling count remained zero. Every sample was checked for channel/bundle/core power conservation.", "",
+          "The benchmark requested no refuelling and checked each sample for channel/bundle/core power conservation.", "",
           "![Benchmark trajectories](trajectories.png)", "",
-          "## Absolute reactivity and zone compensation", "",
-          "Fuel reactivity with empty zones declines as the inventory burns. The live net reactivity includes "
+          "## Reactivity and zone compensation", "",
+          "The live net reactivity includes "
           "the changing zone absorption: draining removes absorption and can keep the core close to critical "
-          "without adding fuel, until zone control authority is exhausted. The regulated plot uses a separate "
-          "zoomed vertical scale; its small solver/controller residuals are not the underlying fuel decay.", "",
-          "![Absolute reactivity and zone fills](reactivity.png)", "",
-          ("The fixed-initial-fill panel contains only tight start/end probes of the actual burned inventories. "
-           "It shows reactivity falling if the initial zones are retained. No intermediate frozen-fill trajectory "
-           "was simulated, and no line is interpolated between the endpoint probes." if zone_audit else ""), "",
+          "without adding fuel, until zone control authority is exhausted. The regulated plot uses its own "
+          "vertical scale and shows compensated reactivity rather than fuel-only change.", "",
+          "![Reactivity and zone fills](reactivity.png)", "",
+          ("The fixed-initial-fill panel contains the audit's tight startup and 72-hour endpoint probes. "
+           "It shows reactivity with the initial zones retained. The report checks the pack and seed, "
+           "but does not verify that the audit and displayed trajectory used identical settings or inventories. "
+           "No intermediate frozen-fill trajectory is plotted." if zone_audit else
+           "The change panel shows empty-zone reactivity relative to the initial sample."), "",
           "Full precision: [report.json](report.json), [samples.csv](samples.csv)."]
 (directory / "summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -115,7 +121,7 @@ for s in summaries:
         if field is None and has_probes:
             ax.plot(s["CompletedDays"] * 24, loss(s), "o", color=line.get_color(), markersize=6)
 for ax, title, units in zip(axes.flat,
-                          ["Maximum channel power", "Maximum bundle power", "Average of 14 zone fills", "Reactivity loss: gameplay trace + tighter endpoint dots"],
+                          ["Maximum channel power", "Maximum bundle power", "Average of 14 zone fills", "Reactivity loss: gameplay trace" + (" + independent probe dots" if has_probes else "")],
                           ["MW", "kW", "Fill (%)", "milli-k"]):
     ax.set_title(title)
     ax.set_ylabel(units)
@@ -126,12 +132,12 @@ for ax in axes[-1]:
     ax.set_xlabel("Simulated hours")
 handles, labels = axes[0, 0].get_legend_handles_labels()
 fig.legend(handles, labels, title="Starting seed", loc="outside lower center", ncol=6, frameon=False)
-fig.suptitle(f"Seeded aged cores: 3 days without refuelling\nSynthetic model, {thermal_mw:,.0f} MW thermal reference power, normal RRS, half-hour samples", fontsize=13)
+fig.suptitle(f"Seeded aged cores: up to 3 days without refuelling\nSynthetic model, {thermal_mw:,.0f} MW thermal reference power, normal RRS, half-hour samples", fontsize=13)
 fig.savefig(directory / "trajectories.png", dpi=180)
 fig.savefig(directory / "trajectories.svg")
 plt.close(fig)
 
-# Plot rho itself, rather than the positive cumulative loss shown above.
+# Plot absolute reactivity and, without a zone audit, change from startup.
 fig, axes = plt.subplots(2, 2, figsize=(12, 8), layout="constrained")
 audit_by_seed = {r["Seed"]: r for r in zone_audit["results"]} if zone_audit else {}
 for s in summaries:
@@ -151,15 +157,15 @@ for s in summaries:
         initial = a["InitialTightControlledRhoMk"]
         final_fixed = initial - a["FixedInitialZonesBurnupLossMk"]
         axes[0, 1].scatter(0, initial, color=color, marker="o", s=40)
-        axes[0, 1].scatter(s["CompletedDays"] * 24, final_fixed, color=color, marker="s", s=40)
+        axes[0, 1].scatter(72, final_fixed, color=color, marker="s", s=40)
     else:
         initial = float(selected[0]["unregulated_rho"])
         axes[0, 1].plot(hours, [1000 * (float(r["unregulated_rho"]) - initial) for r in selected],
                        color=color, linewidth=1.5)
 
-titles = ["Fuel reactivity: empty zones (tight endpoint dots)",
-          "Initial zones held fixed: endpoint probes only" if zone_audit else "Fuel reactivity change from startup",
-          "Live net reactivity: zones compensate (zoomed scale)", "Average of 14 zone fills"]
+titles = ["Fuel reactivity: empty zones" + (" (independent probe dots)" if has_probes else ""),
+          "Initial zones held fixed: endpoint probes only" if zone_audit else "Empty-zone reactivity change from startup",
+          "Live net reactivity: zones compensate", "Average of 14 zone fills"]
 for ax, title, units in zip(axes.flat, titles, ["Reactivity (mk)", "Reactivity (mk)", "Reactivity (mk)", "Fill (%)"]):
     ax.set_title(title, fontsize=11)
     ax.set_ylabel(units)
@@ -167,14 +173,15 @@ for ax, title, units in zip(axes.flat, titles, ["Reactivity (mk)", "Reactivity (
     ax.set_xticks([0, 12, 24, 36, 48, 60, 72])
     ax.set_xlabel("Simulated hours")
     ax.grid(alpha=0.25)
-for ax in [axes[0, 1], axes[1, 0]]:
-    ax.axhline(0, color="black", linewidth=0.8, linestyle="--", label="Critical: rho = 0")
+axes[0, 1].axhline(0, color="black", linewidth=0.8, linestyle="--",
+                    label="Critical: rho = 0" if zone_audit else "No change from startup")
+axes[1, 0].axhline(0, color="black", linewidth=0.8, linestyle="--", label="Critical: rho = 0")
 if zone_audit:
-    axes[0, 1].text(0.03, 0.08, "Circles: startup | Squares: 72 h\nSame burned inventories; no intermediate fixed-fill run",
+    axes[0, 1].text(0.03, 0.08, "Circles: startup | Squares: audit at 72 h\nNo intermediate fixed-fill trajectory",
                     transform=axes[0, 1].transAxes, fontsize=9)
 handles, labels = axes[0, 0].get_legend_handles_labels()
 fig.legend(handles, labels, title="Starting seed", loc="outside lower center", ncol=6, frameon=False)
-fig.suptitle(f"Reactivity falls with burnup; draining zones removes absorption\n72 hours, no refuelling, synthetic {thermal_mw:,.0f} MW thermal model; no xenon dynamics", fontsize=13)
+fig.suptitle(f"Reactivity and zone response across recorded runs\nNo refuelling, synthetic {thermal_mw:,.0f} MW thermal model", fontsize=13)
 fig.savefig(directory / "reactivity.png", dpi=180)
 fig.savefig(directory / "reactivity.svg")
 plt.close(fig)

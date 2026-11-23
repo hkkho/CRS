@@ -10,7 +10,7 @@ For each inlet-relative position, average the nine fuel coefficients over its be
 
 Normalize node heating to the nominal output and sum the twelve bundle powers per channel. The node powers also supply the startup regulator targets. The actual startup fills are calculated separately. A custom pack computes its own immutable reference at the chosen nominal power, which its scoring and ripple displays share.
 
-This method prescribes exposure ranges. An iterated time-average fuel management solution would solve for dwell times and exposure as well as flux. Current calibration inputs and validation are recorded with the [v10 pack](../../data/calibration/diffusion-v10/README.md).
+This method prescribes exposure ranges. An iterated time-average fuel management solution would solve for dwell times and exposure as well as flux. The [geometry calibration](../../data/calibration/diffusion-v10/README.md) records the relevant inputs and validation.
 
 To produce current reference CSV, JSON and seed comparisons, run from the repository root.
 

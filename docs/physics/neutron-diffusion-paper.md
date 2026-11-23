@@ -239,16 +239,13 @@ assembled equations. Continuum and plant-model errors require separate evidence.
 
 ## 4. How CRS gets below five seconds
 
-### 4.1 Fewer equilibrium events
+### 4.1 Equilibrium events per step
 
-The first daily-turn implementation subdivided a simulated day into 480
-intervals of 180 seconds. The archived development record reports roughly
-9–11 minutes per local browser turn for that prototype. The replacement
-used one frozen-flux interval and one endpoint event. In the archived
-daily-mode acceptance, a two-channel day took 4.154 s and the following
-empty day took 1.487 s. Those historical observations show how strongly
-the workload depends on the integration cadence. Section 5 uses the
-current v11 workload for the build comparison.
+Integration cadence determines the number of equilibrium events and therefore
+the workload. A daily-mode acceptance run using one 86,400 s frozen-flux interval and
+one endpoint event measured 4.154 s for a two-channel day and 1.487 s for the
+following empty day. Fuel moves require additional equilibrium work before the
+interval. Section 5 uses the v11 workload for the build comparison.
 [Archived daily-turn verification](https://github.com/hkkho/CRS/blob/2015dd334782358e910681bbd10f25d8fb3cf2d7/docs/performance/daily-turns.md)
 
 The public time-based mode takes one 43,200 s interval per command. When
@@ -399,9 +396,9 @@ the endpoint and exclude work on a pre-exposure event.
 The matched non-AOT medians were about 7.5–7.8 times the corresponding
 AOT medians. All 12 paired endpoints, including warm-ups, had matching
 state digests, endpoint candidate counts, and endpoint outer iteration
-counts. This supports AOT as a major contributor to lower execution
-time for this workload. The comparison uses three samples per row and
-different background load, so the ratios are descriptive. The
+counts. The comparison is consistent with lower execution time under AOT, but
+the runs used different background loads and only three samples per row, so it
+does not isolate the effect of AOT. The ratios are descriptive. The
 27-command production result supports the five-second finding on this
 desktop for the tested seeds and batches. The uncompressed native WASM
 module was 22.6 MB with AOT and 1.50 MB without it. Cold download and
@@ -486,10 +483,8 @@ approximates the time dependence between solved endpoints.
 [Geometry fit](../../data/calibration/diffusion-v10/README.md) ·
 [Xenon fit](xenon-calibration.md)
 
-The Release Core rerun passed all 131 tests, including the prepared-input
-comparison of coefficient digests, eigenvalue, flux and node power. An
-earlier run had reported a coefficient digest mismatch. The focused
-rerun and the complete rerun both passed that assertion. On the local
+The recorded Release Core run passed all 131 tests, including the prepared-input
+comparison of coefficient digests, eigenvalue, flux and node power. On the local
 Pages AOT build, the direct WASM reproduction matrix matched all six
 cold and warm case digests with no reported browser errors. That matrix
 checks repeatability at a fixed build. The half-day benchmark uses the

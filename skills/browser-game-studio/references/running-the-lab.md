@@ -1,6 +1,6 @@
 # Run the original studies or create a prototype
 
-The package has no JavaScript runtime dependencies. Use Python 3.9 or newer for
+The pattern lab has no JavaScript runtime dependencies. Use Python 3.9 or newer for
 the preview/scaffold helpers and Node 20 or newer for the model tests. Browser
 modules must be served over HTTP rather than opened with a file URL.
 
@@ -15,12 +15,14 @@ This serves only the selected local directory on the loopback interface. Open
 without it the helper serves its own scripts folder. Stop the preview with
 Ctrl+C. The helper is a local development server, not a production hosting stack.
 
-Each numbered item opens a fresh original experiment. Read its instruction beside
+Each numbered item opens a fresh original experiment. A recognized `?pattern=` query
+can also select an experiment in lab mode. Read its instruction beside
 the scene. Buttons work without dragging; the postal scene also supports dragging
 a parcel into a route tray. Spatial scenes accept arrows to select and Enter to
 build. Harvesting accepts Space or the gather button as alternatives to hovering.
-Pause stops timed production while allowing planning commands. Save/restore uses
-local browser storage per pattern; closing a tab grants no offline production.
+Pause stops timed production; available commands still execute immediately. Hidden
+tabs do not advance the simulation. Save/restore uses local browser storage per
+pattern; closing a tab grants no offline production.
 Reduced motion freezes decorative movement while preserving rule progression.
 Sound is optional and requires a gesture. Download scene exports original canvas
 art; the brief form exports a Markdown design hypothesis.
@@ -34,7 +36,9 @@ python scripts/create_game.py C:/work/my-new-game --pattern post --title "Moon P
 The positional path must name a **new** output folder. The command copies the
 original template and a preview server, then writes a game configuration selecting
 the postal example, title and repeatable seed. It refuses to replace an existing
-folder. Available patterns are `council`, `post`, `water`, `harvest`, `flock`,
+folder or write inside the template source. The title must contain non-whitespace
+text. The optional seed is an unsigned 32-bit integer and defaults to 42.
+Available patterns are `council`, `post`, `water`, `harvest`, `flock`,
 `factory`, `garden`, `evolution`, `orb` and `hamlet`. A query string cannot override
 the selected pattern in standalone mode. The other examples remain in the source
 for development, while gallery navigation and research panels are hidden.

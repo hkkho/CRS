@@ -1,7 +1,7 @@
 # Evaluate the delivered game and the skill that produced it
 
-Use two separate questions: **does it work?** and **is it worth playing?** The first
-has many objective checks. The second needs observation and judgment, particularly
+Evaluate two questions: **does it work?** and **is it worth playing?** The first
+has objective checks. The second needs observation and judgment, particularly
 from people who did not build it. None of the checklists below is a validated
 retention predictor.
 

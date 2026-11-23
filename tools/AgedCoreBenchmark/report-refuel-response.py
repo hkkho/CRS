@@ -90,11 +90,13 @@ pre, first, second = [r for r in fuelled if float(r["hours"]) == 14]
 lines = [f"# Two-channel refuelling response — seed {report['seed']}", "",
          "Two identical authoritative GameSession runs were advanced to 72 hours: a no-refuel control, "
          "and a run with two channel refuellings at exactly hour 14. Each operation inserts eight fresh bundles; "
-         "fuel stock falls from 128 to 112. Both operations run sequentially at the same simulation time, "
+         "both operations run sequentially at the same simulation time, "
          "with RRS solving after each. Half-hour samples plus before/after-event samples are retained.", "",
-         "One oldest channel is selected for each discharge direction, using live channel-average burnup "
-         "and the older eight-bundle outlet. Channels and zone IDs below are zero-based and one-based respectively.", "",
-         "| Channel index | Direction | Fresh bundles | Transverse zone pair | Pre-refuel average burnup MWd/kg |",
+         "Channels are grouped by the higher-average-burnup eight-bundle end window (ties to End B), "
+         "then selected by channel-average burnup. "
+         "The recorded direction is the grouping label and may differ from the executed flow direction. "
+         "Channels and zone IDs below are zero-based and one-based respectively.", "",
+         "| Channel index | Grouping direction | Fresh bundles | Transverse zone pair | Pre-refuel average burnup MWd/kg |",
          "|---:|---|---:|---|---:|"]
 for e in events:
     z = e["transverseZonePair"]
@@ -106,11 +108,13 @@ for z in range(1, 15):
     field = f"z{z}_percent"
     a, b, c = (float(r[field]) for r in [pre, first, second])
     lines.append(f"| Z{z} | {a:.3f} | {b:.3f} | {c:.3f} | {c-a:+.3f} |")
-policy = ("Common-mode criticality regulation acts independently of fuel burnup. Shape corrections preserve the criticality band; fill and event bounds remain active."
+policy = ("Common-mode regulation targets criticality. Shape corrections preserve the criticality band; fill and event bounds remain active."
           if "criticality-first" in report.get("controllerModel", "") else
-          "The combined controller can retain fills despite positive net reactivity; these are historical results before criticality and shape were separated.")
+          "Interpret the reported fill response using the controller model recorded in the report.")
 lines += ["", "## Response limits and whole-run results", "",
-          policy + " These are synthetic equilibrium results, not plant transients.", "",
+          policy + " These are synthetic equilibrium results, not plant transients. "
+          "The limit table checks 0% and 100% fills in the refuelled trace. "
+          "Power peaks include the intermediate same-time refuelling samples.", "",
           "| Zone | Limit % | First reaches limit, hour |", "|---:|---:|---:|"]
 limited = False
 for z in range(1, 15):
@@ -133,7 +137,8 @@ lines += ["", f"Empty-zone fuel reactivity immediately before/after both operati
           f"Net compensated reactivity: {1000 * float(pre['regulated_rho']):+.4f} → "
           f"{1000 * float(second['regulated_rho']):+.4f} mk.", "",
           "The lines at hour 14 show sequential equilibrium corrections at the same timestamp, not a valve transient. "
-          "Individual zones respond to both spatial shape and core reactivity. No xenon dynamics are included.", "",
+          "Individual zones respond to both spatial shape and core reactivity. "
+          "The stock and poison treatment depend on the model used to produce the report.", "",
           "![Seven zone pairs over 72 hours](zone-pairs.png)", "",
           "![Seven zone pairs around refuelling](zone-pairs-event.png)", "",
           "![Reactivity and mean zone response](reactivity.png)", "",

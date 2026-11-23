@@ -21,5 +21,5 @@ export const manualChapters = sources.map(([id, title, source]) => [
   marked.parse(source, { async: false }).replace(
     /<(\/?)(h[1-5])(?=[ >])/g,
     (_match, closing: string, heading: string) => `<${closing}h${Number(heading[1]) + 1}`,
-  ),
+  ).replace(/<a href="(https?:\/\/[^\"]+)"/g, '<a href="$1" target="_blank" rel="noopener"'),
 ] as const);

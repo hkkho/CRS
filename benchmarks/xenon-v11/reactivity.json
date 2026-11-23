@@ -1,0 +1,12 @@
+{
+  "dataPack": "candu6-two-group-diffusion-v1-xenon-v11",
+  "seed": 1001,
+  "referenceThermalPowerWatts": 2064000000,
+  "method": "Tight independent static solves; rho=(k-1)/k and mk=1000*rho. Burnup adds one full-power day of thermal energy using the initial half-fill shape, with zones fixed at 50%, actual Xe frozen, and the included Xe reference bound to current burnup when declared. No refuelling. Zone worth is rho(empty)-rho(full) on the identical initial inventory. These are local authored-model measurements, not universal plant constants.",
+  "burnupLossMkPerFullPowerDay": 0.3389693899000314,
+  "totalFourteenZoneWorthMk": 6.944759616872923,
+  "halfFillK": 1.0000039806743497,
+  "afterOneFullPowerDayK": 0.9996651234484751,
+  "emptyK": 1.0036275663585064,
+  "fullK": 0.9966807491847788
+}

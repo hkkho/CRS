@@ -1,6 +1,6 @@
 # CRS documentation
 
-Start with the [player manual](manual/index.md) for time-based play and Custom physics. The [reactor theory](theory/index.md) explains the readings and the numerical model.
+This library explains how to play CRS and how the shared simulation produces the readings shown in the browser. Start with the [player manual](manual/index.md) for time-based play and Custom physics. The [reactor theory](theory/index.md) explains the readings and numerical model.
 
 ## Code walkthrough
 

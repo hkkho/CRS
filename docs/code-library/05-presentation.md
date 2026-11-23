@@ -1,6 +1,6 @@
 # 5. From accepted state to the screen
 
-Game projects immutable readings from accepted inventory and flux. Browser maps these readings into full snapshots and compact patches. `DemoView` consumes the displayed endpoint or its interpolated view through `DemoLoop`.
+`ReactorSim.Game` projects immutable readings from accepted inventory and flux. `ReactorSim.Browser` maps these readings into full snapshots and compact patches. `DemoView` obtains the displayed endpoint or interpolated readings through `DemoLoop`; interpolation is presentation, not another simulation solve.
 
 ```annotated-source
 path: src/ReactorSim.Game/GamePresentationProjector.cs
