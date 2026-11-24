@@ -1,20 +1,20 @@
 # Aged-core burn benchmark
 
-The [v10 geometry calibration](../../data/calibration/diffusion-v10/README.md)
+The [geometry calibration](../../data/calibration/diffusion-v10/README.md)
 records about 0.427 mk per full-power day of frozen-xenon fuel loss and 7 mk
 total zone worth for that configuration. Use
 `--reactivity-scale OUTPUT.json` for an isolated current-pack measurement;
-`--fit-reactivity-scale ARCHIVED_SOURCE.json OUTPUT_DIRECTORY` runs the v3 fit
-from an archived powerlimits-v2 source. Reproducing historical output also
+`--fit-reactivity-scale ARCHIVED_SOURCE.json OUTPUT_DIRECTORY` runs the reactivity-scale fit
+from the archived source pack identified by `candu6-two-group-diffusion-v1-cycle190-650mwe-powerlimits-v2`. Reproducing historical output also
 requires the corresponding source and settings. Historical benchmark numbers
 below describe their original packs and cadence.
 
 ## Lateral iodine–xenon tilt
 
 ```powershell
-dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-hourly.json 1001
-dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-15min.json 1001 4
-dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-v11-xe0.json 1001 1 0
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-hourly.json 1001
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-15min.json 1001 4
+dotnet run --project tools/AgedCoreBenchmark -c Release -- --xenon-tilt artifacts/xenon-xe0.json 1001 1 0
 ```
 
 The benchmark starts from the seed-aged core with iodine and xenon in equilibrium
@@ -39,10 +39,10 @@ disabled because fast-group absorption is also zero. An
 optional pack path after the multiplier runs an offline comparison against
 another pack. Supply the multiplier positional argument when passing a pack path; use one for unscaled absorption.
 
-The seed-1001 v11 case shows 25–26-hour cycles with hourly integration.
+The seed-1001 case with the active pack shows 25–26-hour cycles with hourly integration.
 Keeping the zones split leaves a rightward bias. Releasing the split lets the
 dominant half reverse and the oscillation decay toward equilibrium. See the
-[v11 calibration](../../docs/physics/xenon-calibration.md) for the full-power
+[xenon calibration](../../docs/physics/xenon-calibration.md) for the full-power
 capture, worth, and damping comparisons.
 
 ## Refuelling response

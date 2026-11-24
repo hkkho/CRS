@@ -39,7 +39,7 @@ Artifacts:
 - [Display-range acceptance](display-scales-browser-acceptance.json): benchmark
   color floors, zoomed trends, outlier expansion, limit annotations and 320px
   layout passed against production WASM.
-- [V7 fuel-only decay audit](v7-fuel-decay-audit.json): a separate seed-1001
+- [Fuel-only decay audit](v7-fuel-decay-audit.json): a separate seed-1001
   one-full-power-day exposure with no refuelling, fixed 50% zone fills and frozen
   actual xenon measured a 0.347430 mk/FPD reactivity loss. This isolates fuel
   depletion and is not the net regulated reactivity trend of the 100-day campaign.

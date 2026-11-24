@@ -64,7 +64,7 @@ worker}
 The default topology follows the 380-channel, 12-bundle geometry of the CANDU-6
 reference design. CRS homogenizes each bundle position into one volume with two scalar
 flux unknowns, giving 9,120 flux unknowns and one effective multiplication factor. The
-active v11 pack is a calibrated gameplay surrogate with authored coefficients, effective
+active pack is a calibrated gameplay surrogate with authored coefficients, effective
 boundaries and localized absorption. This paper assesses the balance equations of that
 surrogate and the cost of solving them. Plant-level predictive accuracy would require
 independent reference data and model-error studies. \cite{ref-1} ·
@@ -255,7 +255,7 @@ loop}
 
 \begin{table}[!htbp]
 \centering
-\caption{Default convergence criteria for the embedded v11 pack.}
+\caption{Default convergence criteria for the embedded pack.}
 \label{tab:convergence}
 \small
 \begin{tabularx}{\linewidth}{@{}lX@{}}
@@ -296,7 +296,7 @@ Integration cadence determines the number of equilibrium events and therefore th
 workload. A daily-mode acceptance run using one 86,400 s frozen-flux interval and one endpoint
 event measured 4.154 s for a two-channel day and 1.487 s for the following empty day.
 Fuel moves require additional equilibrium work before the interval.
-Section~\ref{sec:latency} uses the v11 workload for the build comparison.
+Section~\ref{sec:latency} uses the measured workload for the build comparison.
 \href{https://github.com/hkkho/CRS/blob/2015dd334782358e910681bbd10f25d8fb3cf2d7/docs/performance/daily-turns.md}{Archived
 daily-turn verification}
 
@@ -401,7 +401,7 @@ loop}
 The experiment used the local GitHub Pages build at the \texttt{/CRS/} base path on
 Windows 11 Pro (build 26200), AMD Ryzen 7 5800X3D, .NET SDK 10.0.303, and headless
 Playwright Chromium 151.0.7922.34. Both builds use the same source revision, the default
-v11 pack and a single-threaded Release host with profiling disabled. One build enables
+pack for that build and a single-threaded Release host with profiling disabled. One build enables
 AOT and the other leaves it disabled. The AOT run measures the full command stream. The
 non-AOT comparison replays its first block for each seed.
 
@@ -566,7 +566,7 @@ increment, deterministic replay, and rollback on numerical failure. Together the
 checks cover analytic correctness for small cases, behavior of the assembled discrete
 equations, and the transaction that delivers their result. The one-cell case exercises
 zero leakage. The full-core tests exercise the deployed mesh, while refinement error and
-independent plant accuracy remain open. The v10 geometry and v11 xenon comparisons are
+independent plant accuracy remain open. The geometry and xenon comparisons are
 calibration evidence. The frozen-source half-day approximates the time dependence
 between solved endpoints.
 \href{https://github.com/hkkho/CRS/blob/4341ae8881f5827988c3d8b1859aa9e8f13cd8a6/tests/ReactorSim.Game.Tests/DailyTurnTests.cs}{Game

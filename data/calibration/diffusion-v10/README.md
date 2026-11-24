@@ -2,7 +2,7 @@
 
 The [candidate pack](candidate.json) uses 1.5 cm fast and 0.75 cm thermal
 diffusion coefficients along and across channels. Its four interior conductances
-are 37.5% of the radial-v9 values. The existing circular radial and Marshak
+are 37.5% of the circular-boundary baseline values. The existing circular radial and Marshak
 axial boundary conditions derive their conductances from the new interior
 values. The fuel coefficient rows, xenon reference, adjuster strengths and
 liquid-zone strengths are identical to baseline.
@@ -15,7 +15,7 @@ fuel carried its xenon and fresh fuel entered without xenon. The eigenvalue
 solver normalized each shape to 2,064 MW thermal, including the supercritical
 candidate. Zone worth used additional frozen-xenon solves at 0% and 100% fill.
 
-| Measurement across the three seeds | Radial v9 | Diffusion only |
+| Measurement across the three seeds | Circular baseline | Diffusion only |
 | --- | ---: | ---: |
 | Half-fill Keff | 0.999959–1.000100 | 1.055392–1.055477 |
 | Full-fill Keff | 0.996576–0.996735 | 1.051979–1.052107 |
@@ -38,14 +38,14 @@ A separate sensitivity trial scaled both neutron-production groups by
 0.9478925226198047 and refit adjuster and water strength to 17 and 7 mk. Its
 static half-fill Keff was 1.000000447. With the same seed and policy it completed
 six days, then ended during the day-seven fuel moves at 910.54 kW in a bundle.
-That trial retained the v9 Marshak axial boundary.
+That trial retained the baseline Marshak axial boundary.
 
 ## Burnup-only criticality trial
 
 The [burnup sweep](burnup-sweep.csv) used the diffusion-only candidate and
 Core's existing seeded inventory generator. It varied the target mean
 discharge burnup, scaling the existing axial exposure profile at each seed.
-Fuel reaction tables and device strengths remained at v9 values. Every
+Fuel reaction tables and device strengths remained at baseline values. Every
 reported solve used 50% liquid-zone fills, equilibrium xenon calculated for
 that inventory, and fixed 2,064 MW thermal power.
 
@@ -64,7 +64,7 @@ The seed-1001 equilibrium xenon solve failed to converge at 16 MWd/kg.
 The sweep stopped there, so higher targets were not evaluated.
 
 
-## V10 release candidate
+## Selected diffusion fit
 
 Replaying day seven of the Marshak trial isolated the failure to the third
 move, channel 322. The core peak was 833.54 kW immediately before the move
@@ -72,43 +72,43 @@ and 910.54 kW immediately after it. Both axial extrapolation trials, 0.12 m
 and 0.22 m beyond each end face, completed the seed-1001 campaign. The 0.22 m
 trial gave more bundle power margin and was selected.
 
-The [active xenon-v11 pack](../../packs/candu6-two-group-diffusion-pack-v1.json)
+The [active pack](../../packs/candu6-two-group-diffusion-pack-v1.json)
 retains this fit's 1.5 cm fast and 0.75 cm thermal diffusion, radial circle and
 0.22 m effective extrapolation at each axial end. The authored 190-day channel
 interval and 16-bundle/day nominal fuel cycle also remain in use. The common
 axial distance represents the game's effective end reflector; conductance is
-derived from each group's diffusion coefficient. The v11 xenon calibration and
-production coefficients differ from those in the v10 campaign recorded here.
+derived from each group's diffusion coefficient. The active xenon calibration and
+production coefficients differ from those in the campaign recorded here.
 
 The [recorded seed-1001 fit](fit.json) applies the common production multiplier
 0.9458763247001912 to both groups across all burnup knots. Fission heating,
-fuel absorption, downscatter, and the xenon model retain their v9 values.
+fuel absorption, downscatter, and the xenon model retain their baseline values.
 The fit restores half-filled Keff to 1.000000454 and frozen-Xe adjuster and
 water worths to 17.00069 and 7.00003 mk. Frozen-Xe fuel loss measures 0.42716
-mk/full-power day. The v10 scoring reference was recalculated for that pack.
+mk/full-power day. The scoring reference was recalculated for that pack.
 
 | Seed and pack | Days | Fresh bundles | Mean discharge, MWd/kg HM | Score | Peak channel, kW | Peak bundle, kW |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| 1001, v9 | 100 | 1,816 | 6.160 | 2,304.4 | 6,859.5 | 853.67 |
-| 1001, v10 | 100 | 1,736 | 6.183 | 2,150.0 | 6,623.9 | 844.06 |
-| 1002, v10 | 100 | 1,728 | 6.180 | 2,168.6 | 6,760.4 | 852.30 |
-| 1003, v10 | 100 | 1,736 | 6.181 | 2,130.3 | 6,664.9 | 832.74 |
+| 1001, circular baseline | 100 | 1,816 | 6.160 | 2,304.4 | 6,859.5 | 853.67 |
+| 1001, fitted diffusion | 100 | 1,736 | 6.183 | 2,150.0 | 6,623.9 | 844.06 |
+| 1002, fitted diffusion | 100 | 1,728 | 6.180 | 2,168.6 | 6,760.4 | 852.30 |
+| 1003, fitted diffusion | 100 | 1,736 | 6.181 | 2,130.3 | 6,664.9 | 832.74 |
 
 The [campaign summary](campaign-summary.json) records native Browser bridge
 daily-turn results with the same oldest-LZC policy. Peaks are sampled
 endpoints. Daily mode enforces limits after each individual fuel move as well
-as at the end of the turn; the public time-based game checks the combined fuel batch. V10 averaged 17.28–17.36 bundles/day under this
+as at the end of the turn; the public time-based game checks the combined fuel batch. The fitted-diffusion runs averaged 17.28–17.36 bundles/day under this
 policy. The nominal 16 bundles/day is the energy-balanced cycle reference.
 Thermal energy was 4,953,600 MWh in every run. Sampled mean zone fills across
-the v10 runs stayed within 43.89–50.98%.
+the fitted-diffusion runs stayed within 43.89–50.98%.
 
-In separate same-seed comparisons using the v10 calibration at a 12-hour cadence, direct
+In separate same-seed comparisons using the recorded diffusion calibration at a 12-hour cadence, direct
 neighbours gained 3.32–7.01% immediately with normal regulation and
 2.74–6.03% at the half-day endpoint versus the no-fuel run. These measurements use seeds 1001–1003.
 
 Run the fit and seed-1001 campaign from the repository root. The fit reads the
 specified candidate; the campaign uses the pack embedded in the checked-out
-build. Reproducing the recorded campaign requires the v10 pack and matching
+build. Reproducing the recorded campaign requires the recorded fitted-diffusion pack and matching
 source, not the current default pack. The final fit arguments specify radial and
 axial extrapolation distances in metres.
 
@@ -125,8 +125,8 @@ day. Peak endpoint powers across those runs were 6,735 kW/channel and
 this record, so those reported figures cannot be independently checked here.
 
 The local AOT build passed Pages-subpath gameplay, documentation, and
-same-pack update recovery. A separate checkpoint test verifies that a v9
-checkpoint is kept and rejected before command replay on v10. The first
+same-pack update recovery. A separate checkpoint test verifies that a circular-baseline
+checkpoint is kept and rejected before command replay against the fitted-diffusion pack. The first
 Windows AOT link crashed in `wasm-opt`; limiting Binaryen to one core via
 `BINARYEN_CORES=1` completed the same AOT build locally.
 The AOT reproduction matrix produced matching cold and warm digests for

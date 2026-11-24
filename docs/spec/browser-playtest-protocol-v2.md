@@ -1,4 +1,4 @@
-# Browser playtest protocol v2
+# Browser playtest protocol
 
 The authoritative C# bridge accepts JSON commands with `protocol: candu-playtest-v2` and publishes full snapshots or compact patches. See [PlaytestRuntime](../../src/ReactorSim.Browser/PlaytestRuntime.cs), [DTOs](../../src/ReactorSim.Browser/PlaytestDtos.cs), [fixtures](../../tests/Fixtures/README.md), and the [TypeScript parser](../../web/candu-playtest/src/protocol.ts).
 

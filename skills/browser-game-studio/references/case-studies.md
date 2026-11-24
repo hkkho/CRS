@@ -306,7 +306,7 @@ parameters. Test reproducibility separately from whether experimentation is fun.
 The creator describes spell-based incremental world creation, additive and
 separately stacking modifiers, keyboard spell shortcuts and experimental save
 compatibility. The page contains several version labels; the inspected title
-screen specifically reported **v0.5.4.3**, despite the upload path saying v0.5.0.
+screen displayed a build identifier that differed from the upload path.
 Neither the path nor the current Steam version is a reliable substitute for
 checking the actual browser build.
 

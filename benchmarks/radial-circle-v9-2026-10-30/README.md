@@ -1,6 +1,6 @@
 # Circular radial boundary verification
 
-This record compares the v8 and v9 radial boundary calibrations. The [calibration provenance](../../docs/physics/calibration-provenance.md) describes how the circular geometry is used by the current model.
+This record compares the baseline and circular radial boundary calibrations. The [calibration provenance](../../docs/physics/calibration-provenance.md) describes how the circular geometry is used by the current model.
 
 Both campaigns use seed 1001, normal 2,064 MW thermal / 650 MW electrical
 browser defaults, unlimited fuel, atomic one-day integration, and the same
@@ -13,7 +13,7 @@ These are native .NET campaigns through the versioned Browser bridge and shared
 Core/Game simulation. Browser-WASM release checks are separate. Campaign wall
 times are not a controlled performance comparison.
 
-| Measurement | Baseline v8 | Circular v9 |
+| Measurement | Baseline | Circular boundary |
 | --- | ---: | ---: |
 | Completed days | 100 | 100 |
 | Fuel bundles | 1,808 | 1,816 |
@@ -27,7 +27,7 @@ times are not a controlled performance comparison.
 | Highest observed channel power, kW | 6,135.083 | 6,859.532 |
 | Highest observed bundle power, kW | 790.224 | 853.666 |
 
-The v9 campaign's sampled day-boundary Keff ranges from 0.999987586 to 1.000032667. The radial redistribution
+The circular-boundary campaign's sampled day-boundary Keff ranges from 0.999987586 to 1.000032667. The radial redistribution
 raises peak powers, while fuel demand, discharge burnup, score, energy, control
 range and axial tilt stay close to the baseline. These results establish this
 seed/policy's 100-day survival, not all possible player actions.
@@ -39,7 +39,7 @@ Evidence:
 - [Fresh baseline campaign](baseline.json), [final campaign](campaign.json),
   [final commands and digests](campaign-commands.jsonl).
 - [Machine-readable comparison](comparison.json).
-- [Archived v8 fixed reference](baseline-reference.json),
+- [Archived baseline fixed reference](baseline-reference.json),
   [all 380 final references](reference/reference.json), [CSV](reference/reference.csv),
   [power-map figure](reference-comparison.png).
 - [Independent calibration](../../data/calibration/radial-circle-v9/fit/fit.json)
@@ -55,16 +55,16 @@ were accepted; cold/warm digests matched and no browser errors were reported.
 This verifies the uncommitted working tree at the recorded base commit and pack
 hash; it is not a published deployment or an AOT performance measurement.
 
-To repeat the campaign configuration, use the recorded v9 working tree and pack. The current checkout runs its current pack, so the following command alone does not reproduce the recorded figures. Use a new output prefix:
+To repeat the campaign configuration, use the recorded working tree and pack. The current checkout runs its current pack, so the following command alone does not reproduce the recorded figures. Use a new output prefix:
 
 ```powershell
-dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest-lzc --channels-per-day=2 --days=100 --seed=1001 --output=tmp/radial-v9-seed1001
+dotnet run --project tools/LongRunPlaytest -c Release -- --pacing=daily-turn --policy=oldest-lzc --channels-per-day=2 --days=100 --seed=1001 --output=tmp/radial-circle-seed1001
 ```
 
 
 ## Time-based map scale calibration
 
-A native Browser bridge sample used the v9 pack, time-based (`demo`) pacing,
+A native Browser bridge sample used the circular-boundary pack, time-based (`demo`) pacing,
 and seeds 1001, 42 and 2026. For each seed it sampled the initialized core and
 ten 12-hour endpoints. The first half of each day refuelled the two eligible
 channels with the highest average burnup, breaking ties by channel index. The

@@ -33,7 +33,7 @@ The reserve run's authoritative energy totals are **4,953,600 MWh thermal** and
 It used 48 fewer fresh bundles than the regional policy, with a higher observed
 channel peak and a lower final score.
 
-These results show that both policies reached 100 days on this seed with v4. They do not establish performance for other seeds,
+These results show that both policies reached 100 days on this seed with the recorded calibration. They do not establish performance for other seeds,
 policy optimality, or a realistic plant fuelling response. The existing calibration
 and poison-basis limitations are documented in
 [calibration provenance](../../docs/physics/calibration-provenance.md).
@@ -58,7 +58,7 @@ accounting and unchanged matching canonical/embedded pack hashes. Both benchmark
 commands exited successfully. Both generated plots were visually inspected.
 
 The source base was `e69a40af4b4f6708005f3c006ee0bd6d1b6f7043` with the existing
-uncommitted v4 calibration changes. These results describe that working tree,
+uncommitted calibration changes. These results describe that working tree,
 not the base commit alone or the published GitHub Pages deployment.
 [Provenance](provenance.json) records the initial working-tree status, SDK,
 commands and pack hashes; [verification](verification.json) records checks and
@@ -73,9 +73,9 @@ saved-report hashes.
 
 ![Power-headroom policy over 100 days](reserve.png)
 
-## Reproduce with the v4 working tree
+## Reproduce with the recorded working tree
 
-These commands require the recorded v4 working tree and pack. The base commit
+These commands require the recorded working tree and pack. The base commit
 alone does not contain the uncommitted calibration, simulation and benchmark
 source changes used for this record; a current checkout produces a different
 experiment. The plotting commands render the checked-in reports and overwrite
@@ -94,9 +94,9 @@ To render the checked-in reports independently, use Python with Matplotlib and r
 ```powershell
 New-Item -ItemType Directory -Force -Path tmp | Out-Null
 python tools/AgedCoreBenchmark/plot-fuelling-capability.py benchmarks/fuelling-capability-2026-10-07/regional-report.json
-Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-07/fuelling-capability.png -Destination tmp/regional-v4.png
+Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-07/fuelling-capability.png -Destination tmp/regional-2026-10-07.png
 python tools/AgedCoreBenchmark/plot-fuelling-capability.py benchmarks/fuelling-capability-2026-10-07/reserve-report.json
-Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-07/fuelling-capability.png -Destination tmp/reserve-v4.png
+Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-07/fuelling-capability.png -Destination tmp/reserve-2026-10-07.png
 ```
 
 The commands move each generated plot to `tmp`; choose unused destination names

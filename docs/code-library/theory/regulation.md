@@ -12,7 +12,7 @@ Twenty-one fixed absorber rods add localized absorption and shape nearby power. 
 
 For a regulation event, the controller starts with the closest modeled reactivity it can reach, then adjusts individual fills to reduce regional power errors while preserving that modeled reactivity. The spatial solver verifies the move and supplies a measured response for one further correction if needed. Fills stay between 0% and 100%. Across the entire regulation event, including any correction, each fill can move at most eight percentage points from its value at the start of that event.
 
-For the matching xenon-v11 pack and tube mapping, the initial response uses full-core finite differences around 50% fill. The fit uses aged seed 1001 at nominal power with equilibrium xenon held fixed during ±2.5 percentage-point perturbations of each compartment. This is a local calibration. Other packs or mappings start from a generic estimate, and all accepted states use the full-core solver's measured response.
+For the matching active pack and tube mapping, the initial response uses full-core finite differences around 50% fill. The fit uses aged seed 1001 at nominal power with equilibrium xenon held fixed during ±2.5 percentage-point perturbations of each compartment. This is a local calibration. Other packs or mappings start from a generic estimate, and all accepted states use the full-core solver's measured response.
 
 A zone's headroom is its remaining room to fill or drain. The core average can be within bounds while an individual zone has little room to move. Numerical convergence, controller headroom and terminal game status are separate readings.
 

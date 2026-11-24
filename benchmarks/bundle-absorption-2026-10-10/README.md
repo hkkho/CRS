@@ -36,7 +36,7 @@ is 3.12 × 10⁻¹⁷ m⁻¹. CSV values retain full precision.
 - [Vector plot](bundle-absorption.svg)
 - [Plot source](plot_absorption.py)
 
-The following command runs the export from the repository root without overwriting the recorded data. Matching these figures requires the recorded v7 pack and code; the current checkout uses its current model. The plot script reads the checked-in JSON and rewrites the plots and CSV beside it; run it only when intentionally regenerating those artifacts.
+The following command runs the export from the repository root without overwriting the recorded data. Matching these figures requires the recorded pack and code; the current checkout uses its current model. The plot script reads the checked-in JSON and rewrites the plots and CSV beside it; run it only when intentionally regenerating those artifacts.
 
 ```powershell
 dotnet run --project tools/AgedCoreBenchmark -c Release -- --bundle-absorption tmp/bundle-absorption.json 1001

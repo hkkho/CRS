@@ -1,10 +1,10 @@
 # 100-day fuelling capability attempts — 2026-10-06
 
-With the recorded v3 configuration, neither tested policy reached 100 full-power days. Both attempts ended on its 7,300 kW channel-power limit after an accepted fuel move. These results apply to the recorded pack and limits, not the current game.
+With the recorded reactivity calibration, neither tested policy reached 100 full-power days. Both attempts ended on its 7,300 kW channel-power limit after an accepted fuel move. These results apply to the recorded pack and limits, not the current game.
 
 Both runs used seed **1759455334**, initially drawn from cryptographic randomness,
 and the authoritative endless browser-factory `GameSession` at 100% full power:
-2,064 MW thermal / 650 MW electrical. The active pack was
+2,064 MW thermal / 650 MW electrical. The recorded pack was
 `candu6-two-group-diffusion-v1-cycle190-650mwe-reactivity-v3`.
 Xenon, three-minute spatial/LZC solves, unlimited fuel and all normal terminal
 limits remained active. There were no physics, inventory or horizon overrides.
@@ -53,7 +53,7 @@ this repository.
 
 ## Reproduce
 
-The benchmark commands require the recorded v3 source and pack identified above. Running them against the current checkout measures its current model and does not reproduce these figures.
+The benchmark commands require the recorded source and pack identified above. Running them against the current checkout measures its current model and does not reproduce these figures.
 
 ```powershell
 dotnet run --project tools/AgedCoreBenchmark -c Release -- --fuelling-100-days artifacts/fuelling-100-days-balanced 1759455334
@@ -70,7 +70,7 @@ reserve plot requires `reserve-report.jsonl` beside `reserve-report.json`.
 ```powershell
 New-Item -ItemType Directory -Force -Path tmp | Out-Null
 python tools/AgedCoreBenchmark/plot-fuelling-capability.py benchmarks/fuelling-capability-2026-10-06/regional-report.json
-Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-06/fuelling-capability.png -Destination tmp/regional-v3.png
+Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-06/fuelling-capability.png -Destination tmp/regional-2026-10-06.png
 python tools/AgedCoreBenchmark/plot-fuelling-capability.py benchmarks/fuelling-capability-2026-10-06/reserve-report.json
-Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-06/fuelling-capability.png -Destination tmp/reserve-v3.png
+Move-Item -LiteralPath benchmarks/fuelling-capability-2026-10-06/fuelling-capability.png -Destination tmp/reserve-2026-10-06.png
 ```

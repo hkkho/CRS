@@ -46,7 +46,7 @@ common multiplier of 1.0010823199232564, the reciprocal of the seed-1001
 half-fill equilibrium multiplication factor before normalization. It brings
 the half-fill state close to criticality while preserving the relative
 production curve. The static report records `k = 1.00000398` for that state.
-[V10 geometry fit](../../data/calibration/diffusion-v10/README.md)
+[Geometry fit](../../data/calibration/diffusion-v10/README.md)
 and [Point Lepreau reference design, §§5–6](https://www.unene.ca/essentialcandu/pdf/2%20-%20Genealogy%20of%20CANDU%20Reactors.pdf)
 
 With actual xenon frozen, the seed-1001 fuel-only reactivity loss is about
@@ -59,7 +59,7 @@ records the pack, power, method and values.
 The 96-hour benchmark applies the lateral 80/20 zone split at full power.
 It compares a held split with a free response after all zones return to
 50% at hour eight. Fuel inventory and burnup stay fixed and the benchmark
-bypasses regulation and operating limits. Both runs use the v11 physics with
+bypasses regulation and operating limits. Both runs use the active physics with
 tighter solver tolerances than the default pack; the reports identify these
 overrides with a custom pack ID and explicitly set the xenon absorption
 multiplier to 1. The equilibrium worth is a shared static baseline. The
@@ -67,7 +67,7 @@ benchmark measures same-side peak spacing
 and estimates damping from the change in successive amplitudes around the
 untilted baseline.
 
-| Seed 1001, v11 | Hourly steps | 15-minute steps with hourly samples |
+| Seed 1001, active pack | Hourly steps | 15-minute steps with hourly samples |
 | --- | ---: | ---: |
 | Held-split periods | 25 h | 22–24 h |
 | Released periods | 25–26 h | 22–25 h |

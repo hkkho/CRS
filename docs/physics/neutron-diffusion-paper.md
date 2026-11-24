@@ -40,7 +40,7 @@ renders accepted observations.
 The default topology follows the 380-channel, 12-bundle geometry of the
 CANDU-6 reference design. CRS homogenizes each bundle position into one
 volume with two scalar flux unknowns, giving 9,120 flux unknowns and one
-effective multiplication factor. The active v11 pack is a calibrated gameplay
+effective multiplication factor. The active pack is a calibrated gameplay
 surrogate with authored coefficients, effective boundaries and localized
 absorption. This paper assesses the balance equations of that surrogate and
 the cost of solving them. Plant-level predictive accuracy would require
@@ -245,7 +245,7 @@ Integration cadence determines the number of equilibrium events and therefore
 the workload. A daily-mode acceptance run using one 86,400 s frozen-flux interval and
 one endpoint event measured 4.154 s for a two-channel day and 1.487 s for the
 following empty day. Fuel moves require additional equilibrium work before the
-interval. Section 5 uses the v11 workload for the build comparison.
+interval. Section 5 uses the measured workload for the build comparison.
 [Archived daily-turn verification](https://github.com/hkkho/CRS/blob/2015dd334782358e910681bbd10f25d8fb3cf2d7/docs/performance/daily-turns.md)
 
 The public time-based mode takes one 43,200 s interval per command. When
@@ -341,7 +341,7 @@ Startup and device coverage are separate measurements.
 The experiment used the local GitHub Pages build at the `/CRS/` base path
 on Windows 11 Pro (build 26200), AMD Ryzen 7 5800X3D, .NET SDK 10.0.303,
 and headless Playwright Chromium 151.0.7922.34. Both builds use the same
-source revision, the default v11 pack and a single-threaded Release host
+source revision, the default pack for that build and a single-threaded Release host
 with profiling disabled. One build enables AOT and the other leaves it
 disabled. The AOT run measures the full command stream. The non-AOT
 comparison replays its first block for each seed.
@@ -475,8 +475,8 @@ numerical failure. Together these checks cover analytic correctness for
 small cases, behavior of the assembled discrete equations, and the
 transaction that delivers their result. The one-cell case exercises zero
 leakage. The full-core tests exercise the deployed mesh, while refinement
-error and independent plant accuracy remain open. The v10 geometry and
-v11 xenon comparisons are calibration evidence. The frozen-source half-day
+error and independent plant accuracy remain open. The geometry and
+xenon comparisons are calibration evidence. The frozen-source half-day
 approximates the time dependence between solved endpoints.
 [Game step tests](../../tests/ReactorSim.Game.Tests/DailyTurnTests.cs) ·
 [Browser demo tests](../../tests/ReactorSim.Browser.Tests/DemoModeTests.cs) ·
